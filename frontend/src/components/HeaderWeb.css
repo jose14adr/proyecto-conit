@@ -1,0 +1,162 @@
+/* ============================= */
+/* HEADER PRINCIPAL */
+/* ============================= */
+
+.header-web {
+  width: 100%;
+  background: #0f172a;
+  color: white;
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-web-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 0 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ============================= */
+/* LOGO */
+/* ============================= */
+
+.logo-web {
+  font-size: 22px;
+  font-weight: 700;
+  text-decoration: none;
+  color: white;
+}
+
+/* ============================= */
+/* NAV */
+/* ============================= */
+
+.nav-web {
+  display: flex;
+  gap: 28px;
+}
+
+.nav-web a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.nav-web a:hover {
+  color: #38bdf8;
+}
+
+/* ============================= */
+/* ACCIONES */
+/* ============================= */
+
+.actions-web {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* ============================= */
+/* CARRITO */
+/* ============================= */
+
+.cart-web {
+  position: relative;
+  text-decoration: none;
+  font-size: 20px;
+  color: white;
+  margin-right: 12px;
+}
+
+/* Badge contador */
+
+.cart-badge-web {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+
+  background: #ef4444;
+  color: white;
+
+  font-size: 11px;
+  font-weight: bold;
+
+  padding: 2px 6px;
+  border-radius: 50%;
+}
+
+/* ============================= */
+/* BOTÓN AULA */
+/* ============================= */
+
+.btn-aula-web {
+  background: #38bdf8;
+  color: white;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.btn-aula-web:hover {
+  background: #0ea5e9;
+}
+
+/* ============================= */
+/* MENÚ HAMBURGUESA */
+/* ============================= */
+
+.menu-toggle-web {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: white;
+  cursor: pointer;
+}
+
+/* ============================= */
+/* RESPONSIVE */
+/* ============================= */
+
+@media (max-width: 900px) {
+
+  .menu-toggle-web {
+    display: block;
+  }
+
+  .nav-web {
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+
+    background: #0f172a;
+
+    flex-direction: column;
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 20px 0;
+
+    display: none;
+  }
+
+  .nav-web.open {
+    display: flex;
+  }
+
+  .btn-aula-web {
+    display: none;
+  }
+
+}

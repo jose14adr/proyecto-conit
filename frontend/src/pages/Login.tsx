@@ -50,9 +50,17 @@ export default function Login() {
         recaptchaToken: captchaToken,
       };
       //Llamamos al backend pasando los datos completos, incluyendo el token del reCAPTCHA
-      const respuesta = await login(loginData);
-      //Guardamos el token en el navegador
-      localStorage.setItem("token", respuesta.accessToken);
+     const respuesta = await login(loginData);
+     console.log("RESPUESTA LOGIN >>>", respuesta);
+
+    if (!respuesta?.access_token) {
+  console.log("RESPUESTA LOGIN >>>", respuesta);
+  throw new Error("No llegó access_token del backend");
+}
+
+localStorage.setItem("token", respuesta.access_token);
+console.log("TOKEN GUARDADO:", localStorage.getItem("token"));
+
       //Si todo está bien, mostramos un mensaje de éxito
       toast.success(`Inicio de sesión exitoso`);
       //Redirigimos al dashboard

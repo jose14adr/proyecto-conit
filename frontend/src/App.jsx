@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 import Login from "./pages/Login";
@@ -7,6 +7,16 @@ import ResetPassword from "./pages/ResetPassword";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// WEB PUBLICA CONIT
+import HeaderWeb from "./components/HeaderWeb";
+import FooterWeb from "./components/FooterWeb";
+import HomeWeb from "./pages/HomeWeb";
+import CursosWeb from "./pages/CursosWeb";
+import NosotrosWeb from "./pages/NosotrosWeb";
+import ContactoWeb from "./pages/ContactoWeb";
+import CarritoWeb from "./pages/CarritoWeb";
+
+// ESTUDIANTE
 import LayoutEstudiante from "./layouts/LayoutEstudiante";
 import HomePage from "./pages/HomePage";
 import MisCursos from "./pages/MisCursos";
@@ -16,6 +26,7 @@ import Biblioteca from "./pages/Biblioteca";
 import MiPerfil from "./pages/MiPerfil";
 import MisPagos from "./pages/MisPagos";
 
+// ADMIN
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
 import Docentes from "./admin/docentes";
@@ -26,25 +37,78 @@ import Pagos from "./admin/Pagos";
 
 import Matricula from "./pages/Matricula";
 
-import DocenteLayout from "./docente/DocenteLayout"
-import PerfilDocente from "./docente/PerfilDocente"
-import MisCursosDocente from "./docente/MisCursos"
-import HorarioDocente from "./docente/HorarioDocente"
-import CursoDetalleDocente from "./docente/CursoDetalleDocente"
-import RegistroNotas from "./docente/RegistroNotas"
-import ListaAprobados from "./docente/ListaAprobados"
+// DOCENTE
+import DocenteLayout from "./docente/DocenteLayout";
+import PerfilDocente from "./docente/PerfilDocente";
+import MisCursosDocente from "./docente/MisCursos";
+import HorarioDocente from "./docente/HorarioDocente";
+import CursoDetalleDocente from "./docente/CursoDetalleDocente";
+import RegistroNotas from "./docente/RegistroNotas";
+import ListaAprobados from "./docente/ListaAprobados";
+import TareasDocente from "./docente/TareasDocente";
+
+function PublicWebLayout({ children }) {
+  return (
+    <>
+      <HeaderWeb />
+      {children}
+      <FooterWeb />
+    </>
+  );
+}
 
 export default function App() {
   return (
     <>
-      {/*Muestra alertas de notificaciones*/}
       <Toaster position="top-right" />
 
       <Routes>
-        {/*Login*/}
+        {/* LOGIN */}
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* WEB PUBLICA CONIT */}
+        <Route
+          path="/web"
+          element={
+            <PublicWebLayout>
+              <HomeWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/cursos"
+          element={
+            <PublicWebLayout>
+              <CursosWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/nosotros"
+          element={
+            <PublicWebLayout>
+              <NosotrosWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/contacto"
+          element={
+            <PublicWebLayout>
+              <ContactoWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/carrito"
+          element={
+            <PublicWebLayout>
+              <CarritoWeb />
+            </PublicWebLayout>
+          }
+        />
 
         <Route element={<ProtectedRoute />}>
           {/* ESTUDIANTE */}
@@ -77,9 +141,11 @@ export default function App() {
             <Route path="notas" element={<RegistroNotas />} />
             <Route path="aprobados" element={<ListaAprobados />} />
             <Route path="horario" element={<HorarioDocente />} />
+            <Route path="tareas" element={<TareasDocente />} />
           </Route>
         </Route>
-        {/*Ruta Comodín*/}
+
+        {/* Ruta comodín */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>

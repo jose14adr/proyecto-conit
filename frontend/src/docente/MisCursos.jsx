@@ -5,7 +5,7 @@ import { getCursosDocente } from "../services/docenteService"
 function MisCursos() {
   const [cursos, setCursos] = useState([])
 
-  // buscador google-style
+  // buscador estilo google
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)

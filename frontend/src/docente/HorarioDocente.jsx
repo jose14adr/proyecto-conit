@@ -142,6 +142,7 @@ function HorarioDocente() {
   const goToday = () => setWeekStart(startOfWeekMonday(new Date()))
 
   return (
+
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white p-4 rounded shadow flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -174,7 +175,7 @@ function HorarioDocente() {
 
       {/* Paneles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* === PANEL 1: CLASES DE HOY (MISMO LOOK QUE PRÓXIMA CLASE) === */}
+        {/* === PANEL 1: CLASES DE HOY === */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-bold text-lg mb-2">Clases de hoy ({hoyLabel})</h3>
 
@@ -189,7 +190,7 @@ function HorarioDocente() {
           )}
         </div>
 
-        {/* === PANEL 2: PRÓXIMA CLASE (MANTENIDO) === */}
+        {/* === PANEL 2: PRÓXIMA CLASE  === */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-bold text-lg mb-2">Próxima clase</h3>
 
@@ -216,6 +217,7 @@ function HorarioDocente() {
           </thead>
 
           <tbody>
+            
             {horas.length === 0 ? (
               <tr>
                 <td className="p-4 text-gray-500" colSpan={dias.length + 1}>

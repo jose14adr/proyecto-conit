@@ -3,11 +3,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsuarioModule } from './usuario/usuario.module';
 import { AuthModule } from './auth/auth.module';
-import { DocenteModule } from './docente/docente.module';
-import { AlumnoModule } from './alumno/alumno.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DocenteModule } from './docente/docente.module';
+import { AlumnoModule } from './alumno/alumno.module';
+import { CursoModule } from './curso/curso.module';
+import { TemarioModule } from './temario/temario.module';
+import { UnidadModule } from './unidad/unidad.module';
+import { SesionModule } from './sesion/sesion.module';
+import { GrupoModule } from './grupo/grupo.module';
 
 import { join } from 'path';
 
@@ -48,6 +53,11 @@ import { join } from 'path';
     AuthModule,
     DocenteModule,
     AlumnoModule,
+    CursoModule,
+    TemarioModule,
+    UnidadModule,
+    SesionModule,
+    GrupoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

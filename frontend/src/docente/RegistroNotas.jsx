@@ -1,67 +1,64 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import { getCursosDocente, getAlumnosByCurso } from "../services/docenteService"
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getCursosDocente, getAlumnosByCurso, guardarNotas } from "../services/docenteService";
 
 function hoyTexto() {
-  const d = new Date()
-  const dd = String(d.getDate()).padStart(2, "0")
-  const mm = String(d.getMonth() + 1).padStart(2, "0")
-  const yyyy = d.getFullYear()
-  return `${dd}/${mm}/${yyyy}`
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 function toNumberOrNaN(v) {
-  if (v === "" || v === null || v === undefined) return NaN
-  const n = Number(v)
-  return Number.isNaN(n) ? NaN : n
+  if (v === "" || v === null || v === undefined) return NaN;
+  const n = Number(v);
+  return Number.isNaN(n) ? NaN : n;
 }
 
 function validateNota(v) {
-  // Devuelve { ok: boolean, msg: string }
-  if (v === "" || v === null || v === undefined) {
-    return { ok: false, msg: "Obligatorio" }
-  }
-  const n = Number(v)
-  if (Number.isNaN(n)) return { ok: false, msg: "Solo números" }
-  if (n < 0 || n > 20) return { ok: false, msg: "Debe ser 0 a 20" }
-  return { ok: true, msg: "" }
+  if (v === "" || v === null || v === undefined) return { ok: false, msg: "Obligatorio" };
+  const n = Number(v);
+  if (Number.isNaN(n)) return { ok: false, msg: "Solo números" };
+  if (n < 0 || n > 20) return { ok: false, msg: "Debe ser 0 a 20" };
+  return { ok: true, msg: "" };
 }
 
 function promedio3(n1, n2, n3) {
-  if ([n1, n2, n3].some((x) => Number.isNaN(x))) return "—"
-  return ((n1 + n2 + n3) / 3).toFixed(1)
+  if ([n1, n2, n3].some((x) => Number.isNaN(x))) return "—";
+  return ((n1 + n2 + n3) / 3).toFixed(1);
 }
 
 export default function RegistroNotas() {
-  const [cursos, setCursos] = useState([])
-  const [alumnos, setAlumnos] = useState([])
+  const [cursos, setCursos] = useState([]);
+  const [alumnos, setAlumnos] = useState([]);
 
   // selección
-  const [cursoId, setCursoId] = useState("")
-  const [query, setQuery] = useState("")
-  const [openSug, setOpenSug] = useState(false)
-  const [highlight, setHighlight] = useState(0)
-  const inputRef = useRef(null)
+  const [cursoId, setCursoId] = useState("");
+  const [query, setQuery] = useState("");
+  const [openSug, setOpenSug] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+  const inputRef = useRef(null);
 
-  // edición (draft)
-  const [draft, setDraft] = useState({}) // { alumnoId: {nota1,nota2,nota3} }
-  const [original, setOriginal] = useState({})
-  const [dirty, setDirty] = useState(false)
-  const [saving, setSaving] = useState(false)
+  // draft: ✅ CLAVE REAL = idmatricula
+  const [draft, setDraft] = useState({}); // { [idmatricula]: {nota1,nota2,nota3} }
+  const [original, setOriginal] = useState({});
+  const [saving, setSaving] = useState(false);
 
   // modal notas
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalAlumno, setModalAlumno] = useState(null)
-  const [modalNotas, setModalNotas] = useState({ nota1: "", nota2: "", nota3: "" })
-  const [modalTouched, setModalTouched] = useState({ nota1: false, nota2: false, nota3: false })
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalAlumno, setModalAlumno] = useState(null);
+  const [modalNotas, setModalNotas] = useState({ nota1: "", nota2: "", nota3: "" });
+  const [modalTouched, setModalTouched] = useState({ nota1: false, nota2: false, nota3: false });
 
   // modal boleta
-  const [boletaOpen, setBoletaOpen] = useState(false)
-  const [boletaAlumno, setBoletaAlumno] = useState(null)
+  const [boletaOpen, setBoletaOpen] = useState(false);
+  const [boletaAlumno, setBoletaAlumno] = useState(null);
 
   useEffect(() => {
-    getCursosDocente().then((data) => setCursos(data || []))
-  }, [])
+    getCursosDocente().then((data) => setCursos(data || []));
+  }, []);
 
+  // ✅ Cargar alumnos + armar draft por idmatricula
   useEffect(() => {
     if (!cursoId) return;
 
@@ -71,189 +68,206 @@ export default function RegistroNotas() {
 
       const base = {};
       list.forEach((a) => {
-        base[a.id] = {
+        const key = a.idmatricula; // ✅
+        base[key] = {
           nota1: a.nota1 ?? "",
           nota2: a.nota2 ?? "",
           nota3: a.nota3 ?? "",
         };
       });
+
       setDraft(base);
       setOriginal(base);
-      setDirty(false);
     });
   }, [cursoId]);
 
   const cursoSeleccionado = useMemo(() => {
-    return cursos.find((c) => String(c.id) === String(cursoId)) || null
-  }, [cursos, cursoId])
+    return cursos.find((c) => String(c.id) === String(cursoId)) || null;
+  }, [cursos, cursoId]);
 
   // sugerencias tipo google
   const sugerencias = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return cursos.slice(0, 6)
-    return cursos.filter((c) => c.nombre.toLowerCase().includes(q)).slice(0, 8)
-  }, [query, cursos])
+    const q = query.trim().toLowerCase();
+    if (!q) return cursos.slice(0, 6);
+    return cursos.filter((c) => c.nombre.toLowerCase().includes(q)).slice(0, 8);
+  }, [query, cursos]);
 
   const seleccionarCurso = (c) => {
-    setCursoId(String(c.id))
-    setQuery(c.nombre)
-    setOpenSug(false)
-    setHighlight(0)
-  }
+    setCursoId(String(c.id));
+    setQuery(c.nombre);
+    setOpenSug(false);
+    setHighlight(0);
+  };
 
   const onKeyDown = (e) => {
-    if (!openSug) return
+    if (!openSug) return;
 
     if (e.key === "ArrowDown") {
-      e.preventDefault()
-      setHighlight((h) => Math.min(h + 1, sugerencias.length - 1))
+      e.preventDefault();
+      setHighlight((h) => Math.min(h + 1, sugerencias.length - 1));
     }
     if (e.key === "ArrowUp") {
-      e.preventDefault()
-      setHighlight((h) => Math.max(h - 1, 0))
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
     }
     if (e.key === "Enter") {
-      e.preventDefault()
-      const pick = sugerencias[highlight]
-      if (pick) seleccionarCurso(pick)
+      e.preventDefault();
+      const pick = sugerencias[highlight];
+      if (pick) seleccionarCurso(pick);
     }
-    if (e.key === "Escape") setOpenSug(false)
-  }
+    if (e.key === "Escape") setOpenSug(false);
+  };
 
-  const cancelarCambios = () => {
-    setDraft(original)
-    setDirty(false)
-  }
-
-  // ===== Validación global (Opción C) =====
+  // ===== Validación global =====
   const erroresPorAlumno = useMemo(() => {
-    // { alumnoId: { nota1: msg, nota2: msg, nota3: msg } }
-    const errs = {}
+    const errs = {};
     alumnos.forEach((a) => {
-      const row = draft[a.id] || { nota1: "", nota2: "", nota3: "" }
-      const v1 = validateNota(row.nota1)
-      const v2 = validateNota(row.nota2)
-      const v3 = validateNota(row.nota3)
+      const key = a.idmatricula;
+      const row = draft[key] || { nota1: "", nota2: "", nota3: "" };
+
+      const v1 = validateNota(row.nota1);
+      const v2 = validateNota(row.nota2);
+      const v3 = validateNota(row.nota3);
+
       if (!v1.ok || !v2.ok || !v3.ok) {
-        errs[a.id] = {
+        errs[key] = {
           nota1: v1.ok ? "" : v1.msg,
           nota2: v2.ok ? "" : v2.msg,
           nota3: v3.ok ? "" : v3.msg,
-        }
+        };
       }
-    })
-    return errs
-  }, [draft, alumnos])
+    });
+    return errs;
+  }, [draft, alumnos]);
 
-  const tieneErrores = useMemo(() => {
-    return Object.keys(erroresPorAlumno).length > 0
-  }, [erroresPorAlumno])
-
-  const guardarCambios = async () => {
-    if (!cursoId) return
-    if (tieneErrores) {
-      alert("❌ No puedes guardar: hay notas inválidas o incompletas.")
-      return
-    }
-
-    setSaving(true)
-
-    // luego conectamos a backend:
-    // await updateNotasCurso(cursoId, draft)
-
-    setTimeout(() => {
-      setSaving(false)
-      setOriginal(draft)
-      setDirty(false)
-      alert("✅ Notas guardadas (simulado). Luego lo conectamos al backend.")
-    }, 600)
-  }
-
-  const updateDraft = (alumnoId, key, value) => {
-    setDraft((prev) => ({
-      ...prev,
-      [alumnoId]: { ...prev[alumnoId], [key]: value },
-    }))
-    setDirty(true)
-  }
+  const tieneErrores = useMemo(() => Object.keys(erroresPorAlumno).length > 0, [erroresPorAlumno]);
 
   // ===== Modal Notas =====
   const abrirModalNotas = (alumno) => {
-    const notas = draft[alumno.id] || { nota1: "", nota2: "", nota3: "" }
-    setModalAlumno(alumno)
+    setModalAlumno(alumno);
+
     setModalNotas({
-      nota1: notas.nota1 ?? "",
-      nota2: notas.nota2 ?? "",
-      nota3: notas.nota3 ?? "",
-    })
-    setModalTouched({ nota1: false, nota2: false, nota3: false })
-    setModalOpen(true)
-  }
+      nota1: alumno?.nota1 ?? "",
+      nota2: alumno?.nota2 ?? "",
+      nota3: alumno?.nota3 ?? "",
+    });
+
+    setModalTouched({ nota1: false, nota2: false, nota3: false });
+    setModalOpen(true);
+  };
 
   const cerrarModalNotas = () => {
-    setModalOpen(false)
-    setModalAlumno(null)
-    setModalNotas({ nota1: "", nota2: "", nota3: "" })
-    setModalTouched({ nota1: false, nota2: false, nota3: false })
-  }
+    setModalOpen(false);
+    setModalAlumno(null);
+    setModalNotas({ nota1: "", nota2: "", nota3: "" });
+    setModalTouched({ nota1: false, nota2: false, nota3: false });
+  };
 
   const modalErrors = useMemo(() => {
     return {
       nota1: validateNota(modalNotas.nota1),
       nota2: validateNota(modalNotas.nota2),
       nota3: validateNota(modalNotas.nota3),
-    }
-  }, [modalNotas])
+    };
+  }, [modalNotas]);
 
-  const modalHasErrors =
-    !modalErrors.nota1.ok || !modalErrors.nota2.ok || !modalErrors.nota3.ok
+  const modalHasErrors = !modalErrors.nota1.ok || !modalErrors.nota2.ok || !modalErrors.nota3.ok;
 
   const modalProm = useMemo(() => {
-    const n1 = toNumberOrNaN(modalNotas.nota1)
-    const n2 = toNumberOrNaN(modalNotas.nota2)
-    const n3 = toNumberOrNaN(modalNotas.nota3)
-    return promedio3(n1, n2, n3)
-  }, [modalNotas])
+    const n1 = toNumberOrNaN(modalNotas.nota1);
+    const n2 = toNumberOrNaN(modalNotas.nota2);
+    const n3 = toNumberOrNaN(modalNotas.nota3);
+    return promedio3(n1, n2, n3);
+  }, [modalNotas]);
 
-  const guardarModalNotas = () => {
-    if (!modalAlumno) return
+  // ✅ ESTE ES EL GUARDADO REAL EN SUPABASE
+  const guardarModalNotas = async () => {
+    try {
+      if (!modalAlumno) return;
 
-    // marcar touched para que se vean errores si intentan guardar
-    setModalTouched({ nota1: true, nota2: true, nota3: true })
+      setModalTouched({ nota1: true, nota2: true, nota3: true });
+      if (modalHasErrors) return;
 
-    if (modalHasErrors) return
+      setSaving(true);
 
-    const alumnoId = modalAlumno.id
-    updateDraft(alumnoId, "nota1", modalNotas.nota1)
-    updateDraft(alumnoId, "nota2", modalNotas.nota2)
-    updateDraft(alumnoId, "nota3", modalNotas.nota3)
-    cerrarModalNotas()
-  }
+      const idmatricula = Number(modalAlumno.idmatricula);
+
+      await guardarNotas(modalAlumno.idmatricula, {
+        1: Number(modalNotas.nota1),
+        2: Number(modalNotas.nota2),
+        3: Number(modalNotas.nota3),
+      });
+
+      // ✅ actualizar tabla en memoria (alumnos)
+      setAlumnos((prev) =>
+        prev.map((a) =>
+          Number(a.idmatricula) === idmatricula
+            ? {
+                ...a,
+                nota1: Number(modalNotas.nota1),
+                nota2: Number(modalNotas.nota2),
+                nota3: Number(modalNotas.nota3),
+              }
+            : a
+        )
+      );
+
+      // ✅ actualizar draft por idmatricula (clave real)
+      setDraft((prev) => ({
+        ...prev,
+        [idmatricula]: {
+          nota1: modalNotas.nota1,
+          nota2: modalNotas.nota2,
+          nota3: modalNotas.nota3,
+        },
+      }));
+
+      // ✅ también actualiza original para que al volver no “reviva” lo viejo
+      setOriginal((prev) => ({
+        ...prev,
+        [idmatricula]: {
+          nota1: modalNotas.nota1,
+          nota2: modalNotas.nota2,
+          nota3: modalNotas.nota3,
+        },
+      }));
+
+      cerrarModalNotas();
+      alert("Notas guardadas correctamente ✅");
+    } catch (e) {
+      console.error("❌ Error guardando en Supabase:", e);
+      alert("Error al guardar (mira Console)");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // ===== Modal Boleta =====
   const abrirBoleta = (alumno) => {
-    setBoletaAlumno(alumno)
-    setBoletaOpen(true)
-  }
+    setBoletaAlumno(alumno);
+    setBoletaOpen(true);
+  };
 
   const cerrarBoleta = () => {
-    setBoletaOpen(false)
-    setBoletaAlumno(null)
-  }
+    setBoletaOpen(false);
+    setBoletaAlumno(null);
+  };
 
   const boletaNotas = useMemo(() => {
-    if (!boletaAlumno) return { nota1: "—", nota2: "—", nota3: "—", promedio: "—" }
-    const row = draft[boletaAlumno.id] || { nota1: "", nota2: "", nota3: "" }
-    const n1 = validateNota(row.nota1).ok ? row.nota1 : "—"
-    const n2 = validateNota(row.nota2).ok ? row.nota2 : "—"
-    const n3 = validateNota(row.nota3).ok ? row.nota3 : "—"
+    if (!boletaAlumno) return { nota1: "—", nota2: "—", nota3: "—", promedio: "—" };
+    const key = boletaAlumno.idmatricula;
+    const row = draft[key] || { nota1: "", nota2: "", nota3: "" };
 
-    const pn1 = toNumberOrNaN(n1 === "—" ? "" : n1)
-    const pn2 = toNumberOrNaN(n2 === "—" ? "" : n2)
-    const pn3 = toNumberOrNaN(n3 === "—" ? "" : n3)
+    const n1 = validateNota(row.nota1).ok ? row.nota1 : "—";
+    const n2 = validateNota(row.nota2).ok ? row.nota2 : "—";
+    const n3 = validateNota(row.nota3).ok ? row.nota3 : "—";
 
-    return { nota1: n1, nota2: n2, nota3: n3, promedio: promedio3(pn1, pn2, pn3) }
-  }, [boletaAlumno, draft])
+    const pn1 = toNumberOrNaN(n1 === "—" ? "" : n1);
+    const pn2 = toNumberOrNaN(n2 === "—" ? "" : n2);
+    const pn3 = toNumberOrNaN(n3 === "—" ? "" : n3);
+
+    return { nota1: n1, nota2: n2, nota3: n3, promedio: promedio3(pn1, pn2, pn3) };
+  }, [boletaAlumno, draft]);
 
   return (
     <div className="space-y-6">
@@ -269,9 +283,9 @@ export default function RegistroNotas() {
               ref={inputRef}
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value)
-                setOpenSug(true)
-                setHighlight(0)
+                setQuery(e.target.value);
+                setOpenSug(true);
+                setHighlight(0);
               }}
               onFocus={() => setOpenSug(true)}
               onBlur={() => setTimeout(() => setOpenSug(false), 150)}
@@ -307,19 +321,17 @@ export default function RegistroNotas() {
             <select
               value={cursoId}
               onChange={(e) => {
-                const val = e.target.value
-                setCursoId(val)
-                if (!val){
+                const val = e.target.value;
+                setCursoId(val);
+
+                if (!val) {
                   setAlumnos([]);
                   setDraft({});
                   setOriginal({});
-                  setDirty(false);
                   setQuery("");
-                } else { 
-                  const found = cursos.find((c) => String(c.id) === String(val))
-                  if (found) {
-                    setQuery(found.nombre)
-                  }
+                } else {
+                  const found = cursos.find((c) => String(c.id) === String(val));
+                  if (found) setQuery(found.nombre);
                 }
               }}
               className="border rounded px-3 py-2 w-full"
@@ -345,6 +357,7 @@ export default function RegistroNotas() {
                 {cursoSeleccionado.nombre} • Grupo {cursoSeleccionado.grupo} • {cursoSeleccionado.horario}
               </p>
             )}
+
             {cursoId && (
               <p className={`text-xs mt-1 ${tieneErrores ? "text-red-600" : "text-gray-500"}`}>
                 {tieneErrores
@@ -352,31 +365,6 @@ export default function RegistroNotas() {
                   : "Todas las notas están completas."}
               </p>
             )}
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={cancelarCambios}
-              disabled={!dirty || saving}
-              className={`border px-3 py-2 rounded ${
-                !dirty || saving ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
-              }`}
-            >
-              Cancelar
-            </button>
-
-            <button
-              onClick={guardarCambios}
-              disabled={!dirty || saving || tieneErrores}
-              className={`px-4 py-2 rounded text-white ${
-                !dirty || saving || tieneErrores
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
-              }`}
-              title={tieneErrores ? "Corrige notas inválidas antes de guardar" : "Guardar"}
-            >
-              {saving ? "Guardando..." : "Guardar cambios"}
-            </button>
           </div>
         </div>
 
@@ -400,17 +388,18 @@ export default function RegistroNotas() {
 
               <tbody>
                 {alumnos.map((a) => {
-                  const row = draft[a.id] || { nota1: "", nota2: "", nota3: "" }
-                  const e = erroresPorAlumno[a.id] || { nota1: "", nota2: "", nota3: "" }
+                  const key = a.idmatricula; // ✅
+                  const row = draft[key] || { nota1: "", nota2: "", nota3: "" };
+                  const e = erroresPorAlumno[key] || { nota1: "", nota2: "", nota3: "" };
 
-                  const n1 = toNumberOrNaN(row.nota1)
-                  const n2 = toNumberOrNaN(row.nota2)
-                  const n3 = toNumberOrNaN(row.nota3)
+                  const n1 = toNumberOrNaN(row.nota1);
+                  const n2 = toNumberOrNaN(row.nota2);
+                  const n3 = toNumberOrNaN(row.nota3);
 
-                  const prom = promedio3(n1, n2, n3)
+                  const prom = promedio3(n1, n2, n3);
 
                   return (
-                    <tr key={a.id} className="border-b">
+                    <tr key={key} className="border-b">
                       <td className="py-2">{a.nombre}</td>
 
                       <td className="py-2">
@@ -443,7 +432,7 @@ export default function RegistroNotas() {
                         </div>
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -508,20 +497,19 @@ export default function RegistroNotas() {
                 Promedio: <span className="font-bold">{modalProm}</span>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={cerrarModalNotas}
-                  className="border px-3 py-2 rounded hover:bg-gray-50"
-                >
+                <button onClick={cerrarModalNotas} className="border px-3 py-2 rounded hover:bg-gray-50">
                   Cancelar
                 </button>
                 <button
                   onClick={guardarModalNotas}
-                  disabled={modalHasErrors}
+                  disabled={modalHasErrors || saving}
                   className={`px-4 py-2 rounded text-white ${
-                    modalHasErrors ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                    modalHasErrors || saving
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
-                  Guardar
+                  {saving ? "Guardando..." : "Guardar"}
                 </button>
               </div>
             </div>
@@ -549,11 +537,7 @@ export default function RegistroNotas() {
                 </p>
               </div>
 
-              <button
-                onClick={cerrarBoleta}
-                className="border rounded px-2 py-1 hover:bg-gray-50"
-                aria-label="Cerrar"
-              >
+              <button onClick={cerrarBoleta} className="border rounded px-2 py-1 hover:bg-gray-50" aria-label="Cerrar">
                 ✕
               </button>
             </div>
@@ -593,11 +577,11 @@ export default function RegistroNotas() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function CellRead({ value, error }) {
-  const show = value === "" ? "—" : value
+  const show = value === "" ? "—" : value;
   return (
     <div>
       <div className={`inline-block px-2 py-1 rounded ${error ? "bg-red-50 text-red-700" : "bg-gray-50"}`}>
@@ -605,11 +589,11 @@ function CellRead({ value, error }) {
       </div>
       {error && <div className="text-xs text-red-600 mt-1">{error}</div>}
     </div>
-  )
+  );
 }
 
 function FieldNota({ label, value, onChange, onBlur, touched, validation }) {
-  const invalid = touched && !validation.ok
+  const invalid = touched && !validation.ok;
   return (
     <div>
       <label className="block text-sm font-semibold mb-1">{label}</label>
@@ -620,14 +604,12 @@ function FieldNota({ label, value, onChange, onBlur, touched, validation }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
-        className={`w-full rounded px-3 py-2 border ${
-          invalid ? "border-red-500 bg-red-50" : "border-gray-300"
-        }`}
+        className={`w-full rounded px-3 py-2 border ${invalid ? "border-red-500 bg-red-50" : "border-gray-300"}`}
         placeholder="0 - 20"
       />
       {invalid && <div className="text-xs text-red-600 mt-1">{validation.msg}</div>}
     </div>
-  )
+  );
 }
 
 function BoletaBox({ label, value, strong }) {
@@ -636,5 +618,5 @@ function BoletaBox({ label, value, strong }) {
       <div className="text-xs uppercase tracking-wider text-gray-500">{label}</div>
       <div className={`${strong ? "text-lg font-bold" : "text-base font-semibold"} mt-1`}>{value}</div>
     </div>
-  )
+  );
 }
