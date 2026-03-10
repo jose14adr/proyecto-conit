@@ -18,38 +18,41 @@ function CursoDetalleDocente() {
   const [alumnos, setAlumnos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ===== Insertar PDF =====
+  // ===== Fecha actual =====
+  const hoy = new Date().toISOString().slice(0, 10);
 
+  // ===== PDF =====
   const exportarPDF = () => {
-  const doc = new jsPDF();
+    const doc = new jsPDF();
 
-  doc.setFontSize(16);
-  doc.text("Reporte de Asistencia", 14, 15);
+    doc.setFontSize(16);
+    doc.text("Reporte de Asistencia", 14, 15);
 
-  doc.setFontSize(11);
-  doc.text(`Curso: ${curso?.nombre || ""}`, 14, 22);
-  doc.text(`Fecha: ${fechaAsistencia}`, 14, 28);
+    doc.setFontSize(11);
+    doc.text(`Curso: ${curso?.nombre || ""}`, 14, 22);
+    doc.text(`Fecha: ${fechaAsistencia}`, 14, 28);
 
-  const rows = alumnos.map((a) => {
-    const asistencia = asistenciaMap[a.idalumno] || {};
+    const rows = alumnos.map((a) => {
+      const key = a.idalumno || a.id;
+      const asistencia = asistenciaMap[key] || {};
 
-    return [
-      `${a.nombre} ${a.apellido}`,
-      a.numdocumento || "-",
-      asistencia.estado || "Sin registro",
-      asistencia.tipo_justificacion || "-",
-      asistencia.observacion || "-"
-    ];
-  });
+      return [
+        `${a.nombre || ""} ${a.apellido || ""}`.trim(),
+        a.numdocumento || "-",
+        asistencia.estado || "Sin registro",
+        asistencia.tipo_justificacion || "-",
+        asistencia.observacion || "-",
+      ];
+    });
 
-  autoTable(doc, {
-    startY: 35,
-    head: [["Alumno", "DNI", "Estado", "Justificación", "Observación"]],
-    body: rows
-  });
+    autoTable(doc, {
+      startY: 35,
+      head: [["Alumno", "DNI", "Estado", "Justificación", "Observación"]],
+      body: rows,
+    });
 
-  doc.save(`asistencia_${curso?.nombre}_${fechaAsistencia}.pdf`);
-};
+    doc.save(`asistencia_${curso?.nombre || "curso"}_${fechaAsistencia}.pdf`);
+  };
 
   // ===== Materiales =====
   const [materiales, setMateriales] = useState([]);
@@ -61,7 +64,6 @@ function CursoDetalleDocente() {
   const archivoInputRef = useRef(null);
 
   // ===== Asistencia =====
-  const hoy = new Date().toISOString().slice(0, 10);
   const [fechaAsistencia, setFechaAsistencia] = useState(hoy);
   const [asistenciaMap, setAsistenciaMap] = useState({});
 
@@ -100,7 +102,7 @@ function CursoDetalleDocente() {
     };
 
     cargarDatos();
-  }, [id]);
+  }, [id, hoy]);
 
   const cargarAsistenciaPorFecha = async (fecha) => {
     try {
@@ -120,6 +122,11 @@ function CursoDetalleDocente() {
       console.error(error);
       alert(error?.message || "Error cargando asistencia");
     }
+  };
+
+  const irAHoy = async () => {
+    setFechaAsistencia(hoy);
+    await cargarAsistenciaPorFecha(hoy);
   };
 
   const handleSeleccionArchivo = (e) => {
@@ -373,9 +380,7 @@ function CursoDetalleDocente() {
                 >
                   <div>
                     <div className="font-semibold text-gray-800">{m.titulo}</div>
-                    <div className="text-sm text-gray-500">
-                      Tipo: {m.tipo}
-                    </div>
+                    <div className="text-sm text-gray-500">Tipo: {m.tipo}</div>
                     <div className="text-xs text-gray-500 mt-1">
                       Cargado: {m.fecha_carga || m.created_at || "-"}
                     </div>
@@ -417,23 +422,42 @@ function CursoDetalleDocente() {
           <div>
             <h3 className="text-xl font-bold">Asistencia</h3>
             <p className="text-sm text-gray-500">
-              Presente, tardanza o falta por alumno
+              Registrar y consultar asistencia por fecha
             </p>
           </div>
 
-          <div>
-            <label className="block font-semibold mb-2">Fecha</label>
-            <input
-              type="date"
-              value={fechaAsistencia}
-              onChange={async (e) => {
-                const nuevaFecha = e.target.value;
-                setFechaAsistencia(nuevaFecha);
-                await cargarAsistenciaPorFecha(nuevaFecha);
-              }}
-              className="border rounded px-3 py-2"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <div>
+              <label className="block font-semibold mb-2">Consultar fecha</label>
+              <input
+                type="date"
+                value={fechaAsistencia}
+                onChange={(e) => setFechaAsistencia(e.target.value)}
+                className="border rounded px-3 py-2"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => cargarAsistenciaPorFecha(fechaAsistencia)}
+              className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+            >
+              Buscar
+            </button>
+
+            <button
+              type="button"
+              onClick={irAHoy}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Hoy
+            </button>
           </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg px-4 py-3 text-sm">
+          Mostrando asistencia correspondiente a la fecha:{" "}
+          <span className="font-semibold">{fechaAsistencia}</span>
         </div>
 
         {alumnos.length === 0 ? (
@@ -643,4 +667,4 @@ function CursoDetalleDocente() {
   );
 }
 
-export default CursoDetalleDocente;
+export default CursoDetalleDocente;   

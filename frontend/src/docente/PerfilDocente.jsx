@@ -9,6 +9,7 @@ import {
   getDocumentosDocente,
   getCursosAdicionalesDocente,
   deleteCursoAdicionalDocente,
+  createCursoAdicionalDocente,
 } from "../services/docenteService";
 
 // ===== Helpers horario =====
@@ -133,6 +134,15 @@ function PerfilDocente() {
   const [documentos, setDocumentos] = useState([]);
   const [cursosExtra, setCursosExtra] = useState([]);
 
+  // ===== UI agregar curso/capacitación =====
+  const [mostrarFormCursoExtra, setMostrarFormCursoExtra] = useState(false);
+  const [nuevoCursoNombre, setNuevoCursoNombre] = useState("");
+  const [nuevoCursoInstitucion, setNuevoCursoInstitucion] = useState("");
+  const [nuevoCursoFechaInicio, setNuevoCursoFechaInicio] = useState("");
+  const [nuevoCursoFechaFin, setNuevoCursoFechaFin] = useState("");
+  const [nuevoCursoArchivo, setNuevoCursoArchivo] = useState(null);
+  const [guardandoCursoExtra, setGuardandoCursoExtra] = useState(false);
+
   // ===== Stats / cursos / horario =====
   const [cursos, setCursos] = useState([]);
   const [horario, setHorario] = useState([]);
@@ -193,9 +203,7 @@ function PerfilDocente() {
         setContactoEmergenciaTelefono(
           perfil.contacto_emergencia_telefono ?? ""
         );
-        setPerfilProfesional(
-          perfil.perfil_profesional ?? perfil.bio ?? ""
-        );
+        setPerfilProfesional(perfil.perfil_profesional ?? perfil.bio ?? "");
 
         setFotoUrl(perfil.foto_url ?? "");
 
@@ -339,6 +347,44 @@ function PerfilDocente() {
     }
   };
 
+  const agregarCursoExtraLocal = async () => {
+  try {
+    if (!nuevoCursoNombre.trim()) {
+      return alert("Ingresa el nombre del curso o capacitación.");
+    }
+
+    setGuardandoCursoExtra(true);
+
+    const nuevoCurso = await createCursoAdicionalDocente({
+      nombre: nuevoCursoNombre.trim(),
+      institucion: nuevoCursoInstitucion.trim(),
+      fecha_inicio: nuevoCursoFechaInicio || null,
+      fecha_fin: nuevoCursoFechaFin || null,
+      archivo: nuevoCursoArchivo || null,
+    });
+
+    setCursosExtra((prev) => [nuevoCurso, ...prev]);
+
+    setNuevoCursoNombre("");
+    setNuevoCursoInstitucion("");
+    setNuevoCursoFechaInicio("");
+    setNuevoCursoFechaFin("");
+    setNuevoCursoArchivo(null);
+    setMostrarFormCursoExtra(false);
+
+    alert("Curso guardado en Supabase ✅");
+  } catch (e) {
+    console.error(e);
+    alert(e?.message || "No se pudo guardar el curso");
+  } finally {
+    setGuardandoCursoExtra(false);
+  }
+};
+
+  const eliminarCursoLocal = (id) => {
+    setCursosExtra((prev) => prev.filter((c) => c.id !== id));
+  };
+
   const badgeClass =
     estado === "Activo"
       ? "bg-green-100 text-green-700 border border-green-200"
@@ -457,17 +503,38 @@ function PerfilDocente() {
             )}
           </div>
 
+          
           {/* Documentos PDF */}
           <div className="border-t pt-4">
             <h3 className="font-semibold text-sm text-gray-500 mb-3">
               Documentos de experiencia laboral
             </h3>
 
-            {documentos.length === 0 ? (
+            {[
+              ...documentos,
+              ...cursosExtra
+                .filter((c) => c.archivo_url)
+                .map((c) => ({
+                  id: `curso-${c.id}`,
+                  nombre: c.nombre,
+                  tipo: "Curso / capacitación",
+                  archivo_url: c.archivo_url,
+                })),
+            ].length === 0 ? (
               <p className="text-sm text-gray-500">No hay documentos registrados.</p>
             ) : (
               <div className="space-y-2">
-                {documentos.map((doc) => (
+                {[
+                  ...documentos,
+                  ...cursosExtra
+                    .filter((c) => c.archivo_url)
+                    .map((c) => ({
+                      id: `curso-${c.id}`,
+                      nombre: c.nombre,
+                      tipo: "Curso / capacitación",
+                      archivo_url: c.archivo_url,
+                    })),
+                ].map((doc) => (
                   <div
                     key={doc.id}
                     className="border rounded-lg px-3 py-2 flex items-center justify-between gap-3"
@@ -481,14 +548,24 @@ function PerfilDocente() {
                       </div>
                     </div>
 
-                    <a
-                      href={doc.archivo_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm px-3 py-1.5 rounded border hover:bg-gray-50"
-                    >
-                      Ver PDF
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={doc.archivo_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm px-3 py-1.5 rounded border hover:bg-gray-50"
+                      >
+                        Ver PDF
+                      </a>
+
+                      <a
+                        href={doc.archivo_url}
+                        download
+                        className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        Descargar
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -764,12 +841,113 @@ function PerfilDocente() {
 
           {/* Cursos adicionales */}
           <div className="bg-white p-5 rounded shadow">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="text-xl font-bold">Cursos y capacitaciones</h3>
-              <span className="text-sm text-gray-500">
-                Permite eliminar si se añadió por error
-              </span>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-xl font-bold">Cursos y capacitaciones</h3>
+                <p className="text-sm text-gray-500">
+                  Permite eliminar si se añadió por error
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMostrarFormCursoExtra((prev) => !prev)}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+              >
+                {mostrarFormCursoExtra ? "Cerrar formulario" : "+ Agregar curso"}
+              </button>
             </div>
+
+            {mostrarFormCursoExtra && (
+              <div className="border rounded-xl p-4 bg-gray-50 mb-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-2">
+                      Nombre del curso o capacitación
+                    </label>
+                    <input
+                      value={nuevoCursoNombre}
+                      onChange={(e) => setNuevoCursoNombre(e.target.value)}
+                      className="border rounded px-3 py-2 w-full bg-white"
+                      placeholder="Ej. Diplomado en IA"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2">Institución</label>
+                    <input
+                      value={nuevoCursoInstitucion}
+                      onChange={(e) => setNuevoCursoInstitucion(e.target.value)}
+                      className="border rounded px-3 py-2 w-full bg-white"
+                      placeholder="Ej. Universidad / Instituto"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2">Fecha inicio</label>
+                    <input
+                      type="date"
+                      value={nuevoCursoFechaInicio}
+                      onChange={(e) => setNuevoCursoFechaInicio(e.target.value)}
+                      className="border rounded px-3 py-2 w-full bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2">Fecha fin</label>
+                    <input
+                      type="date"
+                      value={nuevoCursoFechaFin}
+                      onChange={(e) => setNuevoCursoFechaFin(e.target.value)}
+                      className="border rounded px-3 py-2 w-full bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-2">
+                    Certificado o constancia (PDF)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => setNuevoCursoArchivo(e.target.files?.[0] || null)}
+                    className="border rounded px-3 py-2 w-full bg-white"
+                  />
+                  {nuevoCursoArchivo && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Archivo seleccionado: {nuevoCursoArchivo.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMostrarFormCursoExtra(false);
+                      setNuevoCursoNombre("");
+                      setNuevoCursoInstitucion("");
+                      setNuevoCursoFechaInicio("");
+                      setNuevoCursoFechaFin("");
+                      setNuevoCursoArchivo(null);
+                    }}
+                    className="px-4 py-2 rounded border hover:bg-white text-sm"
+                  >
+                    Cancelar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={agregarCursoExtraLocal}
+                    disabled={guardandoCursoExtra}
+                    className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 text-sm disabled:opacity-60"
+                  >
+                    {guardandoCursoExtra ? "Guardando..." : "Guardar curso"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {cursosExtra.length === 0 ? (
               <p className="text-sm text-gray-500">
@@ -791,12 +969,18 @@ function PerfilDocente() {
                       </div>
                       {(curso.fecha_inicio || curso.fecha_fin) && (
                         <div className="text-xs text-gray-500 mt-1">
-                          {curso.fecha_inicio || "--"} {curso.fecha_fin ? `a ${curso.fecha_fin}` : ""}
+                          {curso.fecha_inicio || "--"}{" "}
+                          {curso.fecha_fin ? `a ${curso.fecha_fin}` : ""}
+                        </div>
+                      )}
+                      {curso.local && (
+                        <div className="text-xs text-blue-600 mt-1">
+                          Registro agregado localmente
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {curso.archivo_url && (
                         <a
                           href={curso.archivo_url}
@@ -808,13 +992,23 @@ function PerfilDocente() {
                         </a>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => eliminarCursoExtra(curso.id)}
-                        className="px-3 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700"
-                      >
-                        Eliminar
-                      </button>
+                      {curso.local ? (
+                        <button
+                          type="button"
+                          onClick={() => eliminarCursoLocal(curso.id)}
+                          className="px-3 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700"
+                        >
+                          Eliminar
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => eliminarCursoExtra(curso.id)}
+                          className="px-3 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700"
+                        >
+                          Eliminar
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

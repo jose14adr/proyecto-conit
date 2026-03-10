@@ -180,67 +180,65 @@ export default function RegistroNotas() {
     return promedio3(n1, n2, n3);
   }, [modalNotas]);
 
-  // ✅ ESTE ES EL GUARDADO REAL EN SUPABASE
+
+  // GUARDADO EN SUPABASE
   const guardarModalNotas = async () => {
-    try {
-      if (!modalAlumno) return;
+  try {
+    if (!modalAlumno) return;
 
-      setModalTouched({ nota1: true, nota2: true, nota3: true });
-      if (modalHasErrors) return;
+    setModalTouched({ nota1: true, nota2: true, nota3: true });
+    if (modalHasErrors) return;
 
-      setSaving(true);
+    setSaving(true);
 
-      const idmatricula = Number(modalAlumno.idmatricula);
+    const idmatricula = Number(modalAlumno.idmatricula);
 
-      await guardarNotas(modalAlumno.idmatricula, {
-        1: Number(modalNotas.nota1),
-        2: Number(modalNotas.nota2),
-        3: Number(modalNotas.nota3),
-      });
+    await guardarNotas(modalAlumno.idmatricula, {
+      1: modalNotas.nota1,
+      2: modalNotas.nota2,
+      3: modalNotas.nota3,
+    });
 
-      // ✅ actualizar tabla en memoria (alumnos)
-      setAlumnos((prev) =>
-        prev.map((a) =>
-          Number(a.idmatricula) === idmatricula
-            ? {
-                ...a,
-                nota1: Number(modalNotas.nota1),
-                nota2: Number(modalNotas.nota2),
-                nota3: Number(modalNotas.nota3),
-              }
-            : a
-        )
-      );
+    setAlumnos((prev) =>
+      prev.map((a) =>
+        Number(a.idmatricula) === idmatricula
+          ? {
+              ...a,
+              nota1: Number(modalNotas.nota1),
+              nota2: Number(modalNotas.nota2),
+              nota3: Number(modalNotas.nota3),
+            }
+          : a
+      )
+    );
 
-      // ✅ actualizar draft por idmatricula (clave real)
-      setDraft((prev) => ({
-        ...prev,
-        [idmatricula]: {
-          nota1: modalNotas.nota1,
-          nota2: modalNotas.nota2,
-          nota3: modalNotas.nota3,
-        },
-      }));
+    setDraft((prev) => ({
+      ...prev,
+      [idmatricula]: {
+        nota1: modalNotas.nota1,
+        nota2: modalNotas.nota2,
+        nota3: modalNotas.nota3,
+      },
+    }));
 
-      // ✅ también actualiza original para que al volver no “reviva” lo viejo
-      setOriginal((prev) => ({
-        ...prev,
-        [idmatricula]: {
-          nota1: modalNotas.nota1,
-          nota2: modalNotas.nota2,
-          nota3: modalNotas.nota3,
-        },
-      }));
+    setOriginal((prev) => ({
+      ...prev,
+      [idmatricula]: {
+        nota1: modalNotas.nota1,
+        nota2: modalNotas.nota2,
+        nota3: modalNotas.nota3,
+      },
+    }));
 
-      cerrarModalNotas();
-      alert("Notas guardadas correctamente ✅");
-    } catch (e) {
-      console.error("❌ Error guardando en Supabase:", e);
-      alert("Error al guardar (mira Console)");
-    } finally {
-      setSaving(false);
-    }
-  };
+    cerrarModalNotas();
+    alert("Notas guardadas correctamente ✅");
+  } catch (e) {
+    console.error("❌ Error guardando en Supabase:", e);
+    alert("Error al guardar (mira Console)");
+  } finally {
+    setSaving(false);
+  }
+};
 
   // ===== Modal Boleta =====
   const abrirBoleta = (alumno) => {
@@ -400,7 +398,24 @@ export default function RegistroNotas() {
 
                   return (
                     <tr key={key} className="border-b">
-                      <td className="py-2">{a.nombre}</td>
+                      <td className="py-2">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={a.foto_url || "https://via.placeholder.com/40x40?text=👤"}
+                            alt={`${a.nombre} ${a.apellido}`}
+                            className="w-10 h-10 rounded-full object-cover border"
+                          />
+
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {a.nombre} {a.apellido}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              DNI: {a.numdocumento || "No registrado"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
 
                       <td className="py-2">
                         <CellRead value={row.nota1} error={e.nota1} />

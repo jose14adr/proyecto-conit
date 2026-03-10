@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
-import { getCursosDocente } from "../services/docenteService";
+import { getCursosDocente, crearTarea } from "../services/docenteService";
 
 function TareasDocente() {
   // ==============================
-  // Estado del formulario
+  // Estado principal del formulario
   // ==============================
   const [form, setForm] = useState({
     cursoId: "",
     titulo: "",
     descripcion: "",
+    fechaInicio: "",
     fechaLimite: "",
     tipoEntrega: "",
-    textoBase: "",
-    archivo: null,
-    video: null,
+    tipoApoyo: "ninguno",
+    textoApoyo: "",
+    archivoApoyo: null,
+    videoApoyo: null,
   });
 
   // ==============================
@@ -21,6 +23,7 @@ function TareasDocente() {
   // ==============================
   const [cursos, setCursos] = useState([]);
   const [loadingCursos, setLoadingCursos] = useState(true);
+  const [guardando, setGuardando] = useState(false);
 
   // ==============================
   // Cargar cursos del docente
@@ -42,15 +45,25 @@ function TareasDocente() {
   }, []);
 
   // ==============================
-  // Manejar inputs normales
+  // Manejar cambios normales
   // ==============================
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        [name]: value,
+      };
+
+      if (name === "tipoApoyo") {
+        next.textoApoyo = "";
+        next.archivoApoyo = null;
+        next.videoApoyo = null;
+      }
+
+      return next;
+    });
   };
 
   // ==============================
@@ -66,32 +79,52 @@ function TareasDocente() {
   };
 
   // ==============================
-  // Guardar tarea (por ahora prueba)
+  // Guardar tarea real
   // ==============================
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("Datos de la tarea:", form);
-    alert("Tarea registrada correctamente ✅");
+    try {
+      setGuardando(true);
 
-    setForm({
-      cursoId: "",
-      titulo: "",
-      descripcion: "",
-      fechaLimite: "",
-      tipoEntrega: "",
-      textoBase: "",
-      archivo: null,
-      video: null,
-    });
+      await crearTarea({
+        cursoId: form.cursoId,
+        titulo: form.titulo,
+        descripcion: form.descripcion,
+        fechaInicio: form.fechaInicio,
+        fechaLimite: form.fechaLimite,
+        tipoEntrega: form.tipoEntrega,
+        tipoApoyo: form.tipoApoyo,
+        textoApoyo: form.textoApoyo,
+        archivoApoyo: form.archivoApoyo,
+        videoApoyo: form.videoApoyo,
+      });
+
+      alert("Tarea creada correctamente ✅");
+
+      setForm({
+        cursoId: "",
+        titulo: "",
+        descripcion: "",
+        fechaInicio: "",
+        fechaLimite: "",
+        tipoEntrega: "",
+        tipoApoyo: "ninguno",
+        textoApoyo: "",
+        archivoApoyo: null,
+        videoApoyo: null,
+      });
+    } catch (error) {
+      console.error("Error al guardar tarea:", error);
+      alert(error.message || "Error al guardar la tarea");
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 md:p-8">
       <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-lg md:p-8">
-        {/* ==============================
-        Encabezado
-        ============================== */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Asignar Tareas</h1>
           <p className="mt-2 text-sm text-gray-500">
@@ -99,9 +132,6 @@ function TareasDocente() {
           </p>
         </div>
 
-        {/* ==============================
-        Formulario
-        ============================== */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Curso */}
           <div>
@@ -111,6 +141,7 @@ function TareasDocente() {
             >
               Curso
             </label>
+
             <select
               id="cursoId"
               name="cursoId"
@@ -125,7 +156,7 @@ function TareasDocente() {
 
               {cursos.map((curso) => (
                 <option key={curso.id} value={curso.id}>
-                  {curso.nombre}
+                  {curso.nombre || curso.nombrecurso || `Curso ${curso.id}`}
                 </option>
               ))}
             </select>
@@ -139,6 +170,7 @@ function TareasDocente() {
             >
               Título de la tarea
             </label>
+
             <input
               id="titulo"
               type="text"
@@ -159,6 +191,7 @@ function TareasDocente() {
             >
               Descripción
             </label>
+
             <textarea
               id="descripcion"
               name="descripcion"
@@ -171,6 +204,26 @@ function TareasDocente() {
             />
           </div>
 
+          {/* Fecha y hora de inicio */}
+          <div>
+            <label
+              htmlFor="fechaInicio"
+              className="mb-2 block text-sm font-semibold text-gray-700"
+            >
+              Fecha y hora de inicio
+            </label>
+
+            <input
+              id="fechaInicio"
+              type="datetime-local"
+              name="fechaInicio"
+              value={form.fechaInicio}
+              onChange={handleChange}
+              required
+              className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+
           {/* Fecha límite */}
           <div>
             <label
@@ -179,6 +232,7 @@ function TareasDocente() {
             >
               Fecha límite
             </label>
+
             <input
               id="fechaLimite"
               type="date"
@@ -190,11 +244,14 @@ function TareasDocente() {
             />
           </div>
 
-          {/* Tipo de entrega */}
+          {/* Tipo de entrega del alumno */}
           <div>
             <label className="mb-3 block text-sm font-semibold text-gray-700">
-              Tipo de entrega
+              Tipo de entrega del alumno
             </label>
+            <p className="mb-3 text-xs text-gray-500">
+              Selecciona cómo deberá entregar esta tarea el alumno.
+            </p>
 
             <div className="flex flex-wrap gap-6">
               <label className="flex items-center gap-2 text-sm text-gray-700">
@@ -232,73 +289,130 @@ function TareasDocente() {
             </div>
           </div>
 
-          {/* Campo dinámico: archivo */}
-          {form.tipoEntrega === "archivo" && (
-            <div>
-              <label
-                htmlFor="archivo"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                Subir archivo
-              </label>
-              <input
-                id="archivo"
-                type="file"
-                name="archivo"
-                onChange={handleFileChange}
-                className="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700"
-              />
-            </div>
-          )}
+          {/* Material de apoyo del docente */}
+          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 md:p-5">
+            <label className="mb-3 block text-sm font-semibold text-gray-700">
+              Material de apoyo del docente
+            </label>
+            <p className="mb-4 text-xs text-gray-500">
+              Aquí puedes agregar contenido opcional para ayudar al alumno a
+              desarrollar la tarea.
+            </p>
 
-          {/* Campo dinámico: texto */}
-          {form.tipoEntrega === "texto" && (
-            <div>
-              <label
-                htmlFor="textoBase"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                Texto de la tarea
+            <div className="flex flex-wrap gap-6">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="tipoApoyo"
+                  value="ninguno"
+                  checked={form.tipoApoyo === "ninguno"}
+                  onChange={handleChange}
+                />
+                <span>Ninguno</span>
               </label>
-              <textarea
-                id="textoBase"
-                name="textoBase"
-                value={form.textoBase}
-                onChange={handleChange}
-                rows="5"
-                placeholder="Escribe aquí las indicaciones..."
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
-            </div>
-          )}
 
-          {/* Campo dinámico: video */}
-          {form.tipoEntrega === "video" && (
-            <div>
-              <label
-                htmlFor="video"
-                className="mb-2 block text-sm font-semibold text-gray-700"
-              >
-                Subir video
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="tipoApoyo"
+                  value="archivo"
+                  checked={form.tipoApoyo === "archivo"}
+                  onChange={handleChange}
+                />
+                <span>Archivo</span>
               </label>
-              <input
-                id="video"
-                type="file"
-                name="video"
-                accept="video/*"
-                onChange={handleFileChange}
-                className="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700"
-              />
-            </div>
-          )}
 
-          {/* Botón */}
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="tipoApoyo"
+                  value="texto"
+                  checked={form.tipoApoyo === "texto"}
+                  onChange={handleChange}
+                />
+                <span>Texto</span>
+              </label>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="tipoApoyo"
+                  value="video"
+                  checked={form.tipoApoyo === "video"}
+                  onChange={handleChange}
+                />
+                <span>Video</span>
+              </label>
+            </div>
+
+            {form.tipoApoyo === "archivo" && (
+              <div className="mt-5">
+                <label
+                  htmlFor="archivoApoyo"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
+                  Subir archivo de apoyo
+                </label>
+
+                <input
+                  id="archivoApoyo"
+                  type="file"
+                  name="archivoApoyo"
+                  onChange={handleFileChange}
+                  className="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700"
+                />
+              </div>
+            )}
+
+            {form.tipoApoyo === "texto" && (
+              <div className="mt-5">
+                <label
+                  htmlFor="textoApoyo"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
+                  Texto de apoyo
+                </label>
+
+                <textarea
+                  id="textoApoyo"
+                  name="textoApoyo"
+                  value={form.textoApoyo}
+                  onChange={handleChange}
+                  rows="5"
+                  placeholder="Escribe aquí indicaciones, recomendaciones o material de ayuda..."
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+            )}
+
+            {form.tipoApoyo === "video" && (
+              <div className="mt-5">
+                <label
+                  htmlFor="videoApoyo"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
+                >
+                  Subir video de apoyo
+                </label>
+
+                <input
+                  id="videoApoyo"
+                  type="file"
+                  name="videoApoyo"
+                  accept="video/*"
+                  onChange={handleFileChange}
+                  className="block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700"
+                />
+              </div>
+            )}
+          </div>
+
           <div className="pt-2">
             <button
               type="submit"
-              className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
+              disabled={guardando}
+              className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Guardar tarea
+              {guardando ? "Guardando..." : "Guardar tarea"}
             </button>
           </div>
         </form>

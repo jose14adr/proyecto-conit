@@ -4,6 +4,21 @@ import { supabase } from "../lib/supabaseClient";
 // HELPERS
 // ======================================================
 
+const extraerDiaDesdeHorario = (horario) => {
+  if (!horario) return "";
+
+  const texto = horario.toLowerCase();
+
+  if (texto.includes("lunes")) return "Lunes";
+  if (texto.includes("martes")) return "Martes";
+  if (texto.includes("miércoles") || texto.includes("miercoles")) return "Miércoles";
+  if (texto.includes("jueves")) return "Jueves";
+  if (texto.includes("viernes")) return "Viernes";
+  if (texto.includes("sábado") || texto.includes("sabado")) return "Sábado";
+
+  return "";
+};
+
 // Obtener usuario autenticado actual
 const getCurrentUser = async () => {
   const {
@@ -170,9 +185,9 @@ export const getCursosAdicionalesDocente = async () => {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
+
   return data || [];
 };
-
 // Agregar curso adicional
 export const addCursoAdicionalDocente = async (payload) => {
   const docente = await getDocenteActual();
@@ -198,16 +213,12 @@ export const addCursoAdicionalDocente = async (payload) => {
 
 // Eliminar curso adicional
 export const deleteCursoAdicionalDocente = async (id) => {
-  const docente = await getDocenteActual();
-
   const { error } = await supabase
     .from("docente_curso_adicional")
     .delete()
-    .eq("id", id)
-    .eq("iddocente", docente.id);
+    .eq("id", id);
 
   if (error) throw new Error(error.message);
-  return true;
 };
 
 // ======================================================
@@ -332,69 +343,21 @@ export const getCursosDocente = async () => {
   });
 };
 
-// ======================================================
-// HORARIO DOCENTE
-// ======================================================
 
-export const getHorarioDocente = async () => {
-  const docente = await getDocenteActual();
-
-  const { data: grupos, error: errGrupos } = await supabase
-    .from("grupo")
-    .select("id, nombregrupo, horario, modalidad, idcurso")
-    .eq("iddocente", docente.id);
-
-  if (errGrupos) throw new Error(errGrupos.message);
-  if (!grupos || grupos.length === 0) return [];
-
-  const cursoIds = [...new Set(grupos.map((g) => g.idcurso).filter(Boolean))];
-  let cursoMap = new Map();
-
-  if (cursoIds.length > 0) {
-    const { data: cursos, error: errCursos } = await supabase
-      .from("curso")
-      .select("id, nombrecurso")
-      .in("id", cursoIds);
-
-    if (errCursos) throw new Error(errCursos.message);
-    cursoMap = new Map((cursos || []).map((c) => [c.id, c.nombrecurso]));
-  }
-
-  // Se asume formato horario tipo:
-  // "Lunes 08:00-10:00" o similar.
-  // Si el formato real es distinto, luego lo adaptamos.
-  return grupos.map((g) => {
-    const horarioTexto = g.horario || "";
-    const firstSpace = horarioTexto.indexOf(" ");
-    const dia =
-      firstSpace > 0 ? horarioTexto.slice(0, firstSpace).trim() : "Sin día";
-    const hora =
-      firstSpace > 0 ? horarioTexto.slice(firstSpace + 1).trim() : horarioTexto;
-
-    return {
-      id: g.id,
-      grupo: g.nombregrupo,
-      modalidad: g.modalidad,
-      curso: cursoMap.get(g.idcurso) || "Curso",
-      dia,
-      hora,
-    };
-  });
-};
 
 // ======================================================
 // ALUMNOS POR CURSO
 // ======================================================
 
 export const getAlumnosByCurso = async (cursoId) => {
-  // 1. Traer grupos del curso
+  // 1. Traer grupos del curso del docente actual
   const docente = await getDocenteActual();
 
-const { data: grupos, error: errGrupos } = await supabase
-  .from("grupo")
-  .select("id")
-  .eq("idcurso", Number(cursoId))
-  .eq("iddocente", docente.id);
+  const { data: grupos, error: errGrupos } = await supabase
+    .from("grupo")
+    .select("id")
+    .eq("idcurso", Number(cursoId))
+    .eq("iddocente", docente.id);
 
   if (errGrupos) throw new Error(errGrupos.message);
 
@@ -408,13 +371,21 @@ const { data: grupos, error: errGrupos } = await supabase
     .in("idgrupo", grupoIds);
 
   if (errMat) throw new Error(errMat.message);
-
   if (!matriculas || matriculas.length === 0) return [];
 
-  const alumnoIds = [...new Set(matriculas.map((m) => m.idalumno).filter(Boolean))];
+  // 3. Dejar solo una matrícula por alumno
+  const matriculasUnicas = Array.from(
+    new Map(
+      matriculas
+        .filter((m) => m.idalumno)
+        .map((m) => [m.idalumno, m])
+    ).values()
+  );
+
+  const alumnoIds = matriculasUnicas.map((m) => m.idalumno);
   if (alumnoIds.length === 0) return [];
 
-  // 3. Traer alumnos
+  // 4. Traer alumnos
   const alumnosChunks = chunkArray(alumnoIds, 100);
   let alumnos = [];
 
@@ -430,8 +401,9 @@ const { data: grupos, error: errGrupos } = await supabase
 
   const alumnosMap = new Map((alumnos || []).map((a) => [a.id, a]));
 
-  // 4. Traer notas
-  const matriculaIds = matriculas.map((m) => m.id);
+  // 5. Traer notas solo de las matrículas únicas
+  const matriculaIds = matriculasUnicas.map((m) => m.id);
+
   const { data: notas, error: errNotas } = await supabase
     .from("nota")
     .select("*")
@@ -441,71 +413,75 @@ const { data: grupos, error: errGrupos } = await supabase
 
   const notasMap = new Map((notas || []).map((n) => [n.idmatricula, n]));
 
-  // 5. Armar resultado
-  return matriculas.map((m) => {
-  const alumno = alumnosMap.get(m.idalumno) || {};
-  const nota = notasMap.get(m.id) || {};
+  // 6. Armar resultado final
+  return matriculasUnicas
+    .map((m) => {
+      const alumno = alumnosMap.get(m.idalumno);
+      if (!alumno) return null;
 
-  if (!alumno) return null;
+      const nota = notasMap.get(m.id) || {};
 
-    return {
-      idalumno: alumno.id,
-      idmatricula: m.id,
-      nombre: alumno.nombre || "",
-      apellido: alumno.apellido || "",
-      correo: alumno.correo || "",
-      numdocumento: alumno.numdocumento || "",
-      foto_url: alumno.foto_url || "",
-      nota1: nota.nota1 ?? "",
-      nota2: nota.nota2 ?? "",
-      nota3: nota.nota3 ?? "",
-    };
-  })
-
-  .filter(Boolean);
-  
+      return {
+        idalumno: alumno.id,
+        idmatricula: m.id,
+        nombre: alumno.nombre || "",
+        apellido: alumno.apellido || "",
+        correo: alumno.correo || "",
+        numdocumento: alumno.numdocumento || "",
+        foto_url: alumno.foto_url || "",
+        nota1: nota.nota1 ?? "",
+        nota2: nota.nota2 ?? "",
+        nota3: nota.nota3 ?? "",
+      };
+    })
+    .filter(Boolean);
 };
 // ======================================================
 // GUARDAR NOTAS
 // ======================================================
 
 export const guardarNotas = async (idmatricula, notas) => {
-  const payload = {
-    idmatricula: Number(idmatricula),
-    nota1: notas[1] ?? notas.nota1 ?? null,
-    nota2: notas[2] ?? notas.nota2 ?? null,
-    nota3: notas[3] ?? notas.nota3 ?? null,
-  };
+  const idMat = Number(idmatricula);
 
-  // Verificar si ya existe
-  const { data: existente, error: errBuscar } = await supabase
+  const registros = [
+    { idmatricula: idMat, evaluacion: 1, nota: notas[1] ?? notas.nota1 ?? null },
+    { idmatricula: idMat, evaluacion: 2, nota: notas[2] ?? notas.nota2 ?? null },
+    { idmatricula: idMat, evaluacion: 3, nota: notas[3] ?? notas.nota3 ?? null },
+  ];
+
+  // Buscar si ya existen notas para esa matrícula
+  const { data: existentes, error: errBuscar } = await supabase
     .from("nota")
-    .select("id")
-    .eq("idmatricula", Number(idmatricula))
-    .maybeSingle();
+    .select("id, evaluacion")
+    .eq("idmatricula", idMat);
 
   if (errBuscar) throw new Error(errBuscar.message);
 
-  if (existente) {
-    const { data, error } = await supabase
-      .from("nota")
-      .update(payload)
-      .eq("id", existente.id)
-      .select()
-      .single();
+  const existentesMap = new Map(
+    (existentes || []).map((row) => [Number(row.evaluacion), row.id])
+  );
 
-    if (error) throw new Error(error.message);
-    return data;
+  // Actualizar si existe, insertar si no existe
+  for (const reg of registros) {
+    const idExistente = existentesMap.get(Number(reg.evaluacion));
+
+    if (idExistente) {
+      const { error } = await supabase
+        .from("nota")
+        .update({ nota: reg.nota })
+        .eq("id", idExistente);
+
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabase
+        .from("nota")
+        .insert(reg);
+
+      if (error) throw new Error(error.message);
+    }
   }
 
-  const { data, error } = await supabase
-    .from("nota")
-    .insert(payload)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+  return true;
 };
 
 // ======================================================
@@ -856,3 +832,246 @@ export const guardarAsistenciaCurso = async (cursoId, asistencias) => {
 };
 
 
+export const crearTarea = async (payload) => {
+  const {
+    cursoId,
+    titulo,
+    descripcion,
+    fechaInicio,
+    fechaLimite,
+    tipoEntrega,
+    tipoApoyo,
+    textoApoyo,
+    archivoApoyo,
+    videoApoyo,
+  } = payload;
+
+  let archivoApoyoUrl = null;
+  let videoApoyoUrl = null;
+
+  // ==============================
+  // Subir archivo de apoyo si existe
+  // ==============================
+  if (tipoApoyo === "archivo" && archivoApoyo) {
+    const extension = archivoApoyo.name.split(".").pop();
+    const fileName = `archivo_${Date.now()}.${extension}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("tareas-apoyo")
+      .upload(filePath, archivoApoyo, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(`Error subiendo archivo de apoyo: ${uploadError.message}`);
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("tareas-apoyo")
+      .getPublicUrl(filePath);
+
+    archivoApoyoUrl = publicUrlData?.publicUrl || null;
+  }
+
+  // ==============================
+  // Subir video de apoyo si existe
+  // ==============================
+  if (tipoApoyo === "video" && videoApoyo) {
+    const extension = videoApoyo.name.split(".").pop();
+    const fileName = `video_${Date.now()}.${extension}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("tareas-apoyo")
+      .upload(filePath, videoApoyo, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(`Error subiendo video de apoyo: ${uploadError.message}`);
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("tareas-apoyo")
+      .getPublicUrl(filePath);
+
+    videoApoyoUrl = publicUrlData?.publicUrl || null;
+  }
+
+  // ==============================
+  // Insertar tarea en la tabla
+  // ==============================
+  const { data, error } = await supabase
+    .from("tarea")
+    .insert([
+      {
+        idcurso: Number(cursoId),
+        titulo,
+        descripcion,
+        fecha_inicio: fechaInicio || null,
+        fecha_limite: fechaLimite,
+        tipo_entrega: tipoEntrega,
+        tipo_apoyo: tipoApoyo,
+        texto_apoyo: tipoApoyo === "texto" ? textoApoyo : null,
+        archivo_apoyo_url: archivoApoyoUrl,
+        video_apoyo_url: videoApoyoUrl,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Error guardando tarea: ${error.message}`);
+  }
+
+  return data;
+};
+
+
+// ======================================================
+// HORARIO DOCENTE
+// ======================================================
+
+
+
+export const getHorarioDocente = async () => {
+  const docenteActual = await getDocenteActual();
+
+  const { data: grupos, error: errGrupos } = await supabase
+    .from("grupo")
+    .select("id, nombregrupo, horario, modalidad, idcurso, iddocente")
+    .eq("iddocente", Number(docenteActual.id));
+
+  if (errGrupos) throw new Error(errGrupos.message);
+
+  if (!grupos || grupos.length === 0) return [];
+
+  const cursoIds = [...new Set(grupos.map((g) => g.idcurso).filter(Boolean))];
+
+  let cursosMap = {};
+  if (cursoIds.length > 0) {
+    const { data: cursos, error: errCursos } = await supabase
+      .from("curso")
+      .select("id, nombrecurso")
+      .in("id", cursoIds);
+
+    if (errCursos) throw new Error(errCursos.message);
+
+    cursosMap = Object.fromEntries((cursos || []).map((c) => [c.id, c]));
+  }
+
+  return grupos.map((g) => ({
+    curso: cursosMap[g.idcurso]?.nombrecurso || "Curso",
+    grupo: g.nombregrupo || "",
+    modalidad: g.modalidad || "",
+    hora: g.horario || "",
+    dia: extraerDiaDesdeHorario(g.horario),
+    salon: g.modalidad?.toLowerCase() === "presencial" ? g.salon || "" : "",
+  }));
+};
+
+export const getHorariosDocentes = async () => {
+  const { data: grupos, error: errGrupos } = await supabase
+    .from("grupo")
+    .select("id, nombregrupo, horario, modalidad, idcurso, iddocente");
+
+  if (errGrupos) throw new Error(errGrupos.message);
+
+  if (!grupos || grupos.length === 0) return [];
+
+  const cursoIds = [...new Set(grupos.map((g) => g.idcurso).filter(Boolean))];
+  const docenteIds = [...new Set(grupos.map((g) => g.iddocente).filter(Boolean))];
+
+  let cursosMap = {};
+  let docentesMap = {};
+
+  if (cursoIds.length > 0) {
+    const { data: cursos, error: errCursos } = await supabase
+      .from("curso")
+      .select("id, nombrecurso")
+      .in("id", cursoIds);
+
+    if (errCursos) throw new Error(errCursos.message);
+
+    cursosMap = Object.fromEntries((cursos || []).map((c) => [c.id, c]));
+  }
+
+  if (docenteIds.length > 0) {
+    const { data: docentes, error: errDocentes } = await supabase
+      .from("docente")
+      .select("id, nombre, apellido")
+      .in("id", docenteIds);
+
+    if (errDocentes) throw new Error(errDocentes.message);
+
+    docentesMap = Object.fromEntries((docentes || []).map((d) => [d.id, d]));
+  }
+
+  return grupos.map((g) => {
+    const docente = docentesMap[g.iddocente];
+    return {
+      docente: `${docente?.nombre || ""} ${docente?.apellido || ""}`.trim(),
+      curso: cursosMap[g.idcurso]?.nombrecurso || "Curso",
+      grupo: g.nombregrupo || "",
+      modalidad: g.modalidad || "",
+      hora: g.horario || "",
+      dia: extraerDiaDesdeHorario(g.horario),
+      salon: g.modalidad?.toLowerCase() === "presencial" ? g.salon || "" : "",
+    };
+  });
+};
+
+export const createCursoAdicionalDocente = async ({
+  nombre,
+  institucion,
+  fecha_inicio,
+  fecha_fin,
+  archivo,
+}) => {
+  const docente = await getDocenteActual();
+
+  let archivo_url = null;
+
+  if (archivo) {
+    const safeName = archivo.name.replace(/\s+/g, "_");
+    const filePath = `docentes/cursos/${docente.id}_${Date.now()}_${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("documentos")
+      .upload(filePath, archivo, {
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("documentos")
+      .getPublicUrl(filePath);
+
+    archivo_url = publicUrlData?.publicUrl ?? null;
+  }
+
+  const { data, error } = await supabase
+    .from("docente_curso_adicional")
+    .insert([
+      {
+        iddocente: docente.id,
+        nombre,
+        institucion: institucion || null,
+        fecha_inicio: fecha_inicio || null,
+        fecha_fin: fecha_fin || null,
+        archivo_url,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return data;
+};
