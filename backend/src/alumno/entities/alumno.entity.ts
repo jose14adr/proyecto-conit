@@ -32,4 +32,10 @@ export class Alumno {
 
   @Column({ default: false })
   nombre_editado: boolean;
+
+  @Column({type:'varchar', nullable: true})
+  foto_url: string;
+
+  @Column({ type: 'varchar', default: 'ACTIVO' })
+  estado: string;
 }

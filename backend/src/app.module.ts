@@ -8,6 +8,7 @@ import { AlumnoModule } from './alumno/alumno.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdministradorModule } from './administrador/administrador.module';
 
 import { join } from 'path';
 
@@ -48,6 +49,7 @@ import { join } from 'path';
     AuthModule,
     DocenteModule,
     AlumnoModule,
+    AdministradorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

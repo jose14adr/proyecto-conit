@@ -52,7 +52,7 @@ export default function Login() {
       //Llamamos al backend pasando los datos completos, incluyendo el token del reCAPTCHA
       const respuesta = await login(loginData);
       //Guardamos el token en el navegador
-      localStorage.setItem("token", respuesta.accessToken);
+      localStorage.setItem("token", respuesta.access_token);
       //Si todo está bien, mostramos un mensaje de éxito
       toast.success(`Inicio de sesión exitoso`);
       //Redirigimos al dashboard

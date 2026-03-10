@@ -27,8 +27,11 @@ export class Curso {
   @Column({ type: 'varchar', nullable: true })
   nivel: string;
 
-  @Column({ type: 'boolean', nullable: true })
+  @Column({ type: 'boolean', default: true })
   estado: boolean;
+
+  @Column({ type: 'real', nullable: true })
+  precio: number;
 
   @Column({ type: 'int', nullable: true })
   idRequisito: number;

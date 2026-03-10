@@ -17,32 +17,24 @@ export class DocenteService {
     private readonly dataSource: DataSource,
   ) {}
 
-async findAll() {
-  const db = await this.docenteRepository.query('SELECT current_database()');
-  console.log('BASE ACTUAL:', db);
-
-  const tables = await this.docenteRepository.query(
-    "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
-  );
-  console.log('TABLAS EN ESTA BD:', tables);
-
-  const raw = await this.docenteRepository.query('SELECT * FROM docente');
-  console.log('RAW QUERY:', raw);
-
-  return raw;
-}
+  async findAll() {
+    return await this.docenteRepository.find({
+      relations: ['usuario'],
+      order: { id: 'DESC' },
+    });
+  }
 
   async create(data: CreateDocenteDto) {
     return await this.dataSource.transaction(async (manager) => {
-
       let usuarioCreado: Usuario | undefined;
 
       if (data.crearUsuario) {
         usuarioCreado = await manager.save(
           manager.create(Usuario, {
             correo: data.correo,
-            contrasenia: '123456',
+            contrasenia: data.contrasenia,
             rol: 'DOCENTE',
+            idempresa: 1,
           }),
         );
       }
@@ -60,5 +52,37 @@ async findAll() {
 
       return await manager.save(docente);
     });
+  }
+
+  async update(id: number, data: any) {
+    //Al actualizar, si se indica crearUsuario, se crea un nuevo usuario y se asocia al docente. Si no, solo se actualizan los datos del docente.
+    const { crearUsuario, contrasenia, ...datosActualizar } = data;
+    //Si el frontend envía crearUsuario como true, se crea un nuevo usuario con la contraseña proporcionada y se asocia al docente. Si no, solo se actualizan los datos del docente sin modificar la relación con el usuario.
+    if(crearUsuario) {
+      //Creamos el nuevo usuario en la tabla Usuario
+      const nuevoUsuario = this.usuarioRepository.save(
+        this.usuarioRepository.create({
+          correo: datosActualizar.correo,
+          contrasenia: contrasenia,
+          rol: 'DOCENTE',
+          idempresa: 1,
+        })
+      );
+      //Se lo asignamos al docente a través de la relación
+      datosActualizar.usuario = nuevoUsuario;
+    }
+    //Actualizamos el docente con sus datos (y su nuevo usuario si se indicó crearUsuario)
+    await this.docenteRepository.update(id, datosActualizar);
+    return this.docenteRepository.findOne({ where: { id } });
+  }
+
+  async remove(id: number) {
+    await this.docenteRepository.update(id, { estado: 'INACTIVO' });
+    return { message: 'Docente inhabilitado correctamente' };
+  }
+
+  async habilitar(id: number) {
+    await this.docenteRepository.update(id, { estado: 'ACTIVO' });
+    return { message: 'Docente habilitado correctamente' };
   }
 }

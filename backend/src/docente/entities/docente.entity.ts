@@ -22,7 +22,7 @@ export class Docente {
   tipoDocumento: string;
 
   @Column({ name: 'numdocumento' })
-  numdocumento: string;
+  numDocumento: string;
 
   @Column()
   telefono: number;
@@ -32,6 +32,9 @@ export class Docente {
 
   @Column()
   correo: string;
+
+  @Column({ default: 'ACTIVO' })
+  estado: string;
 
   // FK hacia Usuario
   @OneToOne(() => Usuario, { nullable: true })

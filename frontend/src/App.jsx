@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 import Login from "./pages/Login";
@@ -18,7 +18,7 @@ import MisPagos from "./pages/MisPagos";
 
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
-import Docentes from "./admin/docentes";
+import Docentes from "./admin/Docentes";
 import Cursos from "./admin/Cursos";
 import Alumnos from "./admin/alumnos";
 import Usuarios from "./admin/Usuarios";
@@ -26,13 +26,13 @@ import Pagos from "./admin/Pagos";
 
 import Matricula from "./pages/Matricula";
 
-import DocenteLayout from "./docente/DocenteLayout"
-import PerfilDocente from "./docente/PerfilDocente"
-import MisCursosDocente from "./docente/MisCursos"
-import HorarioDocente from "./docente/HorarioDocente"
-import CursoDetalleDocente from "./docente/CursoDetalleDocente"
-import RegistroNotas from "./docente/RegistroNotas"
-import ListaAprobados from "./docente/ListaAprobados"
+// import DocenteLayout from "./docente/DocenteLayout"
+// import PerfilDocente from "./docente/PerfilDocente"
+// import MisCursosDocente from "./docente/MisCursos"
+// import HorarioDocente from "./docente/HorarioDocente"
+// import CursoDetalleDocente from "./docente/CursoDetalleDocente"
+// import RegistroNotas from "./docente/RegistroNotas"
+// import ListaAprobados from "./docente/ListaAprobados"
 
 export default function App() {
   return (
@@ -69,15 +69,15 @@ export default function App() {
             <Route path="pagos" element={<Pagos />} />
           </Route>
 
-          {/* DOCENTE */}
-          <Route path="/docente" element={<DocenteLayout />}>
+          {/* DOCENTE (DESACTIVADO POR AHORA) */}
+          {/* <Route path="/docente" element={<DocenteLayout />}>
             <Route path="perfil" element={<PerfilDocente />} />
             <Route path="cursos" element={<MisCursosDocente />} />
             <Route path="cursos/:id" element={<CursoDetalleDocente />} />
             <Route path="notas" element={<RegistroNotas />} />
             <Route path="aprobados" element={<ListaAprobados />} />
             <Route path="horario" element={<HorarioDocente />} />
-          </Route>
+          </Route> */}
         </Route>
         {/*Ruta Comodín*/}
         <Route path="*" element={<Navigate to="/login" replace />} />

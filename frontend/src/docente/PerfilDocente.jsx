@@ -1,8 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  getCursosDocente,
-  getHorarioDocente,
-} from "../services/docenteService";
 
 // ===== Helpers horario =====
 const parseRangeToMinutes = (range) => {
@@ -52,7 +48,7 @@ function PerfilDocente() {
 
   // ===== Nombre solo 1 vez (frontend) =====
   const NAME_LOCK_KEY = "docente_name_locked_v1";
-  
+
   // 1. Le pasamos una función a useState para que lea el localStorage desde el principio
   const [nombreBloqueado, setNombreBloqueado] = useState(() => {
     return localStorage.getItem(NAME_LOCK_KEY) === "true";
@@ -85,8 +81,8 @@ function PerfilDocente() {
   const [horario, setHorario] = useState([]);
 
   useEffect(() => {
-    getCursosDocente().then(setCursos);
-    getHorarioDocente().then(setHorario);
+    //getCursosDocente().then(setCursos);
+    //getHorarioDocente().then(setHorario);
   }, []);
 
   const cursosActivos = cursos.length;
