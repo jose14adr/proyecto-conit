@@ -7,15 +7,26 @@ import ResetPassword from "./pages/ResetPassword";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// WEB PUBLICA CONIT
+import HeaderWeb from "./components/HeaderWeb";
+import FooterWeb from "./components/FooterWeb";
+import HomeWeb from "./pages/HomeWeb";
+import CursosWeb from "./pages/CursosWeb";
+import NosotrosWeb from "./pages/NosotrosWeb";
+import ContactoWeb from "./pages/ContactoWeb";
+import CarritoWeb from "./pages/CarritoWeb";
+
+// ESTUDIANTE
 import LayoutEstudiante from "./layouts/LayoutEstudiante";
 import HomePage from "./pages/HomePage";
 import MisCursos from "./pages/MisCursos";
-import CursoDetalle from "./pages/CursoDetalle";
 import MisSesiones from "./pages/MisSesiones";
 import MisCertificados from "./pages/MisCertificados";
 import Biblioteca from "./pages/Biblioteca";
 import MiPerfil from "./pages/MiPerfil";
 import MisPagos from "./pages/MisPagos";
+
+// ADMIN
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
 import Docentes from "./admin/Docentes";
@@ -26,42 +37,85 @@ import Pagos from "./admin/Pagos";
 
 import Matricula from "./pages/Matricula";
 
-<<<<<<< HEAD
-// import DocenteLayout from "./docente/DocenteLayout"
-// import PerfilDocente from "./docente/PerfilDocente"
-// import MisCursosDocente from "./docente/MisCursos"
-// import HorarioDocente from "./docente/HorarioDocente"
-// import CursoDetalleDocente from "./docente/CursoDetalleDocente"
-// import RegistroNotas from "./docente/RegistroNotas"
-// import ListaAprobados from "./docente/ListaAprobados"
-=======
-import DocenteLayout from "./docente/DocenteLayout"
-import PerfilDocente from "./docente/PerfilDocente"
-import MisCursosDocente from "./docente/MisCursos"
-import HorarioDocente from "./docente/HorarioDocente"
-import CursoDetalleDocente from "./docente/CursoDetalleDocente"
-import RegistroNotas from "./docente/RegistroNotas"
-import ListaAprobados from "./docente/ListaAprobados"
->>>>>>> c0fa001c855a26e4874a87dcfb1053b49cef9b56
+// DOCENTE
+import DocenteLayout from "./docente/DocenteLayout";
+import PerfilDocente from "./docente/PerfilDocente";
+import MisCursosDocente from "./docente/MisCursos";
+import HorarioDocente from "./docente/HorarioDocente";
+import CursoDetalleDocente from "./docente/CursoDetalleDocente";
+import RegistroNotas from "./docente/RegistroNotas";
+import ListaAprobados from "./docente/ListaAprobados";
+import TareasDocente from "./docente/TareasDocente";
+
+function PublicWebLayout({ children }) {
+  return (
+    <>
+      <HeaderWeb />
+      {children}
+      <FooterWeb />
+    </>
+  );
+}
 
 export default function App() {
   return (
     <>
-      {/*Muestra alertas de notificaciones*/}
       <Toaster position="top-right" />
 
       <Routes>
-        {/*Login*/}
+        {/* LOGIN */}
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* WEB PUBLICA CONIT */}
+        <Route
+          path="/web"
+          element={
+            <PublicWebLayout>
+              <HomeWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/cursos"
+          element={
+            <PublicWebLayout>
+              <CursosWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/nosotros"
+          element={
+            <PublicWebLayout>
+              <NosotrosWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/contacto"
+          element={
+            <PublicWebLayout>
+              <ContactoWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/carrito"
+          element={
+            <PublicWebLayout>
+              <CarritoWeb />
+            </PublicWebLayout>
+          }
+        />
 
         <Route element={<ProtectedRoute />}>
           {/* ESTUDIANTE */}
           <Route path="/" element={<LayoutEstudiante />}>
             <Route index element={<HomePage />} />
             <Route path="mis-cursos" element={<MisCursos />} />
-            <Route path="/curso/:id" element={<CursoDetalle />} />
+            <Route path="/curso/:id" element={<CursoDetalleDocente />} />
             <Route path="mis-sesiones" element={<MisSesiones />} />
             <Route path="mis-certificados" element={<MisCertificados />} />
             <Route path="mi-perfil" element={<MiPerfil />} />
@@ -80,26 +134,19 @@ export default function App() {
             <Route path="pagos" element={<Pagos />} />
           </Route>
 
-<<<<<<< HEAD
-          {/* DOCENTE (DESACTIVADO POR AHORA) */}
-          {/* <Route path="/docente" element={<DocenteLayout />}>
-=======
           {/* DOCENTE */}
           <Route path="/docente" element={<DocenteLayout />}>
->>>>>>> c0fa001c855a26e4874a87dcfb1053b49cef9b56
             <Route path="perfil" element={<PerfilDocente />} />
             <Route path="cursos" element={<MisCursosDocente />} />
             <Route path="cursos/:id" element={<CursoDetalleDocente />} />
             <Route path="notas" element={<RegistroNotas />} />
             <Route path="aprobados" element={<ListaAprobados />} />
             <Route path="horario" element={<HorarioDocente />} />
-<<<<<<< HEAD
-          </Route> */}
-=======
+            <Route path="tareas" element={<TareasDocente />} />
           </Route>
->>>>>>> c0fa001c855a26e4874a87dcfb1053b49cef9b56
         </Route>
-        {/*Ruta Comodín*/}
+
+        {/* Ruta comodín */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>

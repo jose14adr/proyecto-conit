@@ -1,3 +1,4 @@
+
 import { Outlet, Link } from "react-router-dom"
 
 function DocenteLayout() {
@@ -8,8 +9,9 @@ function DocenteLayout() {
         <h2 className="text-2xl font-bold mb-6">Panel Docente</h2>
 
         <nav className="flex flex-col gap-3">
-          <Link to="/docente/perfil" className="hover:text-gray-300">Mi Perfil</Link>
+          <Link to="/docente/perfil" className="hover:text-gray-300">Mi Perfil</Link> 
           <Link to="/docente/cursos" className="hover:text-gray-300">Mis Cursos</Link>
+          <Link to="/docente/tareas">Tareas</Link>
           <Link to="/docente/notas" className="hover:text-gray-300">Registro de Notas</Link>
           <Link to="/docente/aprobados" className="hover:text-gray-300">Lista de Aprobados</Link>
           <Link to="/docente/horario" className="hover:text-gray-300">Horario</Link>

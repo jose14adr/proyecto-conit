@@ -12,10 +12,11 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@nestjs-modules/mailer": "^2.0.2",
-    "@supabase/supabase-js": "^2.97.0",
+    "@supabase/supabase-js": "^2.98.0",
     "axios": "^1.13.5",
     "framer-motion": "^12.34.2",
     "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.574.0",
     "nodemailer": "^8.0.1",
     "qrcode": "^1.5.4",

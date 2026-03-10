@@ -5,11 +5,11 @@ import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Loader2, Eye, EyeOff, AlertTriangle } from "lucide-react";
 
-//Importamos lo que construimos en los pasos anteriores
+// Importamos lo que construimos en los pasos anteriores
 import { loginSchema, LoginFormValues } from "../validations/auth.validation";
 import { login } from "../services/auth.service";
 
-//Importamos componente reCaptcha
+// Importamos componente reCaptcha
 import ReCAPTCHA from "react-google-recaptcha";
 
 export default function Login() {
@@ -19,7 +19,7 @@ export default function Login() {
   const [capsLockOn, setCapsLockOn] = useState(false);
   const navigate = useNavigate();
 
-  //Conectamos el formulario con react-hook-form y zod para la validación
+  // Conectamos el formulario con react-hook-form y zod para la validación
   const {
     register,
     handleSubmit,
@@ -29,7 +29,7 @@ export default function Login() {
   });
 
   const verificarMayusculas = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if(e.getModifierState("CapsLock")){
+    if (e.getModifierState("CapsLock")) {
       setCapsLockOn(true);
     } else {
       setCapsLockOn(false);
@@ -37,32 +37,40 @@ export default function Login() {
   };
 
   const onSubmit = async (data: LoginFormValues) => {
-    //Validamos que el usuario haya completado el reCAPTCHA antes de enviar el formulario
-    if(!captchaToken){
+    // Validamos que el usuario haya completado el reCAPTCHA antes de enviar el formulario
+    if (!captchaToken) {
       toast.error("Por favor completa el reCAPTCHA");
       return;
     }
+
     try {
       setIsLoading(true);
-      //Combinamos los datos del formulario con el token del reCAPTCHA para enviar al backend
+
+      // Combinamos los datos del formulario con el token del reCAPTCHA para enviar al backend
       const loginData = {
         ...data,
         recaptchaToken: captchaToken,
       };
-      //Llamamos al backend pasando los datos completos, incluyendo el token del reCAPTCHA
+
+      // Llamamos al backend pasando los datos completos, incluyendo el token del reCAPTCHA
       const respuesta = await login(loginData);
-      //Guardamos el token en el navegador
-<<<<<<< HEAD
+      console.log("RESPUESTA LOGIN >>>", respuesta);
+
+      if (!respuesta?.access_token) {
+        throw new Error("No llegó access_token del backend");
+      }
+
+      // Guardamos el token en el navegador
       localStorage.setItem("token", respuesta.access_token);
-=======
-      localStorage.setItem("token", respuesta.accessToken);
->>>>>>> c0fa001c855a26e4874a87dcfb1053b49cef9b56
-      //Si todo está bien, mostramos un mensaje de éxito
-      toast.success(`Inicio de sesión exitoso`);
-      //Redirigimos al dashboard
+      console.log("TOKEN GUARDADO:", localStorage.getItem("token"));
+
+      // Si todo está bien, mostramos un mensaje de éxito
+      toast.success("Inicio de sesión exitoso");
+
+      // Redirigimos al dashboard
       navigate("/admin");
     } catch (error: any) {
-      //Si el backend rechaza el login, mostramos un mensaje de error
+      // Si el backend rechaza el login, mostramos un mensaje de error
       toast.error(error.message || "Error al iniciar sesión");
     } finally {
       setIsLoading(false);
@@ -116,10 +124,11 @@ export default function Login() {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
-          {/* Mostramos mensaje de mayusculas activadas */}
+
+          {/* Mostramos mensaje de mayúsculas activadas */}
           {capsLockOn && (
             <p className="text-amber-600 text-sm mt-1 ml-4 font-semibold flex items-center gap-1">
-              <AlertTriangle size={16} /> Mayusculas activadas
+              <AlertTriangle size={16} /> Mayúsculas activadas
             </p>
           )}
 
@@ -132,7 +141,7 @@ export default function Login() {
           {/* Widget de reCAPTCHA */}
           <div className="flex justify-center mt-2 mb-2">
             <ReCAPTCHA
-              sitekey="6LeBVX0sAAAAABptVURftyu-3F1crVMQnOr2uDoC" 
+              sitekey="6LeBVX0sAAAAABptVURftyu-3F1crVMQnOr2uDoC"
               onChange={(token: string | null) => setCaptchaToken(token)}
             />
           </div>
