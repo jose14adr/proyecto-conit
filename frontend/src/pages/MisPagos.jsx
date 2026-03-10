@@ -108,7 +108,7 @@ SISTEMA UNIVERSITARIO
 Código: ${pago.codigo}
 Fecha: ${pago.fecha}
 Curso: ${pago.curso}
-Monto: S/ ${pago.monto}
+Monto: S/ ${pago.precio}
 Estado: VERIFICADO
 `;
 

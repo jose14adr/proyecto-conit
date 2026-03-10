@@ -3,15 +3,34 @@ import { initialData } from "../data/bibliotecaData"
 import { useState, useMemo } from "react"
 import { Search, Star, Grid, List, Download, Eye } from "lucide-react"
 import { motion } from "framer-motion"
+import { Globe } from "lucide-react"
+
+import axios from "axios"
+import { useEffect } from "react"
 
 export default function Biblioteca() {
 
-  const [archivos, setArchivos] = useState(initialData)
+  const [archivos, setArchivos] = useState([])
   const [busqueda, setBusqueda] = useState("")
   const [vista, setVista] = useState("grid")
   const [soloFav, setSoloFav] = useState(false)
 
-  // FILTRADO
+  useEffect(() => {
+    cargarRecursos()
+  }, [])
+
+  const cargarRecursos = async () => {
+    try {
+
+      const res = await axios.get("http://localhost:3000/recurso")
+
+      setArchivos(res.data)
+
+    } catch (error) {
+      console.error("Error cargando recursos", error)
+    }
+  }
+
   const filtrados = useMemo(() => {
     return archivos.filter(a => {
       const coincideBusqueda = a.titulo
@@ -41,9 +60,6 @@ export default function Biblioteca() {
           Centro de Recursos
         </h1>
 
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl shadow-sm transition">
-          + Nuevo recurso
-        </button>
       </div>
 
       {/* FILTROS */}
@@ -55,13 +71,13 @@ export default function Biblioteca() {
             placeholder="Buscar recurso..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="pl-10 pr-300 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <button
           onClick={() => setSoloFav(!soloFav)}
-          className={`px-3 py-2 rounded-xl border text-sm flex items-center gap-2 transition
+          className={`px-5 py-2 rounded-xl border text-sm flex items-center gap-2 transition
             ${soloFav ? "bg-yellow-100 border-yellow-300 text-yellow-700" : "bg-white border-gray-200 text-gray-600"}
           `}
         >
@@ -97,28 +113,94 @@ export default function Biblioteca() {
 
       {/* CONTENIDO */}
       {vista === "grid" ? (
-        <div className="grid grid-cols-4 gap-6">
-          {filtrados.map(a => (
-            <ResourceCard key={a.id} data={a} toggleFavorito={toggleFavorito} />
-          ))}
-        </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    {filtrados.map(a => (
+      <ResourceCard
+        key={a.id}
+        data={a}
+        toggleFavorito={toggleFavorito}
+      />
+    ))}
+  </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm divide-y">
-          {filtrados.map(a => (
-            <div key={a.id} className="flex justify-between px-6 py-4 hover:bg-gray-50 transition">
-              <div>
-                <div className="font-medium">{a.titulo}</div>
-                <div className="text-sm text-gray-500">{a.curso}</div>
+
+          {filtrados.map(a => {
+
+            const logos = {
+              Dialnet: "/src/assets/logos/dialnet.png",
+              "Alicia Concytec": "/src/assets/logos/concytec.png",
+              "Google Scholar": "/src/assets/logos/scholar.png",
+              SciELO: "/src/assets/logos/scielo.png",
+              Redalyc: "/src/assets/logos/redalyc.png"
+            }
+
+            return (
+              <div
+                key={a.id}
+                className="flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition"
+              >
+
+                {/* IZQUIERDA */}
+                <div className="flex items-center gap-4">
+
+                  {logos[a.titulo] && (
+                    <img
+                      src={logos[a.titulo]}
+                      className="w-8 h-8 object-contain"
+                    />
+                  )}
+
+                  <div>
+                    <div className="font-medium text-gray-800">
+                      {a.titulo}
+                    </div>
+
+                    <div className="text-sm text-gray-500">
+                      {a.curso}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* DERECHA */}
+                <div className="flex gap-6 items-center text-gray-500">
+
+                  <span className="text-sm">
+                    {a.tipo.toUpperCase()}
+                  </span>
+
+                  <span className="text-sm">
+                    {a.descargas} clics
+                  </span>
+
+                  <Eye
+                    size={18}
+                    className="cursor-pointer hover:text-blue-600"
+                    onClick={async () => {
+                      if (a.link) {
+                        window.open(a.link, "_blank")
+                        try {
+                          await axios.patch(`http://localhost:3000/recurso/${a.id}/click`)
+                          setArchivos(prev =>
+                            prev.map(item =>
+                              item.id === a.id
+                                ? { ...item, descargas: item.descargas + 1 }
+                                : item
+                            )
+                          )
+                        } catch (error) {
+                          console.error("Error registrando click", error)
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
-              <div className="flex gap-6 items-center text-gray-500">
-                <span>{a.tipo.toUpperCase()}</span>
-                <span>{a.descargas} desc</span>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
-
     </div>
   )
 }
@@ -133,23 +215,55 @@ function StatCard({ titulo, valor }) {
 }
 
 function ResourceCard({ data, toggleFavorito }) {
+
+  const logos = {
+  Dialnet: "/src/assets/logos/dialnet.png",
+  "Alicia Concytec": "/src/assets/logos/concytec.png",
+  "Google Scholar": "/src/assets/logos/scholar.png",
+  SciELO: "/src/assets/logos/scielo.png",
+  Redalyc: "/src/assets/logos/redalyc.png"
+}
+
+  const esWeb = data.tipo === "web"
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition"
+      className={`rounded-2xl p-6 shadow-sm border transition w-full
+
+        ${esWeb
+          ? "bg-blue-50 border-blue-200 hover:shadow-md"
+          : "bg-white border-gray-100 hover:shadow-md"}
+      `}
     >
+
       <div className="flex justify-between items-start">
-        <div>
-          <div className="font-medium text-gray-800">{data.titulo}</div>
-          <div className="text-sm text-gray-500 mt-1">{data.curso}</div>
+
+        <div className="flex items-center gap-3">
+          {logos[data.titulo] && (
+            <img
+              src={logos[data.titulo]}
+              className="w-14 h-10 object-contain"
+            />
+          )}
+          <div className="font-medium text-gray-800 text-lg">
+            {data.titulo}
+          </div>
+
+          <div className="text-sm text-gray-500 mt-1">
+            {data.curso}
+          </div>
         </div>
 
         <button onClick={() => toggleFavorito(data.id)}>
           <Star
             size={18}
-            className={data.favorito ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}
+            className={data.favorito
+              ? "text-yellow-500 fill-yellow-500"
+              : "text-gray-300"}
           />
         </button>
+
       </div>
 
       <div className="text-sm text-gray-500 mt-4">
@@ -157,9 +271,32 @@ function ResourceCard({ data, toggleFavorito }) {
       </div>
 
       <div className="flex gap-4 mt-6 text-gray-500">
-        <Eye size={18} className="cursor-pointer hover:text-blue-600" />
-        <Download size={18} className="cursor-pointer hover:text-blue-600" />
+
+        <Eye
+          size={18}
+          className="cursor-pointer hover:text-blue-600"
+          onClick={async () => {
+            if (data.link) {
+              window.open(data.link, "_blank")
+              try {
+                await axios.patch(`http://localhost:3000/recurso/${data.id}/click`)
+
+              } catch (error) {
+                console.error("Error registrando click", error)
+              }
+            }
+          }}
+        />
+
+        {!esWeb && (
+          <Download
+            size={18}
+            className="cursor-pointer hover:text-blue-600"
+          />
+        )}
+
       </div>
+
     </motion.div>
   )
 }

@@ -6,7 +6,19 @@ export class PagoService {
   async getPagosPendientes() {
     const { data, error } = await supabase
       .from('matricula')
-      .select('id, observacion, estado, idalumno')
+      .select(`
+        id,
+        observacion,
+        estado,
+        idalumno,
+        grupo (
+          idcurso,
+          curso (
+            precio,
+            nombrecurso
+          )
+        )
+      `)
       .eq('estado', 'pendiente')
       .eq('idalumno', 1); // por ahora alumno de prueba
 
@@ -14,11 +26,11 @@ export class PagoService {
       throw new Error(error.message);
     }
 
-    return (data || []).map((m) => ({
+    return (data || []).map((m:any) => ({
       id: m.id,
       descripcion: m.observacion || 'Matrícula pendiente',
-      curso: 'Curso no especificado',
-      monto: 0,
+      curso: m.grupo?.curso?.nombrecurso || 'Curso no especificado',
+      monto: m.grupo?.curso?.precio || 0,
       estado: m.estado,
       idalumno: m.idalumno,
     }));
@@ -45,20 +57,32 @@ export class PagoService {
 async getPagosRealizados() {
   const { data, error } = await supabase
     .from('matricula')
-    .select('id, observacion, estado, idalumno')
-    .eq('estado', 'pagado')
+    .select(`
+      id,
+      observacion,
+      estado,
+      idalumno,
+      grupo (
+        idcurso,
+        curso (
+          precio,
+          nombrecurso
+        )
+      )
+    `)
+    .eq('estado', 'pendiente')
     .eq('idalumno', 1);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data || []).map((m) => ({
+  return (data || []).map((m: any) => ({
     id: m.id,
     fecha: new Date().toLocaleDateString(),
     descripcion: m.observacion || 'Matrícula pagada',
-    curso: 'Curso no especificado',
-    monto: 0,
+    curso: m.grupo?.curso?.nombrecurso || 'Curso no especificado',
+    monto: m.grupo?.curso?.precio || 0,
     codigo: `BOL-${m.id}`,
     estado: m.estado,
     idalumno: m.idalumno,

@@ -54,10 +54,10 @@ export default function App() {
             <Route path="/curso/:id" element={<CursoDetalle />} />
             <Route path="mis-sesiones" element={<MisSesiones />} />
             <Route path="mis-certificados" element={<MisCertificados />} />
-            <Route path="biblioteca" element={<Biblioteca />} />
             <Route path="mi-perfil" element={<MiPerfil />} />
             <Route path="mis-pagos" element={<MisPagos />} />
             <Route path="matricula" element={<Matricula />} />
+            <Route path="/recursos" element={<Biblioteca />} />
           </Route>
 
           {/* ADMIN */}
