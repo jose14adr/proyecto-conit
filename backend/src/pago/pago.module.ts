@@ -10,4 +10,3 @@ import { PagoController } from './pago.controller';
   providers: [PagoService],
 })
 export class PagoModule {}
-

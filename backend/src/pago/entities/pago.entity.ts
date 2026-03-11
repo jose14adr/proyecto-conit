@@ -1,35 +1,43 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm"
+import { Matricula } from '../../matricula/entities/matricula.entity';
 
-@Entity({ name: 'Pago' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'pago' }) // Respeta el nombre exacto en BD
 export class Pago {
 
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ type: 'date' })
-  fechaPago: Date;
+  fechapago: Date;
 
   @Column({ type: 'numeric' })
   igv: number;
 
   @Column({ type: 'numeric' })
-  precioInicial: number;
+  precioinicial: number;
 
   @Column({ type: 'numeric' })
-  precioFinal: number;
+  preciofinal: number;
 
   @Column({ type: 'numeric' })
-  precioDescuento: number;
+  preciodescuento: number;
 
   @Column({ type: 'varchar' })
-  tipoPago: string;
+  tipopago: string;
 
   @Column({ type: 'numeric' })
-  idPagoDoc: number;
+  idpagoDoc: number;
 
   @Column({ type: 'numeric' })
-  idTipoComprobante: number;
+  idtipocomprobante: number;
 
   @Column({ type: 'varchar' })
   descripcion: string;
+
+  @Column({ type: 'varchar' })
+  estado: string;
+
+  @ManyToOne(() => Matricula)
+  @JoinColumn({ name: "idmatricula" })
+  matricula: Matricula
 }

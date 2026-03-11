@@ -32,4 +32,25 @@ export class Alumno {
 
   @Column({ default: false })
   nombre_editado: boolean;
+
+  @Column({type:'varchar', nullable: true})
+  foto_url: string;
+
+  @Column({ type: 'varchar', default: 'ACTIVO' })
+  estado: string;
+
+  @Column({ type: 'varchar' })
+  lugar_residencia: string;
+
+  @Column({ type: 'varchar' })
+  departamento: string;
+
+  @Column({ type: 'varchar' })
+  provincia: string;
+
+  @Column({ type: 'varchar' })
+  distrito: string;
+
+  @Column({ type: 'varchar' })
+  estado_civil: string;
 }

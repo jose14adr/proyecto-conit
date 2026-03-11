@@ -1,8 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity({ name: 'Administrador' }) // Respeta el nombre exacto en BD
+@Entity('administrador')
 export class Administrador {
-
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -11,11 +10,14 @@ export class Administrador {
 
   @Column({ type: 'varchar' })
   apellido: string;
-  
-  @Column({ type: 'varchar' })
-  tipoDocumento: string;
 
-  @Column({ type: 'integer' })
+  @Column({ type: 'varchar' })
+  tipodocumento: string;
+
+  @Column({ type: 'varchar' })
+  numdocumento: string;
+
+  @Column({ type: 'int' })
   telefono: number;
 
   @Column({ type: 'varchar' })
@@ -25,11 +27,8 @@ export class Administrador {
   correo: string;
 
   @Column({ type: 'varchar' })
-  numDocumento: string;
-
-  @Column({ type: 'varchar' })
   contrasenia: string;
 
-  @Column({ type: 'integer' })
-  idUsuario: number;
+  @Column({ type: 'int' })
+  idusuario: number;
 }

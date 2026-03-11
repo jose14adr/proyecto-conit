@@ -8,6 +8,7 @@ import { AdministradorController } from './administrador.controller';
   imports: [TypeOrmModule.forFeature([Administrador])],
   controllers: [AdministradorController],
   providers: [AdministradorService],
+  exports: [AdministradorService],
 })
 export class AdministradorModule {}
 

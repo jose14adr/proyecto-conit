@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from "react"
+import { Bell } from "lucide-react"
+import { useContext, useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
+import { NotificacionesContext } from "../context/NotificacionesContext"
 
 
 export default function UserMenu() {
@@ -8,6 +10,15 @@ export default function UserMenu() {
   const [openMenu, setOpenMenu] = useState(false)
   const menuRef = useRef(null)
   const navigate = useNavigate()
+
+  const [notificaciones, setNotificaciones] = useState(0)
+
+  useEffect(() => {
+    const data =
+      JSON.parse(localStorage.getItem("notificaciones")) || []
+
+    setNotificaciones(data.length)
+  }, [])
 
 
   useEffect(() => {
@@ -26,12 +37,29 @@ export default function UserMenu() {
   return (
     <div className="relative" ref={menuRef}>
 
+      <div className="flex items-center gap-4">
+
+        <div className="relative">
+
+          <Bell size={22} />
+
+          {notificaciones > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 rounded-full">
+              {notificaciones.length}
+            </span>
+          )}
+
+       </div>
+        
       <button
         onClick={() => setOpenMenu(!openMenu)}
         className="text-sm text-gray-700 hover:text-gray-900 transition font-medium"
       >
         Karem Daniela Paredes Sandoval
       </button>
+
+      </div>
+
 
       <AnimatePresence>
         {openMenu && (

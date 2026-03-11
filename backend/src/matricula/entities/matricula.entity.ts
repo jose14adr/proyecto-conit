@@ -1,38 +1,42 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Alumno } from '../../alumno/entities/alumno.entity';
+import { Grupo } from '../../grupo/entities/grupo.entity';
 
-@Entity({ name: 'Matricula' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'matricula' }) // Respeta el nombre exacto en BD
 export class Matricula {
 
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true })
   observacion: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true })
   serie: string;
 
-  @Column({ type: 'boolean' })
-  estado: boolean;
-
   @Column({ type: 'varchar' })
+  estado: string;
+
+  @Column({ type: 'varchar', nullable: true })
   beneficio: string;
 
-  @Column({ type: 'integer' })
-  idAlumno: number;
+  @ManyToOne(() => Alumno)
+  @JoinColumn({ name: "idalumno" })
+  alumno: Alumno;
 
-  @Column({ type: 'integer' })
-  idAdministrador: number;
+  @Column({ type: 'integer', nullable: true })
+  idadministrador: number;
 
-  @Column({ type: 'integer' })
-  idGrupo: number;
+  @ManyToOne(() => Grupo)
+  @JoinColumn({ name: "idgrupo" })
+  grupo: Grupo;
 
-  @Column({ type: 'integer' })
-  idCertificado: number;
+  @Column({ type: 'integer', nullable: true })
+  idcertificado: number;
 
-  @Column({ type: 'integer' })
-  idControlAcademico: number;
-  
-  @Column({ type: 'varchar' })
-  pAcademico: string;
+  @Column({ type: 'integer', nullable: true })
+  idcontrolacademico: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  pacademico: string;
 }

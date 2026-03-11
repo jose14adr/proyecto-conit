@@ -74,7 +74,10 @@ function CarritoWeb() {
   // CÁLCULOS DEL RESUMEN
   // =============================
   const subtotal = productosCarrito.reduce((acc, item) => {
-    return acc + item.precio * item.cantidad;
+    const precio = Number(String(item.precio).replace(/[^\d.]/g, "")) || 0;
+    const cantidad = Number(item.cantidad) || 0;
+
+    return acc + precio * cantidad;
   }, 0);
 
   const descuento = 0;
@@ -134,7 +137,7 @@ function CarritoWeb() {
                           </p>
                           <h3>{item.titulo}</h3>
                           <p className="carrito-item-web-meta">
-                            Precio unitario: S/ {item.precio}
+                            Precio unitario: {item.precio}
                           </p>
                         </div>
 
@@ -165,7 +168,7 @@ function CarritoWeb() {
 
                         {/* Precio total por ítem */}
                         <div className="carrito-item-web-price">
-                          <p>S/ {item.precio * item.cantidad}</p>
+                          <p> S/ {(Number(String(item.precio).replace(/[^\d.]/g, "")) || 0) * (Number(item.cantidad) || 0)}</p>
                         </div>
 
                         {/* Acción de eliminar */}
@@ -206,17 +209,17 @@ function CarritoWeb() {
 
               <div className="summary-web-row">
                 <span>Subtotal</span>
-                <span>S/ {subtotal}</span>
+                <span>S/ {subtotal.toFixed(2)}</span>
               </div>
 
               <div className="summary-web-row">
                 <span>Descuento</span>
-                <span>S/ {descuento}</span>
+                <span>S/ {descuento.toFixed(2)}</span>
               </div>
 
               <div className="summary-web-row summary-web-total">
                 <span>Total</span>
-                <span>S/ {total}</span>
+                <span>S/ {total.toFixed(2)}</span>
               </div>
 
               <button className="btn-carrito btn-carrito-primary">

@@ -1,3 +1,5 @@
+import { Users, BookOpen, GraduationCap, CreditCard, TrendingUp } from "lucide-react";
+
 export default function Dashboard() {
   return (
     <div>

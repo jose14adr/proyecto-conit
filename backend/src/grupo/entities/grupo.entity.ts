@@ -1,13 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Docente } from '../../docente/entities/docente.entity';
+import { Curso } from '../../curso/entities/curso.entity';
 
-@Entity({ name: 'Grupo' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'grupo' }) // Respeta el nombre exacto en BD
 export class Grupo {
 
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ type: 'varchar' })
-  nombreGrupo: string;
+  nombregrupo: string;
 
   @Column({ type: 'varchar' })
   horario: string;
@@ -19,11 +21,17 @@ export class Grupo {
   modalidad: string;
 
   @Column({ type: 'integer' })
-  cantidadPersonas: number;
+  cantidadpersonas: number;
 
-  @Column({ type: 'integer' })
-  idCurso: number;
+  @ManyToOne(
+    () => Curso,
+    (curso) => curso.grupos,
+    { nullable: true }
+  )
+  @JoinColumn({ name: 'idcurso' })
+  curso?: Curso;
 
-  @Column({ type: 'integer' })
-  idDocente: number;
+  @ManyToOne(() => Docente, { nullable: true })
+    @JoinColumn({ name: 'iddocente' })
+    docente?: Docente;
 }

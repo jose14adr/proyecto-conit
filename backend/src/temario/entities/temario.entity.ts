@@ -1,23 +1,27 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, JoinColumn, ManyToOne } from 'typeorm';
+import { Unidad } from '../../unidad/entities/unidad.entity';
 
-@Entity({ name: 'Temario' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'temario' })
 export class Temario {
 
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ type: 'varchar' })
-  tituloModulo: string;
+  titulomodulo: string;
 
   @Column({ type: 'varchar' })
-  detalleLecciones: string;
+  detallelecciones: string;
 
   @Column({ type: 'numeric' })
   evaluacion: number;
 
   @Column({ type: 'integer' })
-  idContenido: number;
+  idcontenido: number;
 
-  @Column({ type: 'integer' })
-  idUnidad: number;
+  @OneToMany(
+    () => Unidad,
+    (unidad) => unidad.temario
+  )
+  unidades: Unidad[];
 }

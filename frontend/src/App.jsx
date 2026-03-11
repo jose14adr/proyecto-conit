@@ -17,14 +17,17 @@ import ContactoWeb from "./pages/ContactoWeb";
 import CarritoWeb from "./pages/CarritoWeb";
 
 // ESTUDIANTE
+
 import LayoutEstudiante from "./layouts/LayoutEstudiante";
 import HomePage from "./pages/HomePage";
 import MisCursos from "./pages/MisCursos";
+import CursoDetalle from "./pages/CursoDetalle";
 import MisSesiones from "./pages/MisSesiones";
 import MisCertificados from "./pages/MisCertificados";
 import Biblioteca from "./pages/Biblioteca";
 import MiPerfil from "./pages/MiPerfil";
 import MisPagos from "./pages/MisPagos";
+import Matricula from "./pages/Matricula";
 
 // ADMIN
 import AdminLayout from "./admin/AdminLayout";
@@ -34,8 +37,6 @@ import Cursos from "./admin/Cursos";
 import Alumnos from "./admin/alumnos";
 import Usuarios from "./admin/Usuarios";
 import Pagos from "./admin/Pagos";
-
-import Matricula from "./pages/Matricula";
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
@@ -116,6 +117,7 @@ export default function App() {
             <Route index element={<HomePage />} />
             <Route path="mis-cursos" element={<MisCursos />} />
             <Route path="/curso/:id" element={<CursoDetalleDocente />} />
+            <Route path="/mis-cursos/:id" element={<CursoDetalle />} />
             <Route path="mis-sesiones" element={<MisSesiones />} />
             <Route path="mis-certificados" element={<MisCertificados />} />
             <Route path="mi-perfil" element={<MiPerfil />} />

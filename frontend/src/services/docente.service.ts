@@ -1,0 +1,30 @@
+import api from "./api";
+
+//Obtiene la lista de docentes desde la base de datos a través del backend
+export const obtenerDocentes = async () => {
+  const response = await api.get("/docente");
+  return response.data;
+};
+
+//Registra un nuevo docente en la base de datos a través del backend
+export const crearDocente = async (docenteData: any) => {
+  const response = await api.post("/docente", docenteData);
+  return response.data;
+};
+
+//Actualiza la información de un docente existente en la base de datos a través del backend
+export const actualizarDocente = async (id: number, docenteData: any) => {
+  const response = await api.patch(`/docente/${id}`, docenteData);
+  return response.data;
+};
+
+//Inhabilita un docente en la base de datos a través del backend
+export const inhabilitarDocente = async (id: number) => {
+  const response = await api.patch(`/docente/${id}/inhabilitar`);
+  return response.data;
+};
+
+export const habilitarDocente = async (id: number) => {
+  const response = await api.patch(`/docente/${id}/habilitar`);
+  return response.data;
+};

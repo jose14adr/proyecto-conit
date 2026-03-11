@@ -16,6 +16,7 @@ import { SesionModule } from './sesion/sesion.module';
 import { GrupoModule } from './grupo/grupo.module';
 import { MatriculaModule } from './matricula/matricula.module';
 import { PagoModule } from './pago/pago.module';
+import { RecursoModule } from './recurso/recurso.module';
 import { join } from 'path';
 
 @Module({
@@ -64,6 +65,7 @@ import { join } from 'path';
     GrupoModule,
     MatriculaModule,
     PagoModule,
+    RecursoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
