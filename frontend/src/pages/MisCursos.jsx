@@ -32,7 +32,7 @@ export default function MisCursos() {
             cursos.map((curso) => (
               <div
                 key={curso.id}
-                onClick={() => navigate(`/curso/${curso.id}`)}
+                onClick={() => navigate(`/mis-cursos/${curso.id}`)}
                 className="cursor-pointer border-2 border-dashed border-gray-300 p-6 flex flex-col items-center justify-center hover:bg-gray-50 transition"
               >
               <div className="w-20 h-20 bg-gray-200 rounded-full mb-4" />

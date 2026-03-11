@@ -54,6 +54,4 @@ export class Curso {
     )
     grupos: Grupo[];
 
-    @Column("float")
-    precio: number;
 }

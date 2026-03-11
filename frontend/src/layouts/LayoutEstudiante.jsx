@@ -42,7 +42,7 @@ export default function LayoutEstudiante() {
             Mis Certificados
           </Link>
 
-          <Link to="/biblioteca" className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded">
+          <Link to="/recursos" className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded">
             <Library size={20}/>
             Biblioteca
           </Link>

@@ -5,23 +5,56 @@ import { Curso } from './entities/curso.entity';
 
 @Injectable()
 export class CursoService {
-  constructor(
+    constructor(
     @InjectRepository(Curso)
     private cursoRepository: Repository<Curso>,
   ) {}
+
+  async listarCursos(): Promise<Curso[]> {
+    return await this.cursoRepository.find();
+  }
+
+  async obtenerUno(id: number) {
+    return this.cursoRepository.findOne({
+        where: { id }
+    });
+    }
+
   async findAll() {
-    return await this.cursoRepository.find({
-      order: { id: 'DESC' }, //Traemos los cursos ordenados por id de forma descendente, es decir, los más recientes primero
+    return this.cursoRepository.find({
+      relations: [
+        'grupos',
+        'grupos.docente',
+        'temario',
+        'temario.unidades',
+        'temario.unidades.sesion'
+      ],
     });
   }
 
-  async remove(id: number) {
-    await this.cursoRepository.update(id, { estado: false });
-    return { message: 'Curso inhabilitado correctamente' };
+  async listarCursosAlumno(): Promise<Curso[]> {
+    return this.cursoRepository.find({
+      relations: [
+        'grupos',
+        'grupos.docente',
+        'temario',
+        'temario.unidades',
+        'temario.unidades.sesion'
+      ]
+    });
   }
 
-  async habilitar(id: number) {
-    await this.cursoRepository.update(id, { estado: true });
-    return { message: 'Curso habilitado correctamente' };
-  }
+async obtenerUnoCursoAlumno(id: number): Promise<Curso | null> {
+  return this.cursoRepository.findOne({
+    where: { id },
+    relations: [
+      'grupos',
+      'grupos.docente',
+      'temario',
+      'temario.unidades',
+      'temario.unidades.sesion'
+    ]
+  });
+}
+
 }

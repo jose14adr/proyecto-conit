@@ -3,52 +3,24 @@ import axios from "axios";
 
 export default function MiPerfil() {
   const [foto, setFoto] = useState(null);
-
   const [editando, setEditando] = useState(false);
-
-  const [setNombre] = useState("");
-
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
-
-  const [nombreBloqueado, setNombreBloqueado] = useState(false);
+  const [mostrarModalNombre, setMostrarModalNombre] = useState(false);
 
   const [datos, setDatos] = useState({
     nombre: "",
     apellido: "",
-    lugar: "",
+    nombre_editado: false,
+    lugar_residencia: "",
     departamento: "",
     provincia: "",
     distrito: "",
     direccion: "",
-    estadoCivil: "",
+    estado_civil: "",
     correo: "",
     telefono: "",
   });
-
-  const guardarCambios = async () => {
-    try {
-      const partes = nombre.split(" ");
-
-      const nombreBackend = partes[0];
-      const apellidoBackend = partes.slice(1).join(" ");
-
-      await axios.put("http://localhost:3000/alumno/1", {
-        nombre: datos.nombre,
-        apellido: datos.apellido,
-        telefono: datos.telefono,
-        direccion: datos.direccion,
-        correo: datos.email,
-        tipodocumento: "DNI",
-        numdocumento: "12345678",
-      });
-
-      alert("Actualizado correctamente");
-    } catch (error) {
-      console.error(error);
-      alert(error.response?.data?.message || "Error");
-    }
-  };
 
   useEffect(() => {
     const obtenerAlumno = async () => {
@@ -56,19 +28,18 @@ export default function MiPerfil() {
         const res = await axios.get("http://localhost:3000/alumno/1");
         const data = res.data;
 
-        //setNombre(`${data.nombre} ${data.apellido}`)
-
         setDatos({
-          nombre: data.nombre,
-          apellido: data.apellido,
-          lugar: "",
-          departamento: "",
-          provincia: "",
-          distrito: "",
+          nombre: data.nombre || "",
+          apellido: data.apellido || "",
+          nombre_editado: data.nombre_editado || false,
+          lugar_residencia: data.lugar_residencia || "",
+          departamento: data.departamento || "",
+          provincia: data.provincia || "",
+          distrito: data.distrito || "",
           direccion: data.direccion || "",
-          estadoCivil: "",
+          estado_civil: data.estado_civil || "",
           correo: data.correo || "",
-          telefono: data.telefono || "",
+          telefono: Number(data.telefono) || "",
         });
       } catch (error) {
         console.error(error);
@@ -80,12 +51,57 @@ export default function MiPerfil() {
     obtenerAlumno();
   }, []);
 
+  const guardarDatos = async () => {
+    try {
+      setGuardando(true);
+
+      await axios.put("http://localhost:3000/alumno/1", {
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        telefono: Number(datos.telefono),
+        direccion: datos.direccion,
+        correo: datos.correo,
+        lugar_residencia: datos.lugar_residencia,
+        departamento: datos.departamento,
+        provincia: datos.provincia,
+        distrito: datos.distrito,
+        estado_civil: datos.estado_civil,
+        nombre_editado: true,
+      });
+
+      setEditando(false);
+      setDatos((prev) => ({ ...prev, nombre_editado: true }));
+
+      alert("Actualizado correctamente");
+    } catch (error) {
+      console.error(error);
+      alert("Error al actualizar");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const toggleEditarGuardar = async () => {
+    if (cargando) return;
+
+    if (!editando) {
+      setEditando(true);
+      return;
+    }
+
+    if (!datos.nombre_editado) {
+      setMostrarModalNombre(true);
+      return;
+    }
+
+    guardarDatos();
+  };
+
   const handleChange = async (e) => {
     const file = e.target.files[0];
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("usuario_id", usuario.id);
 
     await fetch("http://localhost:3000/multimedia/upload", {
       method: "POST",
@@ -104,58 +120,6 @@ export default function MiPerfil() {
     }
   };
 
-  const toggleEditar = () => {
-    if (editando) {
-      setEditando(false);
-
-      if (!nombreBloqueado) {
-        setNombreBloqueado(true);
-      }
-
-      alert("Datos guardados correctamente");
-    } else {
-      setEditando(true);
-    }
-  };
-
-  const toggleEditarGuardar = async () => {
-    // Si está cargando, no hacer nada
-    if (cargando) return;
-
-    // Si NO está editando → activar edición
-    if (!editando) {
-      setEditando(true);
-      return;
-    }
-
-    // Validación básica
-    if (!datos.correo || !datos.telefono) {
-      alert("Completa los campos obligatorios");
-      return;
-    }
-
-    try {
-      setGuardando(true);
-
-      await axios.put("http://localhost:3000/alumno/1", {
-        nombre: datos.nombre,
-        apellido: datos.apellido,
-        telefono: datos.telefono,
-        direccion: datos.direccion,
-        correo: datos.correo,
-      });
-
-      setEditando(false);
-
-      alert("Actualizado correctamente");
-    } catch (error) {
-      console.error(error);
-      alert("Error al actualizar");
-    } finally {
-      setGuardando(false);
-    }
-  };
-
   if (cargando) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -168,12 +132,10 @@ export default function MiPerfil() {
 
   return (
     <div className="bg-gray-100 min-h-screen">
-      {/* HEADER ROJO */}
       <div className="bg-blue-600 text-white px-6 py-3 font-semibold">
         Mis Datos
       </div>
 
-      {/* BANNER */}
       <div
         className="relative h-64 bg-cover bg-center"
         style={{
@@ -183,7 +145,6 @@ export default function MiPerfil() {
       >
         <div className="absolute inset-0 bg-black/40"></div>
 
-        {/* FOTO */}
         <div className="absolute left-1/2 transform -translate-x-1/2 top-16">
           <div className="relative">
             <img
@@ -197,21 +158,25 @@ export default function MiPerfil() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={cambiarFoto}
+                onChange={(e) => {
+                  cambiarFoto(e);
+                  handleChange(e);
+                }}
                 className="hidden"
               />
-              <input type="file" onChange={handleChange} />
             </label>
           </div>
         </div>
 
         {/* NOMBRE */}
         <div className="absolute bottom-6 w-full flex justify-center items-center text-white text-lg font-semibold tracking-wide">
-          {editando && !nombreBloqueado ? (
+          {editando && !datos.nombre_editado ? (
             <>
               <input
                 value={datos.nombre}
-                onChange={(e) => setDatos({ ...datos, nombre: e.target.value })}
+                onChange={(e) =>
+                  setDatos({ ...datos, nombre: e.target.value })
+                }
                 className="text-center bg-white text-black px-2 py-1 rounded mr-2"
               />
 
@@ -229,18 +194,10 @@ export default function MiPerfil() {
               <span className="ml-2">{datos.apellido}</span>
             </>
           )}
-
-          {nombreBloqueado && (
-            <p className="text-xs text-red-300 absolute top-full mt-1">
-              El nombre solo puede modificarse una vez
-            </p>
-          )}
         </div>
       </div>
 
-      {/* CONTENIDO */}
       <div className="max-w-6xl mx-auto mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 px-4 md:px-6">
-        {/* DATOS PERSONALES */}
         <div className="md:col-span-2 bg-white rounded shadow">
           <div className="bg-blue-600 text-white px-4 py-2 rounded-t">
             Datos Personales
@@ -250,10 +207,13 @@ export default function MiPerfil() {
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Lugar Residencia"
-                value={datos.lugar}
+                value={datos.lugar_residencia}
                 editando={editando}
-                onChange={(e) => setDatos({ ...datos, lugar: e.target.value })}
+                onChange={(e) =>
+                  setDatos({ ...datos, lugar_residencia: e.target.value })
+                }
               />
+
               <Input
                 label="Departamento"
                 value={datos.departamento}
@@ -262,6 +222,7 @@ export default function MiPerfil() {
                   setDatos({ ...datos, departamento: e.target.value })
                 }
               />
+
               <Input
                 label="Provincia"
                 value={datos.provincia}
@@ -270,6 +231,7 @@ export default function MiPerfil() {
                   setDatos({ ...datos, provincia: e.target.value })
                 }
               />
+
               <Input
                 label="Distrito"
                 value={datos.distrito}
@@ -278,38 +240,46 @@ export default function MiPerfil() {
                   setDatos({ ...datos, distrito: e.target.value })
                 }
               />
+
               <Input
-                label="Dirección"
+                label="Referencia"
                 value={datos.direccion}
                 editando={editando}
                 onChange={(e) =>
                   setDatos({ ...datos, direccion: e.target.value })
                 }
               />
+
               <Input
                 label="Estado Civil"
-                value={datos.estadoCivil}
+                value={datos.estado_civil}
                 editando={editando}
                 onChange={(e) =>
-                  setDatos({ ...datos, estadoCivil: e.target.value })
+                  setDatos({ ...datos, estado_civil: e.target.value })
                 }
               />
+
               <Input
                 label="Correo"
                 value={datos.correo}
                 editando={editando}
-                onChange={(e) => setDatos({ ...datos, correo: e.target.value })}
+                onChange={(e) =>
+                  setDatos({ ...datos, correo: e.target.value })
+                }
               />
+
               <Input
                 label="Teléfono"
                 value={datos.telefono}
                 editando={editando}
-                onChange={(e) =>
-                  setDatos({ ...datos, telefono: e.target.value })
-                }
+                onChange={(e) => {
+                  const soloNumeros = e.target.value.replace(/\D/g, "");
+                  setDatos({ ...datos, telefono: soloNumeros });
+                }}
               />
             </div>
           </div>
+
           <button
             onClick={toggleEditarGuardar}
             disabled={cargando || guardando}
@@ -317,17 +287,17 @@ export default function MiPerfil() {
               cargando || guardando
                 ? "bg-gray-400 cursor-not-allowed"
                 : editando
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-blue-600 hover:bg-blue-700"
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {cargando
               ? "Cargando..."
               : guardando
-                ? "Guardando..."
-                : editando
-                  ? "Guardar"
-                  : "Editar"}
+              ? "Guardando..."
+              : editando
+              ? "Guardar"
+              : "Editar"}
           </button>
         </div>
 
@@ -358,10 +328,51 @@ export default function MiPerfil() {
             <Info label="Nacionalidad" value="Perú" />
           </div>
         </div>
+
+
       </div>
+
+      {/* MODAL CONFIRMACION */}
+      {mostrarModalNombre && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 text-center shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">
+              Confirmar cambio de nombre
+            </h2>
+
+            <p className="text-gray-600 mb-6">
+              ⚠️ Solo podrás modificar tu nombre y apellido una vez.
+              <br />
+              ¿Deseas continuar?
+            </p>
+
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setMostrarModalNombre(false)}
+                className="px-4 py-2 bg-gray-400 rounded text-white"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={() => {
+                  setMostrarModalNombre(false);
+                  guardarDatos();
+                }}
+                className="px-4 py-2 bg-blue-600 rounded text-white"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+
+
 
 function Input({ label, value, editando, onChange }) {
   return (

@@ -50,9 +50,15 @@ export class AlumnoService {
         apellido: data.apellido,
         tipodocumento: data.tipodocumento,
         numdocumento: data.numdocumento,
-        telefono: data.telefono,
+        telefono: Number(data.telefono),
         direccion: data.direccion,
         correo: data.correo,
+        lugar_residencia: data.lugar_residencia,
+        departamento: data.departamento,
+        provincia: data.provincia,
+        distrito: data.distrito,
+        estado_civil: data.estado_civil,
+        nombre_editado: true,
         ...(usuarioCreado && { idUsuario: usuarioCreado.id }),
       });
       return await manager.save(alumno);
