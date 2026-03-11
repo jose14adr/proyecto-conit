@@ -116,13 +116,14 @@ export default function App() {
           <Route path="/" element={<LayoutEstudiante />}>
             <Route index element={<HomePage />} />
             <Route path="mis-cursos" element={<MisCursos />} />
+            <Route path="/curso/:id" element={<CursoDetalleDocente />} />
             <Route path="/mis-cursos/:id" element={<CursoDetalle />} />
             <Route path="mis-sesiones" element={<MisSesiones />} />
             <Route path="mis-certificados" element={<MisCertificados />} />
             <Route path="mi-perfil" element={<MiPerfil />} />
             <Route path="mis-pagos" element={<MisPagos />} />
             <Route path="matricula" element={<Matricula />} />
-            <Route path="recursos" element={<Biblioteca />} />
+            <Route path="/recursos" element={<Biblioteca />} />
           </Route>
 
           {/* ADMIN */}

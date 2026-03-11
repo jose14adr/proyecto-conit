@@ -26,7 +26,7 @@ function ListaAprobados() {
 
       // Normalizamos salida para UI (acepta tanto alumno plano como alumno anidado)
       const mapped = (data || []).map((x) => {
-        const a = x.alumno ?? x; // soporta x.alumno o campos planos
+        const a = x.alumno ?? x;
 
         const nombreCompleto = `${a.nombre ?? ""} ${a.apellido ?? ""}`.trim();
 
@@ -35,9 +35,7 @@ function ListaAprobados() {
         const n3 = x.nota3 ?? null;
 
         let promedio = x.promedio ?? null;
-        if (promedio == null && n1 != null && n2 != null && n3 != null) {
-          promedio = Math.round(((Number(n1) + Number(n2) + Number(n3)) / 3) * 10) / 10;
-        }
+        if (promedio != null) promedio = Number(promedio);
 
         return {
           idmatricula: x.idmatricula ?? x.id ?? null,
@@ -47,6 +45,7 @@ function ListaAprobados() {
           nota2: n2,
           nota3: n3,
           promedio,
+          estado: x.estado ?? "sin_notas",
         };
       });
 
@@ -61,11 +60,11 @@ function ListaAprobados() {
 
   // cuando seleccionas curso, carga desde Supabase (nota incluida)
   useEffect(() => {
-    if (!cursoSeleccionado?.id) {
+    if (!cursoSeleccionado?.idgrupo) {
       setRows([]);
       return;
     }
-    cargar(cursoSeleccionado.id);
+    cargar(cursoSeleccionado.idgrupo);
   }, [cursoSeleccionado]);
 
   // cerrar sugerencias al click fuera
@@ -109,12 +108,17 @@ function ListaAprobados() {
   };
 
   const estadoAlumno = (r) => {
-    const prom = r.promedio;
-    if (prom == null) return "SIN_NOTAS";
-    if (prom >= 11) return "APROBADOS";
-    if (prom >= 8) return "RECUPERACION";
-    return "DESAPROBADOS";
-  };
+  switch (r.estado) {
+    case "aprobado":
+      return "APROBADOS";
+    case "recuperacion":
+      return "RECUPERACION";
+    case "desaprobado":
+      return "DESAPROBADOS";
+    default:
+      return "SIN_NOTAS";
+  }
+};
 
   const rowsFiltradas = useMemo(() => {
     if (filtro === "TODOS") return rows;
@@ -165,7 +169,7 @@ function ListaAprobados() {
               <div className="absolute z-10 mt-2 w-full bg-white border rounded shadow overflow-hidden">
                 {sugerencias.map((c) => (
                   <button
-                    key={c.id}
+                    key={c.idgrupo}
                     type="button"
                     onClick={() => elegirCurso(c)}
                     className="w-full text-left px-3 py-2 hover:bg-gray-50"

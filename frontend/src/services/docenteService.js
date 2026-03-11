@@ -370,6 +370,8 @@ export const getAlumnosByCurso = async (cursoId) => {
     .select("id, idalumno, idgrupo")
     .in("idgrupo", grupoIds);
 
+    
+
   if (errMat) throw new Error(errMat.message);
   if (!matriculas || matriculas.length === 0) return [];
 
@@ -402,39 +404,54 @@ export const getAlumnosByCurso = async (cursoId) => {
   const alumnosMap = new Map((alumnos || []).map((a) => [a.id, a]));
 
   // 5. Traer notas solo de las matrículas únicas
-  const matriculaIds = matriculasUnicas.map((m) => m.id);
+const matriculaIds = matriculasUnicas.map((m) => m.id);
 
-  const { data: notas, error: errNotas } = await supabase
-    .from("nota")
-    .select("*")
-    .in("idmatricula", matriculaIds);
+const { data: notas, error: errNotas } = await supabase
+  .from("nota")
+  .select("idmatricula, evaluacion, nota")
+  .in("idmatricula", matriculaIds);
 
-  if (errNotas) throw new Error(errNotas.message);
+if (errNotas) throw new Error(errNotas.message);
 
-  const notasMap = new Map((notas || []).map((n) => [n.idmatricula, n]));
+// Agrupar notas por matrícula
+const notasMap = new Map();
 
-  // 6. Armar resultado final
-  return matriculasUnicas
-    .map((m) => {
-      const alumno = alumnosMap.get(m.idalumno);
-      if (!alumno) return null;
+(notas || []).forEach((n) => {
+  const key = n.idmatricula;
 
-      const nota = notasMap.get(m.id) || {};
+  if (!notasMap.has(key)) {
+    notasMap.set(key, {});
+  }
 
-      return {
-        idalumno: alumno.id,
-        idmatricula: m.id,
-        nombre: alumno.nombre || "",
-        apellido: alumno.apellido || "",
-        correo: alumno.correo || "",
-        numdocumento: alumno.numdocumento || "",
-        foto_url: alumno.foto_url || "",
-        nota1: nota.nota1 ?? "",
-        nota2: nota.nota2 ?? "",
-        nota3: nota.nota3 ?? "",
-      };
-    })
-    .filter(Boolean);
+  const fila = notasMap.get(key);
+
+  if (Number(n.evaluacion) === 1) fila.nota1 = n.nota;
+  if (Number(n.evaluacion) === 2) fila.nota2 = n.nota;
+  if (Number(n.evaluacion) === 3) fila.nota3 = n.nota;
+});
+
+// 6. Armar resultado final
+return matriculasUnicas
+  .map((m) => {
+    const alumno = alumnosMap.get(m.idalumno);
+    if (!alumno) return null;
+
+    const nota = notasMap.get(m.id) || {};
+
+    return {
+      idalumno: alumno.id,
+      idmatricula: m.id,
+      nombre: alumno.nombre || "",
+      apellido: alumno.apellido || "",
+      correo: alumno.correo || "",
+      numdocumento: alumno.numdocumento || "",
+      foto_url: alumno.foto_url || "",
+      nota1: nota.nota1 ?? "",
+      nota2: nota.nota2 ?? "",
+      nota3: nota.nota3 ?? "",
+    };
+  })
+  .filter(Boolean);
 };
 // ======================================================
 // GUARDAR NOTAS
@@ -444,42 +461,18 @@ export const guardarNotas = async (idmatricula, notas) => {
   const idMat = Number(idmatricula);
 
   const registros = [
-    { idmatricula: idMat, evaluacion: 1, nota: notas[1] ?? notas.nota1 ?? null },
-    { idmatricula: idMat, evaluacion: 2, nota: notas[2] ?? notas.nota2 ?? null },
-    { idmatricula: idMat, evaluacion: 3, nota: notas[3] ?? notas.nota3 ?? null },
+    { idmatricula: idMat, evaluacion: 1, nota: Number(notas[1] ?? notas.nota1) },
+    { idmatricula: idMat, evaluacion: 2, nota: Number(notas[2] ?? notas.nota2) },
+    { idmatricula: idMat, evaluacion: 3, nota: Number(notas[3] ?? notas.nota3) },
   ];
 
-  // Buscar si ya existen notas para esa matrícula
-  const { data: existentes, error: errBuscar } = await supabase
+  const { error } = await supabase
     .from("nota")
-    .select("id, evaluacion")
-    .eq("idmatricula", idMat);
+    .upsert(registros, {
+      onConflict: "idmatricula,evaluacion",
+    });
 
-  if (errBuscar) throw new Error(errBuscar.message);
-
-  const existentesMap = new Map(
-    (existentes || []).map((row) => [Number(row.evaluacion), row.id])
-  );
-
-  // Actualizar si existe, insertar si no existe
-  for (const reg of registros) {
-    const idExistente = existentesMap.get(Number(reg.evaluacion));
-
-    if (idExistente) {
-      const { error } = await supabase
-        .from("nota")
-        .update({ nota: reg.nota })
-        .eq("id", idExistente);
-
-      if (error) throw new Error(error.message);
-    } else {
-      const { error } = await supabase
-        .from("nota")
-        .insert(reg);
-
-      if (error) throw new Error(error.message);
-    }
-  }
+  if (error) throw new Error(error.message);
 
   return true;
 };
@@ -488,92 +481,114 @@ export const guardarNotas = async (idmatricula, notas) => {
 // APROBADOS / REPORTE DE NOTAS
 // ======================================================
 
-export const getAprobadosByCurso = async (cursoId) => {
-  // 1. Grupos del curso
-  const { data: grupos, error: errGrupos } = await supabase
-    .from("grupo")
-    .select("id")
-    .eq("idcurso", Number(cursoId));
+export const getAprobadosByCurso = async (idgrupo) => {
+  const grupoId = Number(idgrupo);
 
-  if (errGrupos) throw new Error(errGrupos.message);
-
-  const grupoIds = (grupos || []).map((g) => g.id);
-  if (grupoIds.length === 0) return [];
-
-  // 2. Matrículas
+  // 1. Traer matrículas del grupo
   const { data: matriculas, error: errMat } = await supabase
     .from("matricula")
     .select("id, idalumno, idgrupo")
-    .in("idgrupo", grupoIds);
+    .eq("idgrupo", grupoId);
 
   if (errMat) throw new Error(errMat.message);
   if (!matriculas || matriculas.length === 0) return [];
 
-  // 3. Alumnos
-  const alumnoIds = [...new Set(matriculas.map((m) => m.idalumno).filter(Boolean))];
+  // 2. Dejar solo una matrícula por alumno dentro del grupo
+  const matriculasUnicas = Array.from(
+    new Map(
+      matriculas
+        .filter((m) => m.idalumno)
+        .map((m) => [m.idalumno, m])
+    ).values()
+  );
 
+  if (matriculasUnicas.length === 0) return [];
+
+  const matriculaIds = matriculasUnicas.map((m) => m.id);
+  const alumnoIds = matriculasUnicas.map((m) => m.idalumno);
+
+  // 3. Traer alumnos
   const { data: alumnos, error: errAlumnos } = await supabase
     .from("alumno")
-    .select("id, nombre, apellido, correo")
+    .select("*")
     .in("id", alumnoIds);
 
   if (errAlumnos) throw new Error(errAlumnos.message);
 
-  // 4. Notas
-  const matriculaIds = matriculas.map((m) => m.id);
+  const alumnosMap = new Map((alumnos || []).map((a) => [a.id, a]));
 
+  // 4. Traer notas de esas matrículas
   const { data: notas, error: errNotas } = await supabase
     .from("nota")
-    .select("idmatricula, nota1, nota2, nota3")
+    .select("idmatricula, evaluacion, nota")
     .in("idmatricula", matriculaIds);
 
   if (errNotas) throw new Error(errNotas.message);
 
-  const alumnosMap = new Map((alumnos || []).map((a) => [a.id, a]));
-  const notasMap = new Map((notas || []).map((n) => [n.idmatricula, n]));
+  // 5. Agrupar notas por matrícula
+  const notasMap = new Map();
 
-  const rows = matriculas.map((m) => {
-    const a = alumnosMap.get(m.idalumno) || {};
-    const n = notasMap.get(m.id) || {};
-
-    const nota1 = Number(n.nota1 ?? 0);
-    const nota2 = Number(n.nota2 ?? 0);
-    const nota3 = Number(n.nota3 ?? 0);
-
-    const tieneAlgunaNota =
-      n.nota1 !== null &&
-      n.nota1 !== undefined ||
-      n.nota2 !== null &&
-      n.nota2 !== undefined ||
-      n.nota3 !== null &&
-      n.nota3 !== undefined;
-
-    const promedio = tieneAlgunaNota
-      ? Number(((nota1 + nota2 + nota3) / 3).toFixed(2))
-      : null;
-
-    let estado = "SIN_NOTAS";
-    if (promedio !== null) {
-      if (promedio >= 13) estado = "APROBADO";
-      else if (promedio >= 11) estado = "RECUPERACION";
-      else estado = "DESAPROBADO";
+  (notas || []).forEach((n) => {
+    if (!notasMap.has(n.idmatricula)) {
+      notasMap.set(n.idmatricula, {
+        nota1: null,
+        nota2: null,
+        nota3: null,
+      });
     }
 
-    return {
-      idmatricula: m.id,
-      idalumno: a.id,
-      nombre: a.nombre || "",
-      apellido: a.apellido || "",
-      correo: a.correo || "",
-      nota1: n.nota1 ?? "",
-      nota2: n.nota2 ?? "",
-      nota3: n.nota3 ?? "",
-      promedio,
-      estado,
-    };
+    const fila = notasMap.get(n.idmatricula);
+
+    if (Number(n.evaluacion) === 1) fila.nota1 = Number(n.nota);
+    if (Number(n.evaluacion) === 2) fila.nota2 = Number(n.nota);
+    if (Number(n.evaluacion) === 3) fila.nota3 = Number(n.nota);
   });
 
-  return rows;
+  // 6. Armar resultado final, una fila por alumno
+  return matriculasUnicas
+    .map((m) => {
+      const alumno = alumnosMap.get(m.idalumno);
+      if (!alumno) return null;
+
+      const nota = notasMap.get(m.id) || {};
+
+      const tieneNota1 = nota.nota1 !== null && nota.nota1 !== undefined;
+      const tieneNota2 = nota.nota2 !== null && nota.nota2 !== undefined;
+      const tieneNota3 = nota.nota3 !== null && nota.nota3 !== undefined;
+
+      const n1 = tieneNota1 ? Number(nota.nota1) : null;
+      const n2 = tieneNota2 ? Number(nota.nota2) : null;
+      const n3 = tieneNota3 ? Number(nota.nota3) : null;
+
+      const notasValidas = [n1, n2, n3].filter((v) => v !== null);
+      const promedio =
+        notasValidas.length > 0
+          ? notasValidas.reduce((acc, v) => acc + v, 0) / notasValidas.length
+          : null;
+
+      let estado = "sin_notas";
+      if (promedio !== null) {
+        if (promedio >= 12) estado = "aprobado";
+        else if (promedio >= 9) estado = "recuperacion";
+        else estado = "desaprobado";
+      }
+
+      return {
+        idalumno: alumno.id,
+        idmatricula: m.id,
+        nombre: alumno.nombre || "",
+        apellido: alumno.apellido || "",
+        correo: alumno.correo || "",
+        numdocumento: alumno.numdocumento || "",
+        foto_url: alumno.foto_url || "",
+        nota1: n1,
+        nota2: n2,
+        nota3: n3,
+        promedio: promedio !== null ? promedio.toFixed(1) : null,
+        estado,
+      };
+    })
+    .filter(Boolean);
 };
 
 // ======================================================
@@ -1075,3 +1090,5 @@ export const createCursoAdicionalDocente = async ({
 
   return data;
 };
+
+

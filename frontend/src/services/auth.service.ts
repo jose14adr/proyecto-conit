@@ -37,7 +37,7 @@ export const login = async (
     const errorData = await response.json().catch(() => null);
     throw new Error(errorData?.message || "Correo o contraseña incorrectos");
   }
-
+  
   const data: LoginResponse = await response.json();
 
   // Guardar token y usuario en el almacenamiento del navegador
