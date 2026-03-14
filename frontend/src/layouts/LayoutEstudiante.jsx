@@ -1,69 +1,137 @@
-import { Home, BookOpen, FileText, Library, LifeBuoy } from "lucide-react"
+import { Home, BookOpen, FileText, Library, LifeBuoy, Menu } from "lucide-react"
 import { Link, Outlet, useLocation } from "react-router-dom"
+import { useState } from "react"
 import { Toaster } from "react-hot-toast"
 import UserMenu from "../components/UserMenu"
+import SidebarLink from "../components/SidebarLink"
 
 export default function LayoutEstudiante() {
+
   const location = useLocation()
+  const [sidebarOpen,setSidebarOpen] = useState(true)
+  const iconSize = sidebarOpen ? 26 : 34
+
+  function linkClass(path){
+
+    const active = location.pathname === path
+
+    return `flex items-center
+    ${sidebarOpen ? "gap-4 justify-start" : "justify-center"}
+    p-3 rounded-lg transition-all duration-300
+    ${active 
+    ? "bg-indigo-600 text-white shadow-lg" 
+    : "hover:bg-slate-800 text-gray-300"}`
+  }
 
   return (
+
     <div className="h-screen w-screen flex bg-gray-100">
 
       {/* SIDEBAR */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col p-8">
 
-        <h1 className="text-2xl font-bold mb-10">
-          CONIT
-        </h1>
+      <aside className={`
+      ${sidebarOpen ? "w-64" : "w-20"}
+      bg-gradient-to-b from-slate-900 to-slate-800
+      text-white flex flex-col p-5 transition-all duration-300 shadow-xl
+      `}>
 
-        <nav className="space-y-6 text-lg">
+        {/* LOGO */}
 
-          <Link to="/" className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded">
-            <Home size={20}/>
-            Principal
-          </Link>
+        <div className="flex items-center justify-between mb-10">
 
-          <Link to="/mis-cursos" className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded">
-            <BookOpen size={20}/>
-            Mis Cursos
-          </Link>
+          {sidebarOpen && (
+            <h1 className="text-3xl font-extrabold tracking-wide text-indigo-400">
+              CONIT
+            </h1>
+          )}
 
-          <Link to="/matricula" className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded">
-            <BookOpen size={20}/>Matrícula
-          </Link>
+          <button
+          onClick={()=>setSidebarOpen(!sidebarOpen)}
+          className="hover:bg-slate-700 p-2 rounded-lg transition"
+          >
+            <Menu size={26}/>
+          </button>
 
-          <Link to="/mis-sesiones" className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded">
-            <FileText size={20}/>
-            Mis Sesiones
-          </Link>
+        </div>
 
-          <Link to="/mis-certificados" className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded">
-            <FileText size={20}/>
-            Mis Certificados
-          </Link>
 
-          <Link to="/recursos" className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded">
-            <Library size={20}/>
-            Biblioteca
-          </Link>
+        {/* MENU */}
 
-          <div className="flex items-center gap-3 hover:bg-slate-800 p-2 rounded cursor-pointer">
-            <LifeBuoy size={20}/>
-            Soporte
+        <nav className="space-y-3 text-base">
+
+          <SidebarLink
+            to="/"
+            label="Principal"
+            sidebarOpen={sidebarOpen}
+            active={location.pathname === "/"}
+            icon={<Home size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
+            />
+
+            <SidebarLink
+            to="/mis-cursos"
+            label="Mis Cursos"
+            sidebarOpen={sidebarOpen}
+            active={location.pathname === "/mis-cursos"}
+            icon={<BookOpen size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
+            />
+
+            <SidebarLink
+            to="/matricula"
+            label="Cursos Sugeridos"
+            sidebarOpen={sidebarOpen}
+            active={location.pathname === "/matricula"}
+            icon={<BookOpen size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
+            />
+
+            <SidebarLink
+            to="/mis-sesiones"
+            label="Mis Sesiones"
+            sidebarOpen={sidebarOpen}
+            active={location.pathname === "/mis-sesiones"}
+            icon={<FileText size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
+            />
+
+            <SidebarLink
+            to="/mis-certificados"
+            label="Mis Certificados"
+            sidebarOpen={sidebarOpen}
+            active={location.pathname === "/mis-certificados"}
+            icon={<FileText size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
+            />
+
+            <SidebarLink
+            to="/recursos"
+            label="Biblioteca"
+            sidebarOpen={sidebarOpen}
+            active={location.pathname === "/recursos"}
+            icon={<Library size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
+            />
+          <div className="flex items-center gap-4 p-3 rounded-lg text-gray-300 hover:bg-slate-800 cursor-pointer transition">
+
+            <LifeBuoy size={26}
+            className={`transition-transform duration-300 
+            ${sidebarOpen ? "scale-100" : "scale-125"}`}/>
+            {sidebarOpen && "Soporte"}
+
           </div>
 
         </nav>
+
       </aside>
 
+
       {/* CONTENIDO */}
+
       <div className="flex-1 flex flex-col">
 
-        <header className="h-16 bg-white shadow flex items-center justify-between px-8 relative z-50">
-          <h2 className="text-lg font-semibold">
+        <header className="h-16 bg-white shadow flex items-center justify-between px-8">
+
+          <h2 className="text-lg font-semibold text-gray-700">
             Aula Virtual
           </h2>
 
           <UserMenu />
+
         </header>
 
         <main className="flex-1 overflow-auto p-8">
@@ -72,7 +140,8 @@ export default function LayoutEstudiante() {
 
       </div>
 
-      <Toaster position="top-right" />
+      <Toaster position="top-right"/>
+
     </div>
   )
 }
