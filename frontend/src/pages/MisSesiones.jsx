@@ -1,167 +1,534 @@
-import { useState, useMemo } from "react"
-import { ArrowUpDown } from "lucide-react"
+import { useEffect, useState } from "react"
+import axios from "axios"
 
-const sesiones = [
-  { fecha: "2030-05-07", hora: "07:00", usuario: "Eduardo" },
-  { fecha: "2030-05-07", hora: "13:00", usuario: "Paula" },
-  { fecha: "2030-05-14", hora: "09:30", usuario: "Carlos" },
-  { fecha: "2030-05-14", hora: "15:00", usuario: "Lucía" },
-  { fecha: "2030-05-21", hora: "10:00", usuario: "María" },
-  { fecha: "2030-05-22", hora: "11:00", usuario: "José" },
-  { fecha: "2030-05-23", hora: "08:00", usuario: "Ana" },
-]
+import { Calendar, momentLocalizer } from "react-big-calendar"
+import moment from "moment"
+import "react-big-calendar/lib/css/react-big-calendar.css"
 
-export default function MisSesiones() {
+const localizer = momentLocalizer(moment)
 
-  const [desde, setDesde] = useState("")
-  const [hasta, setHasta] = useState("")
-  const [ordenAsc, setOrdenAsc] = useState(true)
-  const [pagina, setPagina] = useState(1)
+export default function MisSesiones(){
 
-  const porPagina = 4
+const [sesiones,setSesiones] = useState([])
+const [sesionSeleccionada,setSesionSeleccionada] = useState(null)
+const [notificacion,setNotificacion] = useState(null)
+const [ahora,setAhora] = useState(new Date())
 
-  // Filtrar
-  const filtradas = useMemo(() => {
-    return sesiones.filter(s => {
-      const fecha = new Date(s.fecha)
-      const d = desde ? new Date(desde) : null
-      const h = hasta ? new Date(hasta) : null
+/* cargar sesiones */
 
-      if (d && fecha < d) return false
-      if (h && fecha > h) return false
-      return true
-    })
-  }, [desde, hasta])
+useEffect(()=>{
 
-  // Ordenar
-  const ordenadas = useMemo(() => {
-    return [...filtradas].sort((a, b) =>
-      ordenAsc
-        ? new Date(a.fecha) - new Date(b.fecha)
-        : new Date(b.fecha) - new Date(a.fecha)
-    )
-  }, [filtradas, ordenAsc])
+axios.get("http://localhost:3000/sesion-vivo")
+.then(res=>{
+setSesiones(res.data)
+})
 
-  const totalPaginas = Math.ceil(ordenadas.length / porPagina)
+},[])
 
-  const datosPagina = ordenadas.slice(
-    (pagina - 1) * porPagina,
-    pagina * porPagina
-  )
+/* reloj en vivo */
 
-  return (
-    <div className="h-full flex flex-col gap-8">
+useEffect(()=>{
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Mis sesiones
-        </h1>
+const interval = setInterval(()=>{
 
-        <div className="flex gap-4">
+setAhora(new Date())
 
-          <input
-            type="date"
-            value={desde}
-            onChange={(e) => {
-              setDesde(e.target.value)
-              setPagina(1)
-            }}
-            className="px-4 py-2 rounded-xl border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+sesiones.forEach(s=>{
 
-          <input
-            type="date"
-            value={hasta}
-            onChange={(e) => {
-              setHasta(e.target.value)
-              setPagina(1)
-            }}
-            className="px-4 py-2 rounded-xl border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+const inicio = new Date(s.fecha)
+const diff = inicio - new Date()
 
-        </div>
-      </div>
+/* 5 minutos antes */
 
-      {/* CARD TABLA */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+if(diff < 300000 && diff > 295000){
 
-        {/* CABECERA */}
-        <div className="grid grid-cols-3 px-6 py-4 text-sm font-medium text-gray-500 border-b border-gray-200 bg-gray-50">
+setNotificacion(s)
 
-          <button
-            onClick={() => setOrdenAsc(!ordenAsc)}
-            className="flex items-center gap-2 hover:text-gray-800 transition"
-          >
-            Fecha
-            <ArrowUpDown size={16} />
-          </button>
-
-          <div>Hora</div>
-          <div>Usuario</div>
-
-        </div>
-
-        {/* FILAS */}
-        <div className="divide-y divide-gray-100">
-
-          {datosPagina.map((s, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-3 px-6 py-4 text-sm hover:bg-gray-50 transition"
-            >
-              <div className="font-medium text-gray-700">
-                {formatearFecha(s.fecha)}
-              </div>
-
-              <div className="text-gray-600">{s.hora}</div>
-
-              <div className="text-gray-800">{s.usuario}</div>
-            </div>
-          ))}
-
-          {datosPagina.length === 0 && (
-            <div className="px-6 py-10 text-center text-gray-400">
-              No hay sesiones en este rango
-            </div>
-          )}
-
-        </div>
-      </div>
-
-      {/* PAGINACIÓN SaaS */}
-      <div className="flex items-center justify-between">
-
-        <button
-          disabled={pagina === 1}
-          onClick={() => setPagina(pagina - 1)}
-          className="px-4 py-2 rounded-lg border border-gray-300 bg-white shadow-sm disabled:opacity-40 hover:bg-gray-50 transition"
-        >
-          Anterior
-        </button>
-
-        <span className="text-sm text-gray-600">
-          Página {pagina} de {totalPaginas || 1}
-        </span>
-
-        <button
-          disabled={pagina === totalPaginas || totalPaginas === 0}
-          onClick={() => setPagina(pagina + 1)}
-          className="px-4 py-2 rounded-lg border border-gray-300 bg-white shadow-sm disabled:opacity-40 hover:bg-gray-50 transition"
-        >
-          Siguiente
-        </button>
-
-      </div>
-    </div>
-  )
 }
 
-function formatearFecha(fechaISO) {
-  const fecha = new Date(fechaISO)
-  return fecha.toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  })
+})
+
+},1000)
+
+return ()=>clearInterval(interval)
+
+},[sesiones])
+
+
+/* contador */
+
+function tiempoRestante(fecha){
+
+const inicio = new Date(fecha)
+const diff = inicio - ahora
+
+if(diff <= 0) return "EN_VIVO"
+
+const dias = Math.floor(diff / (1000*60*60*24))
+
+const horas = Math.floor(
+(diff % (1000*60*60*24)) / (1000*60*60)
+)
+
+const minutos = Math.floor(
+(diff % (1000*60*60)) / (1000*60)
+)
+
+const segundos = Math.floor(
+(diff % (1000*60)) / 1000
+)
+
+return {dias,horas,minutos,segundos}
+
+}
+
+/* eventos calendario */
+
+const eventos = sesiones.map(s=>({
+
+title:s.titulo,
+
+start:new Date(s.fecha),
+
+end:new Date(new Date(s.fecha).getTime()+s.duracion*60000),
+
+data:s
+
+}))
+
+
+return(
+
+<div style={container}>
+
+<h2 style={titulo}>📡 Mis sesiones en vivo</h2>
+
+{notificacion && (
+
+<div style={alerta}>
+
+🔔 Tu clase comienza en 5 minutos
+
+<b style={{marginLeft:"8px"}}>
+{notificacion.titulo}
+</b>
+
+<button
+style={botonEntrar}
+onClick={()=>window.open(notificacion.link_reunion,"_blank")}
+>
+Entrar ahora
+</button>
+
+<button
+style={cerrarAlerta}
+onClick={()=>setNotificacion(null)}
+>
+✖
+</button>
+
+</div>
+
+)}
+
+{/* TABLA */}
+
+<table style={tabla}>
+
+<thead style={thead}>
+<tr>
+<th style={th}>📅 Fecha</th>
+<th style={th}>⏰ Hora</th>
+<th style={th}>📚 Curso</th>
+<th style={th}>👨‍🏫 Docente</th>
+<th style={th}>⏳ Inicio</th>
+<th style={th}>Acción</th>
+</tr>
+</thead>
+
+<tbody>
+
+{sesiones.map(s=>{
+
+const fecha = new Date(s.fecha)
+
+const inicio = new Date(s.fecha)
+
+const habilitado = ahora >= inicio
+
+return(
+
+<tr key={s.id} style={fila}>
+
+<td style={td}>
+{fecha.toLocaleDateString()}
+</td>
+
+<td style={td}>
+{fecha.toLocaleTimeString([],{
+hour:"2-digit",
+minute:"2-digit"
+})}
+</td>
+
+<td style={td}>
+{s.curso?.nombrecurso}
+</td>
+
+<td style={td}>
+{s.curso?.grupos?.[0]?.docente?.nombre}
+{" "}
+{s.curso?.grupos?.[0]?.docente?.apellido}
+</td>
+
+<td style={td}>
+
+{(() => {
+
+const t = tiempoRestante(s.fecha)
+
+if(t === "EN_VIVO"){
+return <span style={enVivo}>🔴 EN VIVO</span>
+}
+
+return(
+
+<div style={contadorBox}>
+
+<div style={bloque}>
+<span style={numero}>{String(t.dias).padStart(2,"0")}</span>
+<span style={label}>días</span>
+</div>
+
+<div style={separador}>:</div>
+
+<div style={bloque}>
+<span style={numero}>{String(t.horas).padStart(2,"0")}</span>
+<span style={label}>hrs</span>
+</div>
+
+<div style={separador}>:</div>
+
+<div style={bloque}>
+<span style={numero}>{String(t.minutos).padStart(2,"0")}</span>
+<span style={label}>min</span>
+</div>
+
+<div style={separador}>:</div>
+
+<div style={bloque}>
+<span style={numero}>{String(t.segundos).padStart(2,"0")}</span>
+<span style={label}>seg</span>
+</div>
+
+</div>
+
+)
+
+})()}
+
+</td>
+
+<td style={td}>
+
+<a
+href={habilitado ? s.link_reunion : "#"}
+target="_blank"
+rel="noreferrer"
+style={{
+...boton,
+opacity: habilitado ? 1 : 0.5,
+pointerEvents: habilitado ? "auto" : "none"
+}}
+>
+Entrar
+</a>
+
+</td>
+
+</tr>
+
+)
+
+})}
+
+</tbody>
+
+</table>
+
+
+{/* CALENDARIO */}
+
+<h3 style={{marginTop:"40px"}}>📅 Calendario de sesiones</h3>
+
+<Calendar
+localizer={localizer}
+events={eventos}
+startAccessor="start"
+endAccessor="end"
+style={{height:450,marginTop:20}}
+onSelectEvent={(evento)=>{
+setSesionSeleccionada(evento.data)
+}}
+/>
+
+
+{/* MODAL */}
+
+{sesionSeleccionada &&(
+
+<div style={modalFondo}>
+
+<div style={modal}>
+
+<h3 style={{marginBottom:"10px"}}>
+{sesionSeleccionada.titulo}
+</h3>
+
+<div style={modalInfo}>
+
+<p>
+<b>Curso:</b> {sesionSeleccionada.curso?.nombrecurso}
+</p>
+
+<p>
+<b>Fecha:</b>
+{" "}
+{new Date(sesionSeleccionada.fecha).toLocaleString()}
+</p>
+
+<div style={docenteBox}>
+
+<div style={avatar}>👨‍🏫</div>
+
+<div>
+
+<b>
+{sesionSeleccionada.curso?.grupos?.[0]?.docente?.nombre}
+{" "}
+{sesionSeleccionada.curso?.grupos?.[0]?.docente?.apellido}
+</b>
+
+<p style={{fontSize:"13px",color:"#666"}}>
+Docente del curso
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div style={modalBotones}>
+
+<a
+href={sesionSeleccionada.link_reunion}
+target="_blank"
+rel="noreferrer"
+style={boton}
+>
+Entrar a la sesión
+</a>
+
+<button
+onClick={()=>setSesionSeleccionada(null)}
+style={cerrar}
+>
+Cerrar
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+)}
+
+</div>
+
+)
+
+}
+
+
+
+/* ESTILOS */
+
+const container={
+padding:"30px"
+}
+
+const titulo={
+marginBottom:"20px"
+}
+
+const tabla={
+width:"100%",
+borderCollapse:"collapse",
+background:"white",
+borderRadius:"10px",
+overflow:"hidden"
+}
+
+const thead={
+background:"#f5f5f5"
+}
+
+const th={
+padding:"14px",
+textAlign:"left"
+}
+
+const fila={
+borderBottom:"1px solid #eee"
+}
+
+const td={
+padding:"14px"
+}
+
+const boton={
+background:"#e10600",
+color:"white",
+padding:"8px 15px",
+borderRadius:"6px",
+textDecoration:"none",
+fontSize:"14px"
+}
+
+const contador={
+background:"#eef2ff",
+padding:"6px 12px",
+borderRadius:"8px",
+fontSize:"13px",
+fontWeight:"600",
+fontFamily:"monospace"
+}
+
+const modalFondo={
+position:"fixed",
+top:0,
+left:0,
+width:"100%",
+height:"100%",
+background:"rgba(0,0,0,0.45)",
+display:"flex",
+alignItems:"center",
+justifyContent:"center",
+zIndex:999
+}
+
+const modal={
+background:"white",
+padding:"30px",
+borderRadius:"12px",
+width:"420px",
+boxShadow:"0 10px 30px rgba(0,0,0,0.2)",
+animation:"fadeIn 0.2s"
+}
+
+const modalInfo={
+display:"flex",
+flexDirection:"column",
+gap:"8px",
+marginBottom:"20px"
+}
+
+const modalBotones={
+display:"flex",
+justifyContent:"space-between",
+alignItems:"center"
+}
+
+const cerrar={
+marginTop:"15px",
+background:"#eee",
+border:"none",
+padding:"8px 14px",
+borderRadius:"6px",
+cursor:"pointer"
+}
+
+const docenteBox={
+display:"flex",
+alignItems:"center",
+gap:"10px",
+marginTop:"10px"
+}
+
+const avatar={
+width:"40px",
+height:"40px",
+borderRadius:"50%",
+background:"#eef2ff",
+display:"flex",
+alignItems:"center",
+justifyContent:"center",
+fontSize:"20px"
+}
+
+const alerta={
+background:"#fff3cd",
+padding:"12px 15px",
+borderRadius:"8px",
+display:"flex",
+alignItems:"center",
+gap:"10px",
+marginBottom:"20px",
+boxShadow:"0 3px 8px rgba(0,0,0,0.1)"
+}
+
+const botonEntrar={
+background:"#e10600",
+color:"white",
+border:"none",
+padding:"6px 12px",
+borderRadius:"6px",
+cursor:"pointer"
+}
+
+const cerrarAlerta={
+background:"transparent",
+border:"none",
+cursor:"pointer",
+fontSize:"16px"
+}
+
+const contadorBox={
+display:"flex",
+alignItems:"center",
+gap:"6px"
+}
+
+const bloque={
+display:"flex",
+flexDirection:"column",
+alignItems:"center",
+background:"#f3f4f6",
+padding:"6px 8px",
+borderRadius:"6px",
+minWidth:"40px"
+}
+
+const numero={
+fontWeight:"bold",
+fontSize:"15px"
+}
+
+const label={
+fontSize:"10px",
+color:"#666"
+}
+
+const separador={
+fontWeight:"bold"
+}
+
+const enVivo={
+background:"#e10600",
+color:"white",
+padding:"5px 10px",
+borderRadius:"6px",
+fontSize:"12px"
 }
