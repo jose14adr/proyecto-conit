@@ -20,6 +20,9 @@ import { RecursoModule } from './recurso/recurso.module';
 import { join } from 'path';
 import { TareaModule } from './tarea/tarea.module';
 import { SesionVivoModule } from './sesion-vivo/sesion-vivo.module';
+import { VimeoService } from './vimeo/vimeo.service';
+import { VimeoController } from './vimeo/vimeo.controller';
+import { VimeoModule } from './vimeo/vimeo.module';
 
 @Module({
   imports: [
@@ -70,6 +73,7 @@ import { SesionVivoModule } from './sesion-vivo/sesion-vivo.module';
     RecursoModule,
     TareaModule,
     SesionVivoModule,
+    VimeoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
