@@ -100,7 +100,7 @@ export default function Matricula() {
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-4 text-slate-800">
-        Proceso de Matrícula
+        Cursos Sugeridos
       </h1>
 
       {/* Mostrar mensaje de confirmación */}

@@ -18,6 +18,11 @@ import { MatriculaModule } from './matricula/matricula.module';
 import { PagoModule } from './pago/pago.module';
 import { RecursoModule } from './recurso/recurso.module';
 import { join } from 'path';
+import { TareaModule } from './tarea/tarea.module';
+import { SesionVivoModule } from './sesion-vivo/sesion-vivo.module';
+import { VimeoService } from './vimeo/vimeo.service';
+import { VimeoController } from './vimeo/vimeo.controller';
+import { VimeoModule } from './vimeo/vimeo.module';
 
 @Module({
   imports: [
@@ -66,6 +71,9 @@ import { join } from 'path';
     MatriculaModule,
     PagoModule,
     RecursoModule,
+    TareaModule,
+    SesionVivoModule,
+    VimeoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
