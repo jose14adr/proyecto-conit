@@ -23,6 +23,7 @@ import { SesionVivoModule } from './sesion-vivo/sesion-vivo.module';
 import { VimeoService } from './vimeo/vimeo.service';
 import { VimeoController } from './vimeo/vimeo.controller';
 import { VimeoModule } from './vimeo/vimeo.module';
+import { EntregasVideoModule } from './entregas-video/entregas-video.module';
 
 @Module({
   imports: [
@@ -74,6 +75,8 @@ import { VimeoModule } from './vimeo/vimeo.module';
     TareaModule,
     SesionVivoModule,
     VimeoModule,
+    EntregasVideoModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],
