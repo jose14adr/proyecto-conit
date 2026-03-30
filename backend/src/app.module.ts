@@ -24,6 +24,10 @@ import { HistorialLoginModule } from './historial-login/historial-login.module';
 import { CursoModuloModule } from './curso_modulo/curso_modulo.module';
 import { CursoLeccionModule } from './curso_leccion/curso_leccion.module';
 import { LeccionMaterialModule } from './leccion-material/leccion-material.module';
+import { VimeoService } from './vimeo/vimeo.service';
+import { VimeoController } from './vimeo/vimeo.controller';
+import { VimeoModule } from './vimeo/vimeo.module';
+import { EntregasVideoModule } from './entregas-video/entregas-video.module';
 
 @Module({
   imports: [
@@ -78,6 +82,8 @@ import { LeccionMaterialModule } from './leccion-material/leccion-material.modul
     CursoModuloModule,
     CursoLeccionModule,
     LeccionMaterialModule,
+    VimeoModule,
+    EntregasVideoModule,
     
   ],
   controllers: [AppController],

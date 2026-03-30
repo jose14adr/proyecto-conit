@@ -25,4 +25,5 @@ export class Unidad {
   @ManyToOne(() => Sesion, { nullable: true })
   @JoinColumn({ name: 'idsesion' })
   sesion?: Sesion;
+
 }

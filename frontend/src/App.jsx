@@ -34,13 +34,14 @@ import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
 import Docentes from "./admin/Docentes";
 import Cursos from "./admin/Cursos";
-import Alumnos from "./admin/alumnos";
+import Alumnos from "./admin/Alumnos";
 import Usuarios from "./admin/Usuarios";
 import Pagos from "./admin/Pagos";
 import ControlSesiones from "./admin/ControlSesiones";
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
+import DashboardDocente from "./docente/DashboardDocente";
 import PerfilDocente from "./docente/PerfilDocente";
 import MisCursosDocente from "./docente/MisCursos";
 import HorarioDocente from "./docente/HorarioDocente";
@@ -139,6 +140,7 @@ export default function App() {
 
           {/* DOCENTE */}
           <Route path="/docente" element={<DocenteLayout />}>
+            <Route index element={<DashboardDocente />} />
             <Route path="perfil" element={<PerfilDocente />} />
             <Route path="cursos" element={<MisCursosDocente />} />
             <Route path="cursos/:id" element={<CursoDetalleDocente />} />
