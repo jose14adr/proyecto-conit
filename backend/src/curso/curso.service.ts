@@ -44,18 +44,21 @@ export class CursoService {
     });
   }
 
-  async obtenerUnoCursoAlumno(id: number): Promise<Curso | null> {
-    return this.cursoRepository.findOne({
-      where: { id },
-      relations: [
-        'grupos',
-        'grupos.docente',
-        'temario',
-        'temario.unidades',
-        'temario.unidades.sesion',
-      ],
-    });
-  }
+async obtenerUnoCursoAlumno(id: number) {
+  return this.cursoRepository
+    .createQueryBuilder('curso')
+
+    .leftJoinAndSelect('curso.temario', 'temario')
+    .leftJoinAndSelect('temario.unidades', 'unidad')
+    .leftJoinAndSelect('unidad.sesion', 'sesion')
+
+    .leftJoinAndSelect('curso.modulos', 'modulo')
+    .leftJoinAndSelect('modulo.lecciones', 'leccion')
+    .leftJoinAndSelect('leccion.materiales', 'material')
+
+    .where('curso.id = :id', { id })
+    .getOne();
+}
 
   async remove(id: number) {
     await this.cursoRepository.update(id, { estado: false });

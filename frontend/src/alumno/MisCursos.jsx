@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 export default function MisCursos() {
 
@@ -8,7 +9,8 @@ export default function MisCursos() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get("http://localhost:3000/curso")
+    
+    api.get("/curso")
       .then(res => {
         setCursos(res.data);
       })
@@ -41,7 +43,7 @@ export default function MisCursos() {
 
               <div
                 key={curso.id}
-                onClick={() => navigate(`/mis-cursos/${curso.id}`)}
+                onClick={() => navigate(`/alumno/mis-cursos/${curso.id}`)}
                 className="cursor-pointer bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 border border-gray-100"
               >
 
@@ -68,7 +70,7 @@ export default function MisCursos() {
                   <button
                     onClick={(e)=>{
                       e.stopPropagation()
-                      navigate(`/mis-cursos/${curso.id}`)
+                      navigate(`/alumno/mis-cursos/${curso.id}`)
                     }}
                     className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition"
                   >
@@ -139,7 +141,7 @@ export default function MisCursos() {
               </p>
 
               <button
-                onClick={() => navigate(`/mis-cursos/${cursos[0].id}`)}
+                onClick={() => navigate(`/alumno/mis-cursos/${cursos[0].id}`)}
                 className="mt-4 bg-white text-indigo-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100"
               >
                 Continuar

@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { supabase } from '../supabase.client';
+import mercadopago from 'mercadopago';
+import { MatriculaService } from '../matricula/matricula.service';
 
 @Injectable()
 export class PagoService {
+  constructor(
+  private matriculaService: MatriculaService
+) {}
   async getPagosPendientes() {
     const { data, error } = await supabase
       .from('matricula')
@@ -87,6 +92,42 @@ async getPagosRealizados() {
     estado: m.estado,
     idalumno: m.idalumno,
   }));
+}
+
+async pagarConTarjeta(data: any) {
+
+  mercadopago.configure({
+    access_token: process.env.MP_ACCESS_TOKEN
+  });
+
+  const payment = await mercadopago.payment.create({
+    transaction_amount: 50,
+    token: data.token,
+    description: 'Curso',
+    installments: Number(data.installments),
+    payment_method_id: data.payment_method_id,
+    issuer_id: data.issuer_id,
+    payer: {
+      email: data.email
+    }
+  });
+
+  if (payment.body.status === "approved") {
+
+  console.log("🔥 matricula_id:", data.matricula_id);
+
+  const { error } = await supabase
+    .from('matricula')
+    .update({ estado: 'pagado' })
+    .eq('id', data.matricula_id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+}
+
+  return payment.body;
 }
 
 }

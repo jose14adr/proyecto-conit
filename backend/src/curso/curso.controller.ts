@@ -47,4 +47,9 @@ export class CursoController {
   update(@Param('id', ParseIntPipe) id: number, @Body() data: any) {
     return this.cursoService.update(id, data);
   }
+
+ 
 }
+
+  
+

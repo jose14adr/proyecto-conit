@@ -39,4 +39,10 @@ export class Matricula {
 
   @Column({ type: 'varchar', nullable: true })
   pacademico: string;
+
+  @Column({ type: 'numeric', nullable: true })
+  precio: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  created_at: Date;
 }

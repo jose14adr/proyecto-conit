@@ -60,52 +60,52 @@ export default function LayoutEstudiante() {
         <nav className="space-y-3 text-base">
 
           <SidebarLink
-            to="/"
-            label="Principal"
-            sidebarOpen={sidebarOpen}
-            active={location.pathname === "/"}
-            icon={<Home size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
-            />
+  to="/alumno"
+  label="Principal"
+  sidebarOpen={sidebarOpen}
+  active={location.pathname === "/alumno"}
+  icon={<Home size={iconSize} />}
+/>
 
-            <SidebarLink
-            to="/mis-cursos"
-            label="Mis Cursos"
-            sidebarOpen={sidebarOpen}
-            active={location.pathname === "/mis-cursos"}
-            icon={<BookOpen size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
-            />
+<SidebarLink
+  to="/alumno/mis-cursos"
+  label="Mis Cursos"
+  sidebarOpen={sidebarOpen}
+  active={location.pathname.startsWith("/alumno/mis-cursos")}
+  icon={<BookOpen size={iconSize} />}
+/>
 
-            <SidebarLink
-            to="/matricula"
-            label="Cursos Sugeridos"
-            sidebarOpen={sidebarOpen}
-            active={location.pathname === "/matricula"}
-            icon={<BookOpen size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
-            />
+<SidebarLink
+  to="/alumno/matricula"
+  label="Cursos Sugeridos"
+  sidebarOpen={sidebarOpen}
+  active={location.pathname.startsWith("/alumno/matricula")}
+  icon={<BookOpen size={iconSize} />}
+/>
 
-            <SidebarLink
-            to="/mis-sesiones"
-            label="Mis Sesiones"
-            sidebarOpen={sidebarOpen}
-            active={location.pathname === "/mis-sesiones"}
-            icon={<FileText size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
-            />
+<SidebarLink
+  to="/alumno/mis-sesiones"
+  label="Mis Sesiones"
+  sidebarOpen={sidebarOpen}
+  active={location.pathname.startsWith("/alumno/mis-sesiones")}
+  icon={<FileText size={iconSize} />}
+/>
 
-            <SidebarLink
-            to="/mis-certificados"
-            label="Mis Certificados"
-            sidebarOpen={sidebarOpen}
-            active={location.pathname === "/mis-certificados"}
-            icon={<FileText size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
-            />
+<SidebarLink
+  to="/alumno/mis-certificados"
+  label="Mis Certificados"
+  sidebarOpen={sidebarOpen}
+  active={location.pathname.startsWith("/alumno/mis-certificados")}
+  icon={<FileText size={iconSize} />}
+/>
 
-            <SidebarLink
-            to="/recursos"
-            label="Biblioteca"
-            sidebarOpen={sidebarOpen}
-            active={location.pathname === "/recursos"}
-            icon={<Library size={26} className={`transition-transform duration-300 ${sidebarOpen ? "scale-100" : "scale-125"}`}/>}
-            />
+<SidebarLink
+  to="/alumno/recursos"
+  label="Biblioteca"
+  sidebarOpen={sidebarOpen}
+  active={location.pathname.startsWith("/alumno/recursos")}
+  icon={<Library size={iconSize} />}
+/>
           <div className="flex items-center gap-4 p-3 rounded-lg text-gray-300 hover:bg-slate-800 cursor-pointer transition">
 
             <LifeBuoy size={26}

@@ -5,6 +5,9 @@ import { usePagos } from "../context/PagosContext"
 import axios from "axios"
 import { useContext } from "react"
 import { NotificacionesContext } from "../context/NotificacionesContext"
+import api from "../api"
+
+<script src="https://sdk.mercadopago.com/js/v2"></script>
 
 export default function Matricula() {
   const [cursos, setCursos] = useState([])
@@ -22,7 +25,7 @@ export default function Matricula() {
   useEffect(() => {
     const fetchCursos = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/curso")
+        const res = await api.get("/curso")
         setCursos(res.data)
       } catch (error) {
         console.error("Error al traer cursos:", error.response?.data || error.message)
@@ -55,7 +58,7 @@ export default function Matricula() {
 
     try {
       const idAlumno = localStorage.getItem("idalumno")
-      const res = await axios.post("http://localhost:3000/matricula", {
+      const res = await api.post("/matricula", {
         alumnoId: Number(idAlumno),
         grupoId: Number(grupoSeleccionado),
         nombreCurso: selectedCurso.nombrecurso
@@ -79,7 +82,7 @@ export default function Matricula() {
 
   const registrarMatricula = async () => {
 
-  await axios.post("http://localhost:3000/matricula", {
+  await api.post("/matricula", {
     alumnoId: usuario.id,
     grupoId: grupoSeleccionado
   })

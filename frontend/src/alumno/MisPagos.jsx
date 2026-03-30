@@ -3,6 +3,8 @@ import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import PagoModal from "../components/PagosModal";
 
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+
 const generarCodigoBoleta = () => {
   const random = Math.floor(Math.random() * 10000);
   return `BOL-2026-${random}`;
