@@ -1001,8 +1001,8 @@ function PerfilDocente() {
                     />
                     <InfoMiniCard
                       label="Institución"
-                      value={form.institucionEgreso ? "Sí" : "No"}
-                      help={form.institucionEgreso || "Pendiente"}
+                      value={form.institucionEgreso || "Pendiente"}
+                      help={form.institucionEgreso ? "Sí" : "No"}
                     />
                     <InfoMiniCard
                       label="Periodo"

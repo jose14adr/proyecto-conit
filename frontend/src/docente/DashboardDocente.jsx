@@ -26,6 +26,24 @@ function SkeletonCard() {
   return <div className="h-28 animate-pulse rounded-2xl bg-slate-200" />;
 }
 
+function SkeletonCursoCard() {
+  return (
+    <div className="space-y-4">
+      <div className="h-20 animate-pulse rounded-2xl bg-slate-200" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
+        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
+        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
+        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
+      </div>
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="xl:col-span-9 h-[250px] animate-pulse rounded-2xl bg-slate-200" />
+        <div className="xl:col-span-3 h-[250px] animate-pulse rounded-2xl bg-slate-200" />
+      </div>
+    </div>
+  );
+}
+
 function StatCard({ title, value, subtitle, icon: Icon, tone = "blue" }) {
   const tones = {
     blue: "from-blue-600 to-indigo-600",
@@ -40,7 +58,9 @@ function StatCard({ title, value, subtitle, icon: Icon, tone = "blue" }) {
       <div className="relative flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-slate-500">{title}</p>
-          <h3 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{value}</h3>
+          <h3 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+            {value}
+          </h3>
           <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
         </div>
 
@@ -54,9 +74,18 @@ function StatCard({ title, value, subtitle, icon: Icon, tone = "blue" }) {
   );
 }
 
-function SectionCard({ title, subtitle, icon: Icon, right, children, className = "" }) {
+function SectionCard({
+  title,
+  subtitle,
+  icon: Icon,
+  right,
+  children,
+  className = "",
+}) {
   return (
-    <section className={`h-full w-full rounded-3xl border border-slate-200 bg-white shadow-sm ${className}`}>
+    <section
+      className={`h-full w-full rounded-3xl border border-slate-200 bg-white shadow-sm ${className}`}
+    >
       <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-3">
           {Icon ? (
@@ -66,7 +95,9 @@ function SectionCard({ title, subtitle, icon: Icon, right, children, className =
           ) : null}
           <div>
             <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-            {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+            {subtitle ? (
+              <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+            ) : null}
           </div>
         </div>
 
@@ -105,28 +136,80 @@ function parseHoraInicio(horario = "") {
   return hh * 60 + mm;
 }
 
+function calcularDetalleCurso(cursoBase, registro, pendientes) {
+  const alumnosRegistro = registro?.alumnos || [];
+  const totalAlumnos = alumnosRegistro.length;
+
+  const aprobadosCount = alumnosRegistro.filter(
+    (a) => Number(a.faltantes || 0) === 0 && Number(a.promedio || 0) >= 12
+  ).length;
+
+  const recuperacionCount = alumnosRegistro.filter(
+    (a) =>
+      Number(a.faltantes || 0) === 0 &&
+      Number(a.promedio || 0) >= 9 &&
+      Number(a.promedio || 0) < 12
+  ).length;
+
+  const desaprobadosCount = alumnosRegistro.filter(
+    (a) => Number(a.faltantes || 0) === 0 && Number(a.promedio || 0) < 9
+  ).length;
+
+  const sinNotasCount = alumnosRegistro.filter(
+    (a) => Number(a.faltantes || 0) > 0
+  ).length;
+
+  const alumnosConPromedio = alumnosRegistro.filter(
+    (a) =>
+      Number(a.faltantes || 0) === 0 &&
+      a.promedio !== null &&
+      a.promedio !== undefined
+  );
+
+  const promedioCurso =
+    alumnosConPromedio.length > 0
+      ? (
+          alumnosConPromedio.reduce(
+            (acc, a) => acc + Number(a.promedio || 0),
+            0
+          ) / alumnosConPromedio.length
+        ).toFixed(1)
+      : null;
+
+  const faltantes = alumnosRegistro.reduce(
+    (acc, alumno) => acc + Number(alumno.faltantes || 0),
+    0
+  );
+
+  return {
+    ...cursoBase,
+    totalAlumnos,
+    aprobadosCount,
+    recuperacionCount,
+    desaprobadosCount,
+    sinNotasCount,
+    pendientes: Number(pendientes || 0),
+    promedioCurso,
+    faltantes,
+  };
+}
+
 export default function DashboardDocente() {
-  const [loading, setLoading] = useState(true);
+  const [loadingGeneral, setLoadingGeneral] = useState(true);
+  const [loadingCurso, setLoadingCurso] = useState(false);
   const [error, setError] = useState("");
 
   const [horario, setHorario] = useState([]);
-  const [alertas, setAlertas] = useState([]);
-  const [detalleCursos, setDetalleCursos] = useState([]);
+  const [cursosBase, setCursosBase] = useState([]);
+  const [detalleCursosMap, setDetalleCursosMap] = useState({});
   const [cursoSeleccionado, setCursoSeleccionado] = useState("");
-
-  const [stats, setStats] = useState({
-    totalCursos: 0,
-    totalAlumnos: 0,
-    totalAprobados: 0,
-    pendientesRevision: 0,
-  });
 
   useEffect(() => {
     let activo = true;
 
-    const cargarDashboard = async () => {
+    const cargarBase = async () => {
       try {
-        setLoading(true);
+        setLoadingGeneral(true);
         setError("");
 
         const [cursosData, horarioData] = await Promise.all([
@@ -136,162 +219,193 @@ export default function DashboardDocente() {
 
         if (!activo) return;
 
-        setHorario(horarioData || []);
-
         const cursosConGrupo = (cursosData || []).filter((c) => c.idgrupo);
 
-        const detalleCursosCalculado = await Promise.all(
-          cursosConGrupo.map(async (curso) => {
-            const [registro, pendientes] = await Promise.all([
-              getRegistroNotasByGrupo(curso.idgrupo).catch(() => ({
-                evaluaciones: [],
-                alumnos: [],
-              })),
-              getPendientesRevisionByGrupo(curso.idgrupo).catch(() => 0),
-            ]);
+        setCursosBase(cursosConGrupo);
+        setHorario(horarioData || []);
 
-            const alumnosRegistro = registro?.alumnos || [];
-            const totalAlumnos = alumnosRegistro.length;
-
-            const aprobadosCount = alumnosRegistro.filter(
-              (a) => Number(a.faltantes || 0) === 0 && Number(a.promedio || 0) >= 12
-            ).length;
-
-            const recuperacionCount = alumnosRegistro.filter(
-              (a) =>
-                Number(a.faltantes || 0) === 0 &&
-                Number(a.promedio || 0) >= 9 &&
-                Number(a.promedio || 0) < 12
-            ).length;
-
-            const desaprobadosCount = alumnosRegistro.filter(
-              (a) => Number(a.faltantes || 0) === 0 && Number(a.promedio || 0) < 9
-            ).length;
-
-            const sinNotasCount = alumnosRegistro.filter(
-              (a) => Number(a.faltantes || 0) > 0
-            ).length;
-
-            const alumnosConPromedio = alumnosRegistro.filter(
-              (a) =>
-                Number(a.faltantes || 0) === 0 &&
-                a.promedio !== null &&
-                a.promedio !== undefined
-            );
-
-            const promedioCurso =
-              alumnosConPromedio.length > 0
-                ? (
-                    alumnosConPromedio.reduce(
-                      (acc, a) => acc + Number(a.promedio || 0),
-                      0
-                    ) / alumnosConPromedio.length
-                  ).toFixed(1)
-                : null;
-
-            const faltantes = alumnosRegistro.reduce(
-              (acc, alumno) => acc + Number(alumno.faltantes || 0),
-              0
-            );
-
-            return {
-              ...curso,
-              totalAlumnos,
-              aprobadosCount,
-              recuperacionCount,
-              desaprobadosCount,
-              sinNotasCount,
-              pendientes,
-              promedioCurso,
-              faltantes,
-            };
-          })
-        );
-
-        if (!activo) return;
-
-        const totalAlumnos = detalleCursosCalculado.reduce(
-          (acc, c) => acc + c.totalAlumnos,
-          0
-        );
-
-        const totalAprobados = detalleCursosCalculado.reduce(
-          (acc, c) => acc + c.aprobadosCount,
-          0
-        );
-
-        const pendientesRevision = detalleCursosCalculado.reduce(
-          (acc, c) => acc + c.pendientes,
-          0
-        );
-
-        setStats({
-          totalCursos: detalleCursosCalculado.length,
-          totalAlumnos,
-          totalAprobados,
-          pendientesRevision,
-        });
-
-        const nuevasAlertas = [];
-
-        detalleCursosCalculado.forEach((c) => {
-          if (c.pendientes > 0) {
-            nuevasAlertas.push({
-              tipo: "pendientes",
-              titulo: `${c.pendientes} entrega(s) pendientes`,
-              detalle: `${c.nombre} - ${c.grupo}`,
-            });
-          }
-
-          if ((c.faltantes || 0) > 0) {
-            nuevasAlertas.push({
-              tipo: "faltantes",
-              titulo: `${c.faltantes} nota(s) faltante(s)`,
-              detalle: `${c.nombre} - ${c.grupo}`,
-            });
-          }
-
-          if (c.promedioCurso !== null && Number(c.promedioCurso) < 12) {
-            nuevasAlertas.push({
-              tipo: "promedio",
-              titulo: `Promedio bajo: ${c.promedioCurso}`,
-              detalle: `${c.nombre} - ${c.grupo}`,
-            });
-          }
-        });
-
-        setDetalleCursos(detalleCursosCalculado);
-
-        setCursoSeleccionado((prev) => {
-          if (
-            prev &&
-            detalleCursosCalculado.some((c) => String(c.idgrupo) === String(prev))
-          ) {
-            return prev;
-          }
-
-          return detalleCursosCalculado.length > 0
-            ? String(detalleCursosCalculado[0].idgrupo)
-            : "";
-        });
-
-        setAlertas(nuevasAlertas.slice(0, 8));
+        if (cursosConGrupo.length > 0) {
+          setCursoSeleccionado(String(cursosConGrupo[0].idgrupo));
+        }
       } catch (err) {
         console.error(err);
         if (activo) {
           setError(err?.message || "No se pudo cargar el dashboard.");
         }
       } finally {
-        if (activo) setLoading(false);
+        if (activo) setLoadingGeneral(false);
       }
     };
 
-    cargarDashboard();
+    cargarBase();
 
     return () => {
       activo = false;
     };
   }, []);
+
+  useEffect(() => {
+    let activo = true;
+
+    const cargarDetalleCurso = async () => {
+      if (!cursoSeleccionado) return;
+      if (detalleCursosMap[cursoSeleccionado]) return;
+
+      const cursoBase = cursosBase.find(
+        (c) => String(c.idgrupo) === String(cursoSeleccionado)
+      );
+
+      if (!cursoBase) return;
+
+      try {
+        setLoadingCurso(true);
+
+        const [registro, pendientes] = await Promise.all([
+          getRegistroNotasByGrupo(cursoBase.idgrupo).catch(() => ({
+            evaluaciones: [],
+            alumnos: [],
+          })),
+          getPendientesRevisionByGrupo(cursoBase.idgrupo).catch(() => 0),
+        ]);
+
+        if (!activo) return;
+
+        const detalle = calcularDetalleCurso(cursoBase, registro, pendientes);
+
+        setDetalleCursosMap((prev) => ({
+          ...prev,
+          [cursoSeleccionado]: detalle,
+        }));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (activo) setLoadingCurso(false);
+      }
+    };
+
+    cargarDetalleCurso();
+
+    return () => {
+      activo = false;
+    };
+  }, [cursoSeleccionado, cursosBase, detalleCursosMap]);
+
+  useEffect(() => {
+    if (!cursosBase.length) return;
+
+    const cursosSinCache = cursosBase.filter(
+      (curso) => !detalleCursosMap[String(curso.idgrupo)]
+    );
+
+    if (cursosSinCache.length === 0) return;
+
+    let cancelado = false;
+
+    const precargarEnSegundoPlano = async () => {
+      for (const curso of cursosSinCache) {
+        if (cancelado) return;
+        if (String(curso.idgrupo) === String(cursoSeleccionado)) continue;
+
+        try {
+          const [registro, pendientes] = await Promise.all([
+            getRegistroNotasByGrupo(curso.idgrupo).catch(() => ({
+              evaluaciones: [],
+              alumnos: [],
+            })),
+            getPendientesRevisionByGrupo(curso.idgrupo).catch(() => 0),
+          ]);
+
+          if (cancelado) return;
+
+          const detalle = calcularDetalleCurso(curso, registro, pendientes);
+
+          setDetalleCursosMap((prev) => {
+            if (prev[String(curso.idgrupo)]) return prev;
+            return {
+              ...prev,
+              [String(curso.idgrupo)]: detalle,
+            };
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      precargarEnSegundoPlano();
+    }, 1200);
+
+    return () => {
+      cancelado = true;
+      clearTimeout(timeout);
+    };
+  }, [cursosBase, cursoSeleccionado, detalleCursosMap]);
+
+  const detalleCursos = useMemo(() => {
+    return cursosBase.map(
+      (curso) => detalleCursosMap[String(curso.idgrupo)] || curso
+    );
+  }, [cursosBase, detalleCursosMap]);
+
+  const cursoActivo = useMemo(() => {
+    if (!cursoSeleccionado) return null;
+    return detalleCursosMap[String(cursoSeleccionado)] || null;
+  }, [detalleCursosMap, cursoSeleccionado]);
+
+  const stats = useMemo(() => {
+    const detalles = Object.values(detalleCursosMap);
+
+    return {
+      totalCursos: cursosBase.length,
+      totalAlumnos: detalles.reduce(
+        (acc, c) => acc + Number(c.totalAlumnos || 0),
+        0
+      ),
+      totalAprobados: detalles.reduce(
+        (acc, c) => acc + Number(c.aprobadosCount || 0),
+        0
+      ),
+      pendientesRevision: detalles.reduce(
+        (acc, c) => acc + Number(c.pendientes || 0),
+        0
+      ),
+    };
+  }, [cursosBase, detalleCursosMap]);
+
+  const alertas = useMemo(() => {
+    return Object.values(detalleCursosMap)
+      .flatMap((c) => {
+        const lista = [];
+
+        if (Number(c.pendientes || 0) > 0) {
+          lista.push({
+            tipo: "pendientes",
+            titulo: `${c.pendientes} entrega(s) pendientes`,
+            detalle: `${c.nombre} - ${c.grupo}`,
+          });
+        }
+
+        if (Number(c.faltantes || 0) > 0) {
+          lista.push({
+            tipo: "faltantes",
+            titulo: `${c.faltantes} nota(s) faltante(s)`,
+            detalle: `${c.nombre} - ${c.grupo}`,
+          });
+        }
+
+        if (c.promedioCurso !== null && Number(c.promedioCurso) < 12) {
+          lista.push({
+            tipo: "promedio",
+            titulo: `Promedio bajo: ${c.promedioCurso}`,
+            detalle: `${c.nombre} - ${c.grupo}`,
+          });
+        }
+
+        return lista;
+      })
+      .slice(0, 8);
+  }, [detalleCursosMap]);
 
   const clasesHoy = useMemo(() => {
     const hoy = hoyMap[new Date().getDay()];
@@ -308,14 +422,6 @@ export default function DashboardDocente() {
       return parseHoraInicio(a.hora) - parseHoraInicio(b.hora);
     });
   }, [horario]);
-
-  const cursoActivo = useMemo(() => {
-    if (!detalleCursos.length) return null;
-    return (
-      detalleCursos.find((c) => String(c.idgrupo) === String(cursoSeleccionado)) ||
-      detalleCursos[0]
-    );
-  }, [detalleCursos, cursoSeleccionado]);
 
   const estadosCursoActivo = useMemo(() => {
     if (!cursoActivo) return [];
@@ -351,7 +457,7 @@ export default function DashboardDocente() {
     }));
   }, [cursoActivo]);
 
-  if (loading) {
+  if (loadingGeneral) {
     return (
       <div className="min-h-full bg-slate-50 px-6 py-6">
         <div className="mx-auto max-w-7xl space-y-6">
@@ -382,9 +488,12 @@ export default function DashboardDocente() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-medium text-slate-300">Resumen general</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight">Dashboard Docente</h1>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight">
+                Dashboard Docente
+              </h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-300">
-                Visualiza el estado de tus cursos, alumnos, clases programadas y seguimiento académico en un solo lugar.
+                Visualiza el estado de tus cursos, alumnos, clases programadas y
+                seguimiento académico en un solo lugar.
               </p>
             </div>
 
@@ -465,16 +574,21 @@ export default function DashboardDocente() {
               </select>
             }
           >
-            {!cursoActivo ? (
+            {loadingCurso ? (
+              <SkeletonCursoCard />
+            ) : !cursoActivo ? (
               <EmptyState text="No hay cursos disponibles para mostrar el estado académico." />
             ) : (
               <div className="space-y-6">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900">{cursoActivo.nombre}</h3>
+                      <h3 className="text-lg font-semibold text-slate-900">
+                        {cursoActivo.nombre}
+                      </h3>
                       <p className="mt-1 text-sm text-slate-500">
-                        Grupo: {cursoActivo.grupo || "-"} · Modalidad: {cursoActivo.modalidad || "-"}
+                        Grupo: {cursoActivo.grupo || "-"} · Modalidad:{" "}
+                        {cursoActivo.modalidad || "-"}
                       </p>
                     </div>
 
@@ -533,14 +647,22 @@ export default function DashboardDocente() {
                       <tbody>
                         {estadosCursoActivo.map((item) => (
                           <tr key={item.name} className="rounded-2xl bg-slate-50">
-                            <td className="px-3 py-3 font-semibold text-slate-800">{item.name}</td>
+                            <td className="px-3 py-3 font-semibold text-slate-800">
+                              {item.name}
+                            </td>
                             <td className="px-3 py-3 text-slate-700">{item.value}</td>
-                            <td className="px-3 py-3 text-slate-700">{item.porcentaje}%</td>
+                            <td className="px-3 py-3 text-slate-700">
+                              {item.porcentaje}%
+                            </td>
                             <td className="px-3 py-3 text-slate-500">
-                              {item.name === "Aprobados" && "Alumnos con promedio aprobatorio."}
-                              {item.name === "Recuperación" && "Alumnos que requieren recuperación."}
-                              {item.name === "Desaprobados" && "Alumnos con promedio desaprobatorio."}
-                              {item.name === "Sin notas" && "Alumnos con evaluaciones pendientes."}
+                              {item.name === "Aprobados" &&
+                                "Alumnos con promedio aprobatorio."}
+                              {item.name === "Recuperación" &&
+                                "Alumnos que requieren recuperación."}
+                              {item.name === "Desaprobados" &&
+                                "Alumnos con promedio desaprobatorio."}
+                              {item.name === "Sin notas" &&
+                                "Alumnos con evaluaciones pendientes."}
                             </td>
                           </tr>
                         ))}
@@ -553,26 +675,56 @@ export default function DashboardDocente() {
                       {estadosCursoActivo.every((item) => !item.value) ? (
                         <EmptyState text="Sin datos" />
                       ) : (
-                        <div className="h-[240px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={estadosCursoActivo}
-                                dataKey="value"
-                                nameKey="name"
-                                innerRadius={55}
-                                outerRadius={85}
-                                paddingAngle={3}
-                              >
-                                <Cell fill="#22c55e" />
-                                <Cell fill="#f59e0b" />
-                                <Cell fill="#ef4444" />
-                                <Cell fill="#94a3b8" />
-                              </Pie>
-                              <Tooltip />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
+                        <>
+                          <div className="h-[220px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={estadosCursoActivo}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  innerRadius={55}
+                                  outerRadius={85}
+                                  paddingAngle={3}
+                                >
+                                  <Cell fill="#22c55e" />
+                                  <Cell fill="#f59e0b" />
+                                  <Cell fill="#ef4444" />
+                                  <Cell fill="#94a3b8" />
+                                </Pie>
+                                <Tooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                            {estadosCursoActivo.map((item, index) => {
+                              const colors = [
+                                "bg-emerald-500",
+                                "bg-amber-500",
+                                "bg-red-500",
+                                "bg-slate-400",
+                              ];
+
+                              return (
+                                <div
+                                  key={item.name}
+                                  className="flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1.5 text-slate-700"
+                                >
+                                  <span
+                                    className={`h-3 w-3 rounded-full ${colors[index]}`}
+                                  />
+                                  <span className="font-medium">
+                                    {item.name}:{" "}
+                                    <span className="font-semibold">
+                                      {item.porcentaje}%
+                                    </span>
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -645,8 +797,12 @@ export default function DashboardDocente() {
                         <AlertTriangle size={18} />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-amber-900">{alerta.titulo}</h3>
-                        <p className="mt-1 text-sm text-amber-800">{alerta.detalle}</p>
+                        <h3 className="font-semibold text-amber-900">
+                          {alerta.titulo}
+                        </h3>
+                        <p className="mt-1 text-sm text-amber-800">
+                          {alerta.detalle}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -677,8 +833,13 @@ export default function DashboardDocente() {
                 </thead>
                 <tbody>
                   {horarioOrdenado.map((item, index) => (
-                    <tr key={`${item.curso}-${item.grupo}-${index}`} className="rounded-2xl bg-slate-50">
-                      <td className="px-3 py-3 font-medium text-slate-800">{item.dia || "-"}</td>
+                    <tr
+                      key={`${item.curso}-${item.grupo}-${index}`}
+                      className="rounded-2xl bg-slate-50"
+                    >
+                      <td className="px-3 py-3 font-medium text-slate-800">
+                        {item.dia || "-"}
+                      </td>
                       <td className="px-3 py-3 text-slate-600">{item.hora || "-"}</td>
                       <td className="px-3 py-3 text-slate-900">{item.curso || "-"}</td>
                       <td className="px-3 py-3 text-slate-600">{item.grupo || "-"}</td>
