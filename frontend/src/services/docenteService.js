@@ -18,7 +18,7 @@ const extraerDiaDesdeHorario = (horario) => {
 
   return "";
 };
-
+ 
 // Obtener usuario autenticado actual
 const getCurrentUser = async () => {
   const {
@@ -714,30 +714,33 @@ export const uploadPdfCursoAdicionalDocente = async (file, payload = {}) => {
 
 
 export const getCursoById = async (cursoId) => {
+  const grupoId = Number(cursoId);
+
+  const { data: grupo, error: errGrupo } = await supabase
+    .from("grupo")
+    .select("id, idcurso, nombregrupo, horario")
+    .eq("id", grupoId)
+    .maybeSingle();
+
+  if (errGrupo) throw new Error(errGrupo.message);
+  if (!grupo) return null;
+
   const { data: curso, error: errCurso } = await supabase
     .from("curso")
     .select("id, nombrecurso, descripcion")
-    .eq("id", Number(cursoId))
+    .eq("id", Number(grupo.idcurso))
     .maybeSingle();
 
   if (errCurso) throw new Error(errCurso.message);
   if (!curso) return null;
 
-  const { data: grupo, error: errGrupo } = await supabase
-    .from("grupo")
-    .select("nombregrupo, horario")
-    .eq("idcurso", Number(cursoId))
-    .limit(1)
-    .maybeSingle();
-
-  if (errGrupo) throw new Error(errGrupo.message);
-
   return {
     id: curso.id,
+    idgrupo: grupo.id,
     nombre: curso.nombrecurso,
     descripcion: curso.descripcion,
-    grupo: grupo?.nombregrupo || "-",
-    horario: grupo?.horario || "-",
+    grupo: grupo.nombregrupo || "-",
+    horario: grupo.horario || "-",
   };
 };
 
@@ -858,6 +861,7 @@ export const guardarAsistenciaCurso = async (cursoId, asistencias) => {
 export const crearTarea = async (payload) => {
   const {
     cursoId,
+    grupoId,
     titulo,
     descripcion,
     fechaInicio,
@@ -867,14 +871,14 @@ export const crearTarea = async (payload) => {
     textoApoyo,
     archivoApoyo,
     videoApoyo,
+    calificable = false,
+    idmodulo = null,
+    idleccion = null,
   } = payload;
 
   let archivoApoyoUrl = null;
   let videoApoyoUrl = null;
 
-  // ==============================
-  // Subir archivo de apoyo si existe
-  // ==============================
   if (tipoApoyo === "archivo" && archivoApoyo) {
     const extension = archivoApoyo.name.split(".").pop();
     const fileName = `archivo_${Date.now()}.${extension}`;
@@ -898,9 +902,6 @@ export const crearTarea = async (payload) => {
     archivoApoyoUrl = publicUrlData?.publicUrl || null;
   }
 
-  // ==============================
-  // Subir video de apoyo si existe
-  // ==============================
   if (tipoApoyo === "video" && videoApoyo) {
     const extension = videoApoyo.name.split(".").pop();
     const fileName = `video_${Date.now()}.${extension}`;
@@ -924,27 +925,29 @@ export const crearTarea = async (payload) => {
     videoApoyoUrl = publicUrlData?.publicUrl || null;
   }
 
-  // ==============================
-  // Insertar tarea en la tabla
-  // ==============================
   const { data, error } = await supabase
-    .from("tarea")
-    .insert([
-      {
-        idcurso: Number(cursoId),
-        titulo,
-        descripcion,
-        fecha_inicio: fechaInicio || null,
-        fecha_limite: fechaLimite,
-        tipo_entrega: tipoEntrega,
-        tipo_apoyo: tipoApoyo,
-        texto_apoyo: tipoApoyo === "texto" ? textoApoyo : null,
-        archivo_apoyo_url: archivoApoyoUrl,
-        video_apoyo_url: videoApoyoUrl,
-      },
-    ])
-    .select()
-    .single();
+  .from("tarea")
+  .insert([
+    {
+      idcurso: Number(cursoId),
+      idgrupo: grupoId ? Number(grupoId) : null,
+      titulo,
+      descripcion,
+      fecha_inicio: fechaInicio || null,
+      fecha_limite: fechaLimite,
+      tipo_entrega: tipoEntrega,
+      tipo_apoyo: tipoApoyo,
+      texto_apoyo: tipoApoyo === "texto" ? textoApoyo : null,
+      archivo_apoyo_url: archivoApoyoUrl,
+      video_apoyo_url: videoApoyoUrl,
+      calificable: Boolean(calificable),
+      idmodulo: idmodulo ? Number(idmodulo) : null,
+      idleccion: idleccion ? Number(idleccion) : null,
+      orden: nuevoOrden,
+    },
+  ])
+  .select()
+  .single();
 
   if (error) {
     throw new Error(`Error guardando tarea: ${error.message}`);
@@ -1100,15 +1103,44 @@ export const createCursoAdicionalDocente = async ({
 };
 
 export const getTareasByCurso = async (cursoId) => {
-  const { data, error } = await supabase
+  const { data: tareas, error } = await supabase
     .from("tarea")
     .select("*")
     .eq("idcurso", Number(cursoId))
-    .order("fecha_limite", { ascending: true });
+    .order("orden", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) throw new Error(error.message);
-  return data || [];
-};
+
+  const listaTareas = tareas || [];
+
+  if (listaTareas.length === 0) {
+    return [];
+  }
+
+  const tareaIds = listaTareas.map((t) => Number(t.id)).filter(Boolean);
+
+  const { data: evaluaciones, error: errorEvaluaciones } = await supabase
+    .from("evaluacion_config")
+    .select("id, idtarea, nombre, porcentaje, tipo, activa")
+    .in("idtarea", tareaIds)
+    .eq("tipo", "tarea")
+    .eq("activa", true);
+
+  if (errorEvaluaciones) throw new Error(errorEvaluaciones.message);
+
+  return listaTareas.map((tarea) => {
+    const evaluacion = (evaluaciones || []).find(
+      (ev) => Number(ev.idtarea) === Number(tarea.id)
+    );
+
+    return {
+      ...tarea,
+      evaluacion_nombre: evaluacion?.nombre || "",
+      evaluacion_porcentaje: evaluacion?.porcentaje ?? null,
+    };
+  });
+};  
 
 export const marcarTareaRevisada = async (tareaId, revisada) => {
   const { data, error } = await supabase
@@ -1132,6 +1164,74 @@ export const deleteTarea = async (tareaId) => {
   return true;
 };
 
+export const moverTarea = async (tareaId, direccion) => {
+  const { data: actual, error: errorActual } = await supabase
+    .from("tarea")
+    .select("*")
+    .eq("id", Number(tareaId))
+    .maybeSingle();
+
+  if (errorActual) throw new Error(errorActual.message);
+  if (!actual) throw new Error("No se encontró la tarea.");
+
+  let query = supabase
+    .from("tarea")
+    .select("*")
+    .eq("idcurso", actual.idcurso);
+
+  if (direccion === "arriba") {
+    query = query.lt("orden", actual.orden).order("orden", { ascending: false });
+  } else {
+    query = query.gt("orden", actual.orden).order("orden", { ascending: true });
+  }
+
+  const { data: vecino, error: errorVecino } = await query.limit(1).maybeSingle();
+
+  if (errorVecino) throw new Error(errorVecino.message);
+  if (!vecino) return actual;
+
+  // intercambiar orden
+  const { error: errorSwap1 } = await supabase
+    .from("tarea")
+    .update({ orden: vecino.orden })
+    .eq("id", actual.id);
+
+  if (errorSwap1) throw new Error(errorSwap1.message);
+
+  const { error: errorSwap2 } = await supabase
+    .from("tarea")
+    .update({ orden: actual.orden })
+    .eq("id", vecino.id);
+
+  if (errorSwap2) throw new Error(errorSwap2.message);
+
+  return true;
+};
+
+//Arrastrar orden
+export const moverTareaOrden = async (tareasOrdenadas) => {
+  try {
+    const updates = tareasOrdenadas.map((tarea, index) =>
+      supabase
+        .from("tarea")
+        .update({ orden: index + 1 })
+        .eq("id", Number(tarea.id))
+    );
+
+    const results = await Promise.all(updates);
+
+    const errorConDetalle = results.find((r) => r.error);
+    if (errorConDetalle?.error) {
+      throw new Error(errorConDetalle.error.message);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error moviendo tareas:", error);
+    throw error;
+  }
+};
+
 
 // ======================================================
 // MÓDULOS / LECCIONES / MATERIALES DE LECCIÓN
@@ -1143,26 +1243,53 @@ const LIMITE_ARCHIVO_LECCION = 20 * 1024 * 1024; // 20 MB
 // MÓDULOS
 // ------------------------------
 export const getModulosByCurso = async (cursoId) => {
-  const { data, error } = await supabase
+  const { data: modulosRaw, error: modulosError } = await supabase
     .from("curso_modulo")
     .select("*")
     .eq("idcurso", Number(cursoId))
     .order("orden", { ascending: true })
     .order("id", { ascending: true });
 
-  if (error) throw new Error(error.message);
-  return data || [];
+  if (modulosError) throw new Error(modulosError.message);
+
+  const modulos = modulosRaw || [];
+  const modulosPadre = modulos.filter((m) => !m.idpadre);
+  const submodulos = modulos.filter((m) => !!m.idpadre);
+
+  return modulosPadre.map((modulo) => ({
+    ...modulo,
+    submodulos: submodulos
+      .filter((s) => Number(s.idpadre) === Number(modulo.id))
+      .map((s) => ({
+        ...s,
+        lecciones: [],
+      })),
+    lecciones: [],
+  }));
 };
 
-export const crearModulo = async ({ cursoId, titulo, descripcion }) => {
+export const crearModulo = async ({
+  cursoId,
+  titulo,
+  descripcion,
+  idpadre = null,
+}) => {
   if (!titulo?.trim()) {
     throw new Error("El título del módulo es obligatorio.");
   }
 
-  const { data: ultimo, error: errorUltimo } = await supabase
+  let query = supabase
     .from("curso_modulo")
     .select("orden")
-    .eq("idcurso", Number(cursoId))
+    .eq("idcurso", Number(cursoId));
+
+  if (idpadre) {
+    query = query.eq("idpadre", Number(idpadre));
+  } else {
+    query = query.is("idpadre", null);
+  }
+
+  const { data: ultimo, error: errorUltimo } = await query
     .order("orden", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -1177,6 +1304,7 @@ export const crearModulo = async ({ cursoId, titulo, descripcion }) => {
       idcurso: Number(cursoId),
       titulo: titulo.trim(),
       descripcion: descripcion?.trim() || null,
+      idpadre: idpadre ? Number(idpadre) : null,
       orden: nuevoOrden,
     })
     .select()
@@ -1403,6 +1531,11 @@ export const addMaterialLeccion = async (leccionId, payload) => {
 
   let archivoUrl = null;
   let videoUrl = payload.video_url || null;
+  let embedUrl = null;
+  let vimeoVideoId = null;
+  let vimeoUri = null;
+  let estadoVideo = null;
+
   let nombreArchivo = null;
   let tamanoBytes = null;
   let mimeType = null;
@@ -1416,27 +1549,88 @@ export const addMaterialLeccion = async (leccionId, payload) => {
       throw new Error("El archivo supera el límite permitido de 20 MB.");
     }
 
-    const extension = file.name.split(".").pop();
-    const safeName = file.name.replace(/\s+/g, "_");
-    const fileName = `leccion-${leccionId}-${Date.now()}-${safeName}`;
-    const filePath = `cursos/lecciones/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("documentos")
-      .upload(filePath, file, {
-        upsert: true,
-      });
-
-    if (uploadError) throw new Error(uploadError.message);
-
-    const { data: publicData } = supabase.storage
-      .from("documentos")
-      .getPublicUrl(filePath);
-
-    archivoUrl = publicData?.publicUrl || null;
     nombreArchivo = file.name;
     tamanoBytes = file.size || null;
     mimeType = file.type || null;
+
+    if (payload.tipo === "video") {
+      const formData = new FormData();
+      formData.append("video", file);
+      formData.append("title", payload.titulo?.trim() || file.name);
+      formData.append("leccionId", String(leccionId));
+
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+      const result = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${apiUrl}/videos/upload`);
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && typeof payload.onProgress === "function") {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            payload.onProgress(percent);
+          }
+        };
+
+        xhr.onload = () => {
+          try {
+            const response = JSON.parse(xhr.responseText || "{}");
+
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(response);
+            } else {
+              reject(
+                new Error(response?.message || "No se pudo subir el video a Vimeo.")
+              );
+            }
+          } catch {
+            reject(new Error("Respuesta inválida del servidor."));
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Error de red al subir el video."));
+        };
+
+        xhr.send(formData);
+      });
+
+      videoUrl = result?.videoUrl || null;
+      embedUrl = result?.embedUrl || null;
+      vimeoVideoId = result?.vimeoVideoId || null;
+      vimeoUri = result?.vimeoUri || null;
+      estadoVideo = result?.status || "procesando";
+
+      if (typeof payload.onProgress === "function") {
+        payload.onProgress(100);
+      }
+    } else {
+      const safeName = file.name.replace(/\s+/g, "_");
+      const fileName = `leccion-${leccionId}-${Date.now()}-${safeName}`;
+      const filePath = `cursos/lecciones/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("documentos")
+        .upload(filePath, file, {
+          upsert: true,
+        });
+
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data: publicData } = supabase.storage
+        .from("documentos")
+        .getPublicUrl(filePath);
+
+      archivoUrl = publicData?.publicUrl || null;
+
+      if (typeof payload.onProgress === "function") {
+        payload.onProgress(100);
+      }
+    }
+  }
+
+  if (payload.tipo === "url_video" && videoUrl) {
+    estadoVideo = "listo";
   }
 
   const { data: ultimo, error: errorUltimo } = await supabase
@@ -1458,6 +1652,10 @@ export const addMaterialLeccion = async (leccionId, payload) => {
     contenido_texto: contenidoTexto,
     archivo_url: archivoUrl,
     video_url: videoUrl,
+    embed_url: embedUrl,
+    vimeo_video_id: vimeoVideoId,
+    vimeo_uri: vimeoUri,
+    estado_video: estadoVideo,
     enlace_url: enlaceUrl,
     nombre_archivo: nombreArchivo,
     tamano_bytes: tamanoBytes,
@@ -1483,6 +1681,10 @@ export const actualizarMaterialLeccion = async (materialId, payload) => {
     body.contenido_texto = payload.contenido_texto || null;
   }
   if (payload.video_url !== undefined) body.video_url = payload.video_url || null;
+  if (payload.embed_url !== undefined) body.embed_url = payload.embed_url || null;
+  if (payload.vimeo_video_id !== undefined) body.vimeo_video_id = payload.vimeo_video_id || null;
+  if (payload.vimeo_uri !== undefined) body.vimeo_uri = payload.vimeo_uri || null;
+  if (payload.estado_video !== undefined) body.estado_video = payload.estado_video || null;
   if (payload.enlace_url !== undefined) body.enlace_url = payload.enlace_url || null;
   if (payload.tipo !== undefined) body.tipo = payload.tipo;
 
@@ -1548,6 +1750,29 @@ export const moverMaterialLeccion = async (materialId, direccion) => {
   if (errorSwap2) throw new Error(errorSwap2.message);
 
   return true;
+};
+
+export const moverMaterialOrden = async (materialesOrdenados) => {
+  try {
+    const updates = materialesOrdenados.map((material, index) =>
+      supabase
+        .from("leccion_material")
+        .update({ orden: index + 1 })
+        .eq("id", Number(material.id))
+    );
+
+    const results = await Promise.all(updates);
+    const errorConDetalle = results.find((r) => r.error);
+
+    if (errorConDetalle?.error) {
+      throw new Error(errorConDetalle.error.message);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error reordenando materiales:", error);
+    throw error;
+  }
 };
 
 //===================================
@@ -1665,11 +1890,12 @@ export const actualizarEvaluacionesGrupo = async (evaluaciones) => {
 
   const payload = evaluaciones.map((ev, index) => ({
     id: Number(ev.id),
-    idgrupo: Number(ev.idgrupo), // ✅ IMPORTANTE
+    idgrupo: Number(ev.idgrupo), // 
     nombre: String(ev.nombre || "").trim(),
     porcentaje: Number(ev.porcentaje || 0),
     orden: Number(ev.orden ?? index + 1),
     tipo: ev.tipo || "manual",
+    idtarea: ev.tipo === "tarea" && ev.idtarea ? Number(ev.idtarea) : null,
     activa: ev.activa ?? true,
   }));
 
@@ -1686,6 +1912,7 @@ export const crearEvaluacionGrupo = async ({
   nombre,
   porcentaje,
   tipo = "manual",
+  idtarea = null,
   orden = 1,
 }) => {
   const { data, error } = await supabase
@@ -1696,6 +1923,7 @@ export const crearEvaluacionGrupo = async ({
         nombre: String(nombre || "").trim(),
         porcentaje: Number(porcentaje || 0),
         tipo,
+        idtarea: tipo === "tarea" && idtarea ? Number(idtarea) : null,
         orden: Number(orden),
         activa: true,
       },
@@ -1715,4 +1943,348 @@ export const eliminarEvaluacionGrupo = async (evaluacionId) => {
 
   if (error) throw new Error(error.message);
   return true;
+};
+
+//Notas con tareas calificables
+export const getEvaluacionesTareaDisponiblesByGrupo = async (grupoId, tareaIdActual = null) => {
+  const { data, error } = await supabase
+    .from("evaluacion_config")
+    .select("id, idgrupo, nombre, porcentaje, tipo, idtarea, activa, orden")
+    .eq("idgrupo", Number(grupoId))
+    .eq("tipo", "tarea")
+    .eq("activa", true)
+    .order("orden", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const tareaActual = tareaIdActual ? Number(tareaIdActual) : null;
+
+  return (data || []).filter((ev) => {
+    if (!ev.idtarea) return true;
+    return Number(ev.idtarea) === tareaActual;
+  });
+};
+
+export const asignarEvaluacionATarea = async ({
+  tareaId,
+  evaluacionId,
+  grupoId,
+}) => {
+  const idTarea = Number(tareaId);
+  const idEvaluacion = Number(evaluacionId);
+  const idGrupo = Number(grupoId);
+
+  if (!idTarea || !idEvaluacion || !idGrupo) {
+    throw new Error("Faltan datos para vincular la tarea con la evaluación.");
+  }
+
+  const { data: evaluacion, error: errEval } = await supabase
+    .from("evaluacion_config")
+    .select("id, idgrupo, tipo, activa")
+    .eq("id", idEvaluacion)
+    .eq("idgrupo", idGrupo)
+    .eq("tipo", "tarea")
+    .eq("activa", true)
+    .maybeSingle();
+
+  if (errEval) throw new Error(errEval.message);
+  if (!evaluacion) {
+    throw new Error("La evaluación seleccionada no es válida para este grupo.");
+  }
+
+  const { error } = await supabase
+    .from("evaluacion_config")
+    .update({ idtarea: idTarea })
+    .eq("id", idEvaluacion);
+
+  if (error) throw new Error(error.message);
+
+  return true;
+};
+
+
+//==============================
+//Tareas calificables
+//==============================
+
+export const getTareasCalificablesByGrupo = async (grupoId) => {
+  const { data, error } = await supabase
+    .from("tarea")
+    .select("id, titulo, fecha_limite, calificable, idgrupo")
+    .eq("idgrupo", Number(grupoId))
+    .eq("calificable", true)
+    .order("fecha_limite", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+
+
+
+export const getEntregasByTarea = async (tareaId) => {
+  const { data: tarea, error: errTarea } = await supabase
+    .from("tarea")
+    .select("id, idgrupo, titulo")
+    .eq("id", Number(tareaId))
+    .maybeSingle();
+
+  if (errTarea) throw new Error(errTarea.message);
+  if (!tarea) throw new Error("No se encontró la tarea.");
+  if (!tarea.idgrupo) {
+    throw new Error("La tarea no tiene grupo asociado.");
+  }
+
+  const { data: matriculas, error: errMat } = await supabase
+    .from("matricula")
+    .select("id, idalumno, idgrupo")
+    .eq("idgrupo", Number(tarea.idgrupo))
+    .order("id", { ascending: true });
+
+  if (errMat) throw new Error(errMat.message);
+
+  const matriculasUnicas = Array.from(
+    new Map(
+      (matriculas || [])
+        .filter((m) => m.idalumno)
+        .map((m) => [Number(m.idalumno), m])
+    ).values()
+  );
+
+  const alumnoIds = [...new Set(matriculasUnicas.map((m) => m.idalumno))];
+
+  const { data: alumnos, error: errAlumnos } = await supabase
+    .from("alumno")
+    .select("id, nombre, apellido, numdocumento, foto_url")
+    .in("id", alumnoIds.length ? alumnoIds : [-1]);
+
+  if (errAlumnos) throw new Error(errAlumnos.message);
+
+  const matriculaIds = matriculasUnicas.map((m) => Number(m.id));
+
+  const { data: entregas, error: errEntregas } = await supabase
+    .from("tarea_entrega")
+    .select("*")
+    .eq("idtarea", Number(tareaId))
+    .in("idmatricula", matriculaIds.length ? matriculaIds : [-1]);
+
+  if (errEntregas) throw new Error(errEntregas.message);
+
+  const alumnosMap = new Map(
+    (alumnos || []).map((a) => [Number(a.id), a])
+  );
+
+  const entregaMap = new Map(
+    (entregas || []).map((e) => [Number(e.idmatricula), e])
+  );
+
+  const filas = matriculasUnicas.map((m) => {
+    const alumno = alumnosMap.get(Number(m.idalumno));
+    const entrega = entregaMap.get(Number(m.id)) || null;
+
+    return {
+      idmatricula: Number(m.id),
+      idalumno: Number(m.idalumno),
+      nombre: alumno?.nombre || "",
+      apellido: alumno?.apellido || "",
+      numdocumento: alumno?.numdocumento || "",
+      foto_url: alumno?.foto_url || "",
+      entregaId: entrega?.id || null,
+      archivo_url: entrega?.archivo_url || null,
+      comentario: entrega?.comentario || "",
+      fecha_entrega: entrega?.fecha_entrega || null,
+      nota: entrega?.nota ?? "",
+      revisado: entrega?.revisado ?? false,
+      entrego: !!entrega,
+    };
+  });
+
+  return {
+    tarea,
+    entregas: filas,
+  };
+};
+
+export const guardarNotaEntregaYRegistro = async ({
+  tareaId,
+  idmatricula,
+  nota,
+}) => {
+  const notaNumerica =
+    nota === "" || nota === null || nota === undefined ? null : Number(nota);
+
+  if (notaNumerica !== null && (Number.isNaN(notaNumerica) || notaNumerica < 0 || notaNumerica > 20)) {
+    throw new Error("La nota debe estar entre 0 y 20.");
+  }
+
+  const { data: tarea, error: errTarea } = await supabase
+    .from("tarea")
+    .select("id, idgrupo, titulo")
+    .eq("id", Number(tareaId))
+    .maybeSingle();
+
+  if (errTarea) throw new Error(errTarea.message);
+  if (!tarea) throw new Error("No se encontró la tarea.");
+
+  const { data: evaluacion, error: errEval } = await supabase
+    .from("evaluacion_config")
+    .select("id, idgrupo, idtarea, activa, tipo")
+    .eq("idgrupo", Number(tarea.idgrupo))
+    .eq("tipo", "tarea")
+    .eq("idtarea", Number(tareaId))
+    .eq("activa", true)
+    .maybeSingle();
+
+  if (errEval) throw new Error(errEval.message);
+  if (!evaluacion) {
+    throw new Error("Esta tarea no está vinculada a una evaluación activa.");
+  }
+
+  const { data: entrega, error: errEntrega } = await supabase
+    .from("tarea_entrega")
+    .select("id")
+    .eq("idtarea", Number(tareaId))
+    .eq("idmatricula", Number(idmatricula))
+    .maybeSingle();
+
+  if (errEntrega) throw new Error(errEntrega.message);
+
+  if (entrega) {
+  const { error: errUpdate } = await supabase
+    .from("tarea_entrega")
+    .update({
+      nota: notaNumerica,
+      revisado: notaNumerica !== null,
+    })
+    .eq("id", Number(entrega.id));
+
+  if (errUpdate) throw new Error(errUpdate.message);
+} else {
+  const { error: errInsert } = await supabase
+    .from("tarea_entrega")
+    .insert({
+      idtarea: Number(tareaId),
+      idmatricula: Number(idmatricula),
+      idalumno: null, // opcional si no lo tienes
+      nota: notaNumerica,
+      revisado: notaNumerica !== null,
+    });
+
+  if (errInsert) throw new Error(errInsert.message);
+}
+
+  await guardarNotas(Number(idmatricula), {
+    [Number(evaluacion.id)]: notaNumerica,
+  });
+
+  return true;
+};
+
+
+//==============================
+//Mover Sub Módulos
+//==============================
+
+export const moverSubModulo = async (submoduloId, direccion) => {
+  const { data: actual, error: errorActual } = await supabase
+    .from("curso_modulo")
+    .select("*")
+    .eq("id", Number(submoduloId))
+    .maybeSingle();
+
+  if (errorActual) throw new Error(errorActual.message);
+  if (!actual) throw new Error("No se encontró el submódulo.");
+  if (!actual.idpadre) throw new Error("El elemento indicado no es un submódulo.");
+
+  let query = supabase
+    .from("curso_modulo")
+    .select("*")
+    .eq("idcurso", Number(actual.idcurso))
+    .eq("idpadre", Number(actual.idpadre));
+
+  if (direccion === "arriba") {
+    query = query.lt("orden", actual.orden).order("orden", { ascending: false });
+  } else {
+    query = query.gt("orden", actual.orden).order("orden", { ascending: true });
+  }
+
+  const { data: vecino, error: errorVecino } = await query.limit(1).maybeSingle();
+
+  if (errorVecino) throw new Error(errorVecino.message);
+  if (!vecino) return true;
+
+  const { error: errorSwap1 } = await supabase
+    .from("curso_modulo")
+    .update({ orden: vecino.orden })
+    .eq("id", actual.id);
+
+  if (errorSwap1) throw new Error(errorSwap1.message);
+
+  const { error: errorSwap2 } = await supabase
+    .from("curso_modulo")
+    .update({ orden: actual.orden })
+    .eq("id", vecino.id);
+
+  if (errorSwap2) throw new Error(errorSwap2.message);
+
+  return true;
+};
+
+
+//Arrastrar submódulo y lección
+export const moverSubModuloOrden = async (submodulosOrdenados) => {
+  try {
+    const updates = submodulosOrdenados.map((submodulo, index) =>
+      supabase
+        .from("curso_modulo")
+        .update({ orden: index + 1 })
+        .eq("id", Number(submodulo.id))
+    );
+
+    const results = await Promise.all(updates);
+    const errorConDetalle = results.find((r) => r.error);
+
+    if (errorConDetalle?.error) {
+      throw new Error(errorConDetalle.error.message);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error reordenando submódulos:", error);
+    throw error;
+  }
+};
+
+export const moverLeccionOrden = async (leccionesOrdenadas) => {
+  try {
+    const updates = leccionesOrdenadas.map((leccion, index) =>
+      supabase
+        .from("curso_leccion")
+        .update({ orden: index + 1 })
+        .eq("id", Number(leccion.id))
+    );
+
+    const results = await Promise.all(updates);
+    const errorConDetalle = results.find((r) => r.error);
+
+    if (errorConDetalle?.error) {
+      throw new Error(errorConDetalle.error.message);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error reordenando lecciones:", error);
+    throw error;
+  }
+};
+
+
+//Actualizar contraseña docente
+export const updatePasswordDocente = async (newPassword) => {
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) throw new Error(error.message || "No se pudo actualizar la contraseña");
+  return data;
 };

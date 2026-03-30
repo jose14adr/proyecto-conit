@@ -14,7 +14,11 @@ export class VimeoService {
       process.env.VIMEO_ACCESS_TOKEN
     )
 
-  }
+    console.log('VIMEO_CLIENT_ID:', !!process.env.VIMEO_CLIENT_ID);
+    console.log('VIMEO_CLIENT_SECRET:', !!process.env.VIMEO_CLIENT_SECRET);
+    console.log('VIMEO_ACCESS_TOKEN:', !!process.env.VIMEO_ACCESS_TOKEN);
+
+  } 
 
   /* SUBIR VIDEO */
 
@@ -51,8 +55,11 @@ export class VimeoService {
               console.log("✅ VIDEO LISTO")
 
               resolve({
-                videoId: videoId,
-                embed: `https://player.vimeo.com/video/${videoId}`,
+                ok: true,
+                videoUrl: `https://vimeo.com/${videoId}`,
+                embedUrl: `https://player.vimeo.com/video/${videoId}`,
+                vimeoVideoId: videoId,
+                vimeoUri: uri,
                 status: "available"
               })
 

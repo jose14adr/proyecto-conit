@@ -6,6 +6,7 @@ import {
   actualizarEvaluacionesGrupo,
   crearEvaluacionGrupo,
   eliminarEvaluacionGrupo,
+  getTareasCalificablesByGrupo
 } from "../services/docenteService";
 
 function validarNota(valor) {
@@ -45,6 +46,11 @@ export default function RegistroNotas() {
   const [configDraft, setConfigDraft] = useState([]);
   const [configSaving, setConfigSaving] = useState(false);
 
+  const [tareasCalificables, setTareasCalificables] = useState([]);
+
+  const [busquedaAlumno, setBusquedaAlumno] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+
   
 
   useEffect(() => {
@@ -81,6 +87,25 @@ export default function RegistroNotas() {
     cargarRegistro();
   }, [grupoId]);
 
+  useEffect(() => {
+  const cargarTareasCalificables = async () => {
+    if (!grupoId) {
+      setTareasCalificables([]);
+      return;
+    }
+
+    try {
+      const data = await getTareasCalificablesByGrupo(grupoId);
+      setTareasCalificables(data || []);
+    } catch (error) {
+      console.error("Error cargando tareas calificables:", error);
+      setTareasCalificables([]);
+    }
+  };
+
+  cargarTareasCalificables();
+}, [grupoId]);
+
   const cursosUnicos = useMemo(() => {
     const vistos = new Set();
 
@@ -105,6 +130,15 @@ export default function RegistroNotas() {
     );
   }, [evaluaciones]);
 
+  
+  const configuracionCompleta = useMemo(() => {
+    return (
+      evaluaciones.length > 0 &&
+      Number(sumaPorcentajes.toFixed(2)) === 100
+    );
+  }, [evaluaciones, sumaPorcentajes]);
+
+
   const alumnosOrdenados = useMemo(() => {
     return [...alumnos].sort((a, b) => {
       const apA = `${a.apellido || ""} ${a.nombre || ""}`.trim().toLowerCase();
@@ -112,6 +146,30 @@ export default function RegistroNotas() {
       return apA.localeCompare(apB, "es");
     });
   }, [alumnos]);
+
+  const alumnosFiltrados = useMemo(() => {
+    return alumnosOrdenados.filter((a) => {
+      const texto = `${a.nombre || ""} ${a.apellido || ""} ${a.numdocumento || ""}`
+        .toLowerCase()
+        .trim();
+
+      const coincideBusqueda = texto.includes(busquedaAlumno.toLowerCase().trim());
+
+      let coincideEstado = true;
+
+      if (filtroEstado === "completos") {
+        coincideEstado = a.faltantes === 0;
+      } else if (filtroEstado === "pendientes") {
+        coincideEstado = a.faltantes > 0;
+      } else if (filtroEstado === "aprobados") {
+        coincideEstado = a.faltantes === 0 && Number(a.promedio) >= 11;
+      } else if (filtroEstado === "desaprobados") {
+        coincideEstado = a.faltantes === 0 && Number(a.promedio) < 11;
+      }
+
+      return coincideBusqueda && coincideEstado;
+    });
+  }, [alumnosOrdenados, busquedaAlumno, filtroEstado]);
 
   const resumen = useMemo(() => {
     const total = alumnosOrdenados.length;
@@ -194,20 +252,34 @@ export default function RegistroNotas() {
   };
 
   const abrirConfigEvaluaciones = () => {
-  const base = (evaluaciones || []).map((ev, index) => ({
-  id: ev.id,
-  idgrupo: ev.idgrupo, // ✅ IMPORTANTE
-  nombre: ev.nombre || "",
-  porcentaje: String(ev.porcentaje ?? 0),
-  tipo: ev.tipo || "manual",
-  orden: ev.orden ?? index + 1,
-  activa: ev.activa ?? true,
-  isNew: false,
-}));
+    if (!grupoId) {
+      alert("Primero selecciona un grupo.");
+      return;
+    }
 
-  setConfigDraft(base);
-  setConfigOpen(true);
-};
+    if (configuracionCompleta) {
+      const confirmado = window.confirm(
+        "Ya existen evaluaciones configuradas y asignadas. ¿Seguro que deseas modificar lo ya configurado?"
+      );
+
+      if (!confirmado) return;
+    }
+
+    const base = (evaluaciones || []).map((ev, index) => ({
+      id: ev.id,
+      idgrupo: ev.idgrupo,
+      nombre: ev.nombre || "",
+      porcentaje: String(ev.porcentaje ?? 0),
+      tipo: ev.tipo || "manual",
+      idtarea: ev.idtarea ?? null,
+      orden: ev.orden ?? index + 1,
+      activa: ev.activa ?? true,
+      isNew: false,
+    }));
+
+    setConfigDraft(base);
+    setConfigOpen(true);
+  };
 
 const cerrarConfigEvaluaciones = () => {
   setConfigOpen(false);
@@ -216,18 +288,27 @@ const cerrarConfigEvaluaciones = () => {
 
 const cambiarEvaluacionDraft = (index, field, value) => {
   setConfigDraft((prev) =>
-    prev.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item
-    )
+    prev.map((item, i) => {
+      if (i !== index) return item;
+
+      const next = { ...item, [field]: value };
+
+      if (field === "tipo") {
+        next.idtarea = null;
+      }
+
+      return next;
+    })
   );
 };
+
 
 const agregarEvaluacionDraft = () => {
   setConfigDraft((prev) => [
     ...prev,
     {
       id: `new-${Date.now()}`,
-      idgrupo: grupoId, // ✅ IMPORTANTE
+      idgrupo: grupoId, // 
       nombre: "",
       porcentaje: "",
       tipo: "manual",
@@ -275,6 +356,7 @@ const guardarConfigEvaluaciones = async () => {
       return;
     }
 
+
     const suma = limpias.reduce((acc, ev) => acc + Number(ev.porcentaje || 0), 0);
     if (Number(suma.toFixed(2)) !== 100) {
       alert("La suma de porcentajes debe ser 100%.");
@@ -309,6 +391,7 @@ const guardarConfigEvaluaciones = async () => {
           porcentaje: ev.porcentaje,
           orden: index + 1,
           tipo: ev.tipo,
+          idtarea: null,
           activa: true,
         }))
       );
@@ -321,6 +404,7 @@ const guardarConfigEvaluaciones = async () => {
         nombre: ev.nombre,
         porcentaje: ev.porcentaje,
         tipo: ev.tipo,
+        idtarea: null,
         orden: existentes.length + i + 1,
       });
     }
@@ -450,7 +534,15 @@ const guardarConfigEvaluaciones = async () => {
       )}
 
       {!!grupoId && (
-        <section className="rounded-2xl bg-white shadow-sm border border-gray-200 p-5">
+        <section
+          className={`rounded-2xl shadow-md border p-6 transition relative ${
+            configuracionCompleta
+              ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200"
+              : evaluaciones.length === 0
+              ? "bg-amber-50 border-amber-400 ring-2 ring-amber-200"
+              : "bg-white border-gray-200"
+          }`}
+        >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-slate-800">
@@ -459,16 +551,29 @@ const guardarConfigEvaluaciones = async () => {
               <p className="text-sm text-slate-500 mt-1">
                 La suma actual de porcentajes debe ser 100%.
               </p>
+
+              {!configuracionCompleta ? (
+                <div className="mt-3 rounded-xl border border-amber-300 bg-amber-100 px-4 py-3 text-sm text-amber-800">
+                  Debes configurar primero las evaluaciones. Cuando el total llegue a 100%, quedará marcado como configurado.
+                </div>
+              ) : (
+                <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-100 px-4 py-3 text-sm text-emerald-800">
+                  La configuración ya fue completada. Si deseas editarla, el sistema te pedirá confirmación antes de modificarla.
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <button
                 onClick={abrirConfigEvaluaciones}
-                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition shadow-sm ${
+                  configuracionCompleta
+                    ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                    : "bg-slate-900 text-white hover:bg-slate-800"
+                }`}
               >
-                Configurar evaluaciones
+                {configuracionCompleta ? "Editar configuración" : "Configurar evaluaciones"}
               </button>
-
               <div
                 className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold ${
                   Number(sumaPorcentajes.toFixed(2)) === 100
@@ -483,8 +588,8 @@ const guardarConfigEvaluaciones = async () => {
 
           <div className="mt-4 flex flex-wrap gap-3">
             {evaluaciones.length === 0 ? (
-              <div className="text-sm text-slate-500">
-                No hay evaluaciones configuradas para este grupo.
+              <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 px-4 py-5 text-sm text-amber-800">
+                No hay evaluaciones configuradas para este grupo. Debes completar esta sección antes de continuar con el proceso de notas.
               </div>
             ) : (
               evaluaciones.map((ev) => (
@@ -515,23 +620,53 @@ const guardarConfigEvaluaciones = async () => {
           </p>
 
           {!!grupoId && (
-            <div className="mt-3">
-              {Number(sumaPorcentajes.toFixed(2)) !== 100 ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                  Atención: los porcentajes todavía no suman 100%. El cálculo final puede no ser válido.
+            <>
+              <div className="mt-3">
+                {Number(sumaPorcentajes.toFixed(2)) !== 100 ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Atención: los porcentajes todavía no suman 100%. El cálculo final puede no ser válido.
+                  </div>
+                ) : resumen.incompletos > 0 ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Hay alumnos con notas incompletas. Completa las evaluaciones faltantes para ver el promedio final.
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    Todas las evaluaciones están configuradas y los registros están completos.
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex flex-col md:flex-row gap-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={busquedaAlumno}
+                    onChange={(e) => setBusquedaAlumno(e.target.value)}
+                    placeholder="Buscar por nombre, apellido o DNI..."
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                  />
                 </div>
-              ) : resumen.incompletos > 0 ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                  Hay alumnos con notas incompletas. Completa las evaluaciones faltantes para ver el promedio final.
+
+                <div className="md:w-64">
+                  <select
+                    value={filtroEstado}
+                    onChange={(e) => setFiltroEstado(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="completos">Con notas completas</option>
+                    <option value="pendientes">Con notas pendientes</option>
+                    <option value="aprobados">Aprobados</option>
+                    <option value="desaprobados">Desaprobados</option>
+                  </select>
                 </div>
-              ) : (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  Todas las evaluaciones están configuradas y los registros están completos.
-                </div>
-              )}
-            </div>
+              </div>
+            </>
           )}
         </div>
+
+
 
         {!grupoId ? (
           <div className="p-6 text-slate-500">
@@ -539,8 +674,10 @@ const guardarConfigEvaluaciones = async () => {
           </div>
         ) : loading ? (
           <div className="p-6 text-slate-500">Cargando alumnos...</div>
-        ) : alumnosOrdenados.length === 0 ? (
-          <div className="p-6 text-slate-500">No hay alumnos registrados en este grupo.</div>
+        ) : alumnosFiltrados.length === 0 ? (
+          <div className="p-6 text-slate-500">
+            No se encontraron alumnos con ese filtro.
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-[1100px] w-full">
@@ -575,7 +712,7 @@ const guardarConfigEvaluaciones = async () => {
               </thead>
 
               <tbody>
-                {alumnosOrdenados.map((a) => (
+                {alumnosFiltrados.map((a) => (
                   <tr
                     key={a.idmatricula}
                     className="border-b border-slate-100 hover:bg-slate-50/70 transition"
@@ -654,8 +791,19 @@ const guardarConfigEvaluaciones = async () => {
 
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => abrirModal(a)}
-                        className="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition"
+                        onClick={() => {
+                          if (!configuracionCompleta) {
+                            alert("Primero debes completar la configuración de evaluaciones al 100%.");
+                            return;
+                          }
+                          abrirModal(a);
+                        }}
+                        disabled={!configuracionCompleta}
+                        className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition ${
+                          !configuracionCompleta
+                            ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                            : "bg-slate-900 text-white hover:bg-slate-800"
+                        }`}
                       >
                         Editar
                       </button>
@@ -814,7 +962,7 @@ const guardarConfigEvaluaciones = async () => {
           <div>
             <h3 className="text-xl font-bold">Configurar evaluaciones</h3>
             <p className="text-sm text-slate-200 mt-1">
-              Agrega, edita o elimina evaluaciones del grupo seleccionado.
+              Agrega, edita o elimina evaluaciones del grupo seleccionado. Las evaluaciones de tipo tarea se vinculan después desde la sección de tareas del curso.
             </p>
           </div>
 
@@ -851,24 +999,29 @@ const guardarConfigEvaluaciones = async () => {
 
         {/* TABLA */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px]">
+          <table className="w-full min-w-[620px]">
             <thead className="bg-slate-50">
               <tr className="border-b border-slate-200">
                 <th className="px-4 py-3 text-left text-sm font-bold text-slate-700">
                   Nombre
                 </th>
+
                 <th className="px-4 py-3 text-left text-sm font-bold text-slate-700">
                   Porcentaje
                 </th>
+
                 <th className="px-4 py-3 text-left text-sm font-bold text-slate-700">
                   Tipo
                 </th>
+
                 <th className="px-4 py-3 text-center text-sm font-bold text-slate-700">
                   Orden
                 </th>
+
                 <th className="px-4 py-3 text-center text-sm font-bold text-slate-700">
                   Acción
                 </th>
+
               </tr>
             </thead>
 
@@ -884,7 +1037,10 @@ const guardarConfigEvaluaciones = async () => {
                         cambiarEvaluacionDraft(index, "nombre", e.target.value)
                       }
                       placeholder="Ej. Parcial, Proyecto"
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                      disabled={ev.tipo === "tarea"}
+                      className={`w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 ${
+                        ev.tipo === "tarea" ? "bg-slate-100 text-slate-500" : ""
+                      }`}
                     />
                   </td>
 
@@ -940,6 +1096,12 @@ const guardarConfigEvaluaciones = async () => {
             </tbody>
           </table>
         </div>
+
+        {configDraft.some((ev) => ev.tipo === "tarea") && tareasCalificables.length === 0 && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          No hay tareas calificables registradas para este grupo.
+        </div>
+      )}
 
         {/* VALIDACIÓN */}
         <div className="mt-5">
