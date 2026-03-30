@@ -13,7 +13,7 @@ export class CreateUsuarioDto {
 
   @IsNumber()
   @IsNotEmpty()
-  idEmpresa: number;
+  idempresa: number;
 
   @IsString()
   @IsNotEmpty()

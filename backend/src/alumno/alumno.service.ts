@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Alumno } from './entities/alumno.entity';
 import { Usuario } from 'src/usuario/entities/usuario.entity';
-import { th } from 'zod/v4/locales';
 
 @Injectable()
 export class AlumnoService {
@@ -85,12 +84,12 @@ export class AlumnoService {
   }
 
   async remove(id: number) {
-    await this.alumnoRepository.update(id, { estado: 'INACTIVO' });
+    await this.alumnoRepository.update(id, { estado: false });
     return { message: 'Alumno inhabilitado correctamente' };
   }
 
   async habilitar(id: number) {
-    await this.alumnoRepository.update(id, { estado: 'ACTIVO' });
+    await this.alumnoRepository.update(id, { estado: true });
     return { message: 'Alumno habilitado correctamente' };
   }
 }

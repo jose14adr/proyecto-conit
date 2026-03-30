@@ -6,19 +6,26 @@ import { crearCurso, actualizarCurso } from "../services/curso.service";
 import toast from "react-hot-toast";
 
 const cursoSchema = z.object({
-  nombreCurso: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+  nombrecurso: z
+    .string()
+    .min(1, "El nombre del curso es obligatorio")
+    .min(3, "El nombre debe tener al menos 3 caracteres"),
   descripcion: z.string().optional(),
   nivel: z.enum(["Básico", "Intermedio", "Avanzado"]),
-  publicoObjetivo: z.string().optional(),
-  tiempoSemanal: z.string().optional(),
-  //Transformamos los textos a números
-  duración: z.coerce.number().min(1, "La duración debe ser mayor a 0"),
-  creditos: z.coerce.number().min(0, "Los créditos no pueden ser negativos"),
-  precio: z.coerce.number().min(0, "El precio no puede ser negativo"),
-  //Claves foráneas
-  idRequisito: z.coerce.number().optional(),
-  idTemario: z.coerce.number().optional(),
-  idCategoria: z.coerce.number().optional(),
+  publicoobjetivo: z.string().optional(),
+  tiemposemana: z.string().optional(),
+  //Validaciones para campos numéricos, asegurando que se conviertan a números y tengan valores válidos
+  duracion: z.coerce
+    .number({ invalid_type_error: "La duración debe ser un número válido" })
+    .min(1, "La duración debe ser mayor a 0"),
+  creditos: z.coerce
+    .number({ invalid_type_error: "Los créditos deben ser un número válido" })
+    .min(0, "Los créditos no pueden ser negativos"),
+  precio: z.coerce
+    .number({ invalid_type_error: "El precio debe ser un número válido" })
+    .min(0, "El precio no puede ser negativo"),
+  idrequisito: z.coerce.number().optional(),
+  idcategorizacion: z.coerce.number().optional(),
 });
 
 export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
@@ -31,18 +38,18 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(cursoSchema),
+    mode: "onChange",
     defaultValues: {
-      nombreCurso: "",
+      nombrecurso: "",
       descripcion: "",
       nivel: "Básico",
-      publicoObjetivo: "",
-      tiempoSemanal: "",
+      publicoobjetivo: "",
+      tiemposemana: "",
       duracion: "",
       creditos: "",
       precio: "",
-      idRequisito: "",
-      idTemario: "",
-      idCategorizacion: "",
+      idrequisito: "",
+      idcategorizacion: "",
     },
   });
 
@@ -52,8 +59,8 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
         ...cursoEditar,
         //Aseguramos que los campos opcionales tengan un valor por defecto
         descripcion: cursoEditar.descripcion || "",
-        publicoObjetivo: cursoEditar.publicoObjetivo || "",
-        tiempoSemanal: cursoEditar.tiempoSemanal || "",
+        publicoobjetivo: cursoEditar.publicoobjetivo || "",
+        tiemposemana: cursoEditar.tiempoSemana || "",
       });
     }
   }, [cursoEditar, reset]);
@@ -72,7 +79,9 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
       onClose();
     } catch (error) {
       console.error("Error al guardar el curso:", error);
-      toast.error("Ocurrió un error al guardar el curso");
+      toast.error(
+        error.response?.data?.message || "Ocurrió un error al guardar el curso",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -95,20 +104,19 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Nombre del Curso */}
             <div className="md:col-span-2">
               <label className="text-sm text-gray-600 font-medium">
                 Nombre del Curso *
               </label>
               <input
                 type="text"
-                {...register("nombreCurso")}
-                className={getInputClass(errors.nombreCurso)}
+                {...register("nombrecurso")}
+                className={getInputClass(errors.nombrecurso)}
                 placeholder="Ej: Matemáticas Avanzadas"
               />
-              {errors.nombreCurso && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.nombreCurso.message}
+              {errors.nombrecurso && (
+                <p className="text-red-500 text-xs mt-1 font-medium">
+                  {errors.nombrecurso.message}
                 </p>
               )}
             </div>
@@ -124,7 +132,7 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
                 <option value="Avanzado">Avanzado</option>
               </select>
               {errors.nivel && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-red-500 text-xs mt-1 font-medium">
                   {errors.nivel.message}
                 </p>
               )}
@@ -142,7 +150,7 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
                 placeholder="0.00"
               />
               {errors.precio && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-red-500 text-xs mt-1 font-medium">
                   {errors.precio.message}
                 </p>
               )}
@@ -159,7 +167,7 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
                 placeholder="Ej: 40"
               />
               {errors.duracion && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-red-500 text-xs mt-1 font-medium">
                   {errors.duracion.message}
                 </p>
               )}
@@ -176,7 +184,7 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
                 placeholder="Ej: 4"
               />
               {errors.creditos && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-red-500 text-xs mt-1 font-medium">
                   {errors.creditos.message}
                 </p>
               )}
@@ -188,8 +196,8 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
               </label>
               <input
                 type="text"
-                {...register("tiempoSemanal")}
-                className={getInputClass(errors.tiempoSemanal)}
+                {...register("tiemposemana")}
+                className={getInputClass(errors.tiemposemana)}
                 placeholder="Ej: 4 horas/semana"
               />
             </div>
@@ -200,8 +208,8 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
               </label>
               <input
                 type="text"
-                {...register("publicoObjetivo")}
-                className={getInputClass(errors.publicoObjetivo)}
+                {...register("publicoobjetivo")}
+                className={getInputClass(errors.publicoobjetivo)}
                 placeholder="Ej: Estudiantes universitarios"
               />
             </div>
@@ -230,8 +238,9 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
             </button>
             <button
               type="submit"
+              //Bloqueamos visualmente el botón si el formulario no es válido
               disabled={isLoading}
-              className="px-6 py-2 rounded-lg bg-[#5573b3] text-white hover:bg-[#344c92] transition shadow-md min-w-[160px]"
+              className="px-6 py-2.5 rounded-lg text-white font-medium transition shadow-sm bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center min-w-[160px]"
             >
               {isLoading
                 ? "Procesando..."

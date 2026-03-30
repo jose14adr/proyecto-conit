@@ -1,6 +1,6 @@
 import api from "./api";
 
-export const obtenerAlumnos = async () => {
+export const obtenerAlumno = async () => {
   const response = await api.get("/alumno");
   return response.data;
 };
@@ -11,7 +11,7 @@ export const crearAlumno = async (alumnoData: any) => {
 };
 
 export const actualizarAlumno = async (id: number, alumnoData: any) => {
-  const response = await api.patch(`/alumno/${alumnoData.id}`, alumnoData);
+  const response = await api.patch(`/alumno/${id}`, alumnoData);
   return response.data;
 };
 

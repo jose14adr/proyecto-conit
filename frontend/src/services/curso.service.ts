@@ -1,6 +1,6 @@
 import api from "./api";
 
-export const obtenerCursos = async () => {
+export const obtenerCurso = async () => {
   const response = await api.get("/curso");
   return response.data;
 };

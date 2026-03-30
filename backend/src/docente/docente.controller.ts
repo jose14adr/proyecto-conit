@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, UseGuards, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { DocenteService } from './docente.service';
 import { CreateDocenteDto } from './dto/create-docente.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
@@ -19,17 +29,17 @@ export class DocenteController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDocenteDto: any) {
-    return this.docenteService.update(+id, updateDocenteDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateDocenteDto: any) {
+    return this.docenteService.update(id, updateDocenteDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.docenteService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.docenteService.remove(id);
   }
-  
+
   @Patch(':id/habilitar')
-  habilitar(@Param('id') id: string) {
-    return this.docenteService.habilitar(+id);
+  habilitar(@Param('id', ParseIntPipe) id: number) {
+    return this.docenteService.habilitar(id);
   }
 }

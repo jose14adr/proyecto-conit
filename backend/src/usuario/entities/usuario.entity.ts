@@ -19,4 +19,7 @@ export class Usuario {
 
   @Column('text', { array: true, default: [] })
   historialcontrasenias: string[];
+
+  @Column({ type: 'boolean', default: true })
+  estado: boolean;
 }

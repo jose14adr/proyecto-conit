@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Post, Body } from '@nestjs/common';
 import { PagoService } from './pago.service';
 
 @Controller('pago')
@@ -21,4 +21,9 @@ export class PagoController {
   pagar(@Param('id') id: string) {
     return this.pagoService.realizarPago(Number(id));
   }
+
+  @Post('mercadopago/card')
+async pagarTarjeta(@Body() body) {
+  return this.pagoService.pagarConTarjeta(body);
+}
 }

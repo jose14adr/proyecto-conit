@@ -5,7 +5,7 @@ import { Curso } from './entities/curso.entity';
 
 @Injectable()
 export class CursoService {
-    constructor(
+  constructor(
     @InjectRepository(Curso)
     private cursoRepository: Repository<Curso>,
   ) {}
@@ -16,9 +16,9 @@ export class CursoService {
 
   async obtenerUno(id: number) {
     return this.cursoRepository.findOne({
-        where: { id }
+      where: { id },
     });
-    }
+  }
 
   async findAll() {
     return this.cursoRepository.find({
@@ -27,7 +27,7 @@ export class CursoService {
         'grupos.docente',
         'temario',
         'temario.unidades',
-        'temario.unidades.sesion'
+        'temario.unidades.sesion',
       ],
     });
   }
@@ -39,22 +39,44 @@ export class CursoService {
         'grupos.docente',
         'temario',
         'temario.unidades',
-        'temario.unidades.sesion'
-      ]
+        'temario.unidades.sesion',
+      ],
     });
   }
 
-async obtenerUnoCursoAlumno(id: number): Promise<Curso | null> {
-  return this.cursoRepository.findOne({
-    where: { id },
-    relations: [
-      'grupos',
-      'grupos.docente',
-      'temario',
-      'temario.unidades',
-      'temario.unidades.sesion'
-    ]
-  });
+async obtenerUnoCursoAlumno(id: number) {
+  return this.cursoRepository
+    .createQueryBuilder('curso')
+
+    .leftJoinAndSelect('curso.temario', 'temario')
+    .leftJoinAndSelect('temario.unidades', 'unidad')
+    .leftJoinAndSelect('unidad.sesion', 'sesion')
+
+    .leftJoinAndSelect('curso.modulos', 'modulo')
+    .leftJoinAndSelect('modulo.lecciones', 'leccion')
+    .leftJoinAndSelect('leccion.materiales', 'material')
+
+    .where('curso.id = :id', { id })
+    .getOne();
 }
 
+  async remove(id: number) {
+    await this.cursoRepository.update(id, { estado: false });
+    return { message: 'Curso inhabilitado correctamente' };
+  }
+
+  async habilitar(id: number) {
+    await this.cursoRepository.update(id, { estado: true });
+    return { message: 'Curso habilitado correctamente' };
+  }
+
+  async create(data: Partial<Curso>){
+    const nuevoCurso = this.cursoRepository.create(data);
+    return this.cursoRepository.save(nuevoCurso);
+  }
+
+  async update(id: number, data: Partial<Curso>) {
+    await this.cursoRepository.update(id, data);
+    return this.obtenerUno(id);
+  }
 }

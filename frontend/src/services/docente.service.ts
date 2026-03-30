@@ -1,7 +1,7 @@
 import api from "./api";
 
 //Obtiene la lista de docentes desde la base de datos a través del backend
-export const obtenerDocentes = async () => {
+export const obtenerDocente = async () => {
   const response = await api.get("/docente");
   return response.data;
 };
@@ -20,7 +20,7 @@ export const actualizarDocente = async (id: number, docenteData: any) => {
 
 //Inhabilita un docente en la base de datos a través del backend
 export const inhabilitarDocente = async (id: number) => {
-  const response = await api.patch(`/docente/${id}/inhabilitar`);
+  const response = await api.delete(`/docente/${id}`);
   return response.data;
 };
 

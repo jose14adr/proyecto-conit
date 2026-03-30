@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany  } from 'typeorm';
+
 
 @Entity({ name: 'sesion' }) // Respeta el nombre exacto en BD
 export class Sesion {
@@ -11,4 +12,5 @@ export class Sesion {
 
   @Column({ type: 'integer' })
   idevaluacion: number;
+
 }

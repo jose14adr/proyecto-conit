@@ -18,16 +18,16 @@ import CarritoWeb from "./pages/CarritoWeb";
 
 // ESTUDIANTE
 
-import LayoutEstudiante from "./layouts/LayoutEstudiante";
-import HomePage from "./pages/HomePage";
-import MisCursos from "./pages/MisCursos";
-import CursoDetalle from "./pages/CursoDetalle";
-import MisSesiones from "./pages/MisSesiones";
-import MisCertificados from "./pages/MisCertificados";
-import Biblioteca from "./pages/Biblioteca";
-import MiPerfil from "./pages/MiPerfil";
-import MisPagos from "./pages/MisPagos";
-import Matricula from "./pages/Matricula";
+import LayoutEstudiante from "./alumno/LayoutEstudiante";
+import HomePage from "./alumno/HomePage";
+import MisCursos from "./alumno/MisCursos";
+import CursoDetalle from "./alumno/CursoDetalle";
+import MisSesiones from "./alumno/MisSesiones";
+import MisCertificados from "./alumno/MisCertificados";
+import Biblioteca from "./alumno/Biblioteca";
+import MiPerfil from "./alumno/MiPerfil";
+import MisPagos from "./alumno/MisPagos";
+import Matricula from "./alumno/Matricula";
 
 // ADMIN
 import AdminLayout from "./admin/AdminLayout";
@@ -37,6 +37,7 @@ import Cursos from "./admin/Cursos";
 import Alumnos from "./admin/Alumnos";
 import Usuarios from "./admin/Usuarios";
 import Pagos from "./admin/Pagos";
+import ControlSesiones from "./admin/ControlSesiones";
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
@@ -114,17 +115,16 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           {/* ESTUDIANTE */}
-          <Route path="/" element={<LayoutEstudiante />}>
+          <Route path="/alumno" element={<LayoutEstudiante />}>
             <Route index element={<HomePage />} />
             <Route path="mis-cursos" element={<MisCursos />} />
-            <Route path="/curso/:id" element={<CursoDetalleDocente />} />
-            <Route path="/mis-cursos/:id" element={<CursoDetalle />} />
+            <Route path="mis-cursos/:id" element={<CursoDetalle />} />
             <Route path="mis-sesiones" element={<MisSesiones />} />
             <Route path="mis-certificados" element={<MisCertificados />} />
             <Route path="mi-perfil" element={<MiPerfil />} />
             <Route path="mis-pagos" element={<MisPagos />} />
             <Route path="matricula" element={<Matricula />} />
-            <Route path="/recursos" element={<Biblioteca />} />
+            <Route path="recursos" element={<Biblioteca />} />
           </Route>
 
           {/* ADMIN */}
@@ -135,6 +135,7 @@ export default function App() {
             <Route path="alumnos" element={<Alumnos />} />
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="pagos" element={<Pagos />} />
+            <Route path="sesiones" element={<ControlSesiones />} />
           </Route>
 
           {/* DOCENTE */}

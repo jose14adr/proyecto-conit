@@ -77,12 +77,12 @@ export class DocenteService {
   }
 
   async remove(id: number) {
-    await this.docenteRepository.update(id, { estado: 'INACTIVO' });
+    await this.docenteRepository.update(id, { estado: false });
     return { message: 'Docente inhabilitado correctamente' };
   }
 
   async habilitar(id: number) {
-    await this.docenteRepository.update(id, { estado: 'ACTIVO' });
+    await this.docenteRepository.update(id, { estado: true });
     return { message: 'Docente habilitado correctamente' };
   }
 }

@@ -33,8 +33,8 @@ export class Docente {
   @Column()
   correo: string;
 
-  @Column({ default: 'ACTIVO' })
-  estado: string;
+  @Column({ type: 'boolean', default: true })
+  estado: boolean;
 
   // FK hacia Usuario
   @OneToOne(() => Usuario, { nullable: true })

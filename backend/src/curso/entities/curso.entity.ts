@@ -2,6 +2,8 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMan
 import { Grupo } from '../../grupo/entities/grupo.entity';
 import { Temario } from '../../temario/entities/temario.entity';
 import { SesionVivo } from '../../sesion-vivo/entities/sesion-vivo.entity';
+import { CursoModule } from '../curso.module';
+import { CursoModulo } from '../../curso_modulo/entities/curso_modulo.entity';
 
 @Entity({ name: 'curso' })
 export class Curso {
@@ -60,6 +62,12 @@ export class Curso {
     (sesionVivo) => sesionVivo.curso
     )
     sesionesVivo: SesionVivo[];
+
+     @OneToMany(
+    () => CursoModulo,
+    (cursoModulo) => cursoModulo.curso
+    )
+    modulos: CursoModulo[];
 
 
 

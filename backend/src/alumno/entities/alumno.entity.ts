@@ -36,8 +36,8 @@ export class Alumno {
   @Column({type:'varchar', nullable: true})
   foto_url: string;
 
-  @Column({ type: 'varchar', default: 'ACTIVO' })
-  estado: string;
+  @Column({ type: 'boolean', default: true })
+  estado: boolean;
 
   @Column({ type: 'varchar' })
   lugar_residencia: string;

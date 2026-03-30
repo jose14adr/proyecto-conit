@@ -20,6 +20,10 @@ import { RecursoModule } from './recurso/recurso.module';
 import { join } from 'path';
 import { TareaModule } from './tarea/tarea.module';
 import { SesionVivoModule } from './sesion-vivo/sesion-vivo.module';
+import { HistorialLoginModule } from './historial-login/historial-login.module';
+import { CursoModuloModule } from './curso_modulo/curso_modulo.module';
+import { CursoLeccionModule } from './curso_leccion/curso_leccion.module';
+import { LeccionMaterialModule } from './leccion-material/leccion-material.module';
 import { VimeoService } from './vimeo/vimeo.service';
 import { VimeoController } from './vimeo/vimeo.controller';
 import { VimeoModule } from './vimeo/vimeo.module';
@@ -35,7 +39,7 @@ import { EntregasVideoModule } from './entregas-video/entregas-video.module';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        type: 'postgres',
+        type: 'postgres' as 'postgres',
         url: config.get<string>('DATABASE_URL'),
         ssl: {
           rejectUnauthorized: false,
@@ -74,9 +78,13 @@ import { EntregasVideoModule } from './entregas-video/entregas-video.module';
     RecursoModule,
     TareaModule,
     SesionVivoModule,
+    HistorialLoginModule,
+    CursoModuloModule,
+    CursoLeccionModule,
+    LeccionMaterialModule,
     VimeoModule,
     EntregasVideoModule,
-
+    
   ],
   controllers: [AppController],
   providers: [AppService],
