@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import PagoModal from "../components/PagosModal";
-
-<script src="https://sdk.mercadopago.com/js/v2"></script>
+import PagoTarjeta from "../components/PagoTarjeta";
 
 const generarCodigoBoleta = () => {
   const random = Math.floor(Math.random() * 10000);
@@ -340,10 +339,10 @@ Estado: VERIFICADO
               ) : (
                 pagosRealizados.map((pago) => (
                   <tr key={pago.id} className="border-t">
-                    <td className="p-3">{pago.fecha}</td>
-                    <td className="p-3">{pago.codigo}</td>
-                    <td className="p-3">{pago.curso}</td>
-                    <td className="p-3">S/ {pago.monto}</td>
+                    <td className="p-3">{pago.fechapago}</td>
+                    <td className="p-3">{pago.estado}</td>
+                    <td className="p-3">{pago.matricula?.grupo?.curso?.nombrecurso}</td>
+                    <td className="p-3">S/ {pago.preciofinal}</td>
                     <td className="p-3">
                       <button
                         onClick={() => generarBoleta(pago)}
@@ -361,12 +360,30 @@ Estado: VERIFICADO
       )}
 
       {selectedPago && (
-        <PagoModal
-          pago={selectedPago}
-          onClose={() => setSelectedPago(null)}
-          onConfirm={confirmarPago}
-        />
-      )}
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    
+    <div className="bg-white p-6 rounded-xl w-[400px]">
+      
+      <h2 className="text-lg font-bold mb-4">
+        Pagar {selectedPago.curso}
+      </h2>
+
+      <PagoTarjeta 
+        curso_id={selectedPago.id} 
+        onClose={() => setSelectedPago(null)} 
+      />
+
+      <button
+        onClick={() => setSelectedPago(null)}
+        className="mt-4 bg-gray-300 px-3 py-1 rounded"
+      >
+        Cancelar
+      </button>
+
+    </div>
+
+  </div>
+)}
 
     </div>
   );
