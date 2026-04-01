@@ -1,13 +1,18 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
 import { Grupo } from '../../grupo/entities/grupo.entity';
 import { Temario } from '../../temario/entities/temario.entity';
 import { SesionVivo } from '../../sesion-vivo/entities/sesion-vivo.entity';
-import { CursoModule } from '../curso.module';
 import { CursoModulo } from '../../curso_modulo/entities/curso_modulo.entity';
 
 @Entity({ name: 'curso' })
 export class Curso {
-
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -42,8 +47,8 @@ export class Curso {
   idrequisito: number;
 
   @ManyToOne(() => Temario, { nullable: true })
-      @JoinColumn({ name: 'idtemario' })
-      temario?: Temario;
+  @JoinColumn({ name: 'idtemario' })
+  temario?: Temario;
 
   @Column({ type: 'int', nullable: true })
   idcategorizacion: number;
@@ -51,24 +56,12 @@ export class Curso {
   @Column({ type: 'varchar', nullable: true })
   tiemposemana: string;
 
-  @OneToMany(
-      () => Grupo,
-      (grupo) => grupo.curso
-    )
-    grupos: Grupo[];
+  @OneToMany(() => Grupo, (grupo) => grupo.curso)
+  grupos: Grupo[];
 
-     @OneToMany(
-    () => SesionVivo,
-    (sesionVivo) => sesionVivo.curso
-    )
-    sesionesVivo: SesionVivo[];
+  @OneToMany(() => CursoModulo, (cursoModulo) => cursoModulo.curso)
+  modulos: CursoModulo[];
 
-     @OneToMany(
-    () => CursoModulo,
-    (cursoModulo) => cursoModulo.curso
-    )
-    modulos: CursoModulo[];
-
-
-
+  @OneToMany(() => SesionVivo, (sesionVivo) => sesionVivo.curso)
+  sesionesVivo: SesionVivo[];
 }

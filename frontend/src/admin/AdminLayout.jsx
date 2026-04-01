@@ -95,7 +95,7 @@ export default function AdminLayout() {
             to="/admin/usuarios"
             className={`${linkStyle} ${isPathActive("/admin/usuarios") ? activeStyle : inactiveStyle}`}
           >
-            <Users size={20} /> Usuarios
+            <Users size={20} /> Lista de Usuarios
           </Link>
           <Link
             to="/admin/pagos"

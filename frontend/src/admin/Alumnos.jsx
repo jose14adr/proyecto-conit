@@ -6,6 +6,7 @@ import {
 } from "../services/alumno.service";
 import AlumnoModal from "../components/AlumnoModal";
 import AlumnoPerfilModal from "../components/AlumnoPerfilModal";
+import MatricularModal from "../components/MatricularModal";
 import toast from "react-hot-toast";
 import {
   Search,
@@ -16,6 +17,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Users,
+  BookPlus,
 } from "lucide-react";
 
 export default function Alumnos() {
@@ -29,6 +31,8 @@ export default function Alumnos() {
   const [alumnoInhabilitar, setAlumnoInhabilitar] = useState(null);
   const [alumnoHabilitar, setAlumnoHabilitar] = useState(null);
   const [alumnoVer, setAlumnoVer] = useState(null);
+
+  const [alumnoMatricular, setAlumnoMatricular] = useState(null);
 
   const cargarAlumnos = async () => {
     try {
@@ -226,6 +230,13 @@ export default function Alumnos() {
                             <User size={18} />
                           </button>
                           <button
+                            onClick={() => setAlumnoMatricular(alumno)}
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="Matricular en Curso"
+                          >
+                            <BookPlus size={18} />
+                          </button>
+                          <button
                             onClick={() => handleEditar(alumno)}
                             className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                             title="Editar"
@@ -269,11 +280,18 @@ export default function Alumnos() {
         />
       )}
 
-      {/* Modal de perfil */}
       {alumnoVer && (
         <AlumnoPerfilModal
           alumno={alumnoVer}
           onClose={() => setAlumnoVer(null)}
+        />
+      )}
+
+      {alumnoMatricular && (
+        <MatricularModal
+          alumno={alumnoMatricular}
+          onClose={() => setAlumnoMatricular(null)}
+          onSuccess={cargarAlumnos}
         />
       )}
 

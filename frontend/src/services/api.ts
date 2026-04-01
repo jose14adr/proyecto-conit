@@ -1,4 +1,5 @@
 import axios from "axios";
+import { error } from "node:console";
 
 //Creamos una instancia de axios con la URL base del backend
 const api = axios.create({
@@ -19,4 +20,23 @@ api.interceptors.request.use(
     return Promise.reject(error);
   },
 );
+
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      console.warn("Sesion invalida. Expulsando al usuario...");
+      localStorage.removeItem("token");
+      localStorage.removeItem("usuario");
+
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 export default api;

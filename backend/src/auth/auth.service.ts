@@ -11,6 +11,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import * as bcrypt from 'bcrypt';
 import { HistorialLoginService } from '../historial-login/historial-login.service';
+import { number } from 'zod';
 
 @Injectable()
 export class AuthService {
@@ -56,17 +57,24 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
+    let sessionId: number | null = null;
+    try {
+      const sesion = await this.historialLoginService.registrarIngreso(
+        usuario.id,
+        ip || 'IP desconocida',
+        dispositivo || 'Navegador desconocido',
+      );
+      sessionId = sesion.id;
+    } catch (error) {
+      console.error('Error al registrar el inicio de sesión:', error);
+    }
+
     const payload = {
       sub: usuario.id,
       correo: usuario.correo,
       rol: usuario.rol,
+      sessionId: sessionId,
     };
-
-    try {
-      await this.historialLoginService.registrarIngreso(usuario.id, ip || 'IP desconocida', dispositivo || "Navegador desconocido");
-    } catch (error) {
-      console.error('Error al registrar el inicio de sesión:', error);
-    }
 
     return {
       access_token: this.jwtService.sign(payload),

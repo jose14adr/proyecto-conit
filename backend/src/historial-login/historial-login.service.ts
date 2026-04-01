@@ -87,4 +87,18 @@ export class HistorialLoginService {
     });
     return await this.historialRepository.save(nuevoRegistro);
   }
+
+  async cerrarSesionRemota(id: number) {
+    const sesion = await this.historialRepository.findOne({ where: { id } });
+    if (sesion) {
+      sesion.estado = 'CERRADA';
+      return await this.historialRepository.save(sesion);
+    }
+    return null;
+  }
+
+  async verificarSesionActiva(id: number): Promise<boolean> {
+    const sesion = await this.historialRepository.findOne({ where: { id } });
+    return sesion?.estado === 'ACTIVO';
+  }
 }

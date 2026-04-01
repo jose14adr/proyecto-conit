@@ -40,4 +40,8 @@ export class Pago {
   @ManyToOne(() => Matricula)
   @JoinColumn({ name: "idmatricula" })
   matricula: Matricula
+
+  @Column({ type: 'text' })
+  status_detail: string;
+
 }

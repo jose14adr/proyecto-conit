@@ -11,4 +11,3 @@ import { MatriculaController } from './matricula.controller';
   exports: [MatriculaService]
 })
 export class MatriculaModule {}
-
