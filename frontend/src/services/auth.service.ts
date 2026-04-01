@@ -1,16 +1,14 @@
-import { data } from "react-router-dom";
-import { th } from "zod/locales";
-
-//Definimos que le enviamos al backend para iniciar sesión, que es el correo y la contraseña del usuario.
+//Definimos que le enviamos al backend para iniciar sesión
 export interface LoginCredentials {
   correo: string;
   contrasenia: string;
 }
 
-//Definimos que nos responde el backend al hacer login, que es un token de acceso y la información del usuario.
+//Definimos lo que responde el backend
 export interface LoginResponse {
   access_token: string;
   usuario: {
+    id: number; // 🔥 IMPORTANTE (lo usamos)
     correo: string;
     nombre: string;
     rol: string;
@@ -18,12 +16,11 @@ export interface LoginResponse {
   };
 }
 
-//URL base de la API (idealmente esto luego lo pasaríamos a un archivo .env propio de Vite)
 const API_URL = "http://localhost:3000";
 
-//Función para iniciar sesión
+// ================= LOGIN =================
 export const login = async (
-  credentials: LoginCredentials,
+  credentials: LoginCredentials
 ): Promise<LoginResponse> => {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
@@ -37,25 +34,53 @@ export const login = async (
     const errorData = await response.json().catch(() => null);
     throw new Error(errorData?.message || "Correo o contraseña incorrectos");
   }
-  
+
   const data: LoginResponse = await response.json();
 
-  // Guardar token y usuario en el almacenamiento del navegador
+  // 🔹 Guardar token y usuario
   localStorage.setItem("token", data.access_token);
   localStorage.setItem("usuario", JSON.stringify(data.usuario));
+
+  // ================= 🔥 NUEVO: GUARDAR IDALUMNO =================
+  if (data.usuario?.rol === "ALUMNO") {
+    try {
+      const alumnoResponse = await fetch(`${API_URL}/alumno`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.access_token}`,
+        },
+      });
+
+      if (alumnoResponse.ok) {
+        const alumnos = await alumnoResponse.json();
+
+        const alumnoEncontrado = alumnos.find(
+          (a: any) => Number(a.idusuario) === Number(data.usuario.id)
+        );
+
+        if (alumnoEncontrado) {
+          localStorage.setItem("idalumno", String(alumnoEncontrado.id));
+        }
+      }
+    } catch (error) {
+      console.error("Error obteniendo idalumno:", error);
+    }
+  }
 
   return data;
 };
 
-//Cerrar sesión eliminando el token y la información del usuario del almacenamiento del navegador.
+// ================= LOGOUT =================
 export const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("usuario");
+  localStorage.removeItem("idalumno"); // 🔥 importante
 };
 
-//Conecta el endpoint de forgot-password del backend para solicitar el restablecimiento de contraseña, enviando el correo del usuario
+// ================= FORGOT PASSWORD =================
 export const forgotPassword = async (data: { correo: string }) => {
-  const response = await fetch("http://localhost:3000/auth/forgot-password", {
+  const response = await fetch(`${API_URL}/auth/forgot-password`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -66,29 +91,31 @@ export const forgotPassword = async (data: { correo: string }) => {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(
-      errorData.message || "Error al solicitar restablecimiento de contraseña",
+      errorData.message || "Error al solicitar restablecimiento de contraseña"
     );
   }
 
   return response.json();
 };
 
-//Conecta con el endpoint para cambiar la contraseña, enviando el token
+// ================= RESET PASSWORD =================
 export const resetPassword = async (data: {
   token: string;
   contrasenia: string;
   codigoSeguridad: string;
 }) => {
-  const response = await fetch("http://localhost:3000/auth/reset-password", {
+  const response = await fetch(`${API_URL}/auth/reset-password`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || "Error al restablecer contraseña");
   }
+
   return response.json();
 };

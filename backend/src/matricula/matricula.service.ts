@@ -30,26 +30,36 @@ export class MatriculaService {
     const serieGenerada = prefijo + correlativo;
 
     const matricula = await this.matriculaRepo.save({
-      alumno: { id: alumnoId },
-      grupo: { id: grupoId },
-      estado: 'pendiente',
-      observacion: `Matrícula de ${nombreCurso}`,
-      serie: serieGenerada,
-      beneficio: 'NINGUNO',
-      pacademico: '',
-      idadministrador: 1,
-      idcertificado: 1,
-      idcontrolacademico: 1,
+      alumno:{ id: alumnoId },
+      grupo:{ id: grupoId },
+
+      estado:"pendiente",
+
+      observacion:`Matrícula de ${nombreCurso}`,
+      serie:serieGenerada,
+      beneficio:"NINGUNO",
+      pacademico:"",
+
+      idadministrador:1,
+      idcertificado:1,
+      idcontrolacademico:1
     });
+    
 
     return matricula;
   }
 
-  async obtenerPorAlumno(alumnoId: number) {
-    return this.matriculaRepo.find({
-      where: { alumno: { id: alumnoId } },
-      relations: ['grupo', 'grupo.curso'],
-      order: { id: 'DESC' },
-    });
-  }
+  async findByAlumno(idalumno: number) {
+  return await this.matriculaRepo.find({
+    where: {
+      alumno: { id: idalumno }
+    },
+    relations: ['grupo'],
+    order: {
+      created_at: 'DESC'
+    }
+  });
 }
+
+}
+

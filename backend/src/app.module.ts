@@ -28,6 +28,8 @@ import { VimeoService } from './vimeo/vimeo.service';
 import { VimeoController } from './vimeo/vimeo.controller';
 import { VimeoModule } from './vimeo/vimeo.module';
 import { EntregasVideoModule } from './entregas-video/entregas-video.module';
+import { MultimediaModule } from './multimedia/multimedia.module';
+import { SoporteModule } from './soporte/soporte.module';
 
 @Module({
   imports: [
@@ -84,7 +86,8 @@ import { EntregasVideoModule } from './entregas-video/entregas-video.module';
     LeccionMaterialModule,
     VimeoModule,
     EntregasVideoModule,
-    
+    MultimediaModule,
+    SoporteModule,
   ],
   controllers: [AppController],
   providers: [AppService],

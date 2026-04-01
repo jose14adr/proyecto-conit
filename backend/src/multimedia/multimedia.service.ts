@@ -7,36 +7,45 @@ export class MultimediaService {
   async upload(file: Express.Multer.File, usuario_id: string) {
     const fileName = `${uuidv4()}-${file.originalname}`;
 
-    // 1️⃣ Subir al bucket
-    const { error } = await supabase.storage
+    // 1. Subir imagen al bucket
+    const { error: storageError } = await supabase.storage
       .from('imagenes')
       .upload(fileName, file.buffer, {
         contentType: file.mimetype,
       });
 
-    if (error) {
-      throw new Error(error.message);
+    if (storageError) {
+      throw new Error(storageError.message);
     }
 
-    // 2️⃣ Obtener URL pública
+    // 2. Obtener URL pública
     const { data } = supabase.storage
       .from('imagenes')
       .getPublicUrl(fileName);
 
     const publicUrl = data.publicUrl;
 
-    // 3️⃣ Guardar en tabla multimedia
-    const { error: dbError } = await supabase
-      .from('multimedia')
-      .insert({
-        nombre: file.originalname,
-        url: publicUrl,
-        tipo: file.mimetype,
-        usuario_id: usuario_id,
-      });
+    // 3. Buscar alumno por idusuario
+    const { data: alumno, error: alumnoError } = await supabase
+      .from('alumno')
+      .select('id, idusuario')
+      .eq('idusuario', Number(usuario_id))
+      .single();
 
-    if (dbError) {
-      throw new Error(dbError.message);
+    if (alumnoError || !alumno) {
+      throw new Error('No se encontró el alumno asociado al usuario');
+    }
+
+    // 4. Actualizar foto_url del alumno
+    const { error: updateError } = await supabase
+      .from('alumno')
+      .update({
+        foto_url: publicUrl,
+      })
+      .eq('id', alumno.id);
+
+    if (updateError) {
+      throw new Error(updateError.message);
     }
 
     return {

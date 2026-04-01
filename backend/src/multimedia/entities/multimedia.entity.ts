@@ -1,9 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-import { Timestamp } from 'typeorm/browser';
 
-@Entity({ name: 'multimedia' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'multimedia' })
 export class Multimedia {
-
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -14,13 +12,11 @@ export class Multimedia {
   url: string;
 
   @Column({ type: 'timestamp' })
-  created_at: Timestamp;
+  created_at: Date;
 
   @Column({ type: 'varchar' })
   tipo: string;
 
   @Column({ type: 'integer' })
   usuario_id: number;
-
 }
-

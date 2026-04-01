@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { MatriculaService } from './matricula.service';
 
 @Controller('matricula')
@@ -15,7 +15,7 @@ export class MatriculaController {
   }
 
   @Get('alumno/:id')
-  obtenerPorAlumno(@Param('id') id: number) {
-    return this.matriculaService.obtenerPorAlumno(id);
+  obtenerPorAlumno(@Param('id', ParseIntPipe) id: number) {
+    return this.matriculaService.findByAlumno(id);
   }
 }
