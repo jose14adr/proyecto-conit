@@ -8,5 +8,6 @@ import { MatriculaController } from './matricula.controller';
   imports: [TypeOrmModule.forFeature([Matricula])],
   controllers: [MatriculaController],
   providers: [MatriculaService],
+  exports: [MatriculaService]
 })
 export class MatriculaModule {}

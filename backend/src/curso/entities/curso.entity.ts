@@ -9,6 +9,7 @@ import {
 import { Grupo } from '../../grupo/entities/grupo.entity';
 import { Temario } from '../../temario/entities/temario.entity';
 import { SesionVivo } from '../../sesion-vivo/entities/sesion-vivo.entity';
+import { CursoModulo } from '../../curso_modulo/entities/curso_modulo.entity';
 
 @Entity({ name: 'curso' })
 export class Curso {
@@ -57,6 +58,9 @@ export class Curso {
 
   @OneToMany(() => Grupo, (grupo) => grupo.curso)
   grupos: Grupo[];
+
+  @OneToMany(() => CursoModulo, (cursoModulo) => cursoModulo.curso)
+  modulos: CursoModulo[];
 
   @OneToMany(() => SesionVivo, (sesionVivo) => sesionVivo.curso)
   sesionesVivo: SesionVivo[];

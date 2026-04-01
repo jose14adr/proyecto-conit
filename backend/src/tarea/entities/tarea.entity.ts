@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Unidad } from '../../unidad/entities/unidad.entity';
 
 @Entity({ name: 'tarea' })
 export class Tarea {
@@ -38,5 +39,10 @@ export class Tarea {
 
   @Column()
   fecha_inicio: Date;
+
+  @ManyToOne(() => Unidad, { nullable: true })
+    @JoinColumn({ name: 'unidad_id' })
+    sesion?: Unidad;
+  
 
 }
