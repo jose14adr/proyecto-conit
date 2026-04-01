@@ -5,11 +5,21 @@ import { MatriculaService } from '../matricula/matricula.service';
 import * as nodemailer from 'nodemailer';
 import PDFDocument from 'pdfkit';
 import * as fs from 'fs';
+import axios from 'axios';
+import * as crypto from 'crypto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Pago } from './entities/pago.entity';
+
 
 @Injectable()
 export class PagoService {
 
-  constructor(private matriculaService: MatriculaService) {}
+  constructor(
+    private matriculaService: MatriculaService,
+      @InjectRepository(Pago)
+    private pagoRepository: Repository<Pago>,
+  ) {}
 
   // ==============================
   // PAGOS PENDIENTES
@@ -81,6 +91,94 @@ async getPagosRealizados() {
 
   return data;
 }
+
+
+
+  // ==============================
+  // PAGO CON MERCADOPAGO
+  // ==============================
+  async pagarConMercadoPago(data: any) {
+    mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
+
+    const payment = await mercadopago.payment.create({
+      transaction_amount: Number(data.preciofinal),
+      token: data.token,
+      description: 'Pago curso',
+      installments: Number(data.installments),
+      payment_method_id: data.payment_method_id,
+      issuer_id: data.issuer_id,
+      payer: { email: data.email, identification: { type: 'DNI', number: data.dni } },
+    });
+
+    return this.procesarPagoBackend(data, payment.body, 'mercadopago');
+  }
+
+  // ==============================
+  // PAGO CON PAYPAL
+  // ==============================
+  async pagarConPaypal(data: any) {
+    // 🌐 Aquí usarías la API de PayPal REST v2
+    const res = await axios.post('https://api-m.sandbox.paypal.com/v2/checkout/orders', {
+      intent: 'CAPTURE',
+      purchase_units: [{ amount: { currency_code: 'PEN', value: String(data.preciofinal) } }],
+      payer: { email_address: data.email },
+    }, {
+      headers: { Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}` }
+    });
+
+    // Capturar pago inmediatamente (sandbox)
+    const orderId = res.data.id;
+    const capture = await axios.post(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`, {}, {
+      headers: { Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}` }
+    });
+
+    const pago = {
+      id: capture.data.id,
+      status: capture.data.status.toLowerCase(), // APPROVED -> approved
+      status_detail: null
+    };
+
+    return this.procesarPagoBackend(data, pago, 'paypal');
+  }
+
+ 
+    // ==============================
+  // PROCESAR PAGO Y GUARDAR EN SUPABASE
+  // ==============================
+  private async procesarPagoBackend(data: any, pago: any, metodo: string) {
+    const estado = pago.status === 'approved' ? 'pagado' : (pago.status === 'rejected' ? 'rechazado' : 'pendiente');
+
+    const { data: existe } = await supabase
+      .from('pago')
+      .select('id')
+      .eq('idpagodoc', pago.id)
+      .maybeSingle();
+
+    if (!existe) {
+      await supabase.from('pago').insert([{
+        fechapago: new Date(),
+        precioinicial: data.precioinicial,
+        preciodescuento: data.preciodescuento,
+        preciofinal: data.preciofinal,
+        igv: data.igv,
+        tipopago: metodo,
+        estado,
+        matricula_id: data.matricula_id,
+        idpagodoc: pago.id,
+        idtipocomprobante: 1,
+        status_detail: pago.status_detail
+      }]);
+    }
+
+    if (estado === 'pagado') {
+      await supabase.from('matricula').update({ estado: 'pagado' }).eq('id', data.matricula_id);
+      const pdfPath = await this.generarPDF(data, pago);
+      await this.enviarCorreo(data.email, data, pdfPath);
+    }
+
+    return { id: pago.id, status: estado, status_detail: pago.status_detail };
+  }
+
 
   // ==============================
   // PAGO MANUAL
@@ -197,9 +295,26 @@ async getPagosRealizados() {
     return { received: true };
   }
 
+    // ==============================
+  // PDF Y CORREO
   // ==============================
-  // CORREO
-  // ==============================
+  async generarPDF(data: any, payment: any) {
+    const filePath = `boleta-${payment.id}.pdf`;
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    doc.pipe(fs.createWriteStream(filePath));
+    doc.fontSize(18).text('BOLETA ELECTRÓNICA', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12);
+    doc.text(`Código: ${payment.id}`);
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`);
+    doc.text(`Cliente: ${data.email}`);
+    doc.text(`Monto: S/ ${data.preciofinal}`);
+    doc.moveDown();
+    doc.text('Gracias por su compra', { align: 'center' });
+    doc.end();
+    return filePath;
+  }
+
   async enviarCorreo(email: string, detalle: any, pdfPath: string) {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -215,10 +330,192 @@ async getPagosRealizados() {
     });
   }
 
+   // ==============================
+  // PAGO CON IZIPAY
+  // ==============================
+  async pagarConIzipay(data: any) {
+
+  if (!process.env.IZIPAY_USER || !process.env.IZIPAY_PASSWORD) {
+    throw new Error("❌ Credenciales Izipay no configuradas");
+  }
+
+  const res = await axios.post(
+    "https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment",
+    {
+      amount: data.preciofinal * 100,
+      currency: "PEN",
+      orderId: data.matricula_id.toString(), // 🔥 IMPORTANTE
+      customer: {
+        email: data.email
+      }
+    },
+    {
+      headers: {
+        Authorization: "Basic " + Buffer.from(
+          `${process.env.IZIPAY_USER}:${process.env.IZIPAY_PASSWORD}`
+        ).toString("base64"),
+        "Content-Type": "application/json"
+      }
+    }
+  );
+
+  return {
+    status: "pending",
+    formToken: res.data.answer?.formToken
+  };
+}
+
+  async confirmarPagoIzipay(formToken: string, data: any) {
+
+  const res = await axios.post(
+    "https://api.micuentaweb.pe/api-payment/V4/Charge/GetPaymentDetails",
+    { formToken },
+    {
+      headers: {
+        Authorization: "Basic " + Buffer.from(
+          `${process.env.IZIPAY_USER}:${process.env.IZIPAY_PASSWORD}`
+        ).toString("base64"),
+        "Content-Type": "application/json"
+      }
+    }
+  );
+
+  const estado = res.data.answer?.orderStatus;
+
+  if (estado === "PAID") {
+    return this.procesarPagoBackend(
+      data,
+      { id: Date.now(), status: "approved", status_detail: "accredited" },
+      "izipay"
+    );
+  }
+
+  return { status: "pending" };
+}
+
+
+  async procesarWebhookIzipay(body: any) {
+
+    console.log("📩 WEBHOOK RAW:", body);
+
+    const hashRecibido = body['kr-hash'];
+    const claveSecreta = process.env.IZIPAY_HMAC_SHA256;
+
+    if (!claveSecreta) {
+  throw new Error("❌ Falta IZIPAY_HMAC_SHA256 en .env");
+}
+
+    // 🔐 1. Construir string para firma
+    const data = Object.keys(body)
+      .filter(key => key.startsWith('kr-') && key !== 'kr-hash')
+      .sort()
+      .map(key => `${key}=${body[key]}`)
+      .join('&');
+
+    // 🔐 2. Generar hash local
+    const hashCalculado = crypto
+      .createHmac('sha256', claveSecreta)
+      .update(data)
+      .digest('hex');
+
+    // 🔐 3. Validar firma
+    if (hashCalculado !== hashRecibido) {
+      console.error("❌ FIRMA INVÁLIDA");
+      throw new Error("Firma inválida");
+    }
+
+    console.log("✅ FIRMA VÁLIDA");
+
+    // ============================
+    // 📊 DATOS IMPORTANTES
+    // ============================
+    const estado = body['kr-answer-orderStatus']; // PAID / REFUSED
+    const orderId = body['kr-answer-orderDetails-orderId'];
+    const monto = body['kr-answer-orderDetails-orderTotalAmount'];
+
+    console.log("📊 ESTADO:", estado);
+
+    // ============================
+    // 💾 ACTUALIZAR BD
+    // ============================
+    if (estado === "PAID") {
+
+      await supabase
+        .from('matricula')
+        .update({ estado: 'pagado' })
+        .eq('id', orderId);
+
+      await supabase
+        .from('pago')
+        .update({ estado: 'pagado' })
+        .eq('matricula_id', orderId);
+
+      console.log("💰 Pago confirmado en BD");
+
+      // 📄 PDF + 📧 correo
+      const pdfPath = await this.generarPDF({ preciofinal: monto / 100 }, { id: orderId });
+
+      await this.enviarCorreo("cliente@email.com", { preciofinal: monto / 100 }, pdfPath);
+
+    }
+
+    return { ok: true };
+  }
+
+  async buscarPorMatricula(matricula_id: number) {
+  return await this.pagoRepository.findOne({
+    where: {
+      matricula: { id: matricula_id }
+    }
+  });
+}
+
+  async marcarPagado(matricula_id: number, data: any) {
+  const pago = await this.pagoRepository.findOne({
+    where: {
+      matricula: { id: matricula_id }
+    },
+    relations: ["matricula"]
+  });
+
+  if (!pago) {
+    throw new Error("Pago no encontrado");
+  }
+
+  pago.estado = "pagado";
+  pago.status_detail = JSON.stringify(data);
+  pago.fechapago = new Date();
+
+  return await this.pagoRepository.save(pago);
+}
+
+
+
+
+
+
+  // ==============================
+  // CORREO
+  // ==============================
+  /*async enviarCorreo(email: string, detalle: any, pdfPath: string) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: '✅ Pago confirmado',
+      html: `<h2>Pago exitoso</h2><p>Monto: S/ ${detalle.preciofinal}</p>`,
+      attachments: [{ filename: 'boleta.pdf', path: pdfPath }]
+    });
+  }*/
+
   // ==============================
   // PDF
   // ==============================
-  async generarPDF(data: any, payment: any) {
+  /*async generarPDF(data: any, payment: any) {
     const filePath = `boleta-${payment.body.id}.pdf`;
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     doc.pipe(fs.createWriteStream(filePath));
@@ -233,5 +530,5 @@ async getPagosRealizados() {
     doc.text('Gracias por su compra', { align: 'center' });
     doc.end();
     return filePath;
-  }
+  }*/
 }

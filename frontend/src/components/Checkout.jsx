@@ -1,0 +1,35 @@
+import { useState } from "react";
+import PagoTarjeta from "./PagoTarjeta";
+import PagoIzipay from "./PagoIzipay";
+import PagoPaypal from "./PagoPaypal";
+
+export default function Checkout({ curso_id, onClose }) {
+
+  const [metodo, setMetodo] = useState("");
+
+  return (
+    <div>
+      <h2 className="mb-3 font-bold">Elige tu método de pago</h2>
+
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setMetodo("tarjeta")}>💳 Tarjeta</button>
+        <button onClick={() => setMetodo("yape")}>📱 Yape</button>
+        <button onClick={() => setMetodo("paypal")}>🌎 PayPal</button>
+    </div>
+
+      {/* 🔥 Render dinámico */}
+      {metodo === "tarjeta" && (
+        <PagoTarjeta curso_id={curso_id} onClose={onClose} />
+      )}
+
+      {metodo === "yape" && (
+        <PagoIzipay curso_id={curso_id} onClose={onClose} />
+      )}
+
+      {metodo === "paypal" && (
+        <PagoPaypal curso_id={curso_id} onClose={onClose} />
+      )}
+
+    </div>
+  );
+}
