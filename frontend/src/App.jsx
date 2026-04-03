@@ -10,11 +10,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 // WEB PUBLICA CONIT
 import HeaderWeb from "./components/HeaderWeb";
 import FooterWeb from "./components/FooterWeb";
-import HomeWeb from "./pages/HomeWeb";
-import CursosWeb from "./pages/CursosWeb";
-import NosotrosWeb from "./pages/NosotrosWeb";
-import ContactoWeb from "./pages/ContactoWeb";
-import CarritoWeb from "./pages/CarritoWeb";
+import HomeWeb from "./pages/web/HomeWeb";
+import CursosWeb from "./pages/web/CursosWeb";
+import NosotrosWeb from "./pages/web/NosotrosWeb";
+import ContactoWeb from "./pages/web/ContactoWeb";
+import CarritoWeb from "./pages/web/CarritoWeb";
+import DetalleCursoWeb from "./pages/web/DetalleCursoWeb";
 
 // ESTUDIANTE
 
@@ -28,6 +29,7 @@ import Biblioteca from "./alumno/Biblioteca";
 import MiPerfil from "./alumno/MiPerfil";
 import MisPagos from "./alumno/MisPagos";
 import Matricula from "./alumno/Matricula";
+import Soporte from "./alumno//Soporte";
 
 // ADMIN
 import AdminLayout from "./admin/AdminLayout";
@@ -89,6 +91,22 @@ export default function App() {
           }
         />
         <Route
+          path="/web/cursos/:id"
+          element={
+            <PublicWebLayout>
+              <DetalleCursoWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
+          path="/web/cursos"
+          element={
+            <PublicWebLayout>
+              <CursosWeb />
+            </PublicWebLayout>
+          }
+        />
+        <Route
           path="/web/nosotros"
           element={
             <PublicWebLayout>
@@ -121,6 +139,7 @@ export default function App() {
             <Route path="mis-cursos/:id" element={<CursoDetalle />} />
             <Route path="mis-sesiones" element={<MisSesiones />} />
             <Route path="mis-certificados" element={<MisCertificados />} />
+            <Route path="soporte" element={<Soporte />} />
             <Route path="mi-perfil" element={<MiPerfil />} />
             <Route path="mis-pagos" element={<MisPagos />} />
             <Route path="matricula" element={<Matricula />} />

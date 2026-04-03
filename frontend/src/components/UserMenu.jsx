@@ -72,7 +72,7 @@ export default function UserMenu() {
           >
             <button
               onClick={() => {
-                navigate("/mi-perfil")
+                navigate("/alumno/mi-perfil")
                 setOpenMenu(false)
               }}
               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition">

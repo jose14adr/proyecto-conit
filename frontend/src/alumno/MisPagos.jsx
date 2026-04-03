@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import PagoModal from "../components/PagosModal";
 import PagoTarjeta from "../components/PagoTarjeta";
+import Checkout from "../components/Checkout";
 
 const generarCodigoBoleta = () => {
   const random = Math.floor(Math.random() * 10000);
@@ -368,7 +369,7 @@ Estado: VERIFICADO
         Pagar {selectedPago.curso}
       </h2>
 
-      <PagoTarjeta 
+      <Checkout 
         curso_id={selectedPago.id} 
         onClose={() => setSelectedPago(null)} 
       />

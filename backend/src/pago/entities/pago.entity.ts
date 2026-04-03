@@ -26,7 +26,7 @@ export class Pago {
   tipopago: string;
 
   @Column({ type: 'numeric' })
-  idpagoDoc: number;
+  idpagodoc: number;
 
   @Column({ type: 'numeric' })
   idtipocomprobante: number;
@@ -38,7 +38,7 @@ export class Pago {
   estado: string;
 
   @ManyToOne(() => Matricula)
-  @JoinColumn({ name: "idmatricula" })
+  @JoinColumn({ name: "matricula_id" })
   matricula: Matricula
 
   @Column({ type: 'text' })
