@@ -925,29 +925,57 @@ export const crearTarea = async (payload) => {
     videoApoyoUrl = publicUrlData?.publicUrl || null;
   }
 
+  let queryOrden = supabase
+    .from("tarea")
+    .select("orden")
+    .eq("idcurso", Number(cursoId));
+
+  if (idmodulo) {
+    queryOrden = queryOrden.eq("idmodulo", Number(idmodulo));
+  } else {
+    queryOrden = queryOrden.is("idmodulo", null);
+  }
+
+  if (idleccion) {
+    queryOrden = queryOrden.eq("idleccion", Number(idleccion));
+  } else {
+    queryOrden = queryOrden.is("idleccion", null);
+  }
+
+  const { data: ultimaTarea, error: errorUltimaTarea } = await queryOrden
+    .order("orden", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (errorUltimaTarea) {
+    throw new Error(`Error obteniendo orden de tarea: ${errorUltimaTarea.message}`);
+  }
+
+  const nuevoOrden = (ultimaTarea?.orden || 0) + 1;
+
   const { data, error } = await supabase
-  .from("tarea")
-  .insert([
-    {
-      idcurso: Number(cursoId),
-      idgrupo: grupoId ? Number(grupoId) : null,
-      titulo,
-      descripcion,
-      fecha_inicio: fechaInicio || null,
-      fecha_limite: fechaLimite,
-      tipo_entrega: tipoEntrega,
-      tipo_apoyo: tipoApoyo,
-      texto_apoyo: tipoApoyo === "texto" ? textoApoyo : null,
-      archivo_apoyo_url: archivoApoyoUrl,
-      video_apoyo_url: videoApoyoUrl,
-      calificable: Boolean(calificable),
-      idmodulo: idmodulo ? Number(idmodulo) : null,
-      idleccion: idleccion ? Number(idleccion) : null,
-      orden: nuevoOrden,
-    },
-  ])
-  .select()
-  .single();
+    .from("tarea")
+    .insert([
+      {
+        idcurso: Number(cursoId),
+        idgrupo: grupoId ? Number(grupoId) : null,
+        titulo,
+        descripcion,
+        fecha_inicio: fechaInicio || null,
+        fecha_limite: fechaLimite,
+        tipo_entrega: tipoEntrega,
+        tipo_apoyo: tipoApoyo,
+        texto_apoyo: tipoApoyo === "texto" ? textoApoyo : null,
+        archivo_apoyo_url: archivoApoyoUrl,
+        video_apoyo_url: videoApoyoUrl,
+        calificable: Boolean(calificable),
+        idmodulo: idmodulo ? Number(idmodulo) : null,
+        idleccion: idleccion ? Number(idleccion) : null,
+        orden: nuevoOrden,
+      },
+    ])
+    .select()
+    .single();
 
   if (error) {
     throw new Error(`Error guardando tarea: ${error.message}`);
@@ -1890,12 +1918,13 @@ export const actualizarEvaluacionesGrupo = async (evaluaciones) => {
 
   const payload = evaluaciones.map((ev, index) => ({
     id: Number(ev.id),
-    idgrupo: Number(ev.idgrupo), // 
+    idgrupo: Number(ev.idgrupo),
     nombre: String(ev.nombre || "").trim(),
     porcentaje: Number(ev.porcentaje || 0),
     orden: Number(ev.orden ?? index + 1),
     tipo: ev.tipo || "manual",
     idtarea: ev.tipo === "tarea" && ev.idtarea ? Number(ev.idtarea) : null,
+    idexamen: ev.tipo === "examen" && ev.idexamen ? Number(ev.idexamen) : null,
     activa: ev.activa ?? true,
   }));
 
@@ -1913,6 +1942,7 @@ export const crearEvaluacionGrupo = async ({
   porcentaje,
   tipo = "manual",
   idtarea = null,
+  idexamen = null,
   orden = 1,
 }) => {
   const { data, error } = await supabase
@@ -1924,6 +1954,7 @@ export const crearEvaluacionGrupo = async ({
         porcentaje: Number(porcentaje || 0),
         tipo,
         idtarea: tipo === "tarea" && idtarea ? Number(idtarea) : null,
+        idexamen: tipo === "examen" && idexamen ? Number(idexamen) : null,
         orden: Number(orden),
         activa: true,
       },
@@ -2323,4 +2354,191 @@ export const getPendientesRevisionByGrupo = async (grupoId) => {
   if (errEntregas) throw new Error(errEntregas.message);
 
   return (entregas || []).length;
+};
+
+
+
+
+
+
+
+export const crearExamen = async ({
+  leccionId,
+  grupoId,
+  titulo,
+  descripcion,
+  duracion_minutos,
+  intentos_permitidos,
+  nota_maxima,
+  preguntas,
+}) => {
+  const { data: examen, error: errExamen } = await supabase
+    .from("examen")
+    .insert({
+      idleccion: Number(leccionId),
+      idgrupo: Number(grupoId),
+      titulo: titulo?.trim(),
+      descripcion: descripcion?.trim() || null,
+      duracion_minutos: Number(duracion_minutos || 30),
+      intentos_permitidos: Number(intentos_permitidos || 1),
+      nota_maxima: Number(nota_maxima || 20),
+      estado: true,
+    })
+    .select()
+    .single();
+
+  if (errExamen) throw new Error(errExamen.message);
+
+  for (let i = 0; i < preguntas.length; i++) {
+    const pregunta = preguntas[i];
+
+    const { data: preguntaDB, error: errPregunta } = await supabase
+      .from("examen_pregunta")
+      .insert({
+        idexamen: Number(examen.id),
+        enunciado: pregunta.enunciado?.trim(),
+        puntaje: Number(pregunta.puntaje || 1),
+        orden: i + 1,
+        estado: true,
+      })
+      .select()
+      .single();
+
+    if (errPregunta) throw new Error(errPregunta.message);
+
+    const opciones = (pregunta.opciones || []).map((op, idx) => ({
+      idpregunta: Number(preguntaDB.id),
+      texto: op.texto?.trim(),
+      es_correcta: !!op.es_correcta,
+      orden: idx + 1,
+    }));
+
+    const { error: errOpciones } = await supabase
+      .from("examen_opcion")
+      .insert(opciones);
+
+    if (errOpciones) throw new Error(errOpciones.message);
+  }
+
+  return examen;
+};
+
+export const getExamenesByLeccion = async (leccionId) => {
+  const { data: examenes, error } = await supabase
+    .from("examen")
+    .select("*")
+    .eq("idleccion", Number(leccionId))
+    .eq("estado", true)
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const examenIds = (examenes || []).map((e) => Number(e.id));
+
+  let preguntas = [];
+  let evaluaciones = [];
+
+  if (examenIds.length > 0) {
+    const { data: preguntasDB, error: errPreg } = await supabase
+      .from("examen_pregunta")
+      .select("id, idexamen")
+      .in("idexamen", examenIds);
+
+    if (errPreg) throw new Error(errPreg.message);
+    preguntas = preguntasDB || [];
+
+    const { data: evaluacionesDB, error: errEval } = await supabase
+      .from("evaluacion_config")
+      .select("id, nombre, porcentaje, idexamen, tipo, activa")
+      .in("idexamen", examenIds)
+      .eq("tipo", "examen")
+      .eq("activa", true);
+
+    if (errEval) throw new Error(errEval.message);
+    evaluaciones = evaluacionesDB || [];
+  }
+
+  return (examenes || []).map((examen) => {
+    const total_preguntas = preguntas.filter(
+      (p) => Number(p.idexamen) === Number(examen.id)
+    ).length;
+
+    const evaluacion = evaluaciones.find(
+      (ev) => Number(ev.idexamen) === Number(examen.id)
+    );
+
+    return {
+      ...examen,
+      total_preguntas,
+      evaluacion_nombre: evaluacion?.nombre || "",
+      evaluacion_porcentaje: evaluacion?.porcentaje ?? null,
+    };
+  });
+};
+
+export const getEvaluacionesExamenDisponiblesByGrupo = async (grupoId, examenIdActual = null) => {
+  const { data, error } = await supabase
+    .from("evaluacion_config")
+    .select("id, idgrupo, nombre, porcentaje, tipo, idexamen, activa, orden")
+    .eq("idgrupo", Number(grupoId))
+    .eq("tipo", "examen")
+    .eq("activa", true)
+    .order("orden", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const examenActual = examenIdActual ? Number(examenIdActual) : null;
+
+  return (data || []).filter((ev) => {
+    if (!ev.idexamen) return true;
+    return Number(ev.idexamen) === examenActual;
+  });
+};
+
+export const asignarEvaluacionAExamen = async ({
+  examenId,
+  evaluacionId,
+  grupoId,
+}) => {
+  const idExamen = Number(examenId);
+  const idEvaluacion = Number(evaluacionId);
+  const idGrupo = Number(grupoId);
+
+  if (!idExamen || !idEvaluacion || !idGrupo) {
+    throw new Error("Faltan datos para vincular el examen con la evaluación.");
+  }
+
+  const { data: evaluacion, error: errEval } = await supabase
+    .from("evaluacion_config")
+    .select("id, idgrupo, tipo, activa")
+    .eq("id", idEvaluacion)
+    .eq("idgrupo", idGrupo)
+    .eq("tipo", "examen")
+    .eq("activa", true)
+    .maybeSingle();
+
+  if (errEval) throw new Error(errEval.message);
+  if (!evaluacion) {
+    throw new Error("La evaluación seleccionada no es válida para este grupo.");
+  }
+
+  const { error } = await supabase
+    .from("evaluacion_config")
+    .update({ idexamen: idExamen })
+    .eq("id", idEvaluacion);
+
+  if (error) throw new Error(error.message);
+
+  return true;
+};
+
+export const deleteExamen = async (examenId) => {
+  const { error } = await supabase
+    .from("examen")
+    .delete()
+    .eq("id", Number(examenId));
+
+  if (error) throw new Error(error.message);
+
+  return true;
 };
