@@ -11,7 +11,9 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import * as bcrypt from 'bcrypt';
 import { HistorialLoginService } from '../historial-login/historial-login.service';
-import { number } from 'zod';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Usuario } from '../usuario/entities/usuario.entity';
 
 @Injectable()
 export class AuthService {
@@ -20,10 +22,12 @@ export class AuthService {
     private jwtService: JwtService,
     private mailerService: MailerService,
     private historialLoginService: HistorialLoginService,
+
+    @InjectRepository(Usuario)
+    private readonly usuarioRepository: Repository<Usuario>,
   ) {}
 
   async login(loginDto: LoginDto, ip: string, dispositivo: string) {
-    //Validacion del token de reCaptcha
     if (!loginDto.recaptchaToken) {
       throw new UnauthorizedException('Falta el token de reCaptcha');
     }
@@ -32,18 +36,15 @@ export class AuthService {
     const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretkey}&response=${loginDto.recaptchaToken}`;
 
     try {
-      //Hacemos la consulta a los servidores de Google para verificar el token
       const recaptchaResponse = await fetch(verificationUrl, {
         method: 'POST',
       });
       const recaptchaData = await recaptchaResponse.json();
 
-      //Si Google detecta que el token no es válido, lanzamos un error de autenticación
       if (!recaptchaData.success) {
         throw new UnauthorizedException('Validación de reCaptcha fallida');
       }
     } catch (error) {
-      //Si hay error de red al conectar a Google
       throw new UnauthorizedException('Error al verificar reCaptcha');
     }
 
@@ -91,13 +92,14 @@ export class AuthService {
     const usuario = await this.usuarioService.findOneByCorreo(
       forgotPasswordDto.correo,
     );
-    //Para evitar revelar si el correo existe o no, siempre respondemos con el mismo mensaje
+
     if (!usuario) {
       return {
         message:
           'Si el correo existe, se enviará un enlace de restablecimiento',
       };
     }
+
     const caracteres =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*';
     let codigoSeguridad = '';
@@ -107,9 +109,9 @@ export class AuthService {
         Math.floor(Math.random() * caracteres.length),
       );
     }
+
     const hashedCode = await bcrypt.hash(codigoSeguridad, 10);
 
-    //Creamos un token JWT con la información del usuario que expira en 5 minutos
     const payload = {
       sub: usuario.id,
       correo: usuario.correo,
@@ -118,8 +120,8 @@ export class AuthService {
     };
     const token = this.jwtService.sign(payload, { expiresIn: '5m' });
 
-    //Armamos el enlace hacia el frontend con el token
     const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+
     await this.mailerService.sendMail({
       to: usuario.correo,
       subject: 'Restablecimiento de contraseña',
@@ -136,55 +138,105 @@ export class AuthService {
           <p>Haz clic en el siguiente enlace y digita tu código (ambos <b>expiran en 5 minutos</b>):</p>
           <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #5573b3; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">Restablecer mi contraseña</a>
           <p style="margin-top: 20px; font-size: 12px; color: #8a9585;">Si tú no solicitaste esto, simplemente ignora este correo.</p>
-        </div>
-      `,
+        </div>`,
     });
-    //Enviamos el correo con el enlace de restablecimiento
+
     return {
       message: 'Si el correo existe, se enviará un enlace de restablecimiento',
     };
   }
 
-  //Función para restablecer la contraseña usando el token enviado por correo
- async resetPassword(resetPasswordDto: ResetPasswordDto) {
-      try {
-        //Verificamos el token. Si expiró o es inválido, lanzamos un error
-        const payload = this.jwtService.verify<{ correo: string; code: string }>(
-          resetPasswordDto.token,
-        );
+  async verificarCorreo(token: string) {
+  const usuario = await this.usuarioRepository.findOne({
+    where: { tokenVerificacion: token },
+  });
 
-        const isCodeValid = await bcrypt.compare(
-          resetPasswordDto.codigoSeguridad,
-          payload.code,
-        );
-        if (!isCodeValid) {
-          throw new BadRequestException('Código de seguridad inválido');
-        }
+  if (!usuario) {
+    throw new BadRequestException('Token inválido');
+  }
 
-        //Buscamos al usuario en la base de datos
-        const usuario = await this.usuarioService.findOneByCorreo(payload.correo);
-        if (!usuario) {
-          throw new UnauthorizedException('Usuario no encontrado');
-        }
+  if (
+    usuario.tokenVerificacionExpira &&
+    new Date(usuario.tokenVerificacionExpira) < new Date()
+  ) {
+    throw new BadRequestException('El token ha expirado');
+  }
 
-        //Actualizamos la contraseña del usuario
-        await this.usuarioService.actualizarContrasenia(
-          usuario.id,
-          resetPasswordDto.contrasenia,
-        );
+  usuario.emailVerificado = true;
+  usuario.tokenVerificacion = null;
+  usuario.tokenVerificacionExpira = null;
 
-        return { message: 'Contraseña restablecida exitosamente' };
-      } catch (error) {
-        console.error('Error al restablecer contraseña:', error);
-        //Si el error es nuestro BadRequestException (contraseña repetida), lo lanzamos tal cual para que el cliente lo maneje
-        if (error instanceof BadRequestException) {
-          throw error;
-        }
-        //Si el token es inválido o expiró, respondemos con un mensaje genérico para no revelar detalles
-        throw new UnauthorizedException(
-          'El enlace de restablecimiento no es válido o ha expirado',
-        );
-      }
-    }
+  await this.usuarioRepository.save(usuario);
+
+  return { message: 'Correo verificado correctamente' };
 }
-  
+
+
+  async enviarCorreoVerificacion(
+  nombre: string,
+  correo: string,
+  token: string,
+) {
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+  const link = `${backendUrl}/auth/verificar-correo?token=${token}`;
+
+  await this.mailerService.sendMail({
+    to: correo,
+    subject: 'Verifica tu correo',
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #141426;">
+        <h2 style="color: #344c92;">Verificación de correo</h2>
+        <p>Hola ${nombre},</p>
+        <p>Haz clic en el siguiente botón para verificar tu correo:</p>
+
+        <a href="${link}" style="display: inline-block; padding: 10px 20px; background-color: #5573b3; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
+          Verificar correo
+        </a>
+
+        <p style="margin-top: 20px; font-size: 12px; color: #8a9585;">
+          Si no solicitaste esto, puedes ignorar este mensaje.
+        </p>
+      </div>
+    `,
+  });
+}
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    try {
+      const payload = this.jwtService.verify<{ correo: string; code: string }>(
+        resetPasswordDto.token,
+      );
+
+      const isCodeValid = await bcrypt.compare(
+        resetPasswordDto.codigoSeguridad,
+        payload.code,
+      );
+
+      if (!isCodeValid) {
+        throw new BadRequestException('Código de seguridad inválido');
+      }
+
+      const usuario = await this.usuarioService.findOneByCorreo(payload.correo);
+      if (!usuario) {
+        throw new UnauthorizedException('Usuario no encontrado');
+      }
+
+      await this.usuarioService.actualizarContrasenia(
+        usuario.id,
+        resetPasswordDto.contrasenia,
+      );
+
+      return { message: 'Contraseña restablecida exitosamente' };
+    } catch (error) {
+      console.error('Error al restablecer contraseña:', error);
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException(
+        'El enlace de restablecimiento no es válido o ha expirado',
+      );
+    }
+  }
+}

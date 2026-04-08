@@ -19,7 +19,7 @@ export class UsuarioService {
     const nuevoUsuario = this.usuarioRepository.create(datosUsuario);
     return await this.usuarioRepository.save(nuevoUsuario);
   }
-
+  
   //TypeORM retorna 'null' si no encuentra el registro.
   async findOneByCorreo(correo: string): Promise<Usuario | null> {
     return await this.usuarioRepository.findOne({ where: { correo } });

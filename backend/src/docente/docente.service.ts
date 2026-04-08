@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { randomBytes } from 'crypto';
 import { Docente } from '../docente/entities/docente.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
 import { CreateDocenteDto } from '../docente/dto/create-docente.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class DocenteService {
@@ -15,6 +17,7 @@ export class DocenteService {
     private readonly usuarioRepository: Repository<Usuario>,
 
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
   ) {}
 
   async findAll() {
@@ -25,16 +28,22 @@ export class DocenteService {
   }
 
   async create(data: CreateDocenteDto) {
-    return await this.dataSource.transaction(async (manager) => {
+    const resultado = await this.dataSource.transaction(async (manager) => {
       let usuarioCreado: Usuario | undefined;
 
       if (data.crearUsuario) {
+        const token = randomBytes(32).toString('hex');
+        const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
         usuarioCreado = await manager.save(
           manager.create(Usuario, {
             correo: data.correo,
             contrasenia: data.contrasenia,
             rol: 'DOCENTE',
             idempresa: 1,
+            emailVerificado: false,
+            tokenVerificacion: token,
+            tokenVerificacionExpira: expiracion,
           }),
         );
       }
@@ -50,30 +59,65 @@ export class DocenteService {
         ...(usuarioCreado && { usuario: usuarioCreado }),
       });
 
-      return await manager.save(docente);
+      const docenteGuardado = await manager.save(docente);
+
+      return { docenteGuardado, usuarioCreado };
     });
+
+    if (resultado.usuarioCreado?.tokenVerificacion) {
+      try {
+        await this.mailService.sendEmailVerificacion(
+          resultado.docenteGuardado.nombre || 'Docente',
+          resultado.usuarioCreado.correo,
+          resultado.usuarioCreado.tokenVerificacion,
+        );
+      } catch (error) {
+        console.error('No se pudo enviar el correo de verificación al docente', error);
+      }
+    }
+
+    return resultado.docenteGuardado;
   }
 
   async update(id: number, data: any) {
-    //Al actualizar, si se indica crearUsuario, se crea un nuevo usuario y se asocia al docente. Si no, solo se actualizan los datos del docente.
     const { crearUsuario, contrasenia, ...datosActualizar } = data;
-    //Si el frontend envía crearUsuario como true, se crea un nuevo usuario con la contraseña proporcionada y se asocia al docente. Si no, solo se actualizan los datos del docente sin modificar la relación con el usuario.
-    if(crearUsuario) {
-      //Creamos el nuevo usuario en la tabla Usuario
-      const nuevoUsuario = this.usuarioRepository.save(
+    let nuevoUsuario: Usuario | null = null;
+
+    if (crearUsuario) {
+      const token = randomBytes(32).toString('hex');
+      const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      nuevoUsuario = await this.usuarioRepository.save(
         this.usuarioRepository.create({
           correo: datosActualizar.correo,
           contrasenia: contrasenia,
           rol: 'DOCENTE',
           idempresa: 1,
-        })
+          emailVerificado: false,
+          tokenVerificacion: token,
+          tokenVerificacionExpira: expiracion,
+        }),
       );
-      //Se lo asignamos al docente a través de la relación
+
       datosActualizar.usuario = nuevoUsuario;
     }
-    //Actualizamos el docente con sus datos (y su nuevo usuario si se indicó crearUsuario)
+
     await this.docenteRepository.update(id, datosActualizar);
-    return this.docenteRepository.findOne({ where: { id } });
+    const docenteActualizado = await this.docenteRepository.findOne({ where: { id } });
+
+    if (nuevoUsuario?.tokenVerificacion && docenteActualizado) {
+      try {
+        await this.mailService.sendEmailVerificacion(
+          docenteActualizado.nombre || 'Docente',
+          nuevoUsuario.correo,
+          nuevoUsuario.tokenVerificacion,
+        );
+      } catch (error) {
+        console.error('No se pudo enviar el correo de verificación al docente', error);
+      }
+    }
+
+    return docenteActualizado;
   }
 
   async remove(id: number) {

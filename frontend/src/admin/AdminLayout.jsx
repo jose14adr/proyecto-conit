@@ -8,6 +8,7 @@ import {
   Users,
   CreditCard,
   Shield,
+  Award,
 } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
@@ -96,6 +97,12 @@ export default function AdminLayout() {
             className={`${linkStyle} ${isPathActive("/admin/usuarios") ? activeStyle : inactiveStyle}`}
           >
             <Users size={20} /> Lista de Usuarios
+          </Link>
+          <Link
+            to="/admin/certificados"
+            className={`${linkStyle} ${isPathActive("/admin/certificados") ? activeStyle : inactiveStyle}`}
+          >
+            <Award size={20} /> Certificados
           </Link>
           <Link
             to="/admin/pagos"

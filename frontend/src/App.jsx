@@ -40,6 +40,7 @@ import Alumnos from "./admin/Alumnos";
 import Usuarios from "./admin/Usuarios";
 import Pagos from "./admin/Pagos";
 import ControlSesiones from "./admin/ControlSesiones";
+import Certificados from "./admin/Certificados";
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
@@ -155,6 +156,7 @@ export default function App() {
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="pagos" element={<Pagos />} />
             <Route path="sesiones" element={<ControlSesiones />} />
+            <Route path="certificados" element={<Certificados />} />
           </Route>
 
           {/* DOCENTE */}

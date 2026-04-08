@@ -33,15 +33,20 @@ import {
   deleteMaterialLeccion,
   moverMaterialLeccion,
   moverMaterialOrden,
+  getMaterialLeccionDownloadUrl,
   getEntregasByTarea,
   guardarNotaEntregaYRegistro,
   getEvaluacionesTareaDisponiblesByGrupo,
   asignarEvaluacionATarea,
   crearExamen,
   getExamenesByLeccion,
+  getExamenDetalle,
   getEvaluacionesExamenDisponiblesByGrupo,
   asignarEvaluacionAExamen,
   deleteExamen,
+  actualizarExamen,
+  getSesionesVivoByCurso,
+  crearSesionVivo,
 } from "../services/docenteService";
 
 import {
@@ -385,6 +390,8 @@ function CursoDetalleDocente() {
   const [formMaterial, setFormMaterial] = useState({});
   const [subidaMaterialProgress, setSubidaMaterialProgress] = useState({});
   const [subidaMaterialEstado, setSubidaMaterialEstado] = useState({});
+  const [notificacionesVideo, setNotificacionesVideo] = useState([]);
+  
 
   // ==============================
   // EXAMENES
@@ -398,6 +405,8 @@ function CursoDetalleDocente() {
   const [evaluacionSeleccionadaExamen, setEvaluacionSeleccionadaExamen] = useState("");
   const [cargandoConfigExamen, setCargandoConfigExamen] = useState(false);
   const [guardandoConfigExamen, setGuardandoConfigExamen] = useState(false);
+  const [examenEditandoId, setExamenEditandoId] = useState(null);
+  const [leccionExamenEditandoId, setLeccionExamenEditandoId] = useState(null);
   
   //Sensores de arrastrado
   const sensors = useSensors(
@@ -440,14 +449,118 @@ function CursoDetalleDocente() {
   const [cargandoDetalleTarea, setCargandoDetalleTarea] = useState(false);
   const [guardandoNotaEntrega, setGuardandoNotaEntrega] = useState({});
 
-
+  // ==============================
   //Asignar notas a una tarea
+  // ==============================
+
     const [configTareaOpen, setConfigTareaOpen] = useState(false);
     const [tareaConfigActual, setTareaConfigActual] = useState(null);
     const [evaluacionesTareaDisponibles, setEvaluacionesTareaDisponibles] = useState([]);
     const [evaluacionSeleccionadaTarea, setEvaluacionSeleccionadaTarea] = useState("");
     const [cargandoConfigTarea, setCargandoConfigTarea] = useState(false);
     const [guardandoConfigTarea, setGuardandoConfigTarea] = useState(false);
+
+
+  // ==============================
+  // SESIONES EN VIVO
+  // ==============================
+  const [sesionesVivo, setSesionesVivo] = useState([]);
+  const [cargandoSesionesVivo, setCargandoSesionesVivo] = useState(false);
+  const [mostrarFormSesionVivo, setMostrarFormSesionVivo] = useState(false);
+  const [guardandoSesionVivo, setGuardandoSesionVivo] = useState(false);
+  const [formSesionVivo, setFormSesionVivo] = useState({
+    titulo: "",
+    descripcion: "",
+    fecha: "",
+    duracion: 60,
+  });  
+
+  
+// ==============================
+// CARGAR SESIONES EN VIVO
+// ==============================
+
+const cargarSesionesVivoCurso = async () => {
+  try {
+    setCargandoSesionesVivo(true);
+    const data = await getSesionesVivoByCurso(Number(id));
+    setSesionesVivo(data || []);
+  } catch (error) {
+    console.error(error);
+    alert(error?.message || "No se pudieron cargar las sesiones en vivo.");
+  } finally {
+    setCargandoSesionesVivo(false);
+  }
+};
+
+const handleChangeSesionVivo = (e) => {
+  const { name, value } = e.target;
+
+  setFormSesionVivo((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+const limpiarFormSesionVivo = () => {
+  setFormSesionVivo({
+    titulo: "",
+    descripcion: "",
+    fecha: "",
+    duracion: 60,
+  });
+};
+
+const guardarSesionVivoCurso = async (e) => {
+  e.preventDefault();
+
+  try {
+    if (!formSesionVivo.titulo.trim()) {
+      return alert("Ingresa el título de la sesión en vivo.");
+    }
+
+    if (!formSesionVivo.fecha) {
+      return alert("Selecciona la fecha y hora de la sesión.");
+    }
+
+    if (!formSesionVivo.duracion || Number(formSesionVivo.duracion) <= 0) {
+      return alert("La duración debe ser mayor a 0.");
+    }
+
+    setGuardandoSesionVivo(true);
+
+    await crearSesionVivo({
+      idcurso: Number(id),
+      titulo: formSesionVivo.titulo,
+      descripcion: formSesionVivo.descripcion,
+      fecha: formSesionVivo.fecha,
+      duracion: Number(formSesionVivo.duracion),
+    });
+
+    limpiarFormSesionVivo();
+    setMostrarFormSesionVivo(false);
+    await cargarSesionesVivoCurso();
+    alert("Sesión en vivo creada correctamente ✅");
+  } catch (error) {
+    console.error(error);
+    alert(error?.message || "No se pudo crear la sesión en vivo.");
+  } finally {
+    setGuardandoSesionVivo(false);
+  }
+};
+
+const formatearFechaSesion = (fecha) => {
+  if (!fecha) return "-";
+
+  const value = new Date(fecha);
+  if (Number.isNaN(value.getTime())) return fecha;
+
+  return value.toLocaleString("es-PE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+};
+
 
   // ==============================
   // PDF
@@ -709,6 +822,12 @@ function CursoDetalleDocente() {
 useEffect(() => {
   setTareasOrdenadas(tareas || []);
 }, [tareas]);
+
+useEffect(() => {
+  if (tabActiva === "resumen") {
+    cargarSesionesVivoCurso();
+  }
+}, [tabActiva, id]); //Cambiar por "}, [id]);" si se quiere cargar siempre apenas entrar al detalle de curso
 
   const cargarTareasCurso = async () => {
     try {
@@ -1604,113 +1723,151 @@ const moverSubModuloCurso = async (submoduloId, direccion) => {
   };
 
   const guardarMaterialCurso = async (e, leccionId) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    const data = formMaterial[leccionId] || {};
+    try {
+      const data = formMaterial[leccionId] || {};
 
-    if (!data.titulo?.trim()) {
-      return alert("Ingresa el título del material.");
-    }
+      if (!data.titulo?.trim()) {
+        return alert("Ingresa el título del material.");
+      }
 
-    if (!data.tipo) {
-      return alert("Selecciona el tipo de material.");
-    }
+      if (!data.tipo) {
+        return alert("Selecciona el tipo de material.");
+      }
 
-    if (data.tipo === "texto" && !data.contenido_texto?.trim()) {
-      return alert("Ingresa el contenido del material.");
-    }
+      if (data.tipo === "texto" && !data.contenido_texto?.trim()) {
+        return alert("Ingresa el contenido del material.");
+      }
 
-    if (data.tipo === "url_video" && !data.video_url?.trim()) {
-      return alert("Ingresa la URL del video.");
-    }
+      if (data.tipo === "url_video" && !data.video_url?.trim()) {
+        return alert("Ingresa la URL del video.");
+      }
 
-    if (data.tipo === "enlace" && !data.enlace_url?.trim()) {
-      return alert("Ingresa el enlace.");
-    }
+      if (data.tipo === "enlace" && !data.enlace_url?.trim()) {
+        return alert("Ingresa el enlace.");
+      }
 
-    if ((data.tipo === "archivo" || data.tipo === "video") && !data.file) {
-      return alert("Selecciona un archivo.");
-    }
+      if ((data.tipo === "archivo" || data.tipo === "video") && !data.file) {
+        return alert("Selecciona un archivo.");
+      }
 
-    setGuardandoMaterial(true);
+      // CASO VIDEO: se lanza en segundo plano y se libera la UI
+      if (data.tipo === "video") {
+        subirVideoEnSegundoPlano(leccionId, data);
 
-    setSubidaMaterialEstado((prev) => ({
-      ...prev,
-      [leccionId]: data.tipo === "video" ? "Subiendo video..." : "Subiendo archivo...",
-    }));
-
-    setSubidaMaterialProgress((prev) => ({
-      ...prev,
-      [leccionId]: 0,
-    }));
-
-    await addMaterialLeccion(leccionId, {
-      titulo: data.titulo,
-      tipo: data.tipo,
-      contenido_texto: data.contenido_texto,
-      video_url: data.tipo === "url_video" ? data.video_url : null,
-      enlace_url: data.tipo === "enlace" ? data.enlace_url : null,
-      file: data.tipo === "archivo" || data.tipo === "video" ? data.file : null,
-      onProgress: (percent) => {
-        setSubidaMaterialProgress((prev) => ({
+        setFormMaterial((prev) => ({
           ...prev,
-          [leccionId]: percent,
+          [leccionId]: {
+            titulo: "",
+            tipo: "texto",
+            contenido_texto: "",
+            video_url: "",
+            enlace_url: "",
+            file: null,
+          },
         }));
 
-        if (percent >= 100) {
-          setSubidaMaterialEstado((prev) => ({
-            ...prev,
-            [leccionId]:
-              data.tipo === "video"
-                ? "Procesando video en Vimeo..."
-                : "Procesando archivo...",
-          }));
-        }
-      },
-    });
+        setMostrarFormMaterial((prev) => ({
+          ...prev,
+          [leccionId]: false,
+        }));
 
-    setFormMaterial((prev) => ({
-      ...prev,
-      [leccionId]: {
-        titulo: "",
-        tipo: "texto",
-        contenido_texto: "",
-        video_url: "",
-        enlace_url: "",
-        file: null,
-      },
-    }));
+        return;
+      }
 
-    setMostrarFormMaterial((prev) => ({
-      ...prev,
-      [leccionId]: false,
-    }));
+      // Resto de materiales: flujo normal
+      setGuardandoMaterial(true);
 
-    await cargarModulosCurso();
+      setSubidaMaterialEstado((prev) => ({
+        ...prev,
+        [leccionId]: data.tipo === "video" ? "Subiendo video..." : "Subiendo archivo...",
+      }));
 
-    if (data.tipo === "video") {
-      await esperarVideoDisponible(leccionId);
-    }
-    alert("Material agregado correctamente ✅");
-  } catch (error) {
-    console.error(error);
-    alert(error?.message || "No se pudo agregar el material");
-  } finally {
-    setGuardandoMaterial(false);
-
-    setTimeout(() => {
       setSubidaMaterialProgress((prev) => ({
         ...prev,
         [leccionId]: 0,
       }));
-      setSubidaMaterialEstado((prev) => ({
+
+      await addMaterialLeccion(leccionId, {
+        titulo: data.titulo,
+        tipo: data.tipo,
+        contenido_texto: data.contenido_texto,
+        video_url: data.tipo === "url_video" ? data.video_url : null,
+        enlace_url: data.tipo === "enlace" ? data.enlace_url : null,
+        file: data.tipo === "archivo" ? data.file : null,
+        onProgress: (percent) => {
+          setSubidaMaterialProgress((prev) => ({
+            ...prev,
+            [leccionId]: percent,
+          }));
+
+          if (percent >= 100) {
+            setSubidaMaterialEstado((prev) => ({
+              ...prev,
+              [leccionId]: "Procesando archivo...",
+            }));
+          }
+        },
+      });
+
+      setFormMaterial((prev) => ({
         ...prev,
-        [leccionId]: "",
+        [leccionId]: {
+          titulo: "",
+          tipo: "texto",
+          contenido_texto: "",
+          video_url: "",
+          enlace_url: "",
+          file: null,
+        },
       }));
-    }, 1200);
-  }
-};
+
+      setMostrarFormMaterial((prev) => ({
+        ...prev,
+        [leccionId]: false,
+      }));
+
+      await cargarModulosCurso();
+      alert("Material agregado correctamente ✅");
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo agregar el material");
+    } finally {
+      setGuardandoMaterial(false);
+
+      setTimeout(() => {
+        setSubidaMaterialProgress((prev) => ({
+          ...prev,
+          [leccionId]: 0,
+        }));
+        setSubidaMaterialEstado((prev) => ({
+          ...prev,
+          [leccionId]: "",
+        }));
+      }, 1200);
+    }
+  };
+
+  const abrirArchivoMaterial = async (material) => {
+    try {
+      if (material.object_key) {
+        const url = await getMaterialLeccionDownloadUrl(material.object_key);
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      if (material.archivo_url) {
+        window.open(material.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      throw new Error("El material no tiene una ruta válida.");
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo abrir el archivo.");
+    }
+  };
 
   const eliminarMaterialCurso = async (materialId) => {
     const confirmado = window.confirm("¿Seguro que deseas eliminar este material?");
@@ -1848,6 +2005,156 @@ const esperarVideoDisponible = async (leccionId, intentos = 12) => {
   await cargarModulosCurso();
 };
 
+const crearIdNotificacion = () =>
+  `video-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const actualizarNotificacionVideo = (id, patch) => {
+  setNotificacionesVideo((prev) =>
+    prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
+  );
+};
+
+const eliminarNotificacionVideo = (id) => {
+  setNotificacionesVideo((prev) => prev.filter((item) => item.id !== id));
+};
+
+const esperarVideoListoEnSegundoPlano = async (
+  leccionId,
+  materialId,
+  notificacionId,
+  intentosMax = 40
+) => {
+  let intentos = 0;
+
+  const intervalo = setInterval(async () => {
+    try {
+      intentos += 1;
+
+      const materiales = await getMaterialesByLeccion(leccionId);
+      const material = (materiales || []).find(
+        (m) => Number(m.id) === Number(materialId)
+      );
+
+      if (!material) {
+        if (intentos >= intentosMax) {
+          clearInterval(intervalo);
+          actualizarNotificacionVideo(notificacionId, {
+            estado: "warning",
+            mensaje: "No se encontró el video para verificar su estado.",
+          });
+        }
+        return;
+      }
+
+      const estado = (material.estado_video || "").toLowerCase();
+
+      if (estado === "available" || estado === "listo") {
+        clearInterval(intervalo);
+
+        actualizarNotificacionVideo(notificacionId, {
+          estado: "success",
+          mensaje: "Video cargado correctamente ✅",
+          progreso: 100,
+        });
+
+        await cargarModulosCurso();
+
+        setTimeout(() => {
+          eliminarNotificacionVideo(notificacionId);
+        }, 5000);
+        return;
+      }
+
+      if (intentos >= intentosMax) {
+        clearInterval(intervalo);
+        actualizarNotificacionVideo(notificacionId, {
+          estado: "info",
+          mensaje: "El video sigue procesándose en Vimeo. Revisa en unos minutos.",
+        });
+      }
+    } catch (error) {
+      clearInterval(intervalo);
+      actualizarNotificacionVideo(notificacionId, {
+        estado: "error",
+        mensaje: "Error verificando el estado del video.",
+      });
+    }
+  }, 8000);
+};
+
+const subirVideoEnSegundoPlano = async (leccionId, data) => {
+  const notificacionId = crearIdNotificacion();
+
+  setNotificacionesVideo((prev) => [
+    {
+      id: notificacionId,
+      leccionId,
+      titulo: data.titulo,
+      estado: "uploading",
+      mensaje: "Subiendo video...",
+      progreso: 0,
+    },
+    ...prev,
+  ]);
+
+  try {
+    const material = await addMaterialLeccion(leccionId, {
+      titulo: data.titulo,
+      tipo: data.tipo,
+      contenido_texto: data.contenido_texto,
+      video_url: null,
+      enlace_url: null,
+      file: data.file,
+      onProgress: (percent) => {
+        actualizarNotificacionVideo(notificacionId, {
+          progreso: percent,
+          estado: percent >= 100 ? "processing" : "uploading",
+          mensaje:
+            percent >= 100
+              ? "Procesando video en Vimeo..."
+              : "Subiendo video...",
+        });
+      },
+    });
+
+    await cargarModulosCurso();
+
+    const estado = (material?.estado_video || "").toLowerCase();
+
+    if (estado === "available" || estado === "listo") {
+      actualizarNotificacionVideo(notificacionId, {
+        estado: "success",
+        mensaje: "Video cargado correctamente ✅",
+        progreso: 100,
+      });
+
+      setTimeout(() => {
+        eliminarNotificacionVideo(notificacionId);
+      }, 5000);
+
+      return;
+    }
+
+    actualizarNotificacionVideo(notificacionId, {
+      estado: "processing",
+      mensaje: "Video subido. Vimeo lo está procesando...",
+      progreso: 100,
+    });
+
+    await esperarVideoListoEnSegundoPlano(
+      leccionId,
+      material.id,
+      notificacionId
+    );
+  } catch (error) {
+    console.error(error);
+    actualizarNotificacionVideo(notificacionId, {
+      estado: "error",
+      mensaje: error?.message || "No se pudo subir el video.",
+    });
+  }
+};
+
 const cerrarDetalleTarea = () => {
   setTareaDetalle(null);
   setEntregasTarea([]);
@@ -1966,34 +2273,174 @@ const guardarConfiguracionTarea = async () => {
   }
 };
 
-  const toggleFormExamen = (leccionId) => {
+  
+const TIPOS_PREGUNTA_CON_OPCIONES = ["unica", "multiple"];
+const TIPOS_PREGUNTA_TEXTO = ["texto_corto", "texto_largo"];
+const TIPOS_PREGUNTA_SIN_OPCIONES = [
+  "texto_corto",
+  "texto_largo",
+  "numerica",
+  "archivo",
+];
+
+const obtenerDefaultsPorTipoPregunta = (tipo) => {
+  switch (tipo) {
+    case "texto_corto":
+      return {
+        max_caracteres: 50,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Escribe una respuesta corta",
+      };
+    case "texto_largo":
+      return {
+        max_caracteres: 200,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Escribe una respuesta más extensa",
+      };
+    case "numerica":
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Ingresa un número",
+      };
+    case "archivo":
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "pdf,jpg,png,doc,docx",
+        texto_placeholder: "Sube tu archivo",
+      };
+    default:
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "",
+      };
+  }
+};
+
+const crearPreguntaVacia = (tipo = "unica") => ({
+  enunciado: "",
+  puntaje: 1,
+  tipo_pregunta: tipo,
+  respuesta_texto: "",
+  texto_placeholder: obtenerDefaultsPorTipoPregunta(tipo).texto_placeholder,
+  max_caracteres: obtenerDefaultsPorTipoPregunta(tipo).max_caracteres,
+  permitir_decimales: obtenerDefaultsPorTipoPregunta(tipo).permitir_decimales,
+  tamano_max_mb: obtenerDefaultsPorTipoPregunta(tipo).tamano_max_mb,
+  extensiones_permitidas: obtenerDefaultsPorTipoPregunta(tipo).extensiones_permitidas,
+  opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
+    ? [
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+      ]
+    : [],
+});
+
+const crearExamenVacio = () => ({
+  id: null,
+  titulo: "",
+  descripcion: "",
+  duracion_minutos: 30,
+  intentos_permitidos: 1,
+  nota_maxima: 20,
+  preguntas: [crearPreguntaVacia()],
+});
+
+const normalizarPreguntaExamen = (pregunta = {}) => {
+  const tipo = pregunta.tipo_pregunta || "unica";
+  const defaults = obtenerDefaultsPorTipoPregunta(tipo);
+
+  return {
+    id: pregunta.id || null,
+    enunciado: pregunta.enunciado || "",
+    puntaje: Number(pregunta.puntaje || 1),
+    tipo_pregunta: tipo,
+    respuesta_texto: pregunta.respuesta_texto || "",
+    texto_placeholder:
+      pregunta.texto_placeholder !== undefined && pregunta.texto_placeholder !== null
+        ? pregunta.texto_placeholder
+        : defaults.texto_placeholder,
+    max_caracteres:
+      pregunta.max_caracteres !== undefined && pregunta.max_caracteres !== null
+        ? Number(pregunta.max_caracteres)
+        : defaults.max_caracteres,
+    permitir_decimales:
+      pregunta.permitir_decimales !== undefined && pregunta.permitir_decimales !== null
+        ? !!pregunta.permitir_decimales
+        : defaults.permitir_decimales,
+    tamano_max_mb:
+      pregunta.tamano_max_mb !== undefined && pregunta.tamano_max_mb !== null
+        ? Number(pregunta.tamano_max_mb)
+        : defaults.tamano_max_mb,
+    extensiones_permitidas:
+      pregunta.extensiones_permitidas !== undefined && pregunta.extensiones_permitidas !== null
+        ? pregunta.extensiones_permitidas
+        : defaults.extensiones_permitidas,
+    opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
+      ? (pregunta.opciones || []).length > 0
+        ? (pregunta.opciones || []).map((opcion) => ({
+            id: opcion.id || null,
+            texto: opcion.texto || "",
+            es_correcta: !!opcion.es_correcta,
+          }))
+        : crearPreguntaVacia(tipo).opciones
+      : [],
+  };
+};
+
+const toggleFormExamen = (leccionId) => {
+  const estabaAbierto = !!mostrarFormExamen[leccionId];
+
+  if (estabaAbierto) {
+    setMostrarFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: false,
+    }));
+    setFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: crearExamenVacio(),
+    }));
+    setExamenEditandoId(null);
+    setLeccionExamenEditandoId(null);
+    return;
+  }
+
   setMostrarFormExamen((prev) => ({
     ...prev,
-    [leccionId]: !prev[leccionId],
+    [leccionId]: true,
   }));
 
   setFormExamen((prev) => ({
     ...prev,
-    [leccionId]:
-      prev[leccionId] || {
-        titulo: "",
-        descripcion: "",
-        duracion_minutos: 30,
-        intentos_permitidos: 1,
-        nota_maxima: 20,
-        preguntas: [
-          {
-            enunciado: "",
-            puntaje: 1,
-            opciones: [
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-            ],
-          },
-        ],
-      },
+    [leccionId]: prev[leccionId] || crearExamenVacio(),
+  }));
+
+  setExamenEditandoId(null);
+  setLeccionExamenEditandoId(null);
+};
+
+const cancelarEdicionExamen = (leccionId) => {
+  setExamenEditandoId(null);
+  setLeccionExamenEditandoId(null);
+  setMostrarFormExamen((prev) => ({
+    ...prev,
+    [leccionId]: false,
+  }));
+  setFormExamen((prev) => ({
+    ...prev,
+    [leccionId]: crearExamenVacio(),
   }));
 };
 
@@ -2001,7 +2448,7 @@ const handleChangeExamen = (leccionId, field, value) => {
   setFormExamen((prev) => ({
     ...prev,
     [leccionId]: {
-      ...(prev[leccionId] || {}),
+      ...(prev[leccionId] || crearExamenVacio()),
       [field]: value,
     },
   }));
@@ -2009,13 +2456,39 @@ const handleChangeExamen = (leccionId, field, value) => {
 
 const handleChangePreguntaExamen = (leccionId, preguntaIndex, field, value) => {
   setFormExamen((prev) => {
-    const actual = prev[leccionId];
-    const preguntas = [...(actual?.preguntas || [])];
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const preguntaActual = preguntas[preguntaIndex] || crearPreguntaVacia();
 
-    preguntas[preguntaIndex] = {
-      ...preguntas[preguntaIndex],
-      [field]: value,
-    };
+    if (field === "tipo_pregunta") {
+      const tipoNuevo = value;
+      const defaults = obtenerDefaultsPorTipoPregunta(tipoNuevo);
+
+      preguntas[preguntaIndex] = {
+        ...preguntaActual,
+        tipo_pregunta: tipoNuevo,
+        texto_placeholder: defaults.texto_placeholder,
+        max_caracteres: defaults.max_caracteres,
+        permitir_decimales: defaults.permitir_decimales,
+        tamano_max_mb: defaults.tamano_max_mb,
+        extensiones_permitidas: defaults.extensiones_permitidas,
+        respuesta_texto:
+          tipoNuevo === "numerica" ||
+          TIPOS_PREGUNTA_TEXTO.includes(tipoNuevo)
+            ? preguntaActual.respuesta_texto || ""
+            : "",
+        opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipoNuevo)
+          ? (preguntaActual.opciones || []).length >= 2
+            ? preguntaActual.opciones
+            : crearPreguntaVacia(tipoNuevo).opciones
+          : [],
+      };
+    } else {
+      preguntas[preguntaIndex] = {
+        ...preguntaActual,
+        [field]: value,
+      };
+    }
 
     return {
       ...prev,
@@ -2027,31 +2500,97 @@ const handleChangePreguntaExamen = (leccionId, preguntaIndex, field, value) => {
   });
 };
 
-const handleChangeOpcionExamen = (leccionId, preguntaIndex, opcionIndex, field, value) => {
+const handleChangeOpcionExamen = (
+  leccionId,
+  preguntaIndex,
+  opcionIndex,
+  field,
+  value
+) => {
   setFormExamen((prev) => {
-    const actual = prev[leccionId];
-    const preguntas = [...(actual?.preguntas || [])];
-    const opciones = [...(preguntas[preguntaIndex]?.opciones || [])];
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const pregunta = { ...(preguntas[preguntaIndex] || crearPreguntaVacia()) };
+    const opciones = [...(pregunta.opciones || [])];
 
-    if (field === "es_correcta" && value === true) {
-      preguntas[preguntaIndex] = {
-        ...preguntas[preguntaIndex],
-        opciones: opciones.map((op, idx) => ({
+    if (field === "es_correcta") {
+      if (pregunta.tipo_pregunta === "unica") {
+        pregunta.opciones = opciones.map((op, idx) => ({
           ...op,
           es_correcta: idx === opcionIndex,
-        })),
-      };
+        }));
+      } else {
+        pregunta.opciones = opciones.map((op, idx) =>
+          idx === opcionIndex ? { ...op, es_correcta: !!value } : op
+        );
+      }
     } else {
-      opciones[opcionIndex] = {
-        ...opciones[opcionIndex],
-        [field]: value,
-      };
-
-      preguntas[preguntaIndex] = {
-        ...preguntas[preguntaIndex],
-        opciones,
-      };
+      pregunta.opciones = opciones.map((op, idx) =>
+        idx === opcionIndex ? { ...op, [field]: value } : op
+      );
     }
+
+    preguntas[preguntaIndex] = pregunta;
+
+    return {
+      ...prev,
+      [leccionId]: {
+        ...actual,
+        preguntas,
+      },
+    };
+  });
+};
+
+const agregarOpcion = (leccionId, preguntaIndex) => {
+  setFormExamen((prev) => {
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const pregunta = { ...(preguntas[preguntaIndex] || crearPreguntaVacia()) };
+
+    if (!TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta)) {
+      return prev;
+    }
+
+    pregunta.opciones = [
+      ...(pregunta.opciones || []),
+      { texto: "", es_correcta: false },
+    ];
+
+    preguntas[preguntaIndex] = pregunta;
+
+    return {
+      ...prev,
+      [leccionId]: {
+        ...actual,
+        preguntas,
+      },
+    };
+  });
+};
+
+const quitarOpcion = (leccionId, preguntaIndex, opcionIndex) => {
+  setFormExamen((prev) => {
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const pregunta = { ...(preguntas[preguntaIndex] || crearPreguntaVacia()) };
+
+    if (!TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta)) {
+      return prev;
+    }
+
+    const opciones = [...(pregunta.opciones || [])];
+    opciones.splice(opcionIndex, 1);
+
+    pregunta.opciones =
+      opciones.length >= 2
+        ? opciones
+        : [
+            { texto: "", es_correcta: false },
+            { texto: "", es_correcta: false },
+          ];
+
+    preguntas[preguntaIndex] = pregunta;
 
     return {
       ...prev,
@@ -2065,25 +2604,13 @@ const handleChangeOpcionExamen = (leccionId, preguntaIndex, opcionIndex, field, 
 
 const agregarPreguntaExamen = (leccionId) => {
   setFormExamen((prev) => {
-    const actual = prev[leccionId];
+    const actual = prev[leccionId] || crearExamenVacio();
 
     return {
       ...prev,
       [leccionId]: {
         ...actual,
-        preguntas: [
-          ...(actual?.preguntas || []),
-          {
-            enunciado: "",
-            puntaje: 1,
-            opciones: [
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-            ],
-          },
-        ],
+        preguntas: [...(actual.preguntas || []), crearPreguntaVacia()],
       },
     };
   });
@@ -2091,8 +2618,8 @@ const agregarPreguntaExamen = (leccionId) => {
 
 const eliminarPreguntaExamen = (leccionId, preguntaIndex) => {
   setFormExamen((prev) => {
-    const actual = prev[leccionId];
-    const preguntas = [...(actual?.preguntas || [])];
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
 
     preguntas.splice(preguntaIndex, 1);
 
@@ -2100,30 +2627,96 @@ const eliminarPreguntaExamen = (leccionId, preguntaIndex) => {
       ...prev,
       [leccionId]: {
         ...actual,
-        preguntas: preguntas.length
-          ? preguntas
-          : [
-              {
-                enunciado: "",
-                puntaje: 1,
-                opciones: [
-                  { texto: "", es_correcta: false },
-                  { texto: "", es_correcta: false },
-                  { texto: "", es_correcta: false },
-                  { texto: "", es_correcta: false },
-                ],
-              },
-            ],
+        preguntas: preguntas.length ? preguntas : [crearPreguntaVacia()],
       },
     };
   });
+};
+
+const validarPreguntaExamen = (pregunta) => {
+  if (!pregunta?.enunciado?.trim()) {
+    return "Cada pregunta debe tener enunciado.";
+  }
+
+  const tipo = pregunta.tipo_pregunta || "unica";
+
+  if (tipo === "texto_corto") {
+    if (!pregunta.respuesta_texto?.trim()) {
+      return "Las preguntas de texto corto deben tener una respuesta de referencia.";
+    }
+    if (Number(pregunta.max_caracteres || 50) > 50) {
+      return "Texto corto solo permite hasta 50 caracteres.";
+    }
+    return null;
+  }
+
+  if (tipo === "texto_largo") {
+    if (!pregunta.respuesta_texto?.trim()) {
+      return "Las preguntas de texto largo deben tener una respuesta de referencia.";
+    }
+    if (Number(pregunta.max_caracteres || 200) > 200) {
+      return "Texto largo solo permite hasta 200 caracteres.";
+    }
+    return null;
+  }
+
+  if (tipo === "numerica") {
+    if (
+      pregunta.respuesta_texto === null ||
+      pregunta.respuesta_texto === undefined ||
+      String(pregunta.respuesta_texto).trim() === ""
+    ) {
+      return "Las preguntas numéricas deben tener una respuesta numérica de referencia.";
+    }
+
+    const valor = String(pregunta.respuesta_texto).trim();
+    const regex = pregunta.permitir_decimales
+      ? /^-?\d+(\.\d+)?$/
+      : /^-?\d+$/;
+
+    if (!regex.test(valor)) {
+      return pregunta.permitir_decimales
+        ? "La respuesta de referencia debe ser un número válido."
+        : "La respuesta de referencia debe ser un número entero.";
+    }
+
+    return null;
+  }
+
+  if (tipo === "archivo") {
+    if (Number(pregunta.tamano_max_mb || 0) <= 0) {
+      return "Las preguntas de archivo deben tener un tamaño máximo válido.";
+    }
+    return null;
+  }
+
+  const opcionesCompletas = (pregunta.opciones || []).filter((op) => op.texto?.trim());
+
+  if (
+    opcionesCompletas.length < 2 ||
+    opcionesCompletas.length !== (pregunta.opciones || []).length
+  ) {
+    return "Las preguntas de opciones deben tener al menos 2 opciones completas.";
+  }
+
+  const correctas = (pregunta.opciones || []).filter((op) => op.es_correcta).length;
+
+  if (tipo === "unica" && correctas !== 1) {
+    return "Las preguntas de opción única deben tener exactamente una respuesta correcta.";
+  }
+
+  if (tipo === "multiple" && correctas < 1) {
+    return "Las preguntas de opción múltiple deben tener al menos una respuesta correcta.";
+  }
+
+  return null;
 };
 
 const guardarExamenLeccion = async (e, leccionId) => {
   e.preventDefault();
 
   try {
-    const data = formExamen[leccionId];
+    const data = formExamen[leccionId] || crearExamenVacio();
 
     if (!data?.titulo?.trim()) {
       return alert("Ingresa el título del examen.");
@@ -2133,23 +2726,15 @@ const guardarExamenLeccion = async (e, leccionId) => {
       return alert("Agrega al menos una pregunta.");
     }
 
-    const preguntasInvalidas = data.preguntas.some((pregunta) => {
-      const correctas = (pregunta.opciones || []).filter((o) => o.es_correcta).length;
+    const errorPregunta = data.preguntas.map(validarPreguntaExamen).find(Boolean);
 
-      return (
-        !pregunta.enunciado?.trim() ||
-        !(pregunta.opciones || []).every((o) => o.texto?.trim()) ||
-        correctas !== 1
-      );
-    });
-
-    if (preguntasInvalidas) {
-      return alert("Cada pregunta debe tener enunciado, 4 opciones completas y una sola correcta.");
+    if (errorPregunta) {
+      return alert(errorPregunta);
     }
 
     setGuardandoExamen(true);
 
-    await crearExamen({
+    const payload = {
       leccionId,
       grupoId: curso?.idgrupo,
       titulo: data.titulo,
@@ -2157,46 +2742,107 @@ const guardarExamenLeccion = async (e, leccionId) => {
       duracion_minutos: Number(data.duracion_minutos || 30),
       intentos_permitidos: Number(data.intentos_permitidos || 1),
       nota_maxima: Number(data.nota_maxima || 20),
-      preguntas: data.preguntas,
-    });
+      preguntas: data.preguntas.map((pregunta) => ({
+        enunciado: pregunta.enunciado,
+        puntaje: Number(pregunta.puntaje || 1),
+        tipo_pregunta: pregunta.tipo_pregunta || "unica",
+        respuesta_texto:
+          TIPOS_PREGUNTA_TEXTO.includes(pregunta.tipo_pregunta) ||
+          pregunta.tipo_pregunta === "numerica"
+            ? pregunta.respuesta_texto || null
+            : null,
+        texto_placeholder: pregunta.texto_placeholder || null,
+        max_caracteres:
+          pregunta.tipo_pregunta === "texto_corto"
+            ? Number(pregunta.max_caracteres || 50)
+            : pregunta.tipo_pregunta === "texto_largo"
+            ? Number(pregunta.max_caracteres || 200)
+            : null,
+        permitir_decimales:
+          pregunta.tipo_pregunta === "numerica"
+            ? !!pregunta.permitir_decimales
+            : true,
+        tamano_max_mb:
+          pregunta.tipo_pregunta === "archivo"
+            ? Number(pregunta.tamano_max_mb || 10)
+            : 10,
+        extensiones_permitidas:
+          pregunta.tipo_pregunta === "archivo"
+            ? pregunta.extensiones_permitidas || null
+            : null,
+        opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta)
+          ? (pregunta.opciones || []).map((opcion) => ({
+              texto: opcion.texto,
+              es_correcta: !!opcion.es_correcta,
+            }))
+          : [],
+      })),
+    };
 
+    if (data.id) {
+      await actualizarExamen(data.id, payload);
+      alert("Examen actualizado correctamente ✅");
+    } else {
+      await crearExamen(payload);
+      alert("Examen creado correctamente ✅");
+    }
+
+    setExamenEditandoId(null);
+    setLeccionExamenEditandoId(null);
     setMostrarFormExamen((prev) => ({
       ...prev,
       [leccionId]: false,
     }));
-
     setFormExamen((prev) => ({
       ...prev,
-      [leccionId]: {
-        titulo: "",
-        descripcion: "",
-        duracion_minutos: 30,
-        intentos_permitidos: 1,
-        nota_maxima: 20,
-        preguntas: [
-          {
-            enunciado: "",
-            puntaje: 1,
-            opciones: [
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-            ],
-          },
-        ],
-      },
+      [leccionId]: crearExamenVacio(),
     }));
 
     await cargarModulosCurso();
-    alert("Examen creado correctamente ✅");
   } catch (error) {
     console.error(error);
-    alert(error?.message || "No se pudo crear el examen");
+    alert(error?.message || "No se pudo crear o actualizar el examen");
   } finally {
     setGuardandoExamen(false);
   }
 };
+
+const cargarExamenParaEdicion = async (examen, leccionId) => {
+  try {
+    setGuardandoExamen(true);
+
+    const detalle = await getExamenDetalle(examen.id);
+
+    setFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: {
+        id: detalle.id,
+        titulo: detalle.titulo || "",
+        descripcion: detalle.descripcion || "",
+        duracion_minutos: Number(detalle.duracion_minutos || 30),
+        intentos_permitidos: Number(detalle.intentos_permitidos || 1),
+        nota_maxima: Number(detalle.nota_maxima || 20),
+        preguntas:
+          (detalle.preguntas || []).length > 0
+            ? detalle.preguntas.map(normalizarPreguntaExamen)
+            : [crearPreguntaVacia()],
+      },
+    }));
+
+    setExamenEditandoId(Number(examen.id));
+    setLeccionExamenEditandoId(Number(leccionId));
+    setMostrarFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: true,
+    }));
+  } catch (error) {
+    console.error("Error al cargar examen:", error);
+    alert(error?.message || "No se pudo cargar el examen para edición.");
+  } finally {
+    setGuardandoExamen(false);
+  }
+};
+
 
 const abrirConfigExamen = async (examen) => {
   try {
@@ -2567,6 +3213,148 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                   {curso.horario || "Sin horario"}
                 </p>
               </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold">Sesiones en vivo</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Programa clases en vivo con Google Meet para este curso.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMostrarFormSesionVivo((prev) => !prev)}
+                className="rounded-2xl bg-violet-600 px-4 py-2 text-white font-semibold hover:bg-violet-700 transition"
+              >
+                {mostrarFormSesionVivo ? "Cancelar" : "+ Crear sesión en vivo"}
+              </button>
+            </div>
+
+            {mostrarFormSesionVivo && (
+              <form
+                onSubmit={guardarSesionVivoCurso}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6 mt-6"
+              >
+                <div>
+                  <label className="block font-semibold mb-2">Título</label>
+                  <input
+                    type="text"
+                    name="titulo"
+                    value={formSesionVivo.titulo}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Ej. Clase en vivo - Introducción"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-2">Duración (minutos)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    name="duracion"
+                    value={formSesionVivo.duracion}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">Descripción</label>
+                  <textarea
+                    name="descripcion"
+                    value={formSesionVivo.descripcion}
+                    onChange={handleChangeSesionVivo}
+                    rows={3}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Descripción breve de la sesión"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">Fecha y hora</label>
+                  <input
+                    type="datetime-local"
+                    name="fecha"
+                    value={formSesionVivo.fecha}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={guardandoSesionVivo}
+                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                  >
+                    {guardandoSesionVivo ? "Creando sesión..." : "Guardar sesión"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-6">
+              {cargandoSesionesVivo ? (
+                <p className="text-sm text-gray-500">Cargando sesiones en vivo...</p>
+              ) : sesionesVivo.length === 0 ? (
+                <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
+                  <p className="text-gray-700 font-medium">
+                    Aún no hay sesiones en vivo programadas.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Crea una sesión para que tus alumnos puedan unirse a la clase.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sesionesVivo.map((sesion) => (
+                    <div
+                      key={sesion.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <p className="text-lg font-bold text-slate-800">{sesion.titulo}</p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {sesion.descripcion || "Sin descripción"}
+                          </p>
+
+                          <div className="mt-3 space-y-1 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold">Fecha:</span>{" "}
+                              {formatearFechaSesion(sesion.fecha)}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Duración:</span>{" "}
+                              {sesion.duracion} min
+                            </p>
+                            <p>
+                              <span className="font-semibold">Estado:</span>{" "}
+                              {sesion.estado || "programada"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <a
+                            href={sesion.link_reunion}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition"
+                          >
+                            Unirse a la sesión
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -4003,9 +4791,13 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                 <button
                                                   type="button"
                                                   onClick={() => toggleFormExamen(leccion.id)}
-                                                  className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm"
+                                                  disabled={
+                                                    !!examenEditandoId &&
+                                                    Number(leccionExamenEditandoId) !== Number(leccion.id)
+                                                  }
+                                                  className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm disabled:opacity-50"
                                                 >
-                                                  + Examen
+                                                  {mostrarFormExamen[leccion.id] ? "Cerrar examen" : "+ Examen"}
                                                 </button>
 
                                                 <button
@@ -4040,69 +4832,98 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                               <div className="mt-4 space-y-3">
                                                 <p className="text-sm font-semibold text-slate-700">Exámenes de la lección</p>
 
-                                                {leccion.examenes.map((examen, idxExamen) => (
-                                                  <div
-                                                    key={examen.id}
-                                                    className="rounded-2xl border border-violet-200 bg-violet-50 p-4"
-                                                  >
-                                                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                                                      <div>
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                          <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
-                                                            Examen {idxExamen + 1}
-                                                          </span>
+                                                {leccion.examenes
+                                                  .filter((examen) => {
+                                                    if (
+                                                      examenEditandoId &&
+                                                      Number(leccionExamenEditandoId) === Number(leccion.id)
+                                                    ) {
+                                                      return Number(examen.id) === Number(examenEditandoId);
+                                                    }
+                                                    return true;
+                                                  })
+                                                  .map((examen, idxExamen) => (
+                                                    <div
+                                                      key={examen.id}
+                                                      className={`rounded-2xl border p-4 ${
+                                                        Number(examen.id) === Number(examenEditandoId)
+                                                          ? "border-amber-300 bg-amber-50"
+                                                          : "border-violet-200 bg-violet-50"
+                                                      }`}
+                                                    >
+                                                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                        <div>
+                                                          <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
+                                                              Examen {idxExamen + 1}
+                                                            </span>
 
-                                                          <h6 className="font-bold text-slate-800">{examen.titulo}</h6>
+                                                            <h6 className="font-bold text-slate-800">{examen.titulo}</h6>
+
+                                                            {Number(examen.id) === Number(examenEditandoId) && (
+                                                              <span className="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
+                                                                Editando ahora
+                                                              </span>
+                                                            )}
+                                                          </div>
+
+                                                          {examen.descripcion && (
+                                                            <p className="text-sm text-slate-500 mt-2">{examen.descripcion}</p>
+                                                          )}
+
+                                                          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                                            <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                              {examen.total_preguntas || 0} preguntas
+                                                            </span>
+                                                            <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                              {examen.duracion_minutos || 30} min
+                                                            </span>
+                                                            <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                              {examen.intentos_permitidos || 1} intento(s)
+                                                            </span>
+                                                            <span
+                                                              className={`inline-flex rounded-full border px-3 py-1 ${
+                                                                examen.evaluacion_nombre
+                                                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                                  : "border-amber-200 bg-amber-50 text-amber-700"
+                                                              }`}
+                                                            >
+                                                              {examen.evaluacion_nombre
+                                                                ? `Evaluación asignada: ${examen.evaluacion_nombre}`
+                                                                : "Sin evaluación asignada"}
+                                                            </span>
+                                                          </div>
                                                         </div>
 
-                                                        {examen.descripcion && (
-                                                          <p className="text-sm text-slate-500 mt-2">{examen.descripcion}</p>
-                                                        )}
-
-                                                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                            {examen.total_preguntas || 0} preguntas
-                                                          </span>
-                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                            {examen.duracion_minutos || 30} min
-                                                          </span>
-                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                            {examen.intentos_permitidos || 1} intento(s)
-                                                          </span>
-                                                          <span
-                                                            className={`inline-flex rounded-full border px-3 py-1 ${
-                                                              examen.evaluacion_nombre
-                                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                                : "border-amber-200 bg-amber-50 text-amber-700"
-                                                            }`}
+                                                        <div className="flex flex-wrap gap-2">
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => abrirConfigExamen(examen)}
+                                                            className="rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
                                                           >
-                                                            {examen.evaluacion_nombre
-                                                              ? `Evaluación asignada: ${examen.evaluacion_nombre}`
-                                                              : "Sin evaluación asignada"}
-                                                          </span>
+                                                            Configurar nota
+                                                          </button>
+
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => cargarExamenParaEdicion(examen, leccion.id)}
+                                                            disabled={guardandoExamen}
+                                                            className="rounded-2xl bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-200 disabled:opacity-60"
+                                                          >
+                                                            {Number(examen.id) === Number(examenEditandoId) ? "Editando..." : "Editar examen"}
+                                                          </button>
+
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => eliminarExamenLeccion(examen.id)}
+                                                            className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
+                                                          >
+                                                            Eliminar
+                                                          </button>
                                                         </div>
-                                                      </div>
-
-                                                      <div className="flex flex-wrap gap-2">
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => abrirConfigExamen(examen)}
-                                                          className="rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
-                                                        >
-                                                          Configurar nota
-                                                        </button>
-
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => eliminarExamenLeccion(examen.id)}
-                                                          className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
-                                                        >
-                                                          Eliminar
-                                                        </button>
                                                       </div>
                                                     </div>
-                                                  </div>
-                                                ))}
+                                                  ))}
                                               </div>
                                             )}
 
@@ -4111,6 +4932,33 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                 onSubmit={(e) => guardarExamenLeccion(e, leccion.id)}
                                                 className="mt-5 border-t pt-5 space-y-5"
                                               >
+                                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                                    <div>
+                                                      <p className="text-sm font-semibold text-amber-800">
+                                                        {examenEditandoId
+                                                          ? `Editando examen: ${formExamen[leccion.id]?.titulo || "Sin título"}`
+                                                          : "Creando nuevo examen"}
+                                                      </p>
+                                                      <p className="text-xs text-amber-700 mt-1">
+                                                        {examenEditandoId
+                                                          ? "Mientras editas este examen, los demás exámenes de la lección se ocultan para evitar confusión."
+                                                          : "Define la configuración general y luego agrega las preguntas."}
+                                                      </p>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-2">
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => cancelarEdicionExamen(leccion.id)}
+                                                        className="rounded-2xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100"
+                                                      >
+                                                        Cancelar
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                   <div>
                                                     <label className="block font-semibold mb-2">Título del examen</label>
@@ -4159,14 +5007,9 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
 
                                                 <div className="space-y-4">
                                                   {(formExamen[leccion.id]?.preguntas || []).map((pregunta, preguntaIndex) => (
-                                                    <div
-                                                      key={preguntaIndex}
-                                                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4"
-                                                    >
+                                                    <div key={preguntaIndex} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
                                                       <div className="flex items-center justify-between gap-3">
-                                                        <h6 className="font-bold text-slate-800">
-                                                          Pregunta {preguntaIndex + 1}
-                                                        </h6>
+                                                        <h6 className="font-bold text-slate-800">Pregunta {preguntaIndex + 1}</h6>
 
                                                         <button
                                                           type="button"
@@ -4177,7 +5020,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                         </button>
                                                       </div>
 
-                                                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                                                         <div className="md:col-span-3">
                                                           <label className="block font-semibold mb-2">Enunciado</label>
                                                           <input
@@ -4214,58 +5057,253 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
                                                           />
                                                         </div>
-                                                      </div>
 
-                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {(pregunta.opciones || []).map((opcion, opcionIndex) => (
-                                                          <div
-                                                            key={opcionIndex}
-                                                            className={`rounded-2xl border p-4 ${
-                                                              opcion.es_correcta
-                                                                ? "border-emerald-300 bg-emerald-50"
-                                                                : "border-slate-200 bg-white"
-                                                            }`}
+                                                        <div className="md:col-span-2">
+                                                          <label className="block font-semibold mb-2">Tipo de pregunta</label>
+                                                          <select
+                                                            value={pregunta.tipo_pregunta || "unica"}
+                                                            onChange={(e) =>
+                                                              handleChangePreguntaExamen(
+                                                                leccion.id,
+                                                                preguntaIndex,
+                                                                "tipo_pregunta",
+                                                                e.target.value
+                                                              )
+                                                            }
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
                                                           >
-                                                            <label className="block font-semibold mb-2">
-                                                              Opción {opcionIndex + 1}
-                                                            </label>
+                                                            <option value="unica">Marcar una sola opción</option>
+                                                            <option value="multiple">Marcar varias opciones</option>
+                                                            <option value="texto_corto">Texto corto</option>
+                                                            <option value="texto_largo">Texto largo</option>
+                                                            <option value="numerica">Respuesta numérica</option>
+                                                            <option value="archivo">Subir archivo</option>
+                                                          </select>
+                                                        </div>
+                                                        </div>
 
-                                                            <input
-                                                              type="text"
-                                                              value={opcion.texto || ""}
-                                                              onChange={(e) =>
-                                                                handleChangeOpcionExamen(
-                                                                  leccion.id,
-                                                                  preguntaIndex,
-                                                                  opcionIndex,
-                                                                  "texto",
-                                                                  e.target.value
-                                                                )
-                                                              }
-                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
-                                                              placeholder={`Texto de la opción ${opcionIndex + 1}`}
-                                                            />
-
-                                                            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-                                                              <input
-                                                                type="radio"
-                                                                name={`correcta-${leccion.id}-${preguntaIndex}`}
-                                                                checked={!!opcion.es_correcta}
-                                                                onChange={() =>
-                                                                  handleChangeOpcionExamen(
+                                                        {TIPOS_PREGUNTA_TEXTO.includes(pregunta.tipo_pregunta) && (
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Respuesta de referencia</label>
+                                                              <textarea
+                                                                value={pregunta.respuesta_texto || ""}
+                                                                maxLength={pregunta.tipo_pregunta === "texto_corto" ? 50 : 200}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
                                                                     leccion.id,
                                                                     preguntaIndex,
-                                                                    opcionIndex,
-                                                                    "es_correcta",
-                                                                    true
+                                                                    "respuesta_texto",
+                                                                    e.target.value
                                                                   )
                                                                 }
+                                                                className="w-full min-h-[120px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="Escribe la respuesta esperada"
                                                               />
-                                                              Marcar como correcta
-                                                            </label>
+                                                              <p className="mt-1 text-xs text-slate-500">
+                                                                Máximo {pregunta.tipo_pregunta === "texto_corto" ? 50 : 200} caracteres
+                                                              </p>
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Placeholder para el alumno</label>
+                                                              <input
+                                                                type="text"
+                                                                value={pregunta.texto_placeholder || ""}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "texto_placeholder",
+                                                                    e.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="Ej. Escribe tu respuesta aquí"
+                                                              />
+                                                            </div>
                                                           </div>
-                                                        ))}
-                                                      </div>
+                                                        )}
+
+                                                        {pregunta.tipo_pregunta === "numerica" && (
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Respuesta numérica correcta</label>
+                                                              <input
+                                                                type="text"
+                                                                value={pregunta.respuesta_texto || ""}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "respuesta_texto",
+                                                                    e.target.value.replace(/[^\d.-]/g, "")
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="Ej. 25 o 25.5"
+                                                              />
+                                                            </div>
+
+                                                            <div className="flex items-end">
+                                                              <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
+                                                                <input
+                                                                  type="checkbox"
+                                                                  checked={!!pregunta.permitir_decimales}
+                                                                  onChange={(e) =>
+                                                                    handleChangePreguntaExamen(
+                                                                      leccion.id,
+                                                                      preguntaIndex,
+                                                                      "permitir_decimales",
+                                                                      e.target.checked
+                                                                    )
+                                                                  }
+                                                                  className="h-4 w-4"
+                                                                />
+                                                                <div>
+                                                                  <p className="font-semibold text-gray-800">Permitir decimales</p>
+                                                                  <p className="text-sm text-gray-500">
+                                                                    Si lo desactivas, solo se aceptarán enteros.
+                                                                  </p>
+                                                                </div>
+                                                              </label>
+                                                            </div>
+                                                          </div>
+                                                        )}
+
+                                                        {pregunta.tipo_pregunta === "archivo" && (
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Tamaño máximo (MB)</label>
+                                                              <input
+                                                                type="number"
+                                                                min="1"
+                                                                value={pregunta.tamano_max_mb || 10}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "tamano_max_mb",
+                                                                    e.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                              />
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Extensiones permitidas</label>
+                                                              <input
+                                                                type="text"
+                                                                value={pregunta.extensiones_permitidas || ""}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "extensiones_permitidas",
+                                                                    e.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="pdf,jpg,png,doc,docx"
+                                                              />
+                                                              <p className="mt-1 text-xs text-slate-500">
+                                                                Separadas por coma, sin punto.
+                                                              </p>
+                                                            </div>
+
+                                                            <div className="md:col-span-2">
+                                                              <label className="block font-semibold mb-2">Texto de ayuda</label>
+                                                              <input
+                                                                type="text"
+                                                                value={pregunta.texto_placeholder || ""}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "texto_placeholder",
+                                                                    e.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="Ej. Sube tu informe en PDF"
+                                                              />
+                                                            </div>
+                                                          </div>
+                                                        )}
+
+                                                        {TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta) && (
+                                                          <>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                              {(pregunta.opciones || []).map((opcion, opcionIndex) => (
+                                                                <div
+                                                                  key={opcionIndex}
+                                                                  className={`rounded-2xl border p-4 ${
+                                                                    opcion.es_correcta
+                                                                      ? "border-emerald-300 bg-emerald-50"
+                                                                      : "border-slate-200 bg-white"
+                                                                  }`}
+                                                                >
+                                                                  <label className="block font-semibold mb-2">
+                                                                    Opción {opcionIndex + 1}
+                                                                  </label>
+
+                                                                  <input
+                                                                    type="text"
+                                                                    value={opcion.texto || ""}
+                                                                    onChange={(e) =>
+                                                                      handleChangeOpcionExamen(
+                                                                        leccion.id,
+                                                                        preguntaIndex,
+                                                                        opcionIndex,
+                                                                        "texto",
+                                                                        e.target.value
+                                                                      )
+                                                                    }
+                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
+                                                                    placeholder={`Texto de la opción ${opcionIndex + 1}`}
+                                                                  />
+
+                                                                  <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                                                                    <input
+                                                                      type={pregunta.tipo_pregunta === "multiple" ? "checkbox" : "radio"}
+                                                                      name={`correcta-${leccion.id}-${preguntaIndex}`}
+                                                                      checked={!!opcion.es_correcta}
+                                                                      onChange={(e) =>
+                                                                        handleChangeOpcionExamen(
+                                                                          leccion.id,
+                                                                          preguntaIndex,
+                                                                          opcionIndex,
+                                                                          "es_correcta",
+                                                                          e.target.checked
+                                                                        )
+                                                                      }
+                                                                    />
+                                                                    {pregunta.tipo_pregunta === "multiple"
+                                                                      ? "Marcar como correcta"
+                                                                      : "Respuesta correcta"}
+                                                                  </label>
+
+                                                                  <button
+                                                                    type="button"
+                                                                    onClick={() => quitarOpcion(leccion.id, preguntaIndex, opcionIndex)}
+                                                                    className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200 mt-3"
+                                                                  >
+                                                                    Eliminar opción
+                                                                  </button>
+                                                                </div>
+                                                              ))}
+                                                            </div>
+
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => agregarOpcion(leccion.id, preguntaIndex)}
+                                                              className="rounded-xl bg-blue-100 text-blue-700 px-4 py-2 text-sm hover:bg-blue-200"
+                                                            >
+                                                              Añadir opción
+                                                            </button>
+                                                          </>
+                                                        )}
                                                     </div>
                                                   ))}
                                                 </div>
@@ -4284,7 +5322,11 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                     disabled={guardandoExamen}
                                                     className="rounded-2xl bg-violet-600 px-5 py-3 text-white font-semibold hover:bg-violet-700 disabled:opacity-60"
                                                   >
-                                                    {guardandoExamen ? "Guardando..." : "Guardar examen"}
+                                                    {guardandoExamen
+                                                      ? "Guardando..."
+                                                      : examenEditandoId
+                                                      ? "Guardar cambios"
+                                                      : "Guardar examen"}
                                                   </button>
                                                 </div>
                                               </form>
@@ -4561,15 +5603,14 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                           )}
 
                                                           <div className="flex flex-wrap gap-2 mt-3">
-                                                            {material.archivo_url && (
-                                                              <a
-                                                                href={material.archivo_url}
-                                                                target="_blank"
-                                                                rel="noreferrer"
+                                                            {(material.object_key || material.archivo_url) && (
+                                                              <button
+                                                                type="button"
+                                                                onClick={() => abrirArchivoMaterial(material)}
                                                                 className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
                                                               >
                                                                 Ver archivo
-                                                              </a>
+                                                              </button>
                                                             )}
 
                                                             {material.video_url && (
@@ -4760,6 +5801,58 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
           </DndContext>
             )}
           </div>
+        </div>
+      )}
+
+      {notificacionesVideo.length > 0 && (
+        <div className="fixed top-4 right-4 z-[80] space-y-3 w-[340px]">
+          {notificacionesVideo.map((item) => (
+            <div
+              key={item.id}
+              className={`rounded-2xl border shadow-lg p-4 bg-white ${
+                item.estado === "success"
+                  ? "border-emerald-200"
+                  : item.estado === "error"
+                  ? "border-red-200"
+                  : item.estado === "warning"
+                  ? "border-amber-200"
+                  : "border-slate-200"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-slate-800">{item.titulo || "Video"}</p>
+                  <p className="text-sm text-slate-600 mt-1">{item.mensaje}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => eliminarNotificacionVideo(item.id)}
+                  className="text-xs rounded-lg border px-2 py-1 hover:bg-slate-50"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {(item.estado === "uploading" || item.estado === "processing") && (
+                <div className="mt-3">
+                  <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        item.estado === "processing" ? "bg-amber-500" : "bg-blue-600"
+                      }`}
+                      style={{ width: `${item.progreso || 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {item.estado === "processing"
+                      ? "El video ya se subió. Vimeo lo está procesando."
+                      : `${Math.round(item.progreso || 0)}% completado`}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

@@ -32,9 +32,14 @@ import { MultimediaModule } from './multimedia/multimedia.module';
 import { SoporteModule } from './soporte/soporte.module';
 import { ExamenModule } from './examen/examen.module';
 import { PensionModule } from './pension/pension.module';
+import { S3Module } from './s3/s3.module';
+import { GoogleMeetModule } from './google-meet/google-meet.module';
+import { MailModule } from './mail/mail.module';
+import { CertificadoModule } from './certificado/certificado.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: join(__dirname, '..', '.env'),
@@ -92,6 +97,10 @@ import { PensionModule } from './pension/pension.module';
     SoporteModule,
     ExamenModule,
     PensionModule,
+    S3Module,
+    GoogleMeetModule,
+    MailModule,
+    CertificadoModule,
   ],
 
   controllers: [AppController],
