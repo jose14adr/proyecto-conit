@@ -2653,3 +2653,37 @@ export const deleteExamen = async (examenId) => {
 
   return true;
 };
+
+export const getSesionesVivoByCurso = async (cursoId) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/sesion-vivo/curso/${cursoId}`);
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message || "No se pudieron cargar las sesiones en vivo.");
+  }
+
+  return data;
+};
+
+export const crearSesionVivo = async (payload) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/sesion-vivo`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message || "No se pudo crear la sesión en vivo.");
+  }
+
+  return data;
+};

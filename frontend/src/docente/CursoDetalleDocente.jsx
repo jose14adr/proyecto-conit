@@ -43,6 +43,8 @@ import {
   getEvaluacionesExamenDisponiblesByGrupo,
   asignarEvaluacionAExamen,
   deleteExamen,
+  getSesionesVivoByCurso,
+  crearSesionVivo,
 } from "../services/docenteService";
 
 import {
@@ -386,6 +388,8 @@ function CursoDetalleDocente() {
   const [formMaterial, setFormMaterial] = useState({});
   const [subidaMaterialProgress, setSubidaMaterialProgress] = useState({});
   const [subidaMaterialEstado, setSubidaMaterialEstado] = useState({});
+
+  const [notificacionesVideo, setNotificacionesVideo] = useState([]);
 
   // ==============================
   // EXAMENES
