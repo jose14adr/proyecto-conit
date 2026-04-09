@@ -60,15 +60,41 @@ export default function Login() {
         throw new Error("No llegó access_token del backend");
       }
 
-      // Guardamos el token en el navegador
-      localStorage.setItem("token", respuesta.access_token);
-      console.log("TOKEN GUARDADO:", localStorage.getItem("token"));
+      const token = respuesta.access_token;
+      localStorage.setItem("token", token);
+
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        window
+          .atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join(""),
+      );
+
+      const tokenData = JSON.parse(jsonPayload);
+
+      // Guardamos la información del usuario en el localStorage para usarla en otras partes de la aplicación
+      localStorage.setItem("usuario", JSON.stringify(tokenData));
+
+      // Buscamos el rol del usuario en el token o en la respuesta del backend, dependiendo de dónde lo envíe el backend
+      const userRole = tokenData.rol || respuesta.usuario?.rol;
 
       // Si todo está bien, mostramos un mensaje de éxito
       toast.success("Inicio de sesión exitoso");
 
       // Redirigimos al dashboard
-      navigate("/admin");
+      if (userRole === "ADMINISTRADOR") {
+        navigate("/admin");
+      } else if (userRole === "DOCENTE") {
+        navigate("/docente");
+      } else if (userRole === "ALUMNO") {
+        navigate("/alumno");
+      } else {
+        console.warn("Rol no reconocido", userRole);
+        navigate("/web");
+      }
     } catch (error: any) {
       // Si el backend rechaza el login, mostramos un mensaje de error
       toast.error(error.message || "Error al iniciar sesión");

@@ -4,88 +4,233 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
+
 import { Usuario } from './entities/usuario.entity';
+import { Alumno } from '../alumno/entities/alumno.entity';
+import { Docente } from '../docente/entities/docente.entity';
+import { Administrador } from '../administrador/entities/administrador.entity';
+
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsuarioService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+
+    private readonly dataSource: DataSource,
   ) {}
 
-  //Esto permite enviar un objeto con datos del usuario sin obligar a tener ID (que es autogenerado)
+  // ✅ CREAR USUARIO
   async create(datosUsuario: Partial<Usuario>): Promise<Usuario> {
+    if (datosUsuario.contrasenia) {
+      datosUsuario.contrasenia = await bcrypt.hash(
+        datosUsuario.contrasenia,
+        10,
+      );
+    }
+
     const nuevoUsuario = this.usuarioRepository.create(datosUsuario);
     return await this.usuarioRepository.save(nuevoUsuario);
   }
 
-  //TypeORM retorna 'null' si no encuentra el registro.
+  // ✅ BUSCAR POR CORREO
   async findOneByCorreo(correo: string): Promise<Usuario | null> {
     return await this.usuarioRepository.findOne({ where: { correo } });
   }
 
+  // ✅ LISTAR
   async findAll(): Promise<Usuario[]> {
     return await this.usuarioRepository.find({
       order: { id: 'DESC' },
     });
   }
 
+  // ✅ BUSCAR POR ID
   async findOne(id: number): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findOne({ where: { id } });
+
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
     }
+
     return usuario;
   }
 
-  async update(id: number, datosActualizados: Partial<Usuario>) {
-    await this.usuarioRepository.update(id, datosActualizados);
-    return this.findOne(id);
+  // ✅ UPDATE COMPLETO (ROL + MIGRACIÓN)
+  async update(id: number, data: any) {
+    return await this.dataSource.transaction(async (manager) => {
+      const usuario = await manager.findOne(Usuario, { where: { id } });
+
+      if (!usuario) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
+
+      const rolAntiguo = usuario.rol;
+      const rolNuevo = data.rol;
+
+      // 🔐 ENCRIPTAR PASSWORD SI VIENE
+      if (data.contrasenia) {
+        usuario.contrasenia = await bcrypt.hash(data.contrasenia, 10);
+      }
+
+      if (data.correo) {
+        usuario.correo = data.correo;
+      }
+
+      // 🔥 CAMBIO DE ROL CON MIGRACIÓN
+      if (rolNuevo && rolAntiguo !== rolNuevo) {
+        let perfilDatos: any = null;
+
+        // 🔻 ELIMINAR PERFIL ANTERIOR
+        if (rolAntiguo === 'ALUMNO') {
+          const perfil = await manager.findOne(Alumno, {
+            where: { idusuario: id },
+          });
+          if (perfil) {
+            perfilDatos = { ...perfil };
+            await manager.delete(Alumno, perfil.id);
+          }
+        }
+
+        if (rolAntiguo === 'DOCENTE') {
+          const perfil = await manager.findOne(Docente, {
+            where: { usuario: { id } },
+          });
+          if (perfil) {
+            perfilDatos = { ...perfil };
+            await manager.delete(Docente, perfil.id);
+          }
+        }
+
+        if (rolAntiguo === 'ADMINISTRADOR' || rolAntiguo === 'ADMIN') {
+          const perfil = await manager.findOne(Administrador, {
+            where: { idusuario: id },
+          });
+          if (perfil) {
+            perfilDatos = { ...perfil };
+            await manager.delete(Administrador, perfil.id);
+          }
+        }
+
+        // 🔄 PREPARAR DATOS PARA MIGRACIÓN
+        const datosMigracion = perfilDatos
+          ? {
+              nombre: perfilDatos.nombre || 'Por editar',
+              apellido: perfilDatos.apellido || 'Por editar',
+              tipodocumento:
+                perfilDatos.tipodocumento ||
+                perfilDatos.tipoDocumento ||
+                'DNI',
+              numdocumento:
+                perfilDatos.numdocumento ||
+                perfilDatos.numDocumento ||
+                '00000000',
+              telefono: perfilDatos.telefono || '',
+              direccion: perfilDatos.direccion || '',
+              correo: perfilDatos.correo || usuario.correo,
+              idusuario: id,
+              usuario: { id },
+            }
+          : {
+              nombre: 'Usuario',
+              apellido: 'Migrado',
+              tipodocumento: 'DNI',
+              numdocumento: '00000000',
+              telefono: '',
+              direccion: '',
+              correo: usuario.correo,
+              idusuario: id,
+              usuario: { id },
+            };
+
+        // 🔺 CREAR NUEVO PERFIL SEGÚN ROL
+        if (rolNuevo === 'ALUMNO') {
+          await manager.save(manager.create(Alumno, datosMigracion));
+        }
+
+        if (rolNuevo === 'DOCENTE') {
+          await manager.save(
+            manager.create(Docente, {
+              ...datosMigracion,
+              tipoDocumento: datosMigracion.tipodocumento,
+              numDocumento: datosMigracion.numdocumento,
+            }),
+          );
+        }
+
+        if (rolNuevo === 'ADMINISTRADOR' || rolNuevo === 'ADMIN') {
+          await manager.save(manager.create(Administrador, datosMigracion));
+        }
+
+        usuario.rol = rolNuevo;
+      }
+
+      return await manager.save(usuario);
+    });
   }
 
+  // ✅ DESHABILITAR
   async remove(id: number) {
     await this.usuarioRepository.update(id, { estado: false });
     return { message: 'Usuario deshabilitado correctamente' };
   }
 
+  // ✅ HABILITAR
   async habilitar(id: number) {
     await this.usuarioRepository.update(id, { estado: true });
     return { message: 'Usuario habilitado correctamente' };
   }
 
+  // 🔐 CAMBIAR CONTRASEÑA CON HISTORIAL
   async actualizarContrasenia(id: number, contrasenia: string) {
-    //Buscamos al usuario para ver sus contraseñas anteriores
     const usuario = await this.usuarioRepository.findOne({ where: { id } });
-    //Si el usuario no existe, lanzamos un error
+
     if (!usuario) {
-      throw new NotFoundException('Usuario no encontrado en la base de datos');
+      throw new NotFoundException('Usuario no encontrado');
     }
-    //Garantizamos que sea un Array de JavaScript
+
     let historial: string[] = [];
-    if (Array.isArray(usuario.historialcontrasenias)) {
-      historial = usuario.historialcontrasenias;
-    } else if (typeof usuario.historialcontrasenias === 'string') {
-      historial = (usuario.historialcontrasenias as string)
-        .replace(/^{|}$/g, '')
-        .split(',');
-    }
-    //Limpiamos cualquier dato vacío que se haya podido guardar por error, para evitar falsos positivos al comparar contraseñas
-    historial = historial.filter((pass) => pass && pass.trim() !== '');
-    //Verificamos que no sea igual a la contraseña actual ni a las anteriores
-    if (
-      usuario.contrasenia === contrasenia ||
-      historial.includes(contrasenia)
-    ) {
+
+    const raw: any = usuario.historialcontrasenias ?? [];
+
+historial = Array.isArray(raw)
+  ? raw
+  : typeof raw === 'string'
+  ? raw.replace(/^{|}$/g, '').split(',')
+  : [];
+
+    historial = historial.filter((p) => p && p.trim() !== '');
+
+    // ❌ MISMA CONTRASEÑA
+    const esActual = await bcrypt.compare(
+      contrasenia,
+      usuario.contrasenia,
+    );
+
+    if (esActual) {
       throw new BadRequestException(
-        'La contraseña ya fue utilizada anteriormente',
+        'La contraseña es igual a la actual',
       );
     }
-    //Metemos la contraseña actual al inicio, y cortamos a 3 elementos
-    const nuevoHistorial = [usuario.contrasenia, ...historial].slice(0, 3); //Guardamos solo las últimas 3 contraseñas
-    //Guardamos la nueva contraseña y el nuevo historial en la base de datos
+
+    // ❌ HISTORIAL
+    for (const hash of historial) {
+      const usada = await bcrypt.compare(contrasenia, hash);
+      if (usada) {
+        throw new BadRequestException(
+          'La contraseña ya fue utilizada anteriormente',
+        );
+      }
+    }
+
+    const hashed = await bcrypt.hash(contrasenia, 10);
+
+    const nuevoHistorial = [usuario.contrasenia, ...historial].slice(0, 3);
+
     await this.usuarioRepository.update(id, {
-      contrasenia: contrasenia,
+      contrasenia: hashed,
       historialcontrasenias: nuevoHistorial,
     });
   }

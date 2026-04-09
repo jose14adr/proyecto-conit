@@ -15,11 +15,11 @@ id: number;
   @JoinColumn({ name: 'idcurso' })
   curso?: Curso;
 
-@Column()
+@Column({ type: 'varchar' })
 titulo: string;
 
-@Column({ nullable: true })
-descripcion: string;
+@Column({ type: 'text', nullable: true })
+descripcion?: string;
 
 @Column()
 fecha: Date;

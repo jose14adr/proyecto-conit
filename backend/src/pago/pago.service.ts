@@ -229,50 +229,45 @@ export class PagoService {
   // ==============================
   async pagarConTarjeta(data: any) {
     mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
-    console.log('📦 DATA BACKEND:', data);
-
-    // 🔹 Sandbox: simulamos pago aprobado
-    if (data.sandbox) {
-      const fakePayment = {
-        body: {
-          id: Math.floor(Math.random() * 10000000),
-          status: 'approved',
-          status_detail: 'accredited',
-        },
-      };
-      await this._guardarPago(data, fakePayment);
-      return {
-        id: fakePayment.body.id,
-        status: fakePayment.body.status,
-        status_detail: fakePayment.body.status_detail,
-      };
-    }
 
     try {
       const payment = await mercadopago.payment.create({
-        transaction_amount: Number(data.preciofinal),
+        transaction_amount: Number(data.transaction_amount),
         token: data.token,
-        description: 'Pago curso',
+        description: "Pago de curso",
         installments: Number(data.installments),
         payment_method_id: data.payment_method_id,
         issuer_id: data.issuer_id,
+
         payer: {
-          email: data.email,
-          identification: { type: 'DNI', number: data.dni },
+          email: data.payer.email,
         },
       });
 
-      console.log('✅ RESPUESTA MP:', payment.body);
-      await this._guardarPago(data, payment);
+      console.log("✅ MP RESPONSE:", payment.body);
+
+      // 🔥 adaptar a tu sistema
+      const dataAdaptada = {
+        preciofinal: data.transaction_amount,
+        precioinicial: data.transaction_amount,
+        preciodescuento: 0,
+        igv: 0,
+        tipopago: "mercadopago",
+        matricula_id: data.matricula_id,
+        email: data.payer.email,
+      };
+
+      await this._guardarPago(dataAdaptada, payment);
 
       return {
         id: payment.body.id,
         status: payment.body.status,
         status_detail: payment.body.status_detail,
       };
+
     } catch (error) {
-      console.error('💥 ERROR GENERAL:', error);
-      throw error;
+      console.error("💥 ERROR MP:", error.response?.data || error);
+      throw new Error("Error al procesar pago con tarjeta");
     }
   }
 

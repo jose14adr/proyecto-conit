@@ -13,11 +13,11 @@ import {
   Plus,
   Edit2,
   Trash2,
-  User,
   AlertTriangle,
   CheckCircle,
   Users,
   BookPlus,
+  BookOpen,
 } from "lucide-react";
 
 export default function Alumnos() {
@@ -176,24 +176,54 @@ export default function Alumnos() {
                   const esInactivo = alumno.estado === false;
                   const textoEstado = esInactivo ? "INACTIVO" : "ACTIVO";
 
+                  // Extraemos los cursos en los que está matriculado (separados por coma si son varios)
+                  const cursosInscritos =
+                    alumno.matriculas?.length > 0
+                      ? alumno.matriculas
+                          .map((m) => m.grupo?.curso?.nombrecurso)
+                          .filter(Boolean)
+                          .join(", ")
+                      : "Sin cursos inscritos";
+
                   return (
                     <tr
                       key={alumno.id}
-                      className={`transition-colors ${esInactivo ? "bg-gray-50 opacity-75" : "hover:shadow-sm"}`}
+                      onClick={() => setAlumnoVer(alumno)}
+                      className={`transition-colors cursor-pointer group ${
+                        esInactivo
+                          ? "bg-gray-50 opacity-75"
+                          : "hover:bg-indigo-50/60"
+                      }`}
                     >
+                      {/* Avatar, Nombre y Curso */}
                       <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-4">
                         <div
-                          className={`p-3 rounded-lg ${esInactivo ? "bg-gray-200 text-gray-500" : "bg-indigo-100 text-indigo-600"}`}
+                          className={`h-11 w-11 rounded-xl flex items-center justify-center text-lg font-bold transition-colors ${
+                            esInactivo
+                              ? "bg-gray-200 text-gray-500"
+                              : "bg-indigo-100 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white"
+                          }`}
                         >
-                          <User size={24} />
+                          {alumno.nombre?.charAt(0)}
+                          {alumno.apellido?.charAt(0)}
                         </div>
                         <div>
-                          <div className="font-bold text-gray-800 text-base">
+                          <div className="font-bold text-gray-800 text-sm group-hover:text-indigo-700 transition-colors">
                             {alumno.nombre} {alumno.apellido}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+                            <BookOpen size={12} className="text-gray-400" />
+                            <span
+                              className="truncate max-w-[200px] md:max-w-xs"
+                              title={cursosInscritos}
+                            >
+                              {cursosInscritos}
+                            </span>
                           </div>
                         </div>
                       </td>
 
+                      {/* Documento */}
                       <td className="px-6 py-4 text-sm text-gray-600">
                         <span className="font-semibold text-gray-700">
                           {alumno.tipoDocumento || "DNI"}:
@@ -201,16 +231,20 @@ export default function Alumnos() {
                         {alumno.numDocumento || alumno.numdocumento}
                       </td>
 
+                      {/* Contacto */}
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        <div className="font-medium">{alumno.correo}</div>
+                        <div className="font-medium text-gray-800">
+                          {alumno.correo}
+                        </div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {alumno.telefono}
                         </div>
                       </td>
 
+                      {/* Estado */}
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
+                          className={`px-3 py-1.5 text-xs font-bold tracking-wide rounded-lg ${
                             esInactivo
                               ? "bg-red-100 text-red-700"
                               : "bg-green-100 text-green-700"
@@ -220,25 +254,26 @@ export default function Alumnos() {
                         </span>
                       </td>
 
+                      {/* Acciones (Detenemos la propagación del clic) */}
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => setAlumnoVer(alumno)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Ver Perfil"
-                          >
-                            <User size={18} />
-                          </button>
-                          <button
-                            onClick={() => setAlumnoMatricular(alumno)}
-                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAlumnoMatricular(alumno);
+                            }}
+                            className="p-2 text-emerald-600 hover:bg-emerald-100 bg-emerald-50 rounded-lg transition-colors"
                             title="Matricular en Curso"
                           >
                             <BookPlus size={18} />
                           </button>
+
                           <button
-                            onClick={() => handleEditar(alumno)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditar(alumno);
+                            }}
+                            className="p-2 text-indigo-600 hover:bg-indigo-100 bg-indigo-50 rounded-lg transition-colors"
                             title="Editar"
                           >
                             <Edit2 size={18} />
@@ -246,16 +281,22 @@ export default function Alumnos() {
 
                           {esInactivo ? (
                             <button
-                              onClick={() => solicitarHabilitacion(alumno)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                solicitarHabilitacion(alumno);
+                              }}
+                              className="p-2 text-green-600 hover:bg-green-100 bg-green-50 rounded-lg transition-colors"
                               title="Re-habilitar"
                             >
                               <CheckCircle size={18} />
                             </button>
                           ) : (
                             <button
-                              onClick={() => solicitarInhabilitacion(alumno)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                solicitarInhabilitacion(alumno);
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-100 bg-red-50 rounded-lg transition-colors"
                               title="Inhabilitar"
                             >
                               <Trash2 size={18} />
@@ -284,6 +325,23 @@ export default function Alumnos() {
         <AlumnoPerfilModal
           alumno={alumnoVer}
           onClose={() => setAlumnoVer(null)}
+          // Le pasamos las funciones cerrando primero el modal de perfil
+          onEdit={() => {
+            setAlumnoVer(null);
+            handleEditar(alumnoVer);
+          }}
+          onMatricular={() => {
+            setAlumnoVer(null);
+            setAlumnoMatricular(alumnoVer);
+          }}
+          onInhabilitar={() => {
+            setAlumnoVer(null);
+            solicitarInhabilitacion(alumnoVer);
+          }}
+          onHabilitar={() => {
+            setAlumnoVer(null);
+            solicitarHabilitacion(alumnoVer);
+          }}
         />
       )}
 

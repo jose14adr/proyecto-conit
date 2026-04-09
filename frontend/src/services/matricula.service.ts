@@ -17,3 +17,8 @@ export const obtenerMatriculasPorAlumno = async (alumnoId: number) => {
   const response = await api.get(`/matricula/alumno/${alumnoId}`);
   return response.data;
 };
+
+export const obtenerAlumnosPorCursoAdmin = async (idcurso: number) => {
+  const response = await api.get(`/matricula/curso/${idcurso}/alumnos`);
+  return response.data;
+};

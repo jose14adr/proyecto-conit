@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { CursoLeccion } from '../../curso_leccion/entities/curso_leccion.entity';
+import { Examen } from '../../examen/entities/examen.entity';
 
 @Entity('leccion_material')
 export class LeccionMaterial {
@@ -52,5 +53,8 @@ export class LeccionMaterial {
 
   @Column({ nullable: true })
   vimeo_uri: string;
+
+  @OneToMany(() => Examen, (examen) => examen.curso_leccion)
+examenes: Examen[];
 
 }

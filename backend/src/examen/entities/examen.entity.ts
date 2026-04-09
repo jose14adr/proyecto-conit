@@ -1,33 +1,64 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-import { Timestamp } from 'typeorm/browser';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
+import { CursoLeccion } from '../../curso_leccion/entities/curso_leccion.entity';
+import { ExamenPregunta } from '../../examen_pregunta/entities/examen_pregunta.entity';
+import { Grupo } from '../../grupo/entities/grupo.entity';
 
-@Entity({ name: 'Examen' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'examen' })
 export class Examen {
-
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar' })
+  @ManyToOne(() => CursoLeccion, (leccion) => leccion.examenes)
+  @JoinColumn({ name: 'idleccion' })
+  curso_leccion: CursoLeccion;
+
+  @ManyToOne(() => Grupo, (grupo) => grupo.examenesGrupo)
+  @JoinColumn({ name: 'idgrupo' })
+  grupo: Grupo;
+
+  @Column()
+  titulo: string;
+
+  @Column()
   descripcion: string;
 
-  @Column({ type: 'date' })
-  fechaInicio: Date;
+  @Column()
+  duracion_minutos: number;
 
-  @Column({ type: 'date' })
-  fechaFin: Date;
+  @Column()
+  intentos_permitidos: number;
 
-  @Column({ type: 'integer' })
-  cantIntentos: number;
+  @Column('numeric')
+  nota_maxima: number;
 
-  @Column({ type: 'integer' })
-  tiempoLimite: number;
+  @Column()
+  estado: boolean;
+
+  @Column()
+  randomizar_preguntas: boolean;
+
+  @Column()
+  randomizar_opciones: boolean;
 
   @Column({ type: 'timestamptz' })
-  horaInicio: Date;
+  fecha_inicio: Date;
 
   @Column({ type: 'timestamptz' })
-  horaFin: Date;
+  fecha_fin: Date;
 
-  @Column({ type: 'integer' })
-  notaAprobacion: number;
+  @Column({ type: 'timestamptz' })
+  created_at: Date;
+
+  @Column({ type: 'timestamptz' })
+  updated_at: Date;
+
+  @OneToMany(() => ExamenPregunta, (p) => p.examen)
+  preguntas: ExamenPregunta[];
 }

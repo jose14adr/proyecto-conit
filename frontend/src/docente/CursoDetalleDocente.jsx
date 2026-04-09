@@ -33,6 +33,7 @@ import {
   deleteMaterialLeccion,
   moverMaterialLeccion,
   moverMaterialOrden,
+  getMaterialLeccionDownloadUrl,
   getEntregasByTarea,
   guardarNotaEntregaYRegistro,
   getEvaluacionesTareaDisponiblesByGrupo,
@@ -440,14 +441,118 @@ function CursoDetalleDocente() {
   const [cargandoDetalleTarea, setCargandoDetalleTarea] = useState(false);
   const [guardandoNotaEntrega, setGuardandoNotaEntrega] = useState({});
 
-
+  // ==============================
   //Asignar notas a una tarea
+  // ==============================
+
     const [configTareaOpen, setConfigTareaOpen] = useState(false);
     const [tareaConfigActual, setTareaConfigActual] = useState(null);
     const [evaluacionesTareaDisponibles, setEvaluacionesTareaDisponibles] = useState([]);
     const [evaluacionSeleccionadaTarea, setEvaluacionSeleccionadaTarea] = useState("");
     const [cargandoConfigTarea, setCargandoConfigTarea] = useState(false);
     const [guardandoConfigTarea, setGuardandoConfigTarea] = useState(false);
+
+
+  // ==============================
+  // SESIONES EN VIVO
+  // ==============================
+  const [sesionesVivo, setSesionesVivo] = useState([]);
+  const [cargandoSesionesVivo, setCargandoSesionesVivo] = useState(false);
+  const [mostrarFormSesionVivo, setMostrarFormSesionVivo] = useState(false);
+  const [guardandoSesionVivo, setGuardandoSesionVivo] = useState(false);
+  const [formSesionVivo, setFormSesionVivo] = useState({
+    titulo: "",
+    descripcion: "",
+    fecha: "",
+    duracion: 60,
+  });  
+
+  
+// ==============================
+// CARGAR SESIONES EN VIVO
+// ==============================
+
+const cargarSesionesVivoCurso = async () => {
+  try {
+    setCargandoSesionesVivo(true);
+    const data = await getSesionesVivoByCurso(Number(id));
+    setSesionesVivo(data || []);
+  } catch (error) {
+    console.error(error);
+    alert(error?.message || "No se pudieron cargar las sesiones en vivo.");
+  } finally {
+    setCargandoSesionesVivo(false);
+  }
+};
+
+const handleChangeSesionVivo = (e) => {
+  const { name, value } = e.target;
+
+  setFormSesionVivo((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+const limpiarFormSesionVivo = () => {
+  setFormSesionVivo({
+    titulo: "",
+    descripcion: "",
+    fecha: "",
+    duracion: 60,
+  });
+};
+
+const guardarSesionVivoCurso = async (e) => {
+  e.preventDefault();
+
+  try {
+    if (!formSesionVivo.titulo.trim()) {
+      return alert("Ingresa el título de la sesión en vivo.");
+    }
+
+    if (!formSesionVivo.fecha) {
+      return alert("Selecciona la fecha y hora de la sesión.");
+    }
+
+    if (!formSesionVivo.duracion || Number(formSesionVivo.duracion) <= 0) {
+      return alert("La duración debe ser mayor a 0.");
+    }
+
+    setGuardandoSesionVivo(true);
+
+    await crearSesionVivo({
+      idcurso: Number(id),
+      titulo: formSesionVivo.titulo,
+      descripcion: formSesionVivo.descripcion,
+      fecha: formSesionVivo.fecha,
+      duracion: Number(formSesionVivo.duracion),
+    });
+
+    limpiarFormSesionVivo();
+    setMostrarFormSesionVivo(false);
+    await cargarSesionesVivoCurso();
+    alert("Sesión en vivo creada correctamente ✅");
+  } catch (error) {
+    console.error(error);
+    alert(error?.message || "No se pudo crear la sesión en vivo.");
+  } finally {
+    setGuardandoSesionVivo(false);
+  }
+};
+
+const formatearFechaSesion = (fecha) => {
+  if (!fecha) return "-";
+
+  const value = new Date(fecha);
+  if (Number.isNaN(value.getTime())) return fecha;
+
+  return value.toLocaleString("es-PE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+};
+
 
   // ==============================
   // PDF
@@ -709,6 +814,12 @@ function CursoDetalleDocente() {
 useEffect(() => {
   setTareasOrdenadas(tareas || []);
 }, [tareas]);
+
+useEffect(() => {
+  if (tabActiva === "resumen") {
+    cargarSesionesVivoCurso();
+  }
+}, [tabActiva, id]); //Cambiar por "}, [id]);" si se quiere cargar siempre apenas entrar al detalle de curso
 
   const cargarTareasCurso = async () => {
     try {
@@ -1604,113 +1715,151 @@ const moverSubModuloCurso = async (submoduloId, direccion) => {
   };
 
   const guardarMaterialCurso = async (e, leccionId) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    const data = formMaterial[leccionId] || {};
+    try {
+      const data = formMaterial[leccionId] || {};
 
-    if (!data.titulo?.trim()) {
-      return alert("Ingresa el título del material.");
-    }
+      if (!data.titulo?.trim()) {
+        return alert("Ingresa el título del material.");
+      }
 
-    if (!data.tipo) {
-      return alert("Selecciona el tipo de material.");
-    }
+      if (!data.tipo) {
+        return alert("Selecciona el tipo de material.");
+      }
 
-    if (data.tipo === "texto" && !data.contenido_texto?.trim()) {
-      return alert("Ingresa el contenido del material.");
-    }
+      if (data.tipo === "texto" && !data.contenido_texto?.trim()) {
+        return alert("Ingresa el contenido del material.");
+      }
 
-    if (data.tipo === "url_video" && !data.video_url?.trim()) {
-      return alert("Ingresa la URL del video.");
-    }
+      if (data.tipo === "url_video" && !data.video_url?.trim()) {
+        return alert("Ingresa la URL del video.");
+      }
 
-    if (data.tipo === "enlace" && !data.enlace_url?.trim()) {
-      return alert("Ingresa el enlace.");
-    }
+      if (data.tipo === "enlace" && !data.enlace_url?.trim()) {
+        return alert("Ingresa el enlace.");
+      }
 
-    if ((data.tipo === "archivo" || data.tipo === "video") && !data.file) {
-      return alert("Selecciona un archivo.");
-    }
+      if ((data.tipo === "archivo" || data.tipo === "video") && !data.file) {
+        return alert("Selecciona un archivo.");
+      }
 
-    setGuardandoMaterial(true);
+      // CASO VIDEO: se lanza en segundo plano y se libera la UI
+      if (data.tipo === "video") {
+        subirVideoEnSegundoPlano(leccionId, data);
 
-    setSubidaMaterialEstado((prev) => ({
-      ...prev,
-      [leccionId]: data.tipo === "video" ? "Subiendo video..." : "Subiendo archivo...",
-    }));
-
-    setSubidaMaterialProgress((prev) => ({
-      ...prev,
-      [leccionId]: 0,
-    }));
-
-    await addMaterialLeccion(leccionId, {
-      titulo: data.titulo,
-      tipo: data.tipo,
-      contenido_texto: data.contenido_texto,
-      video_url: data.tipo === "url_video" ? data.video_url : null,
-      enlace_url: data.tipo === "enlace" ? data.enlace_url : null,
-      file: data.tipo === "archivo" || data.tipo === "video" ? data.file : null,
-      onProgress: (percent) => {
-        setSubidaMaterialProgress((prev) => ({
+        setFormMaterial((prev) => ({
           ...prev,
-          [leccionId]: percent,
+          [leccionId]: {
+            titulo: "",
+            tipo: "texto",
+            contenido_texto: "",
+            video_url: "",
+            enlace_url: "",
+            file: null,
+          },
         }));
 
-        if (percent >= 100) {
-          setSubidaMaterialEstado((prev) => ({
-            ...prev,
-            [leccionId]:
-              data.tipo === "video"
-                ? "Procesando video en Vimeo..."
-                : "Procesando archivo...",
-          }));
-        }
-      },
-    });
+        setMostrarFormMaterial((prev) => ({
+          ...prev,
+          [leccionId]: false,
+        }));
 
-    setFormMaterial((prev) => ({
-      ...prev,
-      [leccionId]: {
-        titulo: "",
-        tipo: "texto",
-        contenido_texto: "",
-        video_url: "",
-        enlace_url: "",
-        file: null,
-      },
-    }));
+        return;
+      }
 
-    setMostrarFormMaterial((prev) => ({
-      ...prev,
-      [leccionId]: false,
-    }));
+      // Resto de materiales: flujo normal
+      setGuardandoMaterial(true);
 
-    await cargarModulosCurso();
+      setSubidaMaterialEstado((prev) => ({
+        ...prev,
+        [leccionId]: data.tipo === "video" ? "Subiendo video..." : "Subiendo archivo...",
+      }));
 
-    if (data.tipo === "video") {
-      await esperarVideoDisponible(leccionId);
-    }
-    alert("Material agregado correctamente ✅");
-  } catch (error) {
-    console.error(error);
-    alert(error?.message || "No se pudo agregar el material");
-  } finally {
-    setGuardandoMaterial(false);
-
-    setTimeout(() => {
       setSubidaMaterialProgress((prev) => ({
         ...prev,
         [leccionId]: 0,
       }));
-      setSubidaMaterialEstado((prev) => ({
+
+      await addMaterialLeccion(leccionId, {
+        titulo: data.titulo,
+        tipo: data.tipo,
+        contenido_texto: data.contenido_texto,
+        video_url: data.tipo === "url_video" ? data.video_url : null,
+        enlace_url: data.tipo === "enlace" ? data.enlace_url : null,
+        file: data.tipo === "archivo" ? data.file : null,
+        onProgress: (percent) => {
+          setSubidaMaterialProgress((prev) => ({
+            ...prev,
+            [leccionId]: percent,
+          }));
+
+          if (percent >= 100) {
+            setSubidaMaterialEstado((prev) => ({
+              ...prev,
+              [leccionId]: "Procesando archivo...",
+            }));
+          }
+        },
+      });
+
+      setFormMaterial((prev) => ({
         ...prev,
-        [leccionId]: "",
+        [leccionId]: {
+          titulo: "",
+          tipo: "texto",
+          contenido_texto: "",
+          video_url: "",
+          enlace_url: "",
+          file: null,
+        },
       }));
-    }, 1200);
-  }
-};
+
+      setMostrarFormMaterial((prev) => ({
+        ...prev,
+        [leccionId]: false,
+      }));
+
+      await cargarModulosCurso();
+      alert("Material agregado correctamente ✅");
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo agregar el material");
+    } finally {
+      setGuardandoMaterial(false);
+
+      setTimeout(() => {
+        setSubidaMaterialProgress((prev) => ({
+          ...prev,
+          [leccionId]: 0,
+        }));
+        setSubidaMaterialEstado((prev) => ({
+          ...prev,
+          [leccionId]: "",
+        }));
+      }, 1200);
+    }
+  };
+
+  const abrirArchivoMaterial = async (material) => {
+    try {
+      if (material.object_key) {
+        const url = await getMaterialLeccionDownloadUrl(material.object_key);
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      if (material.archivo_url) {
+        window.open(material.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      throw new Error("El material no tiene una ruta válida.");
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo abrir el archivo.");
+    }
+  };
 
   const eliminarMaterialCurso = async (materialId) => {
     const confirmado = window.confirm("¿Seguro que deseas eliminar este material?");
@@ -1846,6 +1995,156 @@ const esperarVideoDisponible = async (leccionId, intentos = 12) => {
   }
 
   await cargarModulosCurso();
+};
+
+const crearIdNotificacion = () =>
+  `video-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const actualizarNotificacionVideo = (id, patch) => {
+  setNotificacionesVideo((prev) =>
+    prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
+  );
+};
+
+const eliminarNotificacionVideo = (id) => {
+  setNotificacionesVideo((prev) => prev.filter((item) => item.id !== id));
+};
+
+const esperarVideoListoEnSegundoPlano = async (
+  leccionId,
+  materialId,
+  notificacionId,
+  intentosMax = 40
+) => {
+  let intentos = 0;
+
+  const intervalo = setInterval(async () => {
+    try {
+      intentos += 1;
+
+      const materiales = await getMaterialesByLeccion(leccionId);
+      const material = (materiales || []).find(
+        (m) => Number(m.id) === Number(materialId)
+      );
+
+      if (!material) {
+        if (intentos >= intentosMax) {
+          clearInterval(intervalo);
+          actualizarNotificacionVideo(notificacionId, {
+            estado: "warning",
+            mensaje: "No se encontró el video para verificar su estado.",
+          });
+        }
+        return;
+      }
+
+      const estado = (material.estado_video || "").toLowerCase();
+
+      if (estado === "available" || estado === "listo") {
+        clearInterval(intervalo);
+
+        actualizarNotificacionVideo(notificacionId, {
+          estado: "success",
+          mensaje: "Video cargado correctamente ✅",
+          progreso: 100,
+        });
+
+        await cargarModulosCurso();
+
+        setTimeout(() => {
+          eliminarNotificacionVideo(notificacionId);
+        }, 5000);
+        return;
+      }
+
+      if (intentos >= intentosMax) {
+        clearInterval(intervalo);
+        actualizarNotificacionVideo(notificacionId, {
+          estado: "info",
+          mensaje: "El video sigue procesándose en Vimeo. Revisa en unos minutos.",
+        });
+      }
+    } catch (error) {
+      clearInterval(intervalo);
+      actualizarNotificacionVideo(notificacionId, {
+        estado: "error",
+        mensaje: "Error verificando el estado del video.",
+      });
+    }
+  }, 8000);
+};
+
+const subirVideoEnSegundoPlano = async (leccionId, data) => {
+  const notificacionId = crearIdNotificacion();
+
+  setNotificacionesVideo((prev) => [
+    {
+      id: notificacionId,
+      leccionId,
+      titulo: data.titulo,
+      estado: "uploading",
+      mensaje: "Subiendo video...",
+      progreso: 0,
+    },
+    ...prev,
+  ]);
+
+  try {
+    const material = await addMaterialLeccion(leccionId, {
+      titulo: data.titulo,
+      tipo: data.tipo,
+      contenido_texto: data.contenido_texto,
+      video_url: null,
+      enlace_url: null,
+      file: data.file,
+      onProgress: (percent) => {
+        actualizarNotificacionVideo(notificacionId, {
+          progreso: percent,
+          estado: percent >= 100 ? "processing" : "uploading",
+          mensaje:
+            percent >= 100
+              ? "Procesando video en Vimeo..."
+              : "Subiendo video...",
+        });
+      },
+    });
+
+    await cargarModulosCurso();
+
+    const estado = (material?.estado_video || "").toLowerCase();
+
+    if (estado === "available" || estado === "listo") {
+      actualizarNotificacionVideo(notificacionId, {
+        estado: "success",
+        mensaje: "Video cargado correctamente ✅",
+        progreso: 100,
+      });
+
+      setTimeout(() => {
+        eliminarNotificacionVideo(notificacionId);
+      }, 5000);
+
+      return;
+    }
+
+    actualizarNotificacionVideo(notificacionId, {
+      estado: "processing",
+      mensaje: "Video subido. Vimeo lo está procesando...",
+      progreso: 100,
+    });
+
+    await esperarVideoListoEnSegundoPlano(
+      leccionId,
+      material.id,
+      notificacionId
+    );
+  } catch (error) {
+    console.error(error);
+    actualizarNotificacionVideo(notificacionId, {
+      estado: "error",
+      mensaje: error?.message || "No se pudo subir el video.",
+    });
+  }
 };
 
 const cerrarDetalleTarea = () => {
@@ -2567,6 +2866,148 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                   {curso.horario || "Sin horario"}
                 </p>
               </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold">Sesiones en vivo</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Programa clases en vivo con Google Meet para este curso.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMostrarFormSesionVivo((prev) => !prev)}
+                className="rounded-2xl bg-violet-600 px-4 py-2 text-white font-semibold hover:bg-violet-700 transition"
+              >
+                {mostrarFormSesionVivo ? "Cancelar" : "+ Crear sesión en vivo"}
+              </button>
+            </div>
+
+            {mostrarFormSesionVivo && (
+              <form
+                onSubmit={guardarSesionVivoCurso}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6 mt-6"
+              >
+                <div>
+                  <label className="block font-semibold mb-2">Título</label>
+                  <input
+                    type="text"
+                    name="titulo"
+                    value={formSesionVivo.titulo}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Ej. Clase en vivo - Introducción"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-2">Duración (minutos)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    name="duracion"
+                    value={formSesionVivo.duracion}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">Descripción</label>
+                  <textarea
+                    name="descripcion"
+                    value={formSesionVivo.descripcion}
+                    onChange={handleChangeSesionVivo}
+                    rows={3}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Descripción breve de la sesión"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">Fecha y hora</label>
+                  <input
+                    type="datetime-local"
+                    name="fecha"
+                    value={formSesionVivo.fecha}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={guardandoSesionVivo}
+                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                  >
+                    {guardandoSesionVivo ? "Creando sesión..." : "Guardar sesión"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-6">
+              {cargandoSesionesVivo ? (
+                <p className="text-sm text-gray-500">Cargando sesiones en vivo...</p>
+              ) : sesionesVivo.length === 0 ? (
+                <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
+                  <p className="text-gray-700 font-medium">
+                    Aún no hay sesiones en vivo programadas.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Crea una sesión para que tus alumnos puedan unirse a la clase.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sesionesVivo.map((sesion) => (
+                    <div
+                      key={sesion.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <p className="text-lg font-bold text-slate-800">{sesion.titulo}</p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {sesion.descripcion || "Sin descripción"}
+                          </p>
+
+                          <div className="mt-3 space-y-1 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold">Fecha:</span>{" "}
+                              {formatearFechaSesion(sesion.fecha)}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Duración:</span>{" "}
+                              {sesion.duracion} min
+                            </p>
+                            <p>
+                              <span className="font-semibold">Estado:</span>{" "}
+                              {sesion.estado || "programada"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <a
+                            href={sesion.link_reunion}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition"
+                          >
+                            Unirse a la sesión
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -4561,15 +5002,14 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                           )}
 
                                                           <div className="flex flex-wrap gap-2 mt-3">
-                                                            {material.archivo_url && (
-                                                              <a
-                                                                href={material.archivo_url}
-                                                                target="_blank"
-                                                                rel="noreferrer"
+                                                            {(material.object_key || material.archivo_url) && (
+                                                              <button
+                                                                type="button"
+                                                                onClick={() => abrirArchivoMaterial(material)}
                                                                 className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
                                                               >
                                                                 Ver archivo
-                                                              </a>
+                                                              </button>
                                                             )}
 
                                                             {material.video_url && (
@@ -4760,6 +5200,58 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
           </DndContext>
             )}
           </div>
+        </div>
+      )}
+
+      {notificacionesVideo.length > 0 && (
+        <div className="fixed top-4 right-4 z-[80] space-y-3 w-[340px]">
+          {notificacionesVideo.map((item) => (
+            <div
+              key={item.id}
+              className={`rounded-2xl border shadow-lg p-4 bg-white ${
+                item.estado === "success"
+                  ? "border-emerald-200"
+                  : item.estado === "error"
+                  ? "border-red-200"
+                  : item.estado === "warning"
+                  ? "border-amber-200"
+                  : "border-slate-200"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-slate-800">{item.titulo || "Video"}</p>
+                  <p className="text-sm text-slate-600 mt-1">{item.mensaje}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => eliminarNotificacionVideo(item.id)}
+                  className="text-xs rounded-lg border px-2 py-1 hover:bg-slate-50"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {(item.estado === "uploading" || item.estado === "processing") && (
+                <div className="mt-3">
+                  <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        item.estado === "processing" ? "bg-amber-500" : "bg-blue-600"
+                      }`}
+                      style={{ width: `${item.progreso || 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {item.estado === "processing"
+                      ? "El video ya se subió. Vimeo lo está procesando."
+                      : `${Math.round(item.progreso || 0)}% completado`}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

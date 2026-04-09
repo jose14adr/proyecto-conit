@@ -41,7 +41,7 @@ export default function ControlSesiones() {
     cargarSesiones();
   }, []);
 
-  const confirmarCerrarSesion = async (id) => {
+  const confirmarCerrarSesion = async () => {
     if (!sesionCerrando) return;
 
     try {

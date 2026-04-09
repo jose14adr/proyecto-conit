@@ -370,7 +370,7 @@ Estado: VERIFICADO
       </h2>
 
       <Checkout 
-        curso_id={selectedPago.id} 
+        curso_id={selectedPago} 
         onClose={() => setSelectedPago(null)} 
       />
 

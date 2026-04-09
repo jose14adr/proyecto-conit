@@ -146,8 +146,11 @@ export const addDocumentoDocente = async (payload) => {
     iddocente: docente.id,
     nombre: payload.nombre,
     tipo: payload.tipo || "cv",
-    archivo_url: payload.archivo_url,
+    archivo_url: payload.archivo_url || null,
     mime_type: payload.mime_type || "application/pdf",
+    storage_provider: payload.storage_provider || "s3",
+    bucket: payload.bucket || null,
+    object_key: payload.object_key || null,
   };
 
   const { data, error } = await supabase
@@ -163,6 +166,27 @@ export const addDocumentoDocente = async (payload) => {
 // Eliminar documento del docente
 export const deleteDocumentoDocente = async (id) => {
   const docente = await getDocenteActual();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const { data: doc, error: findError } = await supabase
+    .from("docente_documento")
+    .select("id, iddocente, object_key")
+    .eq("id", id)
+    .eq("iddocente", docente.id)
+    .maybeSingle();
+
+  if (findError) throw new Error(findError.message);
+  if (!doc) throw new Error("No se encontró el documento.");
+
+  if (doc.object_key) {
+    await fetch(`${apiUrl}/s3/object`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key: doc.object_key }),
+    });
+  }
 
   const { error } = await supabase
     .from("docente_documento")
@@ -188,6 +212,8 @@ export const getCursosAdicionalesDocente = async () => {
 
   return data || [];
 };
+
+
 // Agregar curso adicional
 export const addCursoAdicionalDocente = async (payload) => {
   const docente = await getDocenteActual();
@@ -631,7 +657,7 @@ export const uploadFotoDocente = async (file) => {
 };
 
 // ======================================================
-// SUBIDA A STORAGE - PDF DOCUMENTO
+// SUBIDA A STORAGE - PDF DOCUMENTO - S3
 // ======================================================
 
 export const uploadPdfDocumentoDocente = async (file, tipo = "cv") => {
@@ -642,33 +668,60 @@ export const uploadPdfDocumentoDocente = async (file, tipo = "cv") => {
     throw new Error("Solo se permiten archivos PDF.");
   }
 
-  const extension = "pdf";
-  const fileName = `docente-${docente.id}-${tipo}-${Date.now()}.${extension}`;
-  const filePath = `docentes/documentos/${fileName}`;
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-  const { error: uploadError } = await supabase.storage
-    .from("documentos")
-    .upload(filePath, file, {
-      upsert: true,
-      contentType: "application/pdf",
-    });
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("docenteId", String(docente.id));
+  formData.append("tipo", tipo);
 
-  if (uploadError) throw new Error(uploadError.message);
+  const res = await fetch(`${apiUrl}/s3/upload-docente-documento`, {
+    method: "POST",
+    body: formData,
+  });
 
-  const { data } = supabase.storage.from("documentos").getPublicUrl(filePath);
+  const data = await res.json();
 
-  const publicUrl = data?.publicUrl;
-  if (!publicUrl) throw new Error("No se pudo obtener la URL pública del PDF.");
+  if (!res.ok || !data.ok) {
+    throw new Error(data?.message || "No se pudo subir el archivo.");
+  }
 
   const doc = await addDocumentoDocente({
     nombre: file.name,
     tipo,
-    archivo_url: publicUrl,
+    archivo_url: null,
     mime_type: "application/pdf",
+    storage_provider: "s3",
+    bucket: data.bucket,
+    object_key: data.key,
   });
 
   return doc;
 };
+
+//======================================================
+// DESCARGAR DOCUMENTOS DE DOCENTE
+//======================================================
+export const getDocumentoDocenteDownloadUrl = async (objectKey) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/s3/presign-download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ key: objectKey }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data?.message || "No se pudo obtener la URL del archivo.");
+  }
+
+  return data.downloadUrl;
+};
+
 
 // ======================================================
 // SUBIDA A STORAGE - PDF CURSO ADICIONAL
@@ -879,50 +932,56 @@ export const crearTarea = async (payload) => {
   let archivoApoyoUrl = null;
   let videoApoyoUrl = null;
 
+  let apoyoStorageProvider = null;
+  let apoyoBucket = null;
+  let apoyoObjectKey = null;
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   if (tipoApoyo === "archivo" && archivoApoyo) {
-    const extension = archivoApoyo.name.split(".").pop();
-    const fileName = `archivo_${Date.now()}.${extension}`;
-    const filePath = `${fileName}`;
+    const formData = new FormData();
+    formData.append("file", archivoApoyo);
+    formData.append("cursoId", String(cursoId));
+    formData.append("tipoApoyo", "archivo");
 
-    const { error: uploadError } = await supabase.storage
-      .from("tareas-apoyo")
-      .upload(filePath, archivoApoyo, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    const res = await fetch(`${apiUrl}/s3/upload-tarea-apoyo`, {
+      method: "POST",
+      body: formData,
+    });
 
-    if (uploadError) {
-      throw new Error(`Error subiendo archivo de apoyo: ${uploadError.message}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data?.message || "No se pudo subir el archivo de apoyo.");
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from("tareas-apoyo")
-      .getPublicUrl(filePath);
-
-    archivoApoyoUrl = publicUrlData?.publicUrl || null;
+    apoyoStorageProvider = "s3";
+    apoyoBucket = data.bucket;
+    apoyoObjectKey = data.key;
+    archivoApoyoUrl = null;
   }
 
   if (tipoApoyo === "video" && videoApoyo) {
-    const extension = videoApoyo.name.split(".").pop();
-    const fileName = `video_${Date.now()}.${extension}`;
-    const filePath = `${fileName}`;
+    const formData = new FormData();
+    formData.append("file", videoApoyo);
+    formData.append("cursoId", String(cursoId));
+    formData.append("tipoApoyo", "video");
 
-    const { error: uploadError } = await supabase.storage
-      .from("tareas-apoyo")
-      .upload(filePath, videoApoyo, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    const res = await fetch(`${apiUrl}/s3/upload-tarea-apoyo`, {
+      method: "POST",
+      body: formData,
+    });
 
-    if (uploadError) {
-      throw new Error(`Error subiendo video de apoyo: ${uploadError.message}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data?.message || "No se pudo subir el video de apoyo.");
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from("tareas-apoyo")
-      .getPublicUrl(filePath);
-
-    videoApoyoUrl = publicUrlData?.publicUrl || null;
+    apoyoStorageProvider = "s3";
+    apoyoBucket = data.bucket;
+    apoyoObjectKey = data.key;
+    videoApoyoUrl = null;
   }
 
   let queryOrden = supabase
@@ -1570,6 +1629,10 @@ export const addMaterialLeccion = async (leccionId, payload) => {
   let contenidoTexto = payload.contenido_texto || null;
   let enlaceUrl = payload.enlace_url || null;
 
+  let storageProvider = null;
+  let bucket = null;
+  let objectKey = null;
+
   if (payload.file) {
     const file = payload.file;
 
@@ -1633,23 +1696,27 @@ export const addMaterialLeccion = async (leccionId, payload) => {
         payload.onProgress(100);
       }
     } else {
-      const safeName = file.name.replace(/\s+/g, "_");
-      const fileName = `leccion-${leccionId}-${Date.now()}-${safeName}`;
-      const filePath = `cursos/lecciones/${fileName}`;
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-      const { error: uploadError } = await supabase.storage
-        .from("documentos")
-        .upload(filePath, file, {
-          upsert: true,
-        });
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("leccionId", String(leccionId));
 
-      if (uploadError) throw new Error(uploadError.message);
+      const res = await fetch(`${apiUrl}/s3/upload-leccion-material`, {
+        method: "POST",
+        body: formData,
+      });
 
-      const { data: publicData } = supabase.storage
-        .from("documentos")
-        .getPublicUrl(filePath);
+      const data = await res.json();
 
-      archivoUrl = publicData?.publicUrl || null;
+      if (!res.ok || !data.ok) {
+        throw new Error(data?.message || "No se pudo subir el archivo.");
+      }
+
+      storageProvider = "s3";
+      bucket = data.bucket;
+      objectKey = data.key;
+      archivoUrl = null;
 
       if (typeof payload.onProgress === "function") {
         payload.onProgress(100);
@@ -1688,6 +1755,9 @@ export const addMaterialLeccion = async (leccionId, payload) => {
     nombre_archivo: nombreArchivo,
     tamano_bytes: tamanoBytes,
     mime_type: mimeType,
+    storage_provider: storageProvider,
+    bucket,
+    object_key: objectKey,
     orden: nuevoOrden,
   };
 
@@ -1728,6 +1798,27 @@ export const actualizarMaterialLeccion = async (materialId, payload) => {
 };
 
 export const deleteMaterialLeccion = async (materialId) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const { data: material, error: findError } = await supabase
+    .from("leccion_material")
+    .select("id, object_key")
+    .eq("id", Number(materialId))
+    .maybeSingle();
+
+  if (findError) throw new Error(findError.message);
+  if (!material) throw new Error("No se encontró el material.");
+
+  if (material.object_key) {
+    await fetch(`${apiUrl}/s3/object`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key: material.object_key }),
+    });
+  }
+
   const { error } = await supabase
     .from("leccion_material")
     .delete()
@@ -1778,6 +1869,26 @@ export const moverMaterialLeccion = async (materialId, direccion) => {
   if (errorSwap2) throw new Error(errorSwap2.message);
 
   return true;
+};
+
+export const getMaterialLeccionDownloadUrl = async (objectKey) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/s3/presign-download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ key: objectKey }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data?.message || "No se pudo obtener la URL del archivo.");
+  }
+
+  return data.downloadUrl;
 };
 
 export const moverMaterialOrden = async (materialesOrdenados) => {

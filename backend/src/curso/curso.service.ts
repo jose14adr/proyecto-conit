@@ -2,12 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Curso } from './entities/curso.entity';
+import { Usuario } from 'src/usuario/entities/usuario.entity';
+import { Grupo } from 'src/grupo/entities/grupo.entity';
+import { Matricula } from 'src/matricula/entities/matricula.entity';
+
 
 @Injectable()
 export class CursoService {
   constructor(
     @InjectRepository(Curso)
     private cursoRepository: Repository<Curso>,
+    @InjectRepository(Grupo)
+    private readonly grupoRepository: Repository<Grupo>,
+    @InjectRepository(Matricula)
+    private readonly matriculaRepository: Repository<Matricula>,
   ) {}
 
   async listarCursos(): Promise<Curso[]> {
@@ -17,6 +25,7 @@ export class CursoService {
   async obtenerUno(id: number) {
     return this.cursoRepository.findOne({
       where: { id },
+      relations: ['grupos', 'grupos.docente'],
     });
   }
 
@@ -32,31 +41,45 @@ export class CursoService {
     });
   }
 
-  async listarCursosAlumno(): Promise<Curso[]> {
-    return this.cursoRepository.find({
-      relations: [
-        'grupos',
-        'grupos.docente',
-        'temario',
-        'temario.unidades',
-        'temario.unidades.sesion',
-      ],
-    });
-  }
-
-async obtenerUnoCursoAlumno(id: number) {
+async listarCursosAlumno(idAlumno: number): Promise<Matricula[]> {
+  return this.matriculaRepository.find({
+    where: {
+      alumno: { id: idAlumno },
+    },
+    relations: [
+      'grupo',
+      'grupo.curso',
+      'grupo.docente',
+    ],
+  });
+}
+async obtenerUnoCursoAlumno(idCurso: number, idAlumno: number) {
   return this.cursoRepository
     .createQueryBuilder('curso')
 
-    .leftJoinAndSelect('curso.temario', 'temario')
-    .leftJoinAndSelect('temario.unidades', 'unidad')
-    .leftJoinAndSelect('unidad.sesion', 'sesion')
+    // VALIDAR MATRÍCULA
+    .innerJoin('curso.grupos', 'grupo')
+    .innerJoin('grupo.matriculas', 'matricula')
+    .innerJoin('matricula.alumno', 'alumno')
 
+    // ESTRUCTURA DEL CURSO
     .leftJoinAndSelect('curso.modulos', 'modulo')
     .leftJoinAndSelect('modulo.lecciones', 'leccion')
     .leftJoinAndSelect('leccion.materiales', 'material')
 
-    .where('curso.id = :id', { id })
+    // 🔥 AQUÍ ESTÁ LA CLAVE
+    .leftJoinAndSelect('leccion.examenes', 'examen')
+
+    // 🔥 PREGUNTAS
+    .leftJoinAndSelect('examen.preguntas', 'pregunta')
+
+    // 🔥 OPCIONES
+    .leftJoinAndSelect('pregunta.opciones', 'opcion')
+
+    // FILTRO
+    .where('curso.id = :idCurso', { idCurso })
+    .andWhere('alumno.id = :idAlumno', { idAlumno })
+
     .getOne();
 }
 

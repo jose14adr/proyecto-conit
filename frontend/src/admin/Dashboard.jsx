@@ -6,15 +6,13 @@ import {
   ShieldCheck,
   Activity,
   ArrowRight,
-  TrendingUp,
   Clock,
 } from "lucide-react";
 import { obtenerAlumno } from "../services/alumno.service";
 import { obtenerDocente } from "../services/docente.service";
 import { obtenerCurso } from "../services/curso.service";
 import { obtenerUsuario } from "../services/usuario.service";
-import { obtenerSesiones } from "../services/historial-login.service";
-import { obtenerMatriculasPorAlumno } from "../services/matricula.service";
+import { obtenerSesiones } from "../services/historial-login.service"
 import { Link } from "react-router-dom";
 import AlumnoPerfilModal from "../components/AlumnoPerfilModal";
 
@@ -52,24 +50,16 @@ export default function Dashboard() {
           usuariosActivos: usuarios.filter((u) => u.estado !== false).length,
         });
 
-        const topAlumnos = alumnos.slice(0, 5);
-        const alumnosConMatriculas = await Promise.all(
-          topAlumnos.map(async (alumno) => {
-            try {
-              const matriculas = await obtenerMatriculasPorAlumno(alumno.id);
-              const ultimoCurso =
-                matriculas.length > 0
-                  ? matriculas[0].grupo?.curso?.nombrecurso ||
-                    "Curso sin nombre"
-                  : "Sin cursos";
-              return { ...alumno, matriculas, ultimoCurso };
-            } catch (error) {
-              return { ...alumno, ultimoCurso: "Error al cargar matrículas", error };
-            }
-          }),
-        );
+        const topAlumnos = alumnos.slice(0, 5).map((alumno) => {
+          const ultimoCurso =
+            alumno.matriculas && alumno.matriculas.length > 0
+              ? alumno.matriculas[0].grupo?.curso?.nombrecurso ||
+                "Curso sin nombre"
+              : "Sin cursos";
+          return { ...alumno, ultimoCurso };
+        });
 
-        setUltimosRegistros(alumnosConMatriculas);
+        setUltimosRegistros(topAlumnos);
         setUltimosIniciosSesion(sesiones.slice(0, 5));
       } catch (error) {
         console.error("Error al cargar métricas:", error);

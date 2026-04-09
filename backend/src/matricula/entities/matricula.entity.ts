@@ -27,9 +27,9 @@ export class Matricula {
   @Column({ type: 'integer', nullable: true })
   idadministrador: number;
 
-  @ManyToOne(() => Grupo)
-  @JoinColumn({ name: "idgrupo" })
-  grupo: Grupo;
+   @ManyToOne(() => Grupo, (grupo) => grupo.matriculas)
+    @JoinColumn({ name: 'idgrupo' })
+    grupo: Grupo;
 
   @Column({ type: 'integer', nullable: true })
   idcertificado: number;

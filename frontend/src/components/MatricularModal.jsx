@@ -18,16 +18,16 @@ export default function MatricularModal({ alumno, onClose, onSuccess }) {
   const [isLoadingGrupos, setIsLoadingGrupos] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  //Carga cursos disponibles al abrir el modal
   useEffect(() => {
     const cargarCursos = async () => {
       setIsLoadingCursos(true);
       try {
         const response = await api.get("/curso");
-        setCursos(response.data);
+        const cursosActivos = response.data.filter((c) => c.estado !== false);
+        setCursos(cursosActivos);
       } catch (error) {
         console.error("Error al cargar cursos", error);
-        toast.error("Error al cargar cursos", error);
+        toast.error("Error al cargar cursos");
       } finally {
         setIsLoadingCursos(false);
       }
@@ -35,7 +35,6 @@ export default function MatricularModal({ alumno, onClose, onSuccess }) {
     cargarCursos();
   }, []);
 
-  //Carga grupos disponibles al seleccionar un curso
   useEffect(() => {
     if (!cursoSeleccionado) {
       setGrupos([]);
@@ -49,7 +48,7 @@ export default function MatricularModal({ alumno, onClose, onSuccess }) {
         setGrupos(response.data);
       } catch (error) {
         console.error("Error al cargar grupos", error);
-        toast.error("Error al cargar grupos", error);
+        toast.error("Error al cargar grupos");
       } finally {
         setIsLoadingGrupos(false);
       }
@@ -92,7 +91,8 @@ export default function MatricularModal({ alumno, onClose, onSuccess }) {
       onClose();
     } catch (error) {
       console.error("Error al matricular alumno", error);
-      const mensajeError = error.response?.data?.message || "Error al matricular alumno";
+      const mensajeError =
+        error.response?.data?.message || "Error al matricular alumno";
       toast.error(mensajeError);
     } finally {
       setIsSubmitting(false);
@@ -125,7 +125,6 @@ export default function MatricularModal({ alumno, onClose, onSuccess }) {
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* 🔍 BUSCADOR DE CURSOS PERSONALIZADO */}
           <div className="relative">
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               1. Busca y Selecciona el Curso
@@ -145,7 +144,6 @@ export default function MatricularModal({ alumno, onClose, onSuccess }) {
                   setCursoSeleccionado(""); // Resetea si empieza a borrar
                 }}
                 onFocus={() => setMostrarDropdownCursos(true)}
-                // Usamos un pequeño timeout para que dé tiempo de hacer clic en la lista antes de cerrar
                 onBlur={() =>
                   setTimeout(() => setMostrarDropdownCursos(false), 200)
                 }
@@ -213,7 +211,7 @@ export default function MatricularModal({ alumno, onClose, onSuccess }) {
                 </option>
                 {grupos.map((grupo) => (
                   <option key={grupo.id} value={grupo.id}>
-                    {grupo.nombre} (Turno: {grupo.turno})
+                    {grupo.nombregrupo} ({grupo.horario})
                   </option>
                 ))}
               </select>

@@ -1,22 +1,43 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { randomBytes } from 'crypto';
+import * as bcrypt from 'bcrypt';
+
 import { Alumno } from './entities/alumno.entity';
 import { Usuario } from 'src/usuario/entities/usuario.entity';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AlumnoService {
   constructor(
     @InjectRepository(Alumno)
     private readonly alumnoRepository: Repository<Alumno>,
+
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
   ) {}
+
+  async getPerfil(userId: number) {
+    const alumno = await this.alumnoRepository.findOne({
+      where: { idusuario: userId },
+      relations: ['usuario'],
+    });
+
+    if (!alumno) {
+      throw new NotFoundException('Alumno no encontrado');
+    }
+
+    return alumno;
+  }
 
   async findAll() {
     return await this.alumnoRepository.find({
-      order: { id: 'DESC' }, //Traemos los alumnos ordenados por id de forma descendente, es decir, los más recientes primero
+      order: { id: 'DESC' },
+      relations: ['matriculas', 'matriculas.grupo', 'matriculas.grupo.curso'],
     });
   }
 
@@ -26,70 +47,138 @@ export class AlumnoService {
     if (!alumno) {
       throw new NotFoundException('Alumno no encontrado');
     }
+
     return alumno;
   }
 
   async create(data: any) {
-    return await this.dataSource.transaction(async (manager) => {
-      let usuarioCreado: Usuario | undefined;
+    const resultado = await this.dataSource.transaction(async (manager) => {
+      const { contrasenia, crearUsuario, ...datosAlumno } = data;
 
-      if (data.crearUsuario) {
+      let usuarioCreado: Usuario | null = null;
+
+      if (crearUsuario && contrasenia) {
+        const hashedPassword = await bcrypt.hash(contrasenia, 10);
+
+        const token = randomBytes(32).toString('hex');
+        const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
         usuarioCreado = await manager.save(
           manager.create(Usuario, {
-            correo: data.correo,
-            contrasenia: data.contrasenia,
+            correo: datosAlumno.correo,
+            contrasenia: hashedPassword,
             rol: 'ALUMNO',
             idempresa: 1,
+            emailVerificado: false,
+            tokenVerificacion: token,
+            tokenVerificacionExpira: expiracion,
           }),
         );
       }
 
       const alumno = manager.create(Alumno, {
-        nombre: data.nombre,
-        apellido: data.apellido,
-        tipodocumento: data.tipodocumento,
-        numdocumento: data.numdocumento,
-        telefono: Number(data.telefono),
-        direccion: data.direccion,
-        correo: data.correo,
-        lugar_residencia: data.lugar_residencia,
-        departamento: data.departamento,
-        provincia: data.provincia,
-        distrito: data.distrito,
-        estado_civil: data.estado_civil,
+        ...datosAlumno,
         nombre_editado: true,
-        ...(usuarioCreado && { idUsuario: usuarioCreado.id }),
+        ...(usuarioCreado && { idusuario: usuarioCreado.id }),
       });
-      return await manager.save(alumno);
+
+      const alumnoGuardado = await manager.save(alumno);
+
+      return { alumnoGuardado, usuarioCreado };
     });
+
+    // 📧 Envío de correo fuera de la transacción
+    if (resultado.usuarioCreado?.tokenVerificacion) {
+      try {
+        await this.mailService.sendEmailVerificacion(
+          resultado.alumnoGuardado.nombre || 'Alumno',
+          resultado.usuarioCreado.correo,
+          resultado.usuarioCreado.tokenVerificacion,
+        );
+      } catch (error) {
+        console.error('No se pudo enviar el correo de verificación al alumno', error);
+      }
+    }
+
+    return resultado.alumnoGuardado;
   }
 
   async update(id: number, data: any) {
-    const { crearUsuario, contrasenia, ...datosActualizar } = data;
+    const resultado = await this.dataSource.transaction(async (manager) => {
+      const alumno = await manager.findOne(Alumno, { where: { id } });
+      if (!alumno) throw new NotFoundException('Alumno no encontrado');
 
-    if (crearUsuario) {
-      const nuevoUsuario = await this.usuarioRepository.save(
-        this.usuarioRepository.create({
-          correo: datosActualizar.correo,
-          contrasenia: contrasenia,
-          rol: 'ALUMNO',
-          idempresa: 1,
-        }),
-      );
-      datosActualizar.idUsuario = nuevoUsuario.id;
+      const { crearUsuario, contrasenia, ...datosActualizar } = data;
+
+      let nuevoUsuario: Usuario | null = null;
+
+      if (crearUsuario && contrasenia && !alumno.idusuario) {
+        const hashedPassword = await bcrypt.hash(contrasenia, 10);
+
+        const token = randomBytes(32).toString('hex');
+        const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        nuevoUsuario = await manager.save(
+          manager.create(Usuario, {
+            correo: datosActualizar.correo || alumno.correo,
+            contrasenia: hashedPassword,
+            rol: 'ALUMNO',
+            idempresa: 1,
+            emailVerificado: false,
+            tokenVerificacion: token,
+            tokenVerificacionExpira: expiracion,
+          }),
+        );
+
+        datosActualizar.idusuario = nuevoUsuario.id;
+      }
+
+      await manager.update(Alumno, id, datosActualizar);
+
+      const alumnoActualizado = await manager.findOne(Alumno, {
+        where: { id },
+      });
+
+      return { alumnoActualizado, nuevoUsuario };
+    });
+
+    // 📧 Envío de correo
+    if (resultado.nuevoUsuario?.tokenVerificacion) {
+      try {
+        await this.mailService.sendEmailVerificacion(
+          resultado.alumnoActualizado?.nombre || 'Alumno',
+          resultado.nuevoUsuario.correo,
+          resultado.nuevoUsuario.tokenVerificacion,
+        );
+      } catch (error) {
+        console.error('No se pudo enviar el correo de verificación al alumno', error);
+      }
     }
 
-    await this.alumnoRepository.update(id, datosActualizar);
-    return this.findOne(id);
+    return resultado.alumnoActualizado;
   }
 
   async remove(id: number) {
     await this.alumnoRepository.update(id, { estado: false });
+
+    const alumno = await this.findOne(id);
+
+    if (alumno.idusuario) {
+      await this.usuarioRepository.update(alumno.idusuario, { estado: false });
+    }
+
     return { message: 'Alumno inhabilitado correctamente' };
   }
 
   async habilitar(id: number) {
     await this.alumnoRepository.update(id, { estado: true });
+
+    const alumno = await this.findOne(id);
+
+    if (alumno.idusuario) {
+      await this.usuarioRepository.update(alumno.idusuario, { estado: true });
+    }
+
     return { message: 'Alumno habilitado correctamente' };
   }
 }

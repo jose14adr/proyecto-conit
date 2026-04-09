@@ -5,16 +5,19 @@ import {
   habilitarDocente,
 } from "../services/docente.service";
 import DocenteModal from "../components/DocenteModal";
+import DocentePerfilModal from "../components/DocentePerfilModal";
+import AsignarDocenteModal from "../components/AsignarDocenteModal";
+import PermisosDocenteModal from "../components/PermisosDocenteModal";
 import toast from "react-hot-toast";
 import {
   Search,
   Plus,
-  UserCircle,
   Edit2,
   Trash2,
   AlertTriangle,
   CheckCircle,
-  Users
+  Users,
+  BookPlus,
 } from "lucide-react";
 
 export default function Docentes() {
@@ -22,11 +25,16 @@ export default function Docentes() {
   const [docentes, setDocentes] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [docenteEditar, setDocenteEditar] = useState(null); //Para editar un docente existente
-  const [docenteInhabilitar, setDocenteInhabilitar] = useState(null); //Para inhabilitar un docente
-  const [docenteHabilitar, setDocenteHabilitar] = useState(null); //Para habilitar un docente
+  const [docenteEditar, setDocenteEditar] = useState(null);
+  const [docenteInhabilitar, setDocenteInhabilitar] = useState(null);
+  const [docenteHabilitar, setDocenteHabilitar] = useState(null);
 
-  //Usamos nuestra funcion segura que incluye el Token en el header
+  const [docenteVer, setDocenteVer] = useState(null);
+  const [docenteAsignar, setDocenteAsignar] = useState(null);
+
+  // NUEVO: Estado para controlar el modal de permisos
+  const [grupoPermisosEditar, setGrupoPermisosEditar] = useState(null);
+
   const cargarDocentes = async () => {
     try {
       setIsLoading(true);
@@ -40,7 +48,6 @@ export default function Docentes() {
     }
   };
 
-  //Cargamos los docentes al montar el componente
   useEffect(() => {
     cargarDocentes();
   }, []);
@@ -111,7 +118,6 @@ export default function Docentes() {
 
       {/* Contenedor de búsqueda y tabla */}
       <div className="bg-white p-6 rounded-xl shadow">
-        {/* BUSCADOR */}
         <div className="flex justify-between items-center mb-6 gap-4">
           <div className="relative w-full max-w-md">
             <Search
@@ -128,15 +134,13 @@ export default function Docentes() {
           </div>
         </div>
 
-        {/* Tabla */}
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-semibold tracking-wider border-b">
               <tr>
                 <th className="px-6 py-4">Docente</th>
                 <th className="px-6 py-4">Documento</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">Teléfono</th>
+                <th className="px-6 py-4">Contacto</th>
                 <th className="px-6 py-4 text-center">Estado</th>
                 <th className="px-6 py-4 text-center">Acciones</th>
               </tr>
@@ -145,7 +149,7 @@ export default function Docentes() {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="5"
                     className="px-6 py-8 text-center text-gray-500 font-medium"
                   >
                     Cargando datos...
@@ -154,7 +158,7 @@ export default function Docentes() {
               ) : docentesFiltrados.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="5"
                     className="px-6 py-8 text-center text-gray-500 font-medium"
                   >
                     No se encontraron docentes.
@@ -163,39 +167,61 @@ export default function Docentes() {
               ) : (
                 docentesFiltrados.map((docente) => {
                   const esInactivo = docente.estado === false;
-                  const textoEstado = esInactivo ? "Inactivo" : "Activo";
+                  const textoEstado = esInactivo ? "INACTIVO" : "ACTIVO";
 
                   return (
                     <tr
                       key={docente.id}
-                      className={`transition-colors ${esInactivo ? "bg-gray-50 opacity-75" : "hover:shadow-sm"}`}
+                      onClick={() => setDocenteVer(docente)}
+                      className={`transition-colors cursor-pointer group ${
+                        esInactivo
+                          ? "bg-gray-50 opacity-75"
+                          : "hover:bg-indigo-50/60"
+                      }`}
                     >
                       <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-4">
                         <div
-                          className={`p-3 rounded-lg ${esInactivo ? "bg-gray-200 text-gray-500" : "bg-indigo-100 text-indigo-600"}`}
+                          className={`h-11 w-11 rounded-xl flex items-center justify-center text-lg font-bold transition-colors uppercase ${
+                            esInactivo
+                              ? "bg-gray-200 text-gray-500"
+                              : "bg-indigo-100 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white"
+                          }`}
                         >
-                          <UserCircle size={24} />
+                          {docente.nombre?.charAt(0)}
+                          {docente.apellido?.charAt(0)}
                         </div>
-                        <div className="font-bold text-gray-800 text-base">
-                          {docente.nombre} {docente.apellido}
+                        <div>
+                          <div className="font-bold text-gray-800 text-sm group-hover:text-indigo-700 transition-colors">
+                            {docente.nombre} {docente.apellido}
+                          </div>
+                          {docente.titulo && (
+                            <div className="text-xs text-gray-500 mt-1 truncate max-w-[200px]">
+                              {docente.titulo}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         <span className="font-semibold text-gray-700">
-                          {docente.tipoDocumento}:
+                          {docente.tipoDocumento ||
+                            docente.tipodocumento ||
+                            "DNI"}
+                          :
                         </span>{" "}
-                        {docente.numDocumento}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">
-                        {docente.correo}
+                        {docente.numDocumento || docente.numdocumento}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {docente.telefono}
+                        <div className="font-medium text-gray-800">
+                          {docente.correo}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {docente.telefono}
+                        </div>
                       </td>
 
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
+                          className={`px-3 py-1.5 text-xs font-bold tracking-wide rounded-lg uppercase ${
                             esInactivo
                               ? "bg-red-100 text-red-700"
                               : "bg-green-100 text-green-700"
@@ -207,9 +233,25 @@ export default function Docentes() {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
+                          {/* BOTÓN PARA ASIGNAR CARGA ACADÉMICA */}
                           <button
-                            onClick={() => handleEditar(docente)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDocenteAsignar(docente);
+                            }}
+                            className="p-2 text-emerald-600 hover:bg-emerald-100 bg-emerald-50 rounded-lg transition-colors"
+                            title="Asignar Curso"
+                          >
+                            <BookPlus size={18} />
+                          </button>
+
+                          {/* BOTÓN EDITAR */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditar(docente);
+                            }}
+                            className="p-2 text-indigo-600 hover:bg-indigo-100 bg-indigo-50 rounded-lg transition-colors"
                             title="Editar"
                           >
                             <Edit2 size={18} />
@@ -217,16 +259,22 @@ export default function Docentes() {
 
                           {esInactivo ? (
                             <button
-                              onClick={() => solicitarHabilitacion(docente)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                solicitarHabilitacion(docente);
+                              }}
+                              className="p-2 text-green-600 hover:bg-green-100 bg-green-50 rounded-lg transition-colors"
                               title="Re-habilitar"
                             >
                               <CheckCircle size={18} />
                             </button>
                           ) : (
                             <button
-                              onClick={() => solicitarInhabilitacion(docente)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                solicitarInhabilitacion(docente);
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-100 bg-red-50 rounded-lg transition-colors"
                               title="Inhabilitar"
                             >
                               <Trash2 size={18} />
@@ -243,6 +291,7 @@ export default function Docentes() {
         </div>
       </div>
 
+      {/* Modal de Creación/Edición */}
       {mostrarModal && (
         <DocenteModal
           docenteEditar={docenteEditar}
@@ -251,7 +300,54 @@ export default function Docentes() {
         />
       )}
 
-      {/* Modales de confirmación */}
+      {/* MODAL DE PERFIL */}
+      {docenteVer && (
+        <DocentePerfilModal
+          docente={docenteVer}
+          onClose={() => setDocenteVer(null)}
+          onAsignar={() => {
+            setDocenteVer(null);
+            setDocenteAsignar(docenteVer);
+          }}
+          onConfigurarPermisos={(grupo) => {
+            setGrupoPermisosEditar(grupo);
+          }}
+          onInhabilitar={() => {
+            setDocenteVer(null);
+            solicitarInhabilitacion(docenteVer);
+          }}
+          onHabilitar={() => {
+            setDocenteVer(null);
+            solicitarHabilitacion(docenteVer);
+          }}
+        />
+      )}
+
+      {/* NUEVO MODAL DE ASIGNACIÓN */}
+      {docenteAsignar && (
+        <AsignarDocenteModal
+          docente={docenteAsignar}
+          onClose={() => setDocenteAsignar(null)}
+          onSuccess={() => {
+            setDocenteAsignar(null);
+            cargarDocentes();
+          }}
+        />
+      )}
+
+      {/* MODAL DE PERMISOS */}
+      {grupoPermisosEditar && (
+        <PermisosDocenteModal
+          docente={docenteVer}
+          grupo={grupoPermisosEditar}
+          onClose={() => setGrupoPermisosEditar(null)}
+          onSuccess={() => {
+            cargarDocentes();
+          }}
+        />
+      )}
+
+      {/* Modales de Confirmación */}
       {docenteInhabilitar && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden">

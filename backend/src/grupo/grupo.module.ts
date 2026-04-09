@@ -10,4 +10,3 @@ import { GrupoController } from './grupo.controller';
   providers: [GrupoService],
 })
 export class GrupoModule {}
-

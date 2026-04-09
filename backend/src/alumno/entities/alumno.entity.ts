@@ -1,4 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Matricula } from 'src/matricula/entities/matricula.entity';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { Usuario } from '../../usuario/entities/usuario.entity';
+
 
 @Entity({ name: 'alumno' }) // Respeta el nombre exacto en BD
 export class Alumno {
@@ -15,8 +18,8 @@ export class Alumno {
   @Column({ type: 'varchar' })
   tipodocumento: string;
 
-  @Column({ type: 'integer' })
-  telefono: number;
+  @Column({ type: 'varchar' })
+  telefono: string;
 
   @Column({ type: 'varchar' })
   direccion: string;
@@ -26,6 +29,10 @@ export class Alumno {
 
   @Column({ type: 'varchar' })
   numdocumento: string;
+
+  @ManyToOne(() => Usuario, (usuario) => usuario.alumnos)
+  @JoinColumn({ name: 'idusuario' })
+  usuario: Usuario;
 
   @Column({ type: 'integer' })
   idusuario: number;
@@ -53,4 +60,7 @@ export class Alumno {
 
   @Column({ type: 'varchar' })
   estado_civil: string;
+
+  @OneToMany(() => Matricula, (matricula) => matricula.alumno)
+  matriculas: Matricula[];
 }

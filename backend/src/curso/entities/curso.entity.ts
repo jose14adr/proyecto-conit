@@ -56,6 +56,12 @@ export class Curso {
   @Column({ type: 'varchar', nullable: true })
   tiemposemana: string;
 
+  @Column({ type: 'int', nullable: true, default: 0 })
+  descuento: number;
+
+  @Column({ type: 'real', nullable: true })
+  precio_final: number;
+
   @OneToMany(() => Grupo, (grupo) => grupo.curso)
   grupos: Grupo[];
 

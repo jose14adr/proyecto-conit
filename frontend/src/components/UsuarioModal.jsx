@@ -2,142 +2,147 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { crearUsuario, actualizarUsuario } from "../services/usuario.service";
+import { actualizarUsuario } from "../services/usuario.service";
 import toast from "react-hot-toast";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ShieldAlert } from "lucide-react";
 
 const usuarioSchema = z.object({
-  correo: z.string().email("Ingrese un correo electronico válido"),
-  rol: z.enum(["ADMIN", "DOCENTE", "ALUMNO"], {
+  correo: z.string().email("Ingrese un correo electrónico válido"),
+  rol: z.enum(["ADMIN", "ADMINISTRADOR", "DOCENTE", "ALUMNO"], {
     errorMap: () => ({ message: "Seleccione un rol válido" }),
   }),
   contrasenia: z.string().optional(),
 });
 
 export default function UsuarioModal({ onClose, onSuccess, usuarioEditar }) {
-    const [isLoading, setIsLoading] = useState(false);
-    const [mostrarContrasenia, setMostrarContrasenia] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [mostrarContrasenia, setMostrarContrasenia] = useState(false);
 
-    const { register, handleSubmit, reset, setError, formState: { errors } } = useForm({
-        resolver: zodResolver(usuarioSchema),
-        mode: "onChange",
-        defaultValues: {
-            correo: "",
-            rol: "ALUMNO",
-            idempresa: "1",
-            contrasenia: "",
-        },
-    });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(usuarioSchema),
+    mode: "onChange",
+    defaultValues: {
+      correo: "",
+      rol: "ALUMNO",
+      contrasenia: "",
+    },
+  });
 
-    useEffect(() => {
-        if (usuarioEditar) {
-            reset({
-                correo: usuarioEditar.correo || "",
-                rol: usuarioEditar.rol || "ALUMNO",
-                idempresa: usuarioEditar.idempresa || "1",
-                contrasenia: "", //No se muestra la contraseña al editar, el usuario debe ingresar una nueva si desea cambiarla
-            });
+  useEffect(() => {
+    if (usuarioEditar) {
+      reset({
+        correo: usuarioEditar.correo || "",
+        rol: usuarioEditar.rol || "ALUMNO",
+        contrasenia: "",
+      });
+    }
+  }, [usuarioEditar, reset]);
+
+  const onSubmit = async (data) => {
+    try {
+      setIsLoading(true);
+
+      const dataToSend = {
+        correo: data.correo,
+        rol: data.rol,
+      };
+
+      if (data.contrasenia && data.contrasenia.trim() !== "") {
+        if (data.contrasenia.length < 8) {
+          setError("contrasenia", {
+            type: "manual",
+            message: "La nueva contraseña debe tener al menos 8 caracteres",
+          });
+          setIsLoading(false);
+          return;
         }
-    }, [usuarioEditar, reset]);
+        dataToSend.contrasenia = data.contrasenia;
+      }
 
-    const onSubmit = async (data) => {
-        try{
-            if(!usuarioEditar && (!data.contrasenia || data.contrasenia.length < 8)){
-                setError("contrasenia", {
-                    type: "manual",
-                    message: "La contraseña es obligatoria y debe tener al menos 8 caracteres",
-                });
-                return;
-            }
+      await actualizarUsuario(usuarioEditar.id, dataToSend);
+      toast.success("Credenciales actualizadas correctamente");
 
-            setIsLoading(true);
+      onSuccess();
+      onClose();
+    } catch (error) {
+      toast.error("Error al actualizar las credenciales");
+      console.error("Error al actualizar las credenciales", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-            const dataToSend = {
-                correo: data.correo,
-                rol: data.rol,
-                idempresa: 1, 
-            };
-
-            if (data.contrasenia && data.contrasenia.trim() !== "") {
-                dataToSend.contrasenia = data.contrasenia;
-            }
-
-            if (usuarioEditar) {
-                await actualizarUsuario(usuarioEditar.id, dataToSend);
-                toast.success("Usuario actualizado correctamente");
-            } else {
-                await crearUsuario(dataToSend);
-                toast.success("Usuario registrado correctamente");
-            }
-
-            onSuccess();
-            onClose();
-        } catch (error) {
-            toast.error("Error al guardar el usuario", error);
-            console.error("Error al guardar el usuario", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const getInputClass = (error) => {
-        return `w-full border p-2.5 rounded-lg mt-1 focus:ring-2 outline-none transition-colors ${
+  const getInputClass = (error) => {
+    return `w-full border p-2.5 rounded-lg mt-1 focus:ring-2 outline-none transition-colors ${
       error
         ? "border-red-500 focus:ring-red-500 bg-red-50"
         : "border-gray-300 focus:ring-indigo-600 bg-white"
     }`;
   };
 
-return (
+  if (!usuarioEditar) return null;
+
+  return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 animate-fadeIn">
         <h2 className="text-2xl font-bold mb-6 text-slate-800 border-b pb-3">
-          {usuarioEditar ? "Editar Usuario" : "Registrar Usuario"}
+          Editar Credenciales
         </h2>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          
           {/* Correo Electrónico */}
           <div>
-            <label className="text-sm text-gray-600 font-medium">Correo Electrónico *</label>
+            <label className="text-sm text-gray-600 font-medium">
+              Correo Electrónico de Acceso *
+            </label>
             <input
               type="email"
               placeholder="ejemplo@conit.edu"
               {...register("correo")}
               className={getInputClass(errors.correo)}
             />
-            {errors.correo && <p className="text-red-500 text-xs mt-1">{errors.correo.message}</p>}
+            {errors.correo && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.correo.message}
+              </p>
+            )}
           </div>
 
-          {/* Rol y Empresa */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-gray-600 font-medium">Rol en Sistema *</label>
-              <select {...register("rol")} className={getInputClass(errors.rol)}>
-                <option value="ALUMNO">Alumno</option>
-                <option value="DOCENTE">Docente</option>
-                <option value="ADMIN">Administrador</option>
-              </select>
-            </div>
-            
-            {/* Campo Empresa */}
-            <div>
-              <label className="text-sm text-gray-600 font-medium">Empresa</label>
-              <div className="w-full border border-gray-200 bg-gray-50 text-gray-500 p-2.5 rounded-lg mt-1 font-medium cursor-not-allowed flex items-center gap-2">
-                CONIT
-              </div>
+          {/* Rol */}
+          <div>
+            <label className="text-sm text-gray-600 font-medium">
+              Rol en el Sistema *
+            </label>
+            <select {...register("rol")} className={getInputClass(errors.rol)}>
+              <option value="ALUMNO">Alumno</option>
+              <option value="DOCENTE">Docente</option>
+              <option value="ADMINISTRADOR">Administrador</option>
+            </select>
+            <div className="mt-2 bg-blue-50 text-blue-700 p-3 rounded-lg flex gap-2 items-start border border-blue-100">
+              <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+              <p className="text-xs leading-relaxed">
+                Cambiar el rol modificará los paneles a los que puede acceder el
+                usuario al iniciar sesión, pero no trasladará sus datos
+                personales de tabla.
+              </p>
             </div>
           </div>
 
           {/* Contraseña */}
           <div>
             <label className="text-sm text-gray-600 font-medium">
-              Contraseña {usuarioEditar ? "(Opcional)" : "*"}
+              Restablecer Contraseña (Opcional)
             </label>
             <div className="relative">
               <input
                 type={mostrarContrasenia ? "text" : "password"}
-                placeholder={usuarioEditar ? "Dejar en blanco para no cambiar" : "Mínimo 8 caracteres"}
+                placeholder="Dejar en blanco para no cambiar"
                 {...register("contrasenia")}
                 className={getInputClass(errors.contrasenia)}
               />
@@ -149,9 +154,9 @@ return (
                 {mostrarContrasenia ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-            {usuarioEditar && (
-              <p className="text-xs text-gray-500 mt-1.5">
-                Si no deseas cambiar la contraseña de este usuario, deja este campo vacío.
+            {errors.contrasenia && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.contrasenia.message}
               </p>
             )}
           </div>
@@ -169,9 +174,9 @@ return (
             <button
               type="submit"
               disabled={isLoading}
-              className="px-6 py-2.5 rounded-lg text-white font-medium transition shadow-sm bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center min-w-[160px]"
+              className="px-6 py-2.5 rounded-lg text-white font-medium transition shadow-sm bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center min-w-[140px]"
             >
-              {isLoading ? "Guardando..." : usuarioEditar ? "Actualizar" : "Guardar Usuario"}
+              {isLoading ? "Guardando..." : "Actualizar"}
             </button>
           </div>
         </form>

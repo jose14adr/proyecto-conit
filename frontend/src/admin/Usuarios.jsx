@@ -8,13 +8,12 @@ import UsuarioModal from "../components/UsuarioModal";
 import toast from "react-hot-toast";
 import {
   Search,
-  Plus,
   Edit2,
   Trash2,
   Shield,
   AlertTriangle,
   CheckCircle,
-  Key
+  Key,
 } from "lucide-react";
 
 export default function Usuarios() {
@@ -75,11 +74,6 @@ export default function Usuarios() {
     setMostrarModal(true);
   };
 
-  const handleNuevo = () => {
-    setUsuarioEditar(null);
-    setMostrarModal(true);
-  };
-
   const usuariosFiltrados = usuarios.filter((usuario) => {
     const termino = busqueda.toLowerCase();
     const correo = (usuario.correo || "").toLowerCase();
@@ -87,15 +81,15 @@ export default function Usuarios() {
     return correo.includes(termino) || rol.includes(termino);
   });
 
-  //Funcion para darle color según el rol del usuario
   const getRolBadgeColor = (rol) => {
     switch (rol?.toUpperCase()) {
       case "ADMIN":
-        return "bg-purple-100 text-purple-700 border-purple-200";
+      case "ADMINISTRADOR":
+        return "bg-indigo-100 text-indigo-700 border-indigo-200";
       case "DOCENTE":
         return "bg-blue-100 text-blue-700 border-blue-200";
       case "ALUMNO":
-        return "bg-teal-100 text-teal-700 border-teal-200";
+        return "bg-emerald-100 text-emerald-700 border-emerald-200";
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
     }
@@ -107,19 +101,14 @@ export default function Usuarios() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 h-32 rounded-xl flex items-center justify-between px-8 text-white shadow">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-3">
-            <Shield size={28} /> Gestión de Usuarios y Accesos
+            <Shield size={28} /> Control de Credenciales
           </h2>
           <p className="text-sm opacity-90 mt-2">
-            Administra las credenciales, roles y accesos al sistema.
+            Administra los correos de acceso, contraseñas, roles y estado de las
+            cuentas.
           </p>
         </div>
-        <button
-          onClick={handleNuevo}
-          className="bg-white text-indigo-700 hover:bg-gray-100 px-5 py-2.5 rounded-lg font-semibold transition-colors shrink-0 flex items-center gap-2 shadow-sm"
-        >
-          <Plus size={20} />
-          Nuevo Usuario
-        </button>
+        {/* El botón de crear fue eliminado, ya que se crean desde sus respectivos módulos */}
       </div>
 
       {/* Contenedor de búsqueda y tabla */}
@@ -148,7 +137,6 @@ export default function Usuarios() {
               <tr>
                 <th className="px-6 py-4">Credenciales</th>
                 <th className="px-6 py-4">Rol en Sistema</th>
-                <th className="px-6 py-4">Empresa</th>
                 <th className="px-6 py-4 text-center">Estado</th>
                 <th className="px-6 py-4 text-center">Acciones</th>
               </tr>
@@ -157,7 +145,7 @@ export default function Usuarios() {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan="4"
                     className="px-6 py-8 text-center text-gray-500 font-medium"
                   >
                     Cargando datos...
@@ -166,7 +154,7 @@ export default function Usuarios() {
               ) : usuariosFiltrados.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan="4"
                     className="px-6 py-8 text-center text-gray-500 font-medium"
                   >
                     No se encontraron usuarios.
@@ -175,21 +163,29 @@ export default function Usuarios() {
               ) : (
                 usuariosFiltrados.map((usuario) => {
                   const esInactivo = usuario.estado === false;
-                  const textoEstado = esInactivo ? "INACTIVO" : "ACTIVO";
+                  const textoEstado = esInactivo ? "BLOQUEADO" : "ACTIVO";
 
                   return (
                     <tr
                       key={usuario.id}
-                      className={`transition-colors ${esInactivo ? "bg-gray-50 opacity-75" : "hover:shadow-sm"}`}
+                      className={`transition-colors ${
+                        esInactivo
+                          ? "bg-gray-50 opacity-75"
+                          : "hover:bg-indigo-50/60"
+                      }`}
                     >
                       <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-4">
                         <div
-                          className={`p-3 rounded-lg ${esInactivo ? "bg-gray-200 text-gray-500" : "bg-indigo-100 text-indigo-600"}`}
+                          className={`p-3 rounded-lg ${
+                            esInactivo
+                              ? "bg-gray-200 text-gray-500"
+                              : "bg-indigo-100 text-indigo-600"
+                          }`}
                         >
-                          <Key size={24} />
+                          <Key size={20} />
                         </div>
                         <div>
-                          <div className="font-bold text-gray-800 text-base">
+                          <div className="font-bold text-gray-800 text-sm">
                             {usuario.correo}
                           </div>
                         </div>
@@ -197,15 +193,11 @@ export default function Usuarios() {
 
                       <td className="px-6 py-4 text-sm">
                         <span
-                          className={`px-3 py-1 text-xs font-bold rounded-lg border ${getRolBadgeColor(usuario.rol)}`}
+                          className={`px-3 py-1 text-xs font-bold rounded-lg border ${getRolBadgeColor(
+                            usuario.rol,
+                          )}`}
                         >
                           {usuario.rol || "N/A"}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4 text-sm font-medium text-gray-600">
-                        <span className="flex items-center gap-2">
-                          CONIT
                         </span>
                       </td>
 
@@ -225,8 +217,8 @@ export default function Usuarios() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleEditar(usuario)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="Editar"
+                            className="p-2 text-indigo-600 hover:bg-indigo-100 bg-indigo-50 rounded-lg transition-colors"
+                            title="Editar Credenciales"
                           >
                             <Edit2 size={18} />
                           </button>
@@ -234,16 +226,16 @@ export default function Usuarios() {
                           {esInactivo ? (
                             <button
                               onClick={() => solicitarHabilitacion(usuario)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Re-habilitar"
+                              className="p-2 text-green-600 hover:bg-green-100 bg-green-50 rounded-lg transition-colors"
+                              title="Desbloquear Acceso"
                             >
                               <CheckCircle size={18} />
                             </button>
                           ) : (
                             <button
                               onClick={() => solicitarInhabilitacion(usuario)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Inhabilitar"
+                              className="p-2 text-red-600 hover:bg-red-100 bg-red-50 rounded-lg transition-colors"
+                              title="Bloquear Acceso"
                             >
                               <Trash2 size={18} />
                             </button>
@@ -276,14 +268,13 @@ export default function Usuarios() {
                 <AlertTriangle size={32} className="text-red-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">
-                ¿Inhabilitar Usuario?
+                ¿Bloquear Acceso?
               </h3>
-              <p className="text-gray-600">
-                Estás a punto de bloquear el acceso a{" "}
-                <span className="font-bold text-gray-800">
+              <p className="text-gray-600 text-sm">
+                Estás a punto de revocar el acceso al sistema para la cuenta{" "}
+                <span className="font-bold text-gray-800 block mt-1">
                   {usuarioInhabilitar.correo}
                 </span>
-                .
               </p>
             </div>
             <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
@@ -297,7 +288,7 @@ export default function Usuarios() {
                 onClick={confirmarInhabilitacion}
                 className="px-4 py-2 bg-red-600 text-white font-medium hover:bg-red-700 rounded-lg transition-colors shadow"
               >
-                Sí, inhabilitar
+                Sí, bloquear
               </button>
             </div>
           </div>
@@ -313,14 +304,14 @@ export default function Usuarios() {
                 <CheckCircle size={32} className="text-green-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">
-                ¿Habilitar Usuario?
+                ¿Desbloquear Acceso?
               </h3>
-              <p className="text-gray-600">
-                Estás a punto de re-habilitar el acceso a{" "}
-                <span className="font-bold text-gray-800">
+              <p className="text-gray-600 text-sm">
+                Estás a punto de re-habilitar el acceso al sistema para la
+                cuenta{" "}
+                <span className="font-bold text-gray-800 block mt-1">
                   {usuarioHabilitar.correo}
                 </span>
-                .
               </p>
             </div>
             <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
@@ -334,7 +325,7 @@ export default function Usuarios() {
                 onClick={confirmarHabilitacion}
                 className="px-4 py-2 bg-green-600 text-white font-medium hover:bg-green-700 rounded-lg transition-colors shadow"
               >
-                Sí, habilitar
+                Sí, desbloquear
               </button>
             </div>
           </div>

@@ -24,3 +24,8 @@ export const habilitarCurso = async (id: number) => {
   const response = await api.patch(`/curso/${id}/habilitar`);
   return response.data;
 };
+
+export const obtenerCursoPorId = async (id: number) => {
+  const response = await api.get(`/curso/${id}`);
+  return response.data;
+};

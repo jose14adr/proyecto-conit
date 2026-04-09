@@ -17,8 +17,8 @@ export class Administrador {
   @Column({ type: 'varchar' })
   numdocumento: string;
 
-  @Column({ type: 'int' })
-  telefono: number;
+  @Column({ type: 'varchar' })
+  telefono: string;
 
   @Column({ type: 'varchar' })
   direccion: string;
@@ -31,4 +31,7 @@ export class Administrador {
 
   @Column({ type: 'int' })
   idusuario: number;
+
+  @Column({ type: 'boolean', default: true })
+  estado: boolean;
 }

@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
@@ -31,15 +32,19 @@ import MisPagos from "./alumno/MisPagos";
 import Matricula from "./alumno/Matricula";
 import Soporte from "./alumno//Soporte";
 
+import CursoDetalleAdmin from "./admin/CursoDetalleAdmin";
+
 // ADMIN
-import AdminLayout from "./admin/AdminLayout";
-import Dashboard from "./admin/Dashboard";
-import Docentes from "./admin/Docentes";
-import Cursos from "./admin/Cursos";
-import Alumnos from "./admin/Alumnos";
-import Usuarios from "./admin/Usuarios";
-import Pagos from "./admin/Pagos";
-import ControlSesiones from "./admin/ControlSesiones";
+const AdminLayout = lazy(() => import("./admin/AdminLayout"));
+const Dashboard = lazy(() => import("./admin/Dashboard"));
+const Administradores = lazy(() => import("./admin/Administradores"));
+const Docentes = lazy(() => import("./admin/Docentes"));
+const Cursos = lazy(() => import("./admin/Cursos"));
+const Alumnos = lazy(() => import("./admin/Alumnos"));
+const Usuarios = lazy(() => import("./admin/Usuarios"));
+const Pagos = lazy(() => import("./admin/Pagos"));
+const ControlSesiones = lazy(() => import("./admin/ControlSesiones"));
+import Certificados from "./admin/Certificados";
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
@@ -62,117 +67,137 @@ function PublicWebLayout({ children }) {
   );
 }
 
+const PantallaCarga = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+    <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+    <p className="mt-4 text-gray-500 font-medium">Cargando módulo...</p>
+  </div>
+);
+
 export default function App() {
   return (
     <>
       <Toaster position="top-right" />
 
-      <Routes>
-        {/* LOGIN */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+      <Suspense fallback={<PantallaCarga />}>
+        <Routes>
+          {/* LOGIN */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* WEB PUBLICA CONIT */}
-        <Route
-          path="/web"
-          element={
-            <PublicWebLayout>
-              <HomeWeb />
-            </PublicWebLayout>
-          }
-        />
-        <Route
-          path="/web/cursos"
-          element={
-            <PublicWebLayout>
-              <CursosWeb />
-            </PublicWebLayout>
-          }
-        />
-        <Route
-          path="/web/cursos/:id"
-          element={
-            <PublicWebLayout>
-              <DetalleCursoWeb />
-            </PublicWebLayout>
-          }
-        />
-        <Route
-          path="/web/cursos"
-          element={
-            <PublicWebLayout>
-              <CursosWeb />
-            </PublicWebLayout>
-          }
-        />
-        <Route
-          path="/web/nosotros"
-          element={
-            <PublicWebLayout>
-              <NosotrosWeb />
-            </PublicWebLayout>
-          }
-        />
-        <Route
-          path="/web/contacto"
-          element={
-            <PublicWebLayout>
-              <ContactoWeb />
-            </PublicWebLayout>
-          }
-        />
-        <Route
-          path="/web/carrito"
-          element={
-            <PublicWebLayout>
-              <CarritoWeb />
-            </PublicWebLayout>
-          }
-        />
+          {/* WEB PUBLICA CONIT */}
+          <Route
+            path="/web"
+            element={
+              <PublicWebLayout>
+                <HomeWeb />
+              </PublicWebLayout>
+            }
+          />
+          <Route
+            path="/web/cursos"
+            element={
+              <PublicWebLayout>
+                <CursosWeb />
+              </PublicWebLayout>
+            }
+          />
+          <Route
+            path="/web/cursos/:id"
+            element={
+              <PublicWebLayout>
+                <DetalleCursoWeb />
+              </PublicWebLayout>
+            }
+          />
+          <Route
+            path="/web/cursos"
+            element={
+              <PublicWebLayout>
+                <CursosWeb />
+              </PublicWebLayout>
+            }
+          />
+          <Route
+            path="/web/nosotros"
+            element={
+              <PublicWebLayout>
+                <NosotrosWeb />
+              </PublicWebLayout>
+            }
+          />
+          <Route
+            path="/web/contacto"
+            element={
+              <PublicWebLayout>
+                <ContactoWeb />
+              </PublicWebLayout>
+            }
+          />
+          <Route
+            path="/web/carrito"
+            element={
+              <PublicWebLayout>
+                <CarritoWeb />
+              </PublicWebLayout>
+            }
+          />
 
-        <Route element={<ProtectedRoute />}>
-          {/* ESTUDIANTE */}
-          <Route path="/alumno" element={<LayoutEstudiante />}>
-            <Route index element={<HomePage />} />
-            <Route path="mis-cursos" element={<MisCursos />} />
-            <Route path="mis-cursos/:id" element={<CursoDetalle />} />
-            <Route path="mis-sesiones" element={<MisSesiones />} />
-            <Route path="mis-certificados" element={<MisCertificados />} />
-            <Route path="soporte" element={<Soporte />} />
-            <Route path="mi-perfil" element={<MiPerfil />} />
-            <Route path="mis-pagos" element={<MisPagos />} />
-            <Route path="matricula" element={<Matricula />} />
-            <Route path="recursos" element={<Biblioteca />} />
+          {/* ESTUDIANTES */}
+          <Route element={<ProtectedRoute allowedRoles={["ALUMNO"]} />}>
+            <Route path="/alumno" element={<LayoutEstudiante />}>
+              <Route index element={<HomePage />} />
+              <Route path="mis-cursos" element={<MisCursos />} />
+              <Route path="mis-cursos/:id" element={<CursoDetalle />} />
+              <Route path="mis-sesiones" element={<MisSesiones />} />
+              <Route path="mis-certificados" element={<MisCertificados />} />
+              <Route path="soporte" element={<Soporte />} />
+              <Route path="mi-perfil" element={<MiPerfil />} />
+              <Route path="mis-pagos" element={<MisPagos />} />
+              <Route path="matricula" element={<Matricula />} />
+              <Route path="recursos" element={<Biblioteca />} />
+            </Route>
           </Route>
 
-          {/* ADMIN */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="docentes" element={<Docentes />} />
-            <Route path="cursos" element={<Cursos />} />
-            <Route path="alumnos" element={<Alumnos />} />
-            <Route path="usuarios" element={<Usuarios />} />
-            <Route path="pagos" element={<Pagos />} />
-            <Route path="sesiones" element={<ControlSesiones />} />
+          {/* ADMINISTRADORES */}
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["ADMINISTRADOR", "ADMIN"]} />
+            }
+          >
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="administradores" element={<Administradores />} />
+              <Route path="docentes" element={<Docentes />} />
+              <Route path="cursos" element={<Cursos />} />
+              <Route path="cursos/:id" element={<CursoDetalleAdmin />} />
+              <Route path="alumnos" element={<Alumnos />} />
+              <Route path="usuarios" element={<Usuarios />} />
+              <Route path="pagos" element={<Pagos />} />
+              <Route path="sesiones" element={<ControlSesiones />} />
+              <Route path="certificados" element={<Certificados />} />
+            </Route>
           </Route>
 
-          {/* DOCENTE */}
-          <Route path="/docente" element={<DocenteLayout />}>
-            <Route index element={<DashboardDocente />} />
-            <Route path="perfil" element={<PerfilDocente />} />
-            <Route path="cursos" element={<MisCursosDocente />} />
-            <Route path="cursos/:id" element={<CursoDetalleDocente />} />
-            <Route path="notas" element={<RegistroNotas />} />
-            <Route path="aprobados" element={<ListaAprobados />} />
-            <Route path="horario" element={<HorarioDocente />} />
-            <Route path="tareas" element={<TareasDocente />} />
+          {/* DOCENTES */}
+          <Route element={<ProtectedRoute allowedRoles={["DOCENTE"]} />}>
+            <Route path="/docente" element={<DocenteLayout />}>
+              <Route index element={<DashboardDocente />} />
+              <Route path="perfil" element={<PerfilDocente />} />
+              <Route path="cursos" element={<MisCursosDocente />} />
+              <Route path="cursos/:id" element={<CursoDetalleDocente />} />
+              <Route path="notas" element={<RegistroNotas />} />
+              <Route path="aprobados" element={<ListaAprobados />} />
+              <Route path="horario" element={<HorarioDocente />} />
+              <Route path="tareas" element={<TareasDocente />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Ruta comodín */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+          {/* Ruta comodín */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }

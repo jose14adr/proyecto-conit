@@ -1,0 +1,270 @@
+import { useState, useEffect } from "react";
+import { X, BookPlus, Loader2, Search, Briefcase } from "lucide-react";
+import { asignarDocenteAGrupo } from "../services/grupo.service";
+import api from "../services/api";
+import toast from "react-hot-toast";
+
+export default function AsignarDocenteModal({ docente, onClose, onSuccess }) {
+  const [cursos, setCursos] = useState([]);
+  const [grupos, setGrupos] = useState([]);
+
+  const [busquedaCurso, setBusquedaCurso] = useState("");
+  const [cursoSeleccionado, setCursoSeleccionado] = useState("");
+  const [mostrarDropdownCursos, setMostrarDropdownCursos] = useState(false);
+
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState("");
+
+  const [isLoadingCursos, setIsLoadingCursos] = useState(false);
+  const [isLoadingGrupos, setIsLoadingGrupos] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Carga cursos disponibles
+  useEffect(() => {
+    const cargarCursos = async () => {
+      setIsLoadingCursos(true);
+      try {
+        const response = await api.get("/curso");
+        const cursosActivos = response.data.filter((c) => c.estado !== false);
+        setCursos(cursosActivos);
+      } catch (error) {
+        toast.error("Error al cargar la lista de cursos", error);
+      } finally {
+        setIsLoadingCursos(false);
+      }
+    };
+    cargarCursos();
+  }, []);
+
+  // Carga grupos al seleccionar un curso
+  useEffect(() => {
+    if (!cursoSeleccionado) {
+      setGrupos([]);
+      setGrupoSeleccionado("");
+      return;
+    }
+    const cargarGrupos = async () => {
+      setIsLoadingGrupos(true);
+      try {
+        const response = await api.get(`/grupo/curso/${cursoSeleccionado}`);
+        setGrupos(response.data);
+      } catch (error) {
+        toast.error("Error al cargar los grupos", error);
+      } finally {
+        setIsLoadingGrupos(false);
+      }
+    };
+    cargarGrupos();
+  }, [cursoSeleccionado]);
+
+  const cursosFiltrados = cursos.filter((curso) => {
+    const textoCurso = curso.nombrecurso || `Curso #${curso.id}`;
+    return textoCurso.toLowerCase().includes(busquedaCurso.toLowerCase());
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!cursoSeleccionado || !grupoSeleccionado) {
+      return toast.error("Por favor, selecciona un curso y un grupo");
+    }
+
+    // VALIDACIÓN PARA EVITAR DOBLE ASIGNACIÓN
+    const grupoEncontrado = grupos.find(
+      (g) => g.id.toString() === grupoSeleccionado,
+    );
+    if (grupoEncontrado && grupoEncontrado.docente) {
+      if (grupoEncontrado.docente.id === docente.id) {
+        return toast.error("Este docente ya está asignado a este grupo.");
+      } else {
+        return toast.error(
+          `Este grupo ya está siendo dictado por el docente ${grupoEncontrado.docente.nombre} ${grupoEncontrado.docente.apellido}.`,
+        );
+      }
+    }
+
+    setIsSubmitting(true);
+    try {
+      const permisosDefault = {
+        control_total: false,
+        tomar_asistencia: true,
+        crear_tareas: false,
+        modificar_modulos: false,
+        modificar_notas: false,
+        cargar_notas: true,
+        enviar_mensajes: false,
+      };
+
+      await asignarDocenteAGrupo(
+        grupoSeleccionado,
+        docente.id,
+        permisosDefault,
+      );
+      toast.success("Carga académica asignada exitosamente");
+      onSuccess();
+      onClose();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Error al asignar carga académica",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <Briefcase size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Asignar Carga Académica</h2>
+              <p className="text-emerald-100 text-sm mt-0.5">
+                Docente: {docente.nombre} {docente.apellido}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="hover:bg-white/20 p-2 rounded-full transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Formulario */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* BUSCADOR DE CURSOS */}
+          <div className="relative">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              1. Busca y Selecciona el Curso
+            </label>
+            <div
+              className={`flex items-center border rounded-lg px-3 py-2 bg-gray-50 transition-all ${mostrarDropdownCursos ? "border-emerald-500 ring-2 ring-emerald-100 bg-white" : "border-gray-300"}`}
+            >
+              <Search size={18} className="text-gray-400 mr-2 shrink-0" />
+              <input
+                type="text"
+                className="w-full outline-none bg-transparent text-gray-700"
+                placeholder="Escribe el nombre del curso..."
+                value={busquedaCurso}
+                onChange={(e) => {
+                  setBusquedaCurso(e.target.value);
+                  setMostrarDropdownCursos(true);
+                  setCursoSeleccionado("");
+                  setGrupoSeleccionado(""); // Resetea el grupo
+                }}
+                onFocus={() => setMostrarDropdownCursos(true)}
+                onBlur={() =>
+                  setTimeout(() => setMostrarDropdownCursos(false), 200)
+                }
+              />
+              {isLoadingCursos && (
+                <Loader2
+                  size={16}
+                  className="animate-spin text-emerald-500 shrink-0"
+                />
+              )}
+            </div>
+
+            {mostrarDropdownCursos && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                {cursosFiltrados.length === 0 ? (
+                  <div className="p-3 text-sm text-gray-500 text-center">
+                    No se encontraron cursos
+                  </div>
+                ) : (
+                  cursosFiltrados.map((curso) => {
+                    const nombreVisible =
+                      curso.nombrecurso || `Curso #${curso.id}`;
+                    return (
+                      <button
+                        key={curso.id}
+                        type="button"
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 hover:text-emerald-700 border-b border-gray-50 last:border-0 transition-colors"
+                        onClick={() => {
+                          setCursoSeleccionado(curso.id.toString());
+                          setBusquedaCurso(nombreVisible);
+                          setMostrarDropdownCursos(false);
+                          setGrupoSeleccionado(""); // Al cambiar curso, limpia grupo
+                        }}
+                      >
+                        {nombreVisible}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* SELECTOR DE GRUPOS */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              2. Selecciona el Grupo
+            </label>
+            <div className="relative">
+              <select
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all outline-none appearance-none disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                value={grupoSeleccionado}
+                onChange={(e) => setGrupoSeleccionado(e.target.value)}
+                disabled={
+                  !cursoSeleccionado || isLoadingGrupos || grupos.length === 0
+                }
+                required
+              >
+                <option value="">
+                  {!cursoSeleccionado
+                    ? "Primero elige un curso arriba"
+                    : grupos.length === 0 && !isLoadingGrupos
+                      ? "No hay grupos disponibles para este curso"
+                      : "-- Elige un grupo --"}
+                </option>
+                {grupos.map((grupo) => (
+                  <option key={grupo.id} value={grupo.id}>
+                    {grupo.nombregrupo} ({grupo.horario}){" "}
+                    {grupo.docente ? " - Ocupado" : ""}
+                  </option>
+                ))}
+              </select>
+              {isLoadingGrupos && (
+                <Loader2
+                  size={16}
+                  className="absolute right-3 top-3 animate-spin text-emerald-500"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* BOTONES */}
+          <div className="pt-2 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={!grupoSeleccionado || isSubmitting}
+              className="px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors shadow-md disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" /> Asignando...
+                </>
+              ) : (
+                <>
+                  <BookPlus size={18} /> Asignar Curso
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

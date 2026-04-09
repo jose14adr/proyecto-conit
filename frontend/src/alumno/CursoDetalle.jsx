@@ -85,7 +85,7 @@ export default function CursoDetalle() {
     let total = 0
     let vistos = 0
 
-    const unidades = curso?.temario?.unidades || []
+    const respuestas = {}
 
     unidades.forEach((u) => {
       if (u.sesion) total++

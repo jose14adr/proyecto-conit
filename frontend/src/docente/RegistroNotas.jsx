@@ -1084,6 +1084,7 @@ const guardarConfigEvaluaciones = async () => {
                     >
                       <option value="manual">Manual</option>
                       <option value="tarea">Tarea</option>
+                      <option value="examen">Examen</option>
                     </select>
                   </td>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   obtenerCurso,
   eliminarCurso,
@@ -17,6 +18,8 @@ import {
 } from "lucide-react";
 
 export default function Cursos() {
+  const navigate = useNavigate();
+
   const [busqueda, setBusqueda] = useState("");
   const [cursos, setCursos] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -32,8 +35,7 @@ export default function Cursos() {
       const data = await obtenerCurso();
       setCursos(data);
     } catch (error) {
-      toast.error("Error al cargar los cursos");
-      console.error("Error al cargar los cursos:", error);
+      toast.error("Error al cargar los cursos",error);
     } finally {
       setIsLoading(false);
     }
@@ -51,8 +53,7 @@ export default function Cursos() {
       setCursoInhabilitar(null);
       cargarCursos();
     } catch (error) {
-      console.error("Error al inhabilitar el curso:", error);
-      toast.error("Ocurrió un error al inhabilitar el curso");
+      toast.error("Ocurrió un error al inhabilitar el curso", error);
     }
   };
 
@@ -64,8 +65,7 @@ export default function Cursos() {
       setCursoHabilitar(null);
       cargarCursos();
     } catch (error) {
-      console.error("Error al habilitar el curso:", error);
-      toast.error("Ocurrió un error al habilitar el curso");
+      toast.error("Ocurrió un error al habilitar el curso", error);
     }
   };
 
@@ -108,7 +108,6 @@ export default function Cursos() {
 
       {/* Contenedor de busqueda y tabla */}
       <div className="bg-white p-6 rounded-xl shadow">
-        {/* BUSCADOR */}
         <div className="flex justify-between items-center mb-6 gap-4">
           <div className="relative w-full max-w-md">
             <Search
@@ -125,7 +124,6 @@ export default function Cursos() {
           </div>
         </div>
 
-        {/* Tabla */}
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-semibold tracking-wider border-b">
@@ -165,16 +163,17 @@ export default function Cursos() {
                   return (
                     <tr
                       key={curso.id}
-                      className={`transition-colors ${esInactivo ? "bg-gray-50 opacity-75" : "hover:shadow-sm"}`}
+                      onClick={() => navigate(`/admin/cursos/${curso.id}`)}
+                      className={`transition-colors cursor-pointer group ${esInactivo ? "bg-gray-50 opacity-75" : "hover:bg-indigo-50/60"}`}
                     >
                       <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-4">
                         <div
-                          className={`p-3 rounded-lg ${esInactivo ? "bg-gray-200 text-gray-500" : "bg-indigo-100 text-indigo-600"}`}
+                          className={`p-3 rounded-lg ${esInactivo ? "bg-gray-200 text-gray-500" : "bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors"}`}
                         >
                           <BookOpen size={24} />
                         </div>
                         <div>
-                          <div className="font-bold text-gray-800 text-base">
+                          <div className="font-bold text-gray-800 text-base group-hover:text-indigo-700 transition-colors">
                             {curso.nombrecurso}
                           </div>
                           <div className="text-xs text-gray-500 font-normal truncate max-w-[200px] mt-0.5">
@@ -182,60 +181,59 @@ export default function Cursos() {
                           </div>
                         </div>
                       </td>
-
                       <td className="px-6 py-4 text-sm text-gray-600">
                         <span className="font-medium bg-gray-100 px-2 py-1.5 rounded-md border border-gray-200">
                           {curso.nivel || "N/A"}
                         </span>
                       </td>
-
                       <td className="px-6 py-4 text-sm font-bold text-gray-700">
                         {curso.precio != null
                           ? `S/. ${Number(curso.precio).toFixed(2)}`
                           : "Gratis"}
                       </td>
-
                       <td className="px-6 py-4 text-sm text-gray-600">
                         <span className="font-medium text-gray-800">
                           {curso.duracion} hrs
                         </span>{" "}
                         / {curso.creditos} crs
                       </td>
-
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
-                            esInactivo
-                              ? "bg-red-100 text-red-700"
-                              : "bg-green-100 text-green-700"
-                          }`}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${esInactivo ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
                         >
                           {textoEstado}
                         </span>
                       </td>
-
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => handleEditar(curso)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditar(curso);
+                            }}
+                            className="p-2 text-indigo-600 hover:bg-indigo-100 bg-indigo-50 rounded-lg transition-colors"
                             title="Editar"
                           >
                             <Edit2 size={18} />
                           </button>
-
                           {esInactivo ? (
                             <button
-                              onClick={() => solicitarHabilitacion(curso)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                solicitarHabilitacion(curso);
+                              }}
+                              className="p-2 text-green-600 hover:bg-green-100 bg-green-50 rounded-lg transition-colors"
                               title="Re-habilitar"
                             >
                               <CheckCircle size={18} />
                             </button>
                           ) : (
                             <button
-                              onClick={() => solicitarInhabilitacion(curso)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                solicitarInhabilitacion(curso);
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-100 bg-red-50 rounded-lg transition-colors"
                               title="Inhabilitar"
                             >
                               <Trash2 size={18} />

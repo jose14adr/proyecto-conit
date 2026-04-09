@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Alumno } from '../../alumno/entities/alumno.entity';
 
 @Entity({ name: 'usuario' })
 export class Usuario {
@@ -17,9 +18,25 @@ export class Usuario {
   @Column({ type: 'varchar' })
   rol: string;
 
-  @Column('text', { array: true, default: [] })
-  historialcontrasenias: string[];
+  @Column({ type: 'text', array: true, nullable: true })
+historialcontrasenias: string[];
 
   @Column({ type: 'boolean', default: true })
   estado: boolean;
+
+  @OneToMany(() => Alumno, (alumno) => alumno.usuario)
+  alumnos: Alumno[];
+
+   @Column({ name: 'email_verificado', type: 'boolean', default: false })
+  emailVerificado: boolean;
+
+  @Column({ name: 'token_verificacion', type: 'varchar', nullable: true })
+  tokenVerificacion: string | null;
+
+  @Column({
+    name: 'token_verificacion_expira',
+    type: 'timestamp',
+    nullable: true,
+  })
+  tokenVerificacionExpira: Date | null;
 }
