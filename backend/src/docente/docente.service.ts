@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
-
 import { Docente } from '../docente/entities/docente.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
 import { MailService } from '../mail/mail.service';
@@ -42,9 +41,9 @@ export class DocenteService {
   }
 
   async create(data: any) {
-    const resultado = await this.dataSource.transaction(async (manager) => {
-      const { contrasenia, crearUsuario, ...datosDocente } = data;
+    const { contrasenia, crearUsuario, ...datosDocente } = data;
 
+    const resultado = await this.dataSource.transaction(async (manager) => {
       let usuarioCreado: Usuario | null = null;
 
       if (crearUsuario && contrasenia) {
@@ -76,13 +75,14 @@ export class DocenteService {
       return { docenteGuardado, usuarioCreado };
     });
 
-    // 📧 Envío de correo fuera de la transacción
     if (resultado.usuarioCreado?.tokenVerificacion) {
       try {
         await this.mailService.sendEmailVerificacion(
           resultado.docenteGuardado.nombre || 'Docente',
           resultado.usuarioCreado.correo,
           resultado.usuarioCreado.tokenVerificacion,
+          resultado.usuarioCreado.correo,
+          contrasenia,
         );
       } catch (error) {
         console.error(
@@ -96,15 +96,17 @@ export class DocenteService {
   }
 
   async update(id: number, data: any) {
+    const { crearUsuario, contrasenia, ...datosActualizarBase } = data;
+
     const resultado = await this.dataSource.transaction(async (manager) => {
       const docente = await manager.findOne(Docente, {
         where: { id },
-        relations: ['usuario'],
+        relations: ['usuario', 'cursosAdicionales'],
       });
 
-      if (!docente) throw new NotFoundException('Docente no encontrado');
-
-      const { crearUsuario, contrasenia, ...datosActualizar } = data;
+      if (!docente) {
+        throw new NotFoundException('Docente no encontrado');
+      }
 
       let nuevoUsuario: Usuario | null = null;
 
@@ -116,7 +118,7 @@ export class DocenteService {
 
         nuevoUsuario = await manager.save(
           manager.create(Usuario, {
-            correo: datosActualizar.correo || docente.correo,
+            correo: datosActualizarBase.correo || docente.correo,
             contrasenia: hashedPassword,
             rol: 'DOCENTE',
             idempresa: 1,
@@ -126,26 +128,28 @@ export class DocenteService {
           }),
         );
 
-        datosActualizar.usuario = { id: nuevoUsuario.id };
+        docente.usuario = nuevoUsuario;
       }
 
-      await manager.update(Docente, id, datosActualizar);
+      Object.assign(docente, datosActualizarBase);
+      const docenteActualizado = await manager.save(Docente, docente);
 
-      const docenteActualizado = await manager.findOne(Docente, {
-        where: { id },
+      const docenteCompleto = await manager.findOne(Docente, {
+        where: { id: docenteActualizado.id },
         relations: ['usuario', 'cursosAdicionales'],
       });
 
-      return { docenteActualizado, nuevoUsuario };
+      return { docenteActualizado: docenteCompleto, nuevoUsuario };
     });
 
-    // 📧 Envío de correo
     if (resultado.nuevoUsuario?.tokenVerificacion) {
       try {
         await this.mailService.sendEmailVerificacion(
           resultado.docenteActualizado?.nombre || 'Docente',
           resultado.nuevoUsuario.correo,
           resultado.nuevoUsuario.tokenVerificacion,
+          resultado.nuevoUsuario.correo,
+          contrasenia,
         );
       } catch (error) {
         console.error(

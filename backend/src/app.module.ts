@@ -44,9 +44,9 @@ import { S3Service } from './s3/s3.service';
 import { S3Module } from './s3/s3.module';
 import { CertificadoModule } from './certificado/certificado.module';
 
-
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: join(__dirname, '..', '.env'),
@@ -115,6 +115,6 @@ import { CertificadoModule } from './certificado/certificado.module';
   ],
 
   controllers: [AppController],
-  providers: [AppService, GoogleMeetService, MailService, S3Service],
+  providers: [AppService, GoogleMeetService, MailService, S3Service, VimeoService, VimeoController],
 })
 export class AppModule {}

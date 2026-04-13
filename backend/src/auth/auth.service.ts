@@ -18,17 +18,16 @@ import { Usuario } from '../usuario/entities/usuario.entity';
 @Injectable()
 export class AuthService {
   constructor(
-    private usuarioService: UsuarioService,
-    private jwtService: JwtService,
-    private mailerService: MailerService,
-    private historialLoginService: HistorialLoginService,
+    private readonly usuarioService: UsuarioService,
+    private readonly jwtService: JwtService,
+    private readonly mailerService: MailerService,
+    private readonly historialLoginService: HistorialLoginService,
 
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
   ) {}
 
   async login(loginDto: LoginDto, ip: string, dispositivo: string) {
-    // 🔐 reCaptcha
     if (!loginDto.recaptchaToken) {
       throw new UnauthorizedException('Falta el token de reCaptcha');
     }
@@ -55,12 +54,18 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado');
     }
 
-    // 🔐 Validación de contraseña (soporta legacy sin hash)
-    let isPasswordValid = await bcrypt.compare(
-      loginDto.contrasenia,
-      usuario.contrasenia,
-    );
+    let isPasswordValid = false;
 
+    try {
+      isPasswordValid = await bcrypt.compare(
+        loginDto.contrasenia,
+        usuario.contrasenia,
+      );
+    } catch {
+      isPasswordValid = false;
+    }
+
+    // Compatibilidad temporal para usuarios antiguos con contraseña sin hash
     if (!isPasswordValid && usuario.contrasenia === loginDto.contrasenia) {
       isPasswordValid = true;
     }
@@ -69,13 +74,12 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
-    // ⚠️ Bloquear login si no verificó correo (opcional pero recomendado)
     if (!usuario.emailVerificado) {
       throw new UnauthorizedException('Debes verificar tu correo');
     }
 
-    // 📊 Historial login
     let sessionId: number | null = null;
+
     try {
       const sesion = await this.historialLoginService.registrarIngreso(
         usuario.id,
@@ -137,18 +141,26 @@ export class AuthService {
     };
 
     const token = this.jwtService.sign(payload, { expiresIn: '5m' });
-
-    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
     await this.mailerService.sendMail({
       to: usuario.correo,
       subject: 'Restablecimiento de contraseña',
       html: `
-        <div style="font-family: Arial; padding:20px;">
-          <h2>Recuperación de contraseña</h2>
-          <p>Tu código:</p>
-          <h1>${codigoSeguridad}</h1>
-          <a href="${resetLink}">Restablecer contraseña</a>
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #141426;">
+          <h2 style="color: #344c92;">Recuperación de contraseña</h2>
+          <p>Hola,</p>
+          <p>Hemos recibido una solicitud para restablecer tu contraseña en el Aula Virtual.</p>
+
+          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #4b5563;">Tu código de seguridad es:</p>
+            <h1 style="margin: 10px 0 0 0; color: #1b2751; font-size: 32px; letter-spacing: 5px;">${codigoSeguridad}</h1>
+          </div>
+
+          <p>Haz clic en el siguiente enlace y digita tu código (ambos <b>expiran en 5 minutos</b>):</p>
+          <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #5573b3; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">Restablecer mi contraseña</a>
+          <p style="margin-top: 20px; font-size: 12px; color: #8a9585;">Si tú no solicitaste esto, simplemente ignora este correo.</p>
         </div>
       `,
     });
@@ -183,31 +195,11 @@ export class AuthService {
     return { message: 'Correo verificado correctamente' };
   }
 
-  async enviarCorreoVerificacion(
-    nombre: string,
-    correo: string,
-    token: string,
-  ) {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-    const link = `${backendUrl}/auth/verificar-correo?token=${token}`;
-
-    await this.mailerService.sendMail({
-      to: correo,
-      subject: 'Verifica tu correo',
-      html: `
-        <h2>Hola ${nombre}</h2>
-        <p>Haz clic para verificar:</p>
-        <a href="${link}">Verificar correo</a>
-      `,
-    });
-  }
-
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     try {
-      const payload = this.jwtService.verify<{
-        correo: string;
-        code: string;
-      }>(resetPasswordDto.token);
+      const payload = this.jwtService.verify<{ correo: string; code: string }>(
+        resetPasswordDto.token,
+      );
 
       const isCodeValid = await bcrypt.compare(
         resetPasswordDto.codigoSeguridad,
@@ -218,9 +210,7 @@ export class AuthService {
         throw new BadRequestException('Código de seguridad inválido');
       }
 
-      const usuario = await this.usuarioService.findOneByCorreo(
-        payload.correo,
-      );
+      const usuario = await this.usuarioService.findOneByCorreo(payload.correo);
 
       if (!usuario) {
         throw new UnauthorizedException('Usuario no encontrado');
@@ -240,7 +230,7 @@ export class AuthService {
       }
 
       throw new UnauthorizedException(
-        'El enlace no es válido o expiró',
+        'El enlace de restablecimiento no es válido o ha expirado',
       );
     }
   }

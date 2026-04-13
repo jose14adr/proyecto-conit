@@ -33,28 +33,44 @@ export class MailService implements OnModuleInit {
     });
   }
 
-  async sendEmailVerificacion(nombre: string, correo: string, token: string) {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-  const link = `${backendUrl}/auth/verificar-correo?token=${token}`;
+  async sendEmailVerificacion(
+    nombre: string,
+    correoDestino: string,
+    token: string,
+    usuario: string,
+    contrasenia: string,
+  ) {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+    const link = `${backendUrl}/auth/verificar-correo?token=${token}`;
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-      <h2>Verifica tu correo</h2>
-      <p>Hola ${nombre},</p>
-      <p>Haz clic en el siguiente botón para verificar tu correo:</p>
-      <p>
-        <a href="${link}" style="background:#2563eb;color:white;padding:10px 16px;text-decoration:none;border-radius:6px;">
-          Verificar correo
-        </a>
-      </p>
-      <p>Si no solicitaste esto, puedes ignorar este mensaje.</p>
-      <br />
-      <p>Saludos,<br />Equipo Conit</p>
-    </div>
-  `;
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>Verifica tu correo</h2>
+        <p>Hola ${nombre},</p>
 
-  await this.sendMail(correo, 'Verifica tu correo', html);
-}
+        <p>Tus credenciales de acceso son:</p>
+
+        <div style="background:#f3f4f6;padding:12px 16px;border-radius:8px;margin:12px 0;">
+          <p style="margin:0 0 8px 0;"><b>Usuario:</b> ${usuario}</p>
+          <p style="margin:0;"><b>Contraseña:</b> ${contrasenia}</p>
+        </div>
+
+        <p>Haz clic en el siguiente botón para verificar tu correo:</p>
+
+        <p>
+          <a href="${link}" style="background:#2563eb;color:white;padding:10px 16px;text-decoration:none;border-radius:6px;">
+            Verificar correo
+          </a>
+        </p>
+
+        <p>Si no solicitaste esto, puedes ignorar este mensaje.</p>
+        <br />
+        <p>Saludos,<br />Equipo Conit</p>
+      </div>
+    `;
+
+    await this.sendMail(correoDestino, 'Verifica tu correo', html);
+  }
 
   async sendBienvenidaAlumno(nombre: string, correo: string, curso: string) {
     const html = `

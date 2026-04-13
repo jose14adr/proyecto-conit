@@ -19,7 +19,7 @@ id: number;
 titulo: string;
 
 @Column({ type: 'text', nullable: true })
-descripcion?: string;
+descripcion: string | null;
 
 @Column()
 fecha: Date;

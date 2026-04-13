@@ -7,7 +7,10 @@ import { Usuario } from '../usuario/entities/usuario.entity';
 import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Alumno, Usuario]),  MailModule,], 
+  imports: [
+    TypeOrmModule.forFeature([Alumno, Usuario]),
+    MailModule,
+  ],
   controllers: [AlumnoController],
   providers: [AlumnoService],
 })

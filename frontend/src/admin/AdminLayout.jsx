@@ -143,6 +143,7 @@ export default function AdminLayout() {
             <Award size={20} /> Certificados
           </Link>
 
+
           <Link
             to="/admin/pagos"
             className={`${linkStyle} ${

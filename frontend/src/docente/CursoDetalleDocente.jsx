@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Settings } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
@@ -40,11 +40,14 @@ import {
   asignarEvaluacionATarea,
   crearExamen,
   getExamenesByLeccion,
+  getExamenDetalle,
   getEvaluacionesExamenDisponiblesByGrupo,
   asignarEvaluacionAExamen,
   deleteExamen,
+  actualizarExamen,
   getSesionesVivoByCurso,
   crearSesionVivo,
+  getProgresoAlumnosByGrupo,
 } from "../services/docenteService";
 
 import {
@@ -315,6 +318,21 @@ function CursoDetalleDocente() {
   // Tabs
   // ==============================
   const [tabActiva, setTabActiva] = useState("resumen");
+  const [progresoData, setProgresoData] = useState({
+    resumen: {
+      totalAlumnos: 0,
+      totalTareas: 0,
+      totalExamenes: 0,
+      promedioTareas: 0,
+      promedioExamenes: 0,
+      promedioGeneral: 0,
+      alumnosCompletaronTodo: 0,
+    },
+    alumnos: [],
+  });
+  const [cargandoProgreso, setCargandoProgreso] = useState(false);
+  const [busquedaProgreso, setBusquedaProgreso] = useState("");
+  const [progresoCargado, setProgresoCargado] = useState(false);
 
   // ==============================
   // Fecha actual
@@ -388,8 +406,8 @@ function CursoDetalleDocente() {
   const [formMaterial, setFormMaterial] = useState({});
   const [subidaMaterialProgress, setSubidaMaterialProgress] = useState({});
   const [subidaMaterialEstado, setSubidaMaterialEstado] = useState({});
-
   const [notificacionesVideo, setNotificacionesVideo] = useState([]);
+  
 
   // ==============================
   // EXAMENES
@@ -403,6 +421,8 @@ function CursoDetalleDocente() {
   const [evaluacionSeleccionadaExamen, setEvaluacionSeleccionadaExamen] = useState("");
   const [cargandoConfigExamen, setCargandoConfigExamen] = useState(false);
   const [guardandoConfigExamen, setGuardandoConfigExamen] = useState(false);
+  const [examenEditandoId, setExamenEditandoId] = useState(null);
+  const [leccionExamenEditandoId, setLeccionExamenEditandoId] = useState(null);
   
   //Sensores de arrastrado
   const sensors = useSensors(
@@ -806,6 +826,16 @@ const formatearFechaSesion = (fecha) => {
 }, [tabActiva, id]);
 
   useEffect(() => {
+    if (tabActiva === "progreso" && !progresoCargado) {
+      cargarProgresoCurso();
+    }
+  }, [tabActiva, id, progresoCargado]);
+
+  useEffect(() => {
+    setProgresoCargado(false);
+  }, [id]);
+
+  useEffect(() => {
     if (tabActiva === "modulos") {
       cargarModulosCurso();
     }
@@ -835,6 +865,38 @@ useEffect(() => {
       alert(error?.message || "No se pudieron cargar las tareas");
     } finally {
       setCargandoTareas(false);
+    }
+  };
+
+  const cargarProgresoCurso = async (force = false) => {
+    try {
+      if (cargandoProgreso) return;
+      if (progresoCargado && !force) return;
+
+      setCargandoProgreso(true);
+      const data = await getProgresoAlumnosByGrupo(Number(id));
+
+      setProgresoData(
+        data || {
+          resumen: {
+            totalAlumnos: 0,
+            totalTareas: 0,
+            totalExamenes: 0,
+            promedioTareas: 0,
+            promedioExamenes: 0,
+            promedioGeneral: 0,
+            alumnosCompletaronTodo: 0,
+          },
+          alumnos: [],
+        }
+      );
+
+      setProgresoCargado(true);
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo cargar el progreso del curso.");
+    } finally {
+      setCargandoProgreso(false);
     }
   };
 
@@ -2269,34 +2331,174 @@ const guardarConfiguracionTarea = async () => {
   }
 };
 
-  const toggleFormExamen = (leccionId) => {
+  
+const TIPOS_PREGUNTA_CON_OPCIONES = ["unica", "multiple"];
+const TIPOS_PREGUNTA_TEXTO = ["texto_corto", "texto_largo"];
+const TIPOS_PREGUNTA_SIN_OPCIONES = [
+  "texto_corto",
+  "texto_largo",
+  "numerica",
+  "archivo",
+];
+
+const obtenerDefaultsPorTipoPregunta = (tipo) => {
+  switch (tipo) {
+    case "texto_corto":
+      return {
+        max_caracteres: 50,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Escribe una respuesta corta",
+      };
+    case "texto_largo":
+      return {
+        max_caracteres: 200,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Escribe una respuesta más extensa",
+      };
+    case "numerica":
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Ingresa un número",
+      };
+    case "archivo":
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "pdf,jpg,png,doc,docx",
+        texto_placeholder: "Sube tu archivo",
+      };
+    default:
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "",
+      };
+  }
+};
+
+const crearPreguntaVacia = (tipo = "unica") => ({
+  enunciado: "",
+  puntaje: 1,
+  tipo_pregunta: tipo,
+  respuesta_texto: "",
+  texto_placeholder: obtenerDefaultsPorTipoPregunta(tipo).texto_placeholder,
+  max_caracteres: obtenerDefaultsPorTipoPregunta(tipo).max_caracteres,
+  permitir_decimales: obtenerDefaultsPorTipoPregunta(tipo).permitir_decimales,
+  tamano_max_mb: obtenerDefaultsPorTipoPregunta(tipo).tamano_max_mb,
+  extensiones_permitidas: obtenerDefaultsPorTipoPregunta(tipo).extensiones_permitidas,
+  opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
+    ? [
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+      ]
+    : [],
+});
+
+const crearExamenVacio = () => ({
+  id: null,
+  titulo: "",
+  descripcion: "",
+  duracion_minutos: 30,
+  intentos_permitidos: 1,
+  nota_maxima: 20,
+  preguntas: [crearPreguntaVacia()],
+});
+
+const normalizarPreguntaExamen = (pregunta = {}) => {
+  const tipo = pregunta.tipo_pregunta || "unica";
+  const defaults = obtenerDefaultsPorTipoPregunta(tipo);
+
+  return {
+    id: pregunta.id || null,
+    enunciado: pregunta.enunciado || "",
+    puntaje: Number(pregunta.puntaje || 1),
+    tipo_pregunta: tipo,
+    respuesta_texto: pregunta.respuesta_texto || "",
+    texto_placeholder:
+      pregunta.texto_placeholder !== undefined && pregunta.texto_placeholder !== null
+        ? pregunta.texto_placeholder
+        : defaults.texto_placeholder,
+    max_caracteres:
+      pregunta.max_caracteres !== undefined && pregunta.max_caracteres !== null
+        ? Number(pregunta.max_caracteres)
+        : defaults.max_caracteres,
+    permitir_decimales:
+      pregunta.permitir_decimales !== undefined && pregunta.permitir_decimales !== null
+        ? !!pregunta.permitir_decimales
+        : defaults.permitir_decimales,
+    tamano_max_mb:
+      pregunta.tamano_max_mb !== undefined && pregunta.tamano_max_mb !== null
+        ? Number(pregunta.tamano_max_mb)
+        : defaults.tamano_max_mb,
+    extensiones_permitidas:
+      pregunta.extensiones_permitidas !== undefined && pregunta.extensiones_permitidas !== null
+        ? pregunta.extensiones_permitidas
+        : defaults.extensiones_permitidas,
+    opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
+      ? (pregunta.opciones || []).length > 0
+        ? (pregunta.opciones || []).map((opcion) => ({
+            id: opcion.id || null,
+            texto: opcion.texto || "",
+            es_correcta: !!opcion.es_correcta,
+          }))
+        : crearPreguntaVacia(tipo).opciones
+      : [],
+  };
+};
+
+const toggleFormExamen = (leccionId) => {
+  const estabaAbierto = !!mostrarFormExamen[leccionId];
+
+  if (estabaAbierto) {
+    setMostrarFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: false,
+    }));
+    setFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: crearExamenVacio(),
+    }));
+    setExamenEditandoId(null);
+    setLeccionExamenEditandoId(null);
+    return;
+  }
+
   setMostrarFormExamen((prev) => ({
     ...prev,
-    [leccionId]: !prev[leccionId],
+    [leccionId]: true,
   }));
 
   setFormExamen((prev) => ({
     ...prev,
-    [leccionId]:
-      prev[leccionId] || {
-        titulo: "",
-        descripcion: "",
-        duracion_minutos: 30,
-        intentos_permitidos: 1,
-        nota_maxima: 20,
-        preguntas: [
-          {
-            enunciado: "",
-            puntaje: 1,
-            opciones: [
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-            ],
-          },
-        ],
-      },
+    [leccionId]: prev[leccionId] || crearExamenVacio(),
+  }));
+
+  setExamenEditandoId(null);
+  setLeccionExamenEditandoId(null);
+};
+
+const cancelarEdicionExamen = (leccionId) => {
+  setExamenEditandoId(null);
+  setLeccionExamenEditandoId(null);
+  setMostrarFormExamen((prev) => ({
+    ...prev,
+    [leccionId]: false,
+  }));
+  setFormExamen((prev) => ({
+    ...prev,
+    [leccionId]: crearExamenVacio(),
   }));
 };
 
@@ -2304,7 +2506,7 @@ const handleChangeExamen = (leccionId, field, value) => {
   setFormExamen((prev) => ({
     ...prev,
     [leccionId]: {
-      ...(prev[leccionId] || {}),
+      ...(prev[leccionId] || crearExamenVacio()),
       [field]: value,
     },
   }));
@@ -2312,13 +2514,39 @@ const handleChangeExamen = (leccionId, field, value) => {
 
 const handleChangePreguntaExamen = (leccionId, preguntaIndex, field, value) => {
   setFormExamen((prev) => {
-    const actual = prev[leccionId];
-    const preguntas = [...(actual?.preguntas || [])];
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const preguntaActual = preguntas[preguntaIndex] || crearPreguntaVacia();
 
-    preguntas[preguntaIndex] = {
-      ...preguntas[preguntaIndex],
-      [field]: value,
-    };
+    if (field === "tipo_pregunta") {
+      const tipoNuevo = value;
+      const defaults = obtenerDefaultsPorTipoPregunta(tipoNuevo);
+
+      preguntas[preguntaIndex] = {
+        ...preguntaActual,
+        tipo_pregunta: tipoNuevo,
+        texto_placeholder: defaults.texto_placeholder,
+        max_caracteres: defaults.max_caracteres,
+        permitir_decimales: defaults.permitir_decimales,
+        tamano_max_mb: defaults.tamano_max_mb,
+        extensiones_permitidas: defaults.extensiones_permitidas,
+        respuesta_texto:
+          tipoNuevo === "numerica" ||
+          TIPOS_PREGUNTA_TEXTO.includes(tipoNuevo)
+            ? preguntaActual.respuesta_texto || ""
+            : "",
+        opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipoNuevo)
+          ? (preguntaActual.opciones || []).length >= 2
+            ? preguntaActual.opciones
+            : crearPreguntaVacia(tipoNuevo).opciones
+          : [],
+      };
+    } else {
+      preguntas[preguntaIndex] = {
+        ...preguntaActual,
+        [field]: value,
+      };
+    }
 
     return {
       ...prev,
@@ -2330,31 +2558,97 @@ const handleChangePreguntaExamen = (leccionId, preguntaIndex, field, value) => {
   });
 };
 
-const handleChangeOpcionExamen = (leccionId, preguntaIndex, opcionIndex, field, value) => {
+const handleChangeOpcionExamen = (
+  leccionId,
+  preguntaIndex,
+  opcionIndex,
+  field,
+  value
+) => {
   setFormExamen((prev) => {
-    const actual = prev[leccionId];
-    const preguntas = [...(actual?.preguntas || [])];
-    const opciones = [...(preguntas[preguntaIndex]?.opciones || [])];
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const pregunta = { ...(preguntas[preguntaIndex] || crearPreguntaVacia()) };
+    const opciones = [...(pregunta.opciones || [])];
 
-    if (field === "es_correcta" && value === true) {
-      preguntas[preguntaIndex] = {
-        ...preguntas[preguntaIndex],
-        opciones: opciones.map((op, idx) => ({
+    if (field === "es_correcta") {
+      if (pregunta.tipo_pregunta === "unica") {
+        pregunta.opciones = opciones.map((op, idx) => ({
           ...op,
           es_correcta: idx === opcionIndex,
-        })),
-      };
+        }));
+      } else {
+        pregunta.opciones = opciones.map((op, idx) =>
+          idx === opcionIndex ? { ...op, es_correcta: !!value } : op
+        );
+      }
     } else {
-      opciones[opcionIndex] = {
-        ...opciones[opcionIndex],
-        [field]: value,
-      };
-
-      preguntas[preguntaIndex] = {
-        ...preguntas[preguntaIndex],
-        opciones,
-      };
+      pregunta.opciones = opciones.map((op, idx) =>
+        idx === opcionIndex ? { ...op, [field]: value } : op
+      );
     }
+
+    preguntas[preguntaIndex] = pregunta;
+
+    return {
+      ...prev,
+      [leccionId]: {
+        ...actual,
+        preguntas,
+      },
+    };
+  });
+};
+
+const agregarOpcion = (leccionId, preguntaIndex) => {
+  setFormExamen((prev) => {
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const pregunta = { ...(preguntas[preguntaIndex] || crearPreguntaVacia()) };
+
+    if (!TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta)) {
+      return prev;
+    }
+
+    pregunta.opciones = [
+      ...(pregunta.opciones || []),
+      { texto: "", es_correcta: false },
+    ];
+
+    preguntas[preguntaIndex] = pregunta;
+
+    return {
+      ...prev,
+      [leccionId]: {
+        ...actual,
+        preguntas,
+      },
+    };
+  });
+};
+
+const quitarOpcion = (leccionId, preguntaIndex, opcionIndex) => {
+  setFormExamen((prev) => {
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const pregunta = { ...(preguntas[preguntaIndex] || crearPreguntaVacia()) };
+
+    if (!TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta)) {
+      return prev;
+    }
+
+    const opciones = [...(pregunta.opciones || [])];
+    opciones.splice(opcionIndex, 1);
+
+    pregunta.opciones =
+      opciones.length >= 2
+        ? opciones
+        : [
+            { texto: "", es_correcta: false },
+            { texto: "", es_correcta: false },
+          ];
+
+    preguntas[preguntaIndex] = pregunta;
 
     return {
       ...prev,
@@ -2368,25 +2662,13 @@ const handleChangeOpcionExamen = (leccionId, preguntaIndex, opcionIndex, field, 
 
 const agregarPreguntaExamen = (leccionId) => {
   setFormExamen((prev) => {
-    const actual = prev[leccionId];
+    const actual = prev[leccionId] || crearExamenVacio();
 
     return {
       ...prev,
       [leccionId]: {
         ...actual,
-        preguntas: [
-          ...(actual?.preguntas || []),
-          {
-            enunciado: "",
-            puntaje: 1,
-            opciones: [
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-            ],
-          },
-        ],
+        preguntas: [...(actual.preguntas || []), crearPreguntaVacia()],
       },
     };
   });
@@ -2394,8 +2676,8 @@ const agregarPreguntaExamen = (leccionId) => {
 
 const eliminarPreguntaExamen = (leccionId, preguntaIndex) => {
   setFormExamen((prev) => {
-    const actual = prev[leccionId];
-    const preguntas = [...(actual?.preguntas || [])];
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
 
     preguntas.splice(preguntaIndex, 1);
 
@@ -2403,30 +2685,96 @@ const eliminarPreguntaExamen = (leccionId, preguntaIndex) => {
       ...prev,
       [leccionId]: {
         ...actual,
-        preguntas: preguntas.length
-          ? preguntas
-          : [
-              {
-                enunciado: "",
-                puntaje: 1,
-                opciones: [
-                  { texto: "", es_correcta: false },
-                  { texto: "", es_correcta: false },
-                  { texto: "", es_correcta: false },
-                  { texto: "", es_correcta: false },
-                ],
-              },
-            ],
+        preguntas: preguntas.length ? preguntas : [crearPreguntaVacia()],
       },
     };
   });
+};
+
+const validarPreguntaExamen = (pregunta) => {
+  if (!pregunta?.enunciado?.trim()) {
+    return "Cada pregunta debe tener enunciado.";
+  }
+
+  const tipo = pregunta.tipo_pregunta || "unica";
+
+  if (tipo === "texto_corto") {
+    if (!pregunta.respuesta_texto?.trim()) {
+      return "Las preguntas de texto corto deben tener una respuesta de referencia.";
+    }
+    if (Number(pregunta.max_caracteres || 50) > 50) {
+      return "Texto corto solo permite hasta 50 caracteres.";
+    }
+    return null;
+  }
+
+  if (tipo === "texto_largo") {
+    if (!pregunta.respuesta_texto?.trim()) {
+      return "Las preguntas de texto largo deben tener una respuesta de referencia.";
+    }
+    if (Number(pregunta.max_caracteres || 200) > 200) {
+      return "Texto largo solo permite hasta 200 caracteres.";
+    }
+    return null;
+  }
+
+  if (tipo === "numerica") {
+    if (
+      pregunta.respuesta_texto === null ||
+      pregunta.respuesta_texto === undefined ||
+      String(pregunta.respuesta_texto).trim() === ""
+    ) {
+      return "Las preguntas numéricas deben tener una respuesta numérica de referencia.";
+    }
+
+    const valor = String(pregunta.respuesta_texto).trim();
+    const regex = pregunta.permitir_decimales
+      ? /^-?\d+(\.\d+)?$/
+      : /^-?\d+$/;
+
+    if (!regex.test(valor)) {
+      return pregunta.permitir_decimales
+        ? "La respuesta de referencia debe ser un número válido."
+        : "La respuesta de referencia debe ser un número entero.";
+    }
+
+    return null;
+  }
+
+  if (tipo === "archivo") {
+    if (Number(pregunta.tamano_max_mb || 0) <= 0) {
+      return "Las preguntas de archivo deben tener un tamaño máximo válido.";
+    }
+    return null;
+  }
+
+  const opcionesCompletas = (pregunta.opciones || []).filter((op) => op.texto?.trim());
+
+  if (
+    opcionesCompletas.length < 2 ||
+    opcionesCompletas.length !== (pregunta.opciones || []).length
+  ) {
+    return "Las preguntas de opciones deben tener al menos 2 opciones completas.";
+  }
+
+  const correctas = (pregunta.opciones || []).filter((op) => op.es_correcta).length;
+
+  if (tipo === "unica" && correctas !== 1) {
+    return "Las preguntas de opción única deben tener exactamente una respuesta correcta.";
+  }
+
+  if (tipo === "multiple" && correctas < 1) {
+    return "Las preguntas de opción múltiple deben tener al menos una respuesta correcta.";
+  }
+
+  return null;
 };
 
 const guardarExamenLeccion = async (e, leccionId) => {
   e.preventDefault();
 
   try {
-    const data = formExamen[leccionId];
+    const data = formExamen[leccionId] || crearExamenVacio();
 
     if (!data?.titulo?.trim()) {
       return alert("Ingresa el título del examen.");
@@ -2436,23 +2784,15 @@ const guardarExamenLeccion = async (e, leccionId) => {
       return alert("Agrega al menos una pregunta.");
     }
 
-    const preguntasInvalidas = data.preguntas.some((pregunta) => {
-      const correctas = (pregunta.opciones || []).filter((o) => o.es_correcta).length;
+    const errorPregunta = data.preguntas.map(validarPreguntaExamen).find(Boolean);
 
-      return (
-        !pregunta.enunciado?.trim() ||
-        !(pregunta.opciones || []).every((o) => o.texto?.trim()) ||
-        correctas !== 1
-      );
-    });
-
-    if (preguntasInvalidas) {
-      return alert("Cada pregunta debe tener enunciado, 4 opciones completas y una sola correcta.");
+    if (errorPregunta) {
+      return alert(errorPregunta);
     }
 
     setGuardandoExamen(true);
 
-    await crearExamen({
+    const payload = {
       leccionId,
       grupoId: curso?.idgrupo,
       titulo: data.titulo,
@@ -2460,46 +2800,107 @@ const guardarExamenLeccion = async (e, leccionId) => {
       duracion_minutos: Number(data.duracion_minutos || 30),
       intentos_permitidos: Number(data.intentos_permitidos || 1),
       nota_maxima: Number(data.nota_maxima || 20),
-      preguntas: data.preguntas,
-    });
+      preguntas: data.preguntas.map((pregunta) => ({
+        enunciado: pregunta.enunciado,
+        puntaje: Number(pregunta.puntaje || 1),
+        tipo_pregunta: pregunta.tipo_pregunta || "unica",
+        respuesta_texto:
+          TIPOS_PREGUNTA_TEXTO.includes(pregunta.tipo_pregunta) ||
+          pregunta.tipo_pregunta === "numerica"
+            ? pregunta.respuesta_texto || null
+            : null,
+        texto_placeholder: pregunta.texto_placeholder || null,
+        max_caracteres:
+          pregunta.tipo_pregunta === "texto_corto"
+            ? Number(pregunta.max_caracteres || 50)
+            : pregunta.tipo_pregunta === "texto_largo"
+            ? Number(pregunta.max_caracteres || 200)
+            : null,
+        permitir_decimales:
+          pregunta.tipo_pregunta === "numerica"
+            ? !!pregunta.permitir_decimales
+            : true,
+        tamano_max_mb:
+          pregunta.tipo_pregunta === "archivo"
+            ? Number(pregunta.tamano_max_mb || 10)
+            : 10,
+        extensiones_permitidas:
+          pregunta.tipo_pregunta === "archivo"
+            ? pregunta.extensiones_permitidas || null
+            : null,
+        opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta)
+          ? (pregunta.opciones || []).map((opcion) => ({
+              texto: opcion.texto,
+              es_correcta: !!opcion.es_correcta,
+            }))
+          : [],
+      })),
+    };
 
+    if (data.id) {
+      await actualizarExamen(data.id, payload);
+      alert("Examen actualizado correctamente ✅");
+    } else {
+      await crearExamen(payload);
+      alert("Examen creado correctamente ✅");
+    }
+
+    setExamenEditandoId(null);
+    setLeccionExamenEditandoId(null);
     setMostrarFormExamen((prev) => ({
       ...prev,
       [leccionId]: false,
     }));
-
     setFormExamen((prev) => ({
       ...prev,
-      [leccionId]: {
-        titulo: "",
-        descripcion: "",
-        duracion_minutos: 30,
-        intentos_permitidos: 1,
-        nota_maxima: 20,
-        preguntas: [
-          {
-            enunciado: "",
-            puntaje: 1,
-            opciones: [
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-              { texto: "", es_correcta: false },
-            ],
-          },
-        ],
-      },
+      [leccionId]: crearExamenVacio(),
     }));
 
     await cargarModulosCurso();
-    alert("Examen creado correctamente ✅");
   } catch (error) {
     console.error(error);
-    alert(error?.message || "No se pudo crear el examen");
+    alert(error?.message || "No se pudo crear o actualizar el examen");
   } finally {
     setGuardandoExamen(false);
   }
 };
+
+const cargarExamenParaEdicion = async (examen, leccionId) => {
+  try {
+    setGuardandoExamen(true);
+
+    const detalle = await getExamenDetalle(examen.id);
+
+    setFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: {
+        id: detalle.id,
+        titulo: detalle.titulo || "",
+        descripcion: detalle.descripcion || "",
+        duracion_minutos: Number(detalle.duracion_minutos || 30),
+        intentos_permitidos: Number(detalle.intentos_permitidos || 1),
+        nota_maxima: Number(detalle.nota_maxima || 20),
+        preguntas:
+          (detalle.preguntas || []).length > 0
+            ? detalle.preguntas.map(normalizarPreguntaExamen)
+            : [crearPreguntaVacia()],
+      },
+    }));
+
+    setExamenEditandoId(Number(examen.id));
+    setLeccionExamenEditandoId(Number(leccionId));
+    setMostrarFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: true,
+    }));
+  } catch (error) {
+    console.error("Error al cargar examen:", error);
+    alert(error?.message || "No se pudo cargar el examen para edición.");
+  } finally {
+    setGuardandoExamen(false);
+  }
+};
+
 
 const abrirConfigExamen = async (examen) => {
   try {
@@ -2684,6 +3085,64 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
   };
 };
 
+  const progresoResumen = progresoData?.resumen || {
+    totalAlumnos: 0,
+    totalTareas: 0,
+    totalExamenes: 0,
+    promedioTareas: 0,
+    promedioExamenes: 0,
+    promedioGeneral: 0,
+    alumnosCompletaronTodo: 0,
+  };
+
+  const alumnosProgreso = progresoData?.alumnos || [];
+
+  const alumnosFiltradosProgreso = useMemo(() => {
+    const textoBusqueda = busquedaProgreso.toLowerCase().trim();
+
+    return alumnosProgreso.filter((fila) => {
+      const texto = `${fila.nombre || ""} ${fila.apellido || ""} ${fila.numdocumento || ""}`
+        .toLowerCase()
+        .trim();
+
+      return texto.includes(textoBusqueda);
+    });
+  }, [alumnosProgreso, busquedaProgreso]);
+
+  const obtenerClaseProgreso = (valor) => {
+    const porcentaje = Number(valor || 0);
+
+    if (porcentaje >= 100) {
+      return {
+        badge: "bg-emerald-100 text-emerald-700",
+        bar: "bg-emerald-500",
+        label: "Completado",
+      };
+    }
+
+    if (porcentaje >= 70) {
+      return {
+        badge: "bg-blue-100 text-blue-700",
+        bar: "bg-blue-500",
+        label: "Avanzado",
+      };
+    }
+
+    if (porcentaje >= 40) {
+      return {
+        badge: "bg-amber-100 text-amber-700",
+        bar: "bg-amber-500",
+        label: "En proceso",
+      };
+    }
+
+    return {
+      badge: "bg-rose-100 text-rose-700",
+      bar: "bg-rose-500",
+      label: "Inicial",
+    };
+  };
+
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-2xl shadow text-gray-500">
@@ -2777,6 +3236,14 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
 
             <button
               type="button"
+              onClick={() => setTabActiva("progreso")}
+              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur hover:bg-white/20 transition"
+            >
+              Ver progreso
+            </button>
+
+            <button
+              type="button"
               onClick={() => setTabActiva("tareas")}
               className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition shadow-lg"
             >
@@ -2820,6 +3287,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
         <div className="flex flex-wrap gap-2">
           {[
             { key: "resumen", label: "Resumen" },
+            { key: "progreso", label: "Progreso" },
             { key: "asistencia", label: "Asistencia" },
             { key: "tareas", label: "Tareas" },
             { key: "modulos", label: "Módulos" },
@@ -3092,6 +3560,240 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+
+      {tabActiva === "progreso" && (
+        <div className="space-y-6">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h3 className="text-2xl font-black tracking-tight text-slate-900">
+                  Progreso del curso
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Seguimiento del avance académico por tareas entregadas y exámenes rendidos.
+                </p>
+              </div>
+
+              <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
+                <input
+                  type="text"
+                  value={busquedaProgreso}
+                  onChange={(e) => setBusquedaProgreso(e.target.value)}
+                  placeholder="Buscar alumno o DNI..."
+                  className="w-full min-w-[260px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => cargarProgresoCurso(true)}
+                  disabled={cargandoProgreso}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                >
+                  {cargandoProgreso ? "Actualizando..." : "Recargar"}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
+              <div className="rounded-2xl bg-slate-950 p-5 text-white">
+                <p className="text-xs uppercase tracking-[0.14em] text-slate-300">
+                  Promedio general
+                </p>
+                <p className="mt-3 text-4xl font-black">
+                  {Number(progresoResumen.promedioGeneral || 0).toFixed(0)}%
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-blue-50 p-5">
+                <p className="text-xs uppercase tracking-[0.14em] text-blue-700">
+                  Promedio tareas
+                </p>
+                <p className="mt-3 text-4xl font-black text-blue-700">
+                  {Number(progresoResumen.promedioTareas || 0).toFixed(0)}%
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-violet-50 p-5">
+                <p className="text-xs uppercase tracking-[0.14em] text-violet-700">
+                  Promedio exámenes
+                </p>
+                <p className="mt-3 text-4xl font-black text-violet-700">
+                  {Number(progresoResumen.promedioExamenes || 0).toFixed(0)}%
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-emerald-50 p-5">
+                <p className="text-xs uppercase tracking-[0.14em] text-emerald-700">
+                  Completaron todo
+                </p>
+                <p className="mt-3 text-4xl font-black text-emerald-700">
+                  {progresoResumen.alumnosCompletaronTodo || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="grid grid-cols-12 gap-4 border-b border-slate-200 bg-slate-50 px-5 py-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+              <div className="col-span-5">Alumno</div>
+              <div className="col-span-3">Tareas</div>
+              <div className="col-span-2">Exámenes</div>
+              <div className="col-span-2 text-right">Progreso</div>
+            </div>
+
+            {cargandoProgreso ? (
+              <div className="space-y-3 p-5">
+                {[1, 2, 3, 4].map((item) => (
+                  <div
+                    key={item}
+                    className="animate-pulse rounded-2xl border border-slate-200 p-4"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-full bg-slate-200" />
+                        <div className="space-y-2">
+                          <div className="h-4 w-48 rounded bg-slate-200" />
+                          <div className="h-3 w-28 rounded bg-slate-200" />
+                        </div>
+                      </div>
+                      <div className="h-4 w-16 rounded bg-slate-200" />
+                    </div>
+                    <div className="mt-4 h-2 w-full rounded-full bg-slate-200" />
+                  </div>
+                ))}
+              </div>
+            ) : alumnosFiltradosProgreso.length === 0 ? (
+              <div className="p-10 text-center">
+                <p className="font-semibold text-slate-700">
+                  No hay datos de progreso para mostrar.
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  Revisa si el grupo tiene matrículas, tareas o exámenes registrados.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {alumnosFiltradosProgreso.map((fila) => {
+                  const porcentaje = Number(fila.progresoGeneral || 0);
+
+                  const colorBarra =
+                    porcentaje >= 100
+                      ? "bg-emerald-500"
+                      : porcentaje >= 70
+                      ? "bg-blue-500"
+                      : porcentaje >= 40
+                      ? "bg-amber-500"
+                      : "bg-rose-500";
+
+                  const colorBadge =
+                    porcentaje >= 100
+                      ? "bg-emerald-100 text-emerald-700"
+                      : porcentaje >= 70
+                      ? "bg-blue-100 text-blue-700"
+                      : porcentaje >= 40
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-rose-100 text-rose-700";
+
+                  const labelEstado =
+                    porcentaje >= 100
+                      ? "Completado"
+                      : porcentaje >= 70
+                      ? "Avanzado"
+                      : porcentaje >= 40
+                      ? "En proceso"
+                      : "Inicial";
+
+                  return (
+                    <div
+                      key={fila.idmatricula}
+                      className="px-5 py-5 transition hover:bg-slate-50/70"
+                    >
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        <div className="col-span-12 lg:col-span-5">
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 overflow-hidden rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center">
+                              {fila.foto_url ? (
+                                <img
+                                  src={fila.foto_url}
+                                  alt={fila.nombre}
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="text-[11px] text-slate-400">Sin foto</span>
+                              )}
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="truncate text-base font-bold text-slate-900">
+                                {fila.nombre} {fila.apellido}
+                              </p>
+                              <p className="text-sm text-slate-500">
+                                DNI: {fila.numdocumento || "-"} · Matrícula #{fila.idmatricula}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="col-span-6 lg:col-span-3">
+                          <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Tareas
+                            </p>
+                            <p className="mt-1 text-lg font-bold text-slate-900">
+                              {fila.tareasEntregadas}/{fila.totalTareas}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              {Number(fila.progresoTareas || 0).toFixed(0)}%
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="col-span-6 lg:col-span-2">
+                          <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Exámenes
+                            </p>
+                            <p className="mt-1 text-lg font-bold text-slate-900">
+                              {fila.examenesRendidos}/{fila.totalExamenes}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              {Number(fila.progresoExamenes || 0).toFixed(0)}%
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="col-span-12 lg:col-span-2">
+                          <div className="flex items-center justify-between lg:justify-end gap-3">
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${colorBadge}`}
+                            >
+                              {labelEstado}
+                            </span>
+                            <span className="text-2xl font-black text-slate-900">
+                              {porcentaje.toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className={`h-full rounded-full ${colorBarra} transition-all duration-500`}
+                            style={{ width: `${Math.min(porcentaje, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -4448,9 +5150,13 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                 <button
                                                   type="button"
                                                   onClick={() => toggleFormExamen(leccion.id)}
-                                                  className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm"
+                                                  disabled={
+                                                    !!examenEditandoId &&
+                                                    Number(leccionExamenEditandoId) !== Number(leccion.id)
+                                                  }
+                                                  className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm disabled:opacity-50"
                                                 >
-                                                  + Examen
+                                                  {mostrarFormExamen[leccion.id] ? "Cerrar examen" : "+ Examen"}
                                                 </button>
 
                                                 <button
@@ -4485,69 +5191,98 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                               <div className="mt-4 space-y-3">
                                                 <p className="text-sm font-semibold text-slate-700">Exámenes de la lección</p>
 
-                                                {leccion.examenes.map((examen, idxExamen) => (
-                                                  <div
-                                                    key={examen.id}
-                                                    className="rounded-2xl border border-violet-200 bg-violet-50 p-4"
-                                                  >
-                                                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                                                      <div>
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                          <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
-                                                            Examen {idxExamen + 1}
-                                                          </span>
+                                                {leccion.examenes
+                                                  .filter((examen) => {
+                                                    if (
+                                                      examenEditandoId &&
+                                                      Number(leccionExamenEditandoId) === Number(leccion.id)
+                                                    ) {
+                                                      return Number(examen.id) === Number(examenEditandoId);
+                                                    }
+                                                    return true;
+                                                  })
+                                                  .map((examen, idxExamen) => (
+                                                    <div
+                                                      key={examen.id}
+                                                      className={`rounded-2xl border p-4 ${
+                                                        Number(examen.id) === Number(examenEditandoId)
+                                                          ? "border-amber-300 bg-amber-50"
+                                                          : "border-violet-200 bg-violet-50"
+                                                      }`}
+                                                    >
+                                                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                        <div>
+                                                          <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
+                                                              Examen {idxExamen + 1}
+                                                            </span>
 
-                                                          <h6 className="font-bold text-slate-800">{examen.titulo}</h6>
+                                                            <h6 className="font-bold text-slate-800">{examen.titulo}</h6>
+
+                                                            {Number(examen.id) === Number(examenEditandoId) && (
+                                                              <span className="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
+                                                                Editando ahora
+                                                              </span>
+                                                            )}
+                                                          </div>
+
+                                                          {examen.descripcion && (
+                                                            <p className="text-sm text-slate-500 mt-2">{examen.descripcion}</p>
+                                                          )}
+
+                                                          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                                            <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                              {examen.total_preguntas || 0} preguntas
+                                                            </span>
+                                                            <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                              {examen.duracion_minutos || 30} min
+                                                            </span>
+                                                            <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                              {examen.intentos_permitidos || 1} intento(s)
+                                                            </span>
+                                                            <span
+                                                              className={`inline-flex rounded-full border px-3 py-1 ${
+                                                                examen.evaluacion_nombre
+                                                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                                  : "border-amber-200 bg-amber-50 text-amber-700"
+                                                              }`}
+                                                            >
+                                                              {examen.evaluacion_nombre
+                                                                ? `Evaluación asignada: ${examen.evaluacion_nombre}`
+                                                                : "Sin evaluación asignada"}
+                                                            </span>
+                                                          </div>
                                                         </div>
 
-                                                        {examen.descripcion && (
-                                                          <p className="text-sm text-slate-500 mt-2">{examen.descripcion}</p>
-                                                        )}
-
-                                                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                            {examen.total_preguntas || 0} preguntas
-                                                          </span>
-                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                            {examen.duracion_minutos || 30} min
-                                                          </span>
-                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                            {examen.intentos_permitidos || 1} intento(s)
-                                                          </span>
-                                                          <span
-                                                            className={`inline-flex rounded-full border px-3 py-1 ${
-                                                              examen.evaluacion_nombre
-                                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                                : "border-amber-200 bg-amber-50 text-amber-700"
-                                                            }`}
+                                                        <div className="flex flex-wrap gap-2">
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => abrirConfigExamen(examen)}
+                                                            className="rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
                                                           >
-                                                            {examen.evaluacion_nombre
-                                                              ? `Evaluación asignada: ${examen.evaluacion_nombre}`
-                                                              : "Sin evaluación asignada"}
-                                                          </span>
+                                                            Configurar nota
+                                                          </button>
+
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => cargarExamenParaEdicion(examen, leccion.id)}
+                                                            disabled={guardandoExamen}
+                                                            className="rounded-2xl bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-200 disabled:opacity-60"
+                                                          >
+                                                            {Number(examen.id) === Number(examenEditandoId) ? "Editando..." : "Editar examen"}
+                                                          </button>
+
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => eliminarExamenLeccion(examen.id)}
+                                                            className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
+                                                          >
+                                                            Eliminar
+                                                          </button>
                                                         </div>
-                                                      </div>
-
-                                                      <div className="flex flex-wrap gap-2">
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => abrirConfigExamen(examen)}
-                                                          className="rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
-                                                        >
-                                                          Configurar nota
-                                                        </button>
-
-                                                        <button
-                                                          type="button"
-                                                          onClick={() => eliminarExamenLeccion(examen.id)}
-                                                          className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
-                                                        >
-                                                          Eliminar
-                                                        </button>
                                                       </div>
                                                     </div>
-                                                  </div>
-                                                ))}
+                                                  ))}
                                               </div>
                                             )}
 
@@ -4556,6 +5291,33 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                 onSubmit={(e) => guardarExamenLeccion(e, leccion.id)}
                                                 className="mt-5 border-t pt-5 space-y-5"
                                               >
+                                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                                    <div>
+                                                      <p className="text-sm font-semibold text-amber-800">
+                                                        {examenEditandoId
+                                                          ? `Editando examen: ${formExamen[leccion.id]?.titulo || "Sin título"}`
+                                                          : "Creando nuevo examen"}
+                                                      </p>
+                                                      <p className="text-xs text-amber-700 mt-1">
+                                                        {examenEditandoId
+                                                          ? "Mientras editas este examen, los demás exámenes de la lección se ocultan para evitar confusión."
+                                                          : "Define la configuración general y luego agrega las preguntas."}
+                                                      </p>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-2">
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => cancelarEdicionExamen(leccion.id)}
+                                                        className="rounded-2xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100"
+                                                      >
+                                                        Cancelar
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                   <div>
                                                     <label className="block font-semibold mb-2">Título del examen</label>
@@ -4604,14 +5366,9 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
 
                                                 <div className="space-y-4">
                                                   {(formExamen[leccion.id]?.preguntas || []).map((pregunta, preguntaIndex) => (
-                                                    <div
-                                                      key={preguntaIndex}
-                                                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4"
-                                                    >
+                                                    <div key={preguntaIndex} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
                                                       <div className="flex items-center justify-between gap-3">
-                                                        <h6 className="font-bold text-slate-800">
-                                                          Pregunta {preguntaIndex + 1}
-                                                        </h6>
+                                                        <h6 className="font-bold text-slate-800">Pregunta {preguntaIndex + 1}</h6>
 
                                                         <button
                                                           type="button"
@@ -4622,7 +5379,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                         </button>
                                                       </div>
 
-                                                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                                                         <div className="md:col-span-3">
                                                           <label className="block font-semibold mb-2">Enunciado</label>
                                                           <input
@@ -4659,58 +5416,253 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
                                                           />
                                                         </div>
-                                                      </div>
 
-                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {(pregunta.opciones || []).map((opcion, opcionIndex) => (
-                                                          <div
-                                                            key={opcionIndex}
-                                                            className={`rounded-2xl border p-4 ${
-                                                              opcion.es_correcta
-                                                                ? "border-emerald-300 bg-emerald-50"
-                                                                : "border-slate-200 bg-white"
-                                                            }`}
+                                                        <div className="md:col-span-2">
+                                                          <label className="block font-semibold mb-2">Tipo de pregunta</label>
+                                                          <select
+                                                            value={pregunta.tipo_pregunta || "unica"}
+                                                            onChange={(e) =>
+                                                              handleChangePreguntaExamen(
+                                                                leccion.id,
+                                                                preguntaIndex,
+                                                                "tipo_pregunta",
+                                                                e.target.value
+                                                              )
+                                                            }
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
                                                           >
-                                                            <label className="block font-semibold mb-2">
-                                                              Opción {opcionIndex + 1}
-                                                            </label>
+                                                            <option value="unica">Marcar una sola opción</option>
+                                                            <option value="multiple">Marcar varias opciones</option>
+                                                            <option value="texto_corto">Texto corto</option>
+                                                            <option value="texto_largo">Texto largo</option>
+                                                            <option value="numerica">Respuesta numérica</option>
+                                                            <option value="archivo">Subir archivo</option>
+                                                          </select>
+                                                        </div>
+                                                        </div>
 
-                                                            <input
-                                                              type="text"
-                                                              value={opcion.texto || ""}
-                                                              onChange={(e) =>
-                                                                handleChangeOpcionExamen(
-                                                                  leccion.id,
-                                                                  preguntaIndex,
-                                                                  opcionIndex,
-                                                                  "texto",
-                                                                  e.target.value
-                                                                )
-                                                              }
-                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
-                                                              placeholder={`Texto de la opción ${opcionIndex + 1}`}
-                                                            />
-
-                                                            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-                                                              <input
-                                                                type="radio"
-                                                                name={`correcta-${leccion.id}-${preguntaIndex}`}
-                                                                checked={!!opcion.es_correcta}
-                                                                onChange={() =>
-                                                                  handleChangeOpcionExamen(
+                                                        {TIPOS_PREGUNTA_TEXTO.includes(pregunta.tipo_pregunta) && (
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Respuesta de referencia</label>
+                                                              <textarea
+                                                                value={pregunta.respuesta_texto || ""}
+                                                                maxLength={pregunta.tipo_pregunta === "texto_corto" ? 50 : 200}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
                                                                     leccion.id,
                                                                     preguntaIndex,
-                                                                    opcionIndex,
-                                                                    "es_correcta",
-                                                                    true
+                                                                    "respuesta_texto",
+                                                                    e.target.value
                                                                   )
                                                                 }
+                                                                className="w-full min-h-[120px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="Escribe la respuesta esperada"
                                                               />
-                                                              Marcar como correcta
-                                                            </label>
+                                                              <p className="mt-1 text-xs text-slate-500">
+                                                                Máximo {pregunta.tipo_pregunta === "texto_corto" ? 50 : 200} caracteres
+                                                              </p>
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Placeholder para el alumno</label>
+                                                              <input
+                                                                type="text"
+                                                                value={pregunta.texto_placeholder || ""}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "texto_placeholder",
+                                                                    e.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="Ej. Escribe tu respuesta aquí"
+                                                              />
+                                                            </div>
                                                           </div>
-                                                        ))}
-                                                      </div>
+                                                        )}
+
+                                                        {pregunta.tipo_pregunta === "numerica" && (
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Respuesta numérica correcta</label>
+                                                              <input
+                                                                type="text"
+                                                                value={pregunta.respuesta_texto || ""}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "respuesta_texto",
+                                                                    e.target.value.replace(/[^\d.-]/g, "")
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="Ej. 25 o 25.5"
+                                                              />
+                                                            </div>
+
+                                                            <div className="flex items-end">
+                                                              <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
+                                                                <input
+                                                                  type="checkbox"
+                                                                  checked={!!pregunta.permitir_decimales}
+                                                                  onChange={(e) =>
+                                                                    handleChangePreguntaExamen(
+                                                                      leccion.id,
+                                                                      preguntaIndex,
+                                                                      "permitir_decimales",
+                                                                      e.target.checked
+                                                                    )
+                                                                  }
+                                                                  className="h-4 w-4"
+                                                                />
+                                                                <div>
+                                                                  <p className="font-semibold text-gray-800">Permitir decimales</p>
+                                                                  <p className="text-sm text-gray-500">
+                                                                    Si lo desactivas, solo se aceptarán enteros.
+                                                                  </p>
+                                                                </div>
+                                                              </label>
+                                                            </div>
+                                                          </div>
+                                                        )}
+
+                                                        {pregunta.tipo_pregunta === "archivo" && (
+                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Tamaño máximo (MB)</label>
+                                                              <input
+                                                                type="number"
+                                                                min="1"
+                                                                value={pregunta.tamano_max_mb || 10}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "tamano_max_mb",
+                                                                    e.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                              />
+                                                            </div>
+
+                                                            <div>
+                                                              <label className="block font-semibold mb-2">Extensiones permitidas</label>
+                                                              <input
+                                                                type="text"
+                                                                value={pregunta.extensiones_permitidas || ""}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "extensiones_permitidas",
+                                                                    e.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="pdf,jpg,png,doc,docx"
+                                                              />
+                                                              <p className="mt-1 text-xs text-slate-500">
+                                                                Separadas por coma, sin punto.
+                                                              </p>
+                                                            </div>
+
+                                                            <div className="md:col-span-2">
+                                                              <label className="block font-semibold mb-2">Texto de ayuda</label>
+                                                              <input
+                                                                type="text"
+                                                                value={pregunta.texto_placeholder || ""}
+                                                                onChange={(e) =>
+                                                                  handleChangePreguntaExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    "texto_placeholder",
+                                                                    e.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                placeholder="Ej. Sube tu informe en PDF"
+                                                              />
+                                                            </div>
+                                                          </div>
+                                                        )}
+
+                                                        {TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta) && (
+                                                          <>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                              {(pregunta.opciones || []).map((opcion, opcionIndex) => (
+                                                                <div
+                                                                  key={opcionIndex}
+                                                                  className={`rounded-2xl border p-4 ${
+                                                                    opcion.es_correcta
+                                                                      ? "border-emerald-300 bg-emerald-50"
+                                                                      : "border-slate-200 bg-white"
+                                                                  }`}
+                                                                >
+                                                                  <label className="block font-semibold mb-2">
+                                                                    Opción {opcionIndex + 1}
+                                                                  </label>
+
+                                                                  <input
+                                                                    type="text"
+                                                                    value={opcion.texto || ""}
+                                                                    onChange={(e) =>
+                                                                      handleChangeOpcionExamen(
+                                                                        leccion.id,
+                                                                        preguntaIndex,
+                                                                        opcionIndex,
+                                                                        "texto",
+                                                                        e.target.value
+                                                                      )
+                                                                    }
+                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
+                                                                    placeholder={`Texto de la opción ${opcionIndex + 1}`}
+                                                                  />
+
+                                                                  <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                                                                    <input
+                                                                      type={pregunta.tipo_pregunta === "multiple" ? "checkbox" : "radio"}
+                                                                      name={`correcta-${leccion.id}-${preguntaIndex}`}
+                                                                      checked={!!opcion.es_correcta}
+                                                                      onChange={(e) =>
+                                                                        handleChangeOpcionExamen(
+                                                                          leccion.id,
+                                                                          preguntaIndex,
+                                                                          opcionIndex,
+                                                                          "es_correcta",
+                                                                          e.target.checked
+                                                                        )
+                                                                      }
+                                                                    />
+                                                                    {pregunta.tipo_pregunta === "multiple"
+                                                                      ? "Marcar como correcta"
+                                                                      : "Respuesta correcta"}
+                                                                  </label>
+
+                                                                  <button
+                                                                    type="button"
+                                                                    onClick={() => quitarOpcion(leccion.id, preguntaIndex, opcionIndex)}
+                                                                    className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200 mt-3"
+                                                                  >
+                                                                    Eliminar opción
+                                                                  </button>
+                                                                </div>
+                                                              ))}
+                                                            </div>
+
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => agregarOpcion(leccion.id, preguntaIndex)}
+                                                              className="rounded-xl bg-blue-100 text-blue-700 px-4 py-2 text-sm hover:bg-blue-200"
+                                                            >
+                                                              Añadir opción
+                                                            </button>
+                                                          </>
+                                                        )}
                                                     </div>
                                                   ))}
                                                 </div>
@@ -4729,7 +5681,11 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                     disabled={guardandoExamen}
                                                     className="rounded-2xl bg-violet-600 px-5 py-3 text-white font-semibold hover:bg-violet-700 disabled:opacity-60"
                                                   >
-                                                    {guardandoExamen ? "Guardando..." : "Guardar examen"}
+                                                    {guardandoExamen
+                                                      ? "Guardando..."
+                                                      : examenEditandoId
+                                                      ? "Guardar cambios"
+                                                      : "Guardar examen"}
                                                   </button>
                                                 </div>
                                               </form>

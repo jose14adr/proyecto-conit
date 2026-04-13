@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
-
 import { Alumno } from './entities/alumno.entity';
 import { Usuario } from 'src/usuario/entities/usuario.entity';
 import { MailService } from 'src/mail/mail.service';
@@ -52,9 +51,9 @@ export class AlumnoService {
   }
 
   async create(data: any) {
-    const resultado = await this.dataSource.transaction(async (manager) => {
-      const { contrasenia, crearUsuario, ...datosAlumno } = data;
+    const { contrasenia, crearUsuario, ...datosAlumno } = data;
 
+    const resultado = await this.dataSource.transaction(async (manager) => {
       let usuarioCreado: Usuario | null = null;
 
       if (crearUsuario && contrasenia) {
@@ -87,16 +86,20 @@ export class AlumnoService {
       return { alumnoGuardado, usuarioCreado };
     });
 
-    // 📧 Envío de correo fuera de la transacción
     if (resultado.usuarioCreado?.tokenVerificacion) {
       try {
         await this.mailService.sendEmailVerificacion(
           resultado.alumnoGuardado.nombre || 'Alumno',
           resultado.usuarioCreado.correo,
           resultado.usuarioCreado.tokenVerificacion,
+          resultado.usuarioCreado.correo,
+          contrasenia,
         );
       } catch (error) {
-        console.error('No se pudo enviar el correo de verificación al alumno', error);
+        console.error(
+          'No se pudo enviar el correo de verificación al alumno',
+          error,
+        );
       }
     }
 
@@ -104,12 +107,16 @@ export class AlumnoService {
   }
 
   async update(id: number, data: any) {
+    const { crearUsuario, contrasenia, ...datosActualizarBase } = data;
+
     const resultado = await this.dataSource.transaction(async (manager) => {
       const alumno = await manager.findOne(Alumno, { where: { id } });
-      if (!alumno) throw new NotFoundException('Alumno no encontrado');
 
-      const { crearUsuario, contrasenia, ...datosActualizar } = data;
+      if (!alumno) {
+        throw new NotFoundException('Alumno no encontrado');
+      }
 
+      const datosActualizar = { ...datosActualizarBase };
       let nuevoUsuario: Usuario | null = null;
 
       if (crearUsuario && contrasenia && !alumno.idusuario) {
@@ -142,16 +149,20 @@ export class AlumnoService {
       return { alumnoActualizado, nuevoUsuario };
     });
 
-    // 📧 Envío de correo
     if (resultado.nuevoUsuario?.tokenVerificacion) {
       try {
         await this.mailService.sendEmailVerificacion(
           resultado.alumnoActualizado?.nombre || 'Alumno',
           resultado.nuevoUsuario.correo,
           resultado.nuevoUsuario.tokenVerificacion,
+          resultado.nuevoUsuario.correo,
+          contrasenia,
         );
       } catch (error) {
-        console.error('No se pudo enviar el correo de verificación al alumno', error);
+        console.error(
+          'No se pudo enviar el correo de verificación al alumno',
+          error,
+        );
       }
     }
 
