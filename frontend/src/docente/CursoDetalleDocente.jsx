@@ -417,6 +417,8 @@ function CursoDetalleDocente() {
   const [notificacionesVideo, setNotificacionesVideo] = useState([]);
   
 
+  const [notificacionesVideo, setNotificacionesVideo] = useState([]);
+
   // ==============================
   // EXAMENES
   // ==============================

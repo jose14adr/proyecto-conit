@@ -3603,7 +3603,6 @@ export const getSesionesVivoByCurso = async (cursoId) => {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
   const res = await fetch(`${apiUrl}/sesion-vivo/curso/${cursoId}`);
-
   const data = await res.json();
 
   if (!res.ok) {

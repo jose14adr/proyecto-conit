@@ -154,4 +154,27 @@
             mensaje: 'Examen enviado correctamente',
             };
     }
+
+    async iniciar(examenId: number, idAlumno: number) {
+  const { data: examen } = await supabase
+    .from('examen')
+    .select('*')
+    .eq('id', examenId)
+    .single();
+
+  const { data: intentos } = await supabase
+  .from('examen_intento')
+  .select('*')
+  .eq('examen_id', examenId)
+  .eq('alumno_id', idAlumno);
+
+// Asegurarse de que intentos sea siempre un array
+const listaIntentos = intentos || [];
+
+if (listaIntentos.length >= examen.intentos_permitidos) {
+  throw new Error("Ya no tienes intentos disponibles");
+}
+
+  return { ok: true };
+}
     }

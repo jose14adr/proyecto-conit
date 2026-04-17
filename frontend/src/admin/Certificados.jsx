@@ -62,7 +62,7 @@ const CAMPOS = [
 ];
 
 const MUESTRAS = {
-  alumno: "KAREM DANIELA PAREDES SANDOVAL",
+  alumno: "NOMBRE DESEADO",
   curso: "POR HABER APROBADO SATISFACTORIAMENTE EL CURSO",
   descripcion: "Diseño y desarrollo web con enfoque práctico",
   fecha: "08/04/2026",

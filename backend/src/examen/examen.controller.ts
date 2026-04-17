@@ -19,4 +19,13 @@ async responder(
   console.log('Respuestas recibidas:', body.respuestas);  // Verifica que las respuestas sean correctas
   return await this.examenService.responder(examenId, body.respuestas);
 }
+
+@Post(':id/iniciar')
+iniciar(
+  @Param('id') id: number,
+  @Body() body: any
+) {
+  return this.examenService.iniciar(id, body.idAlumno);
+}
+
 }
