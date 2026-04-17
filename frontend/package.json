@@ -16,6 +16,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@nestjs-modules/mailer": "^2.0.2",
     "@supabase/supabase-js": "^2.98.0",
+    "@vimeo/player": "^2.30.3",
     "axios": "^1.14.0",
     "chart.js": "^4.5.1",
     "framer-motion": "^12.34.2",

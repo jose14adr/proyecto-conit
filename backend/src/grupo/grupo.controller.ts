@@ -19,7 +19,7 @@ export class GrupoController {
   }
 
   @Get('curso/:idcurso')
-  getGrupos(@Param('idcurso') idcurso: number) {
+  getGrupos(@Param('idcurso', ParseIntPipe) idcurso: number) {
     return this.grupoService.gruposPorCurso(idcurso);
   }
 
@@ -30,8 +30,24 @@ export class GrupoController {
   ) {
     return this.grupoService.asignarDocente(idGrupo, idDocente);
   }
+
+  @Patch(':id/cerrar')
+  cerrarGrupo(@Param('id', ParseIntPipe) idGrupo: number) {
+    return this.grupoService.cerrarGrupo(idGrupo);
+  }
+
+  @Patch(':id/estado')
+  actualizarEstado(
+    @Param('id', ParseIntPipe) idGrupo: number,
+    @Body('estado') estado: string,
+  ) {
+    return this.grupoService.actualizarEstado(idGrupo, estado);
+  }
+
   @Get('docente/:iddocente')
-  getGruposPorDocente(@Param('iddocente', ParseIntPipe) iddocente: number) {
+  getGruposPorDocente(
+    @Param('iddocente', ParseIntPipe) iddocente: number,
+  ) {
     return this.grupoService.gruposPorDocente(iddocente);
   }
 }

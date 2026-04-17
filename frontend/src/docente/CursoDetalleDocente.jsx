@@ -50,6 +50,9 @@ import {
   getProgresoAlumnosByGrupo,
 } from "../services/docenteService";
 
+import { verificarEmisionCertificado } from "../services/certificado-verificacion.service";
+import { emitirCertificadoDesdePlantilla } from "../services/certificado-final.service";
+
 import {
   DndContext,
   PointerSensor,
@@ -323,8 +326,13 @@ function CursoDetalleDocente() {
       totalAlumnos: 0,
       totalTareas: 0,
       totalExamenes: 0,
+      totalVideos: 0,
+      totalVideosListos: 0,
+      totalSesiones: 0,
       promedioTareas: 0,
       promedioExamenes: 0,
+      promedioVideos: 0,
+      promedioAsistencia: 0,
       promedioGeneral: 0,
       alumnosCompletaronTodo: 0,
     },
@@ -882,8 +890,13 @@ useEffect(() => {
             totalAlumnos: 0,
             totalTareas: 0,
             totalExamenes: 0,
+            totalVideos: 0,
+            totalVideosListos: 0,
+            totalSesiones: 0,
             promedioTareas: 0,
             promedioExamenes: 0,
+            promedioVideos: 0,
+            promedioAsistencia: 0,
             promedioGeneral: 0,
             alumnosCompletaronTodo: 0,
           },
@@ -1010,6 +1023,46 @@ useEffect(() => {
     }));
   };
 
+  const procesarCertificadoAutomatico = async (idalumno) => {
+    try {
+      const verificacion = await verificarEmisionCertificado({
+        idalumno: Number(idalumno),
+        idgrupo: Number(id),
+      });
+
+      if (!verificacion?.emitirAhora) {
+        return;
+      }
+
+      await emitirCertificadoDesdePlantilla({
+        idalumno: Number(verificacion.alumno.id),
+        idcurso: Number(verificacion.curso.id),
+        nombreAlumno: verificacion.alumno.nombreCompleto,
+        emailAlumno: verificacion.alumno.correo || "",
+        dniAlumno: verificacion.alumno.dni || "",
+        curso: verificacion.curso.nombre,
+        descripcion:
+          verificacion.curso.descripcion ||
+          "Por haber aprobado satisfactoriamente el curso",
+        horas:
+          verificacion.curso.horas !== null &&
+          verificacion.curso.horas !== undefined
+            ? Number(verificacion.curso.horas)
+            : undefined,
+        creditos:
+          verificacion.curso.creditos !== null &&
+          verificacion.curso.creditos !== undefined
+            ? Number(verificacion.curso.creditos)
+            : undefined,
+        fechaEmision: new Date().toISOString().slice(0, 10),
+      });
+
+      alert(`Certificado emitido automáticamente para ${verificacion.alumno.nombreCompleto} ✅`);
+    } catch (error) {
+      console.error("Error verificando/emitiendo certificado:", error);
+    }
+  };
+
   const guardarAsistencia = async () => {
     try {
       const payload = alumnos.map((a) => ({
@@ -1027,6 +1080,11 @@ useEffect(() => {
       }
 
       await guardarAsistenciaCurso(Number(id), payload);
+
+      for (const item of payload) {
+        await procesarCertificadoAutomatico(item.idalumno);
+      }
+
       alert("Asistencia guardada correctamente ✅");
     } catch (error) {
       console.error(error);
@@ -3089,8 +3147,13 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
     totalAlumnos: 0,
     totalTareas: 0,
     totalExamenes: 0,
+    totalVideos: 0,
+    totalVideosListos: 0,
+    totalSesiones: 0,
     promedioTareas: 0,
     promedioExamenes: 0,
+    promedioVideos: 0,
+    promedioAsistencia: 0,
     promedioGeneral: 0,
     alumnosCompletaronTodo: 0,
   };
@@ -3574,7 +3637,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                   Progreso del curso
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Seguimiento del avance académico por tareas entregadas y exámenes rendidos.
+                  Seguimiento del avance por tareas, exámenes, videos y asistencia.
                 </p>
               </div>
 
@@ -3598,7 +3661,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
+            <div className="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-6">
               <div className="rounded-2xl bg-slate-950 p-5 text-white">
                 <p className="text-xs uppercase tracking-[0.14em] text-slate-300">
                   Promedio general
@@ -3626,6 +3689,30 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                 </p>
               </div>
 
+              <div className="rounded-2xl bg-cyan-50 p-5">
+                <p className="text-xs uppercase tracking-[0.14em] text-cyan-700">
+                  Promedio videos
+                </p>
+                <p className="mt-3 text-4xl font-black text-cyan-700">
+                  {Number(progresoResumen.promedioVideos || 0).toFixed(0)}%
+                </p>
+                <p className="mt-2 text-xs text-cyan-700/80">
+                  {progresoResumen.totalVideosListos || 0}/{progresoResumen.totalVideos || 0} listos
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-amber-50 p-5">
+                <p className="text-xs uppercase tracking-[0.14em] text-amber-700">
+                  Promedio asistencia
+                </p>
+                <p className="mt-3 text-4xl font-black text-amber-700">
+                  {Number(progresoResumen.promedioAsistencia || 0).toFixed(0)}%
+                </p>
+                <p className="mt-2 text-xs text-amber-700/80">
+                  {progresoResumen.totalSesiones || 0} sesión(es)
+                </p>
+              </div>
+
               <div className="rounded-2xl bg-emerald-50 p-5">
                 <p className="text-xs uppercase tracking-[0.14em] text-emerald-700">
                   Completaron todo
@@ -3639,10 +3726,12 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
 
           <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="grid grid-cols-12 gap-4 border-b border-slate-200 bg-slate-50 px-5 py-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-              <div className="col-span-5">Alumno</div>
-              <div className="col-span-3">Tareas</div>
-              <div className="col-span-2">Exámenes</div>
-              <div className="col-span-2 text-right">Progreso</div>
+              <div className="col-span-12 2xl:col-span-3">Alumno</div>
+              <div className="col-span-6 md:col-span-3 2xl:col-span-2">Tareas</div>
+              <div className="col-span-6 md:col-span-3 2xl:col-span-2">Exámenes</div>
+              <div className="col-span-6 md:col-span-3 2xl:col-span-2">Videos</div>
+              <div className="col-span-6 md:col-span-3 2xl:col-span-1">Asistencia</div>
+              <div className="col-span-12 2xl:col-span-2 2xl:text-right">Progreso</div>
             </div>
 
             {cargandoProgreso ? (
@@ -3672,40 +3761,14 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                   No hay datos de progreso para mostrar.
                 </p>
                 <p className="mt-2 text-sm text-slate-500">
-                  Revisa si el grupo tiene matrículas, tareas o exámenes registrados.
+                  Revisa si el grupo tiene matrículas, tareas, exámenes, videos o asistencia registrada.
                 </p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
                 {alumnosFiltradosProgreso.map((fila) => {
                   const porcentaje = Number(fila.progresoGeneral || 0);
-
-                  const colorBarra =
-                    porcentaje >= 100
-                      ? "bg-emerald-500"
-                      : porcentaje >= 70
-                      ? "bg-blue-500"
-                      : porcentaje >= 40
-                      ? "bg-amber-500"
-                      : "bg-rose-500";
-
-                  const colorBadge =
-                    porcentaje >= 100
-                      ? "bg-emerald-100 text-emerald-700"
-                      : porcentaje >= 70
-                      ? "bg-blue-100 text-blue-700"
-                      : porcentaje >= 40
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-rose-100 text-rose-700";
-
-                  const labelEstado =
-                    porcentaje >= 100
-                      ? "Completado"
-                      : porcentaje >= 70
-                      ? "Avanzado"
-                      : porcentaje >= 40
-                      ? "En proceso"
-                      : "Inicial";
+                  const clase = obtenerClaseProgreso(porcentaje);
 
                   return (
                     <div
@@ -3713,7 +3776,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                       className="px-5 py-5 transition hover:bg-slate-50/70"
                     >
                       <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-12 lg:col-span-5">
+                        <div className="col-span-12 2xl:col-span-3">
                           <div className="flex items-center gap-3">
                             <div className="h-12 w-12 overflow-hidden rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center">
                               {fila.foto_url ? (
@@ -3739,13 +3802,13 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                           </div>
                         </div>
 
-                        <div className="col-span-6 lg:col-span-3">
+                        <div className="col-span-6 md:col-span-3 2xl:col-span-2">
                           <div className="rounded-2xl bg-slate-50 px-4 py-3">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                               Tareas
                             </p>
                             <p className="mt-1 text-lg font-bold text-slate-900">
-                              {fila.tareasEntregadas}/{fila.totalTareas}
+                              {fila.tareasEntregadas || 0}/{fila.totalTareas || 0}
                             </p>
                             <p className="text-sm text-slate-500">
                               {Number(fila.progresoTareas || 0).toFixed(0)}%
@@ -3753,13 +3816,13 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                           </div>
                         </div>
 
-                        <div className="col-span-6 lg:col-span-2">
+                        <div className="col-span-6 md:col-span-3 2xl:col-span-2">
                           <div className="rounded-2xl bg-slate-50 px-4 py-3">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                               Exámenes
                             </p>
                             <p className="mt-1 text-lg font-bold text-slate-900">
-                              {fila.examenesRendidos}/{fila.totalExamenes}
+                              {fila.examenesRendidos || 0}/{fila.totalExamenes || 0}
                             </p>
                             <p className="text-sm text-slate-500">
                               {Number(fila.progresoExamenes || 0).toFixed(0)}%
@@ -3767,12 +3830,43 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                           </div>
                         </div>
 
-                        <div className="col-span-12 lg:col-span-2">
-                          <div className="flex items-center justify-between lg:justify-end gap-3">
+                        <div className="col-span-6 md:col-span-3 2xl:col-span-2">
+                          <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Videos
+                            </p>
+                            <p className="mt-1 text-lg font-bold text-slate-900">
+                              {fila.videosCompletados || 0}/{fila.totalVideos || 0}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              {Number(fila.progresoVideos || 0).toFixed(0)}%
+                            </p>
+                            <p className="mt-1 text-[11px] text-slate-400">
+                              Iniciados: {fila.videosIniciados || 0}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="col-span-6 md:col-span-3 2xl:col-span-1">
+                          <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Asistencia
+                            </p>
+                            <p className="mt-1 text-lg font-bold text-slate-900">
+                              {Number(fila.progresoAsistencia || 0).toFixed(0)}%
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-1">
+                              P:{fila.presentes || 0} · T:{fila.tardanzas || 0} · F:{fila.faltas || 0}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="col-span-12 2xl:col-span-2">
+                          <div className="flex items-center justify-between 2xl:justify-end gap-3">
                             <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${colorBadge}`}
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${clase.badge}`}
                             >
-                              {labelEstado}
+                              {clase.label}
                             </span>
                             <span className="text-2xl font-black text-slate-900">
                               {porcentaje.toFixed(0)}%
@@ -3784,7 +3878,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                       <div className="mt-4">
                         <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
                           <div
-                            className={`h-full rounded-full ${colorBarra} transition-all duration-500`}
+                            className={`h-full rounded-full ${clase.bar} transition-all duration-500`}
                             style={{ width: `${Math.min(porcentaje, 100)}%` }}
                           />
                         </div>

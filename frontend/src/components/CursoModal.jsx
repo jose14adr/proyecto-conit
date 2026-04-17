@@ -3,7 +3,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { crearCurso, actualizarCurso } from "../services/curso.service";
-import { crearGrupo, obtenerGruposPorCurso } from "../services/grupo.service";
+import {
+  crearGrupo,
+  obtenerGruposPorCurso,
+  cerrarGrupo,
+  actualizarEstadoGrupo,
+} from "../services/grupo.service";
 import toast from "react-hot-toast";
 import { BookOpen, Users, Loader2, Plus, Clock, MapPin } from "lucide-react";
 
@@ -145,6 +150,50 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
       setIsLoading(false);
     }
   };
+
+    const handleCerrarGrupo = async (idGrupo) => {
+      const ok = window.confirm("¿Seguro que deseas cerrar este grupo?");
+      if (!ok) return;
+
+      try {
+        setIsLoading(true);
+        await cerrarGrupo(idGrupo);
+        toast.success("Grupo cerrado correctamente");
+        await cargarGruposDelCurso();
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message || "No se pudo cerrar el grupo",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const handleCambiarEstadoGrupo = async (idGrupo, estado) => {
+      try {
+        setIsLoading(true);
+        await actualizarEstadoGrupo(idGrupo, estado);
+        toast.success("Estado del grupo actualizado");
+        await cargarGruposDelCurso();
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message || "No se pudo actualizar el estado",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const getEstadoBadgeClass = (estado) => {
+      switch (estado) {
+        case "CERRADO":
+          return "bg-red-50 text-red-700 border border-red-100";
+        case "PAUSADO":
+          return "bg-amber-50 text-amber-700 border border-amber-100";
+        default:
+          return "bg-emerald-50 text-emerald-700 border border-emerald-100";
+      }
+    };
 
   const getInputClass = (error) =>
     `w-full border rounded-xl p-2.5 mt-1 outline-none transition-colors ${error ? "border-red-500 bg-red-50 focus:border-red-500" : "border-gray-300 bg-gray-50 focus:bg-white focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"}`;
@@ -485,28 +534,74 @@ export default function CursoModal({ onClose, onSuccess, cursoEditar }) {
                         className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between hover:border-indigo-200 transition-colors"
                       >
                         <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-bold text-gray-800 text-lg">
-                              {g.nombregrupo}
-                            </h4>
-                            <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-100">
-                              {g.modalidad}
-                            </span>
+                          <div className="flex justify-between items-start mb-2 gap-3">
+                            <div>
+                              <h4 className="font-bold text-gray-800 text-lg">
+                                {g.nombregrupo}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-100">
+                                  {g.modalidad}
+                                </span>
+                                <span
+                                  className={`text-xs font-bold px-2.5 py-1 rounded-full ${getEstadoBadgeClass(
+                                    g.estado || "ACTIVO"
+                                  )}`}
+                                >
+                                  {g.estado || "ACTIVO"}
+                                </span>
+                              </div>
+                            </div>
                           </div>
+
                           <p className="text-sm text-gray-600 flex items-center gap-2 mt-2">
-                            <Clock size={14} className="text-gray-400" />{" "}
+                            <Clock size={14} className="text-gray-400" />
                             {g.horario}
                           </p>
+
                           <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                            <Users size={14} className="text-gray-400" />{" "}
+                            <Users size={14} className="text-gray-400" />
                             {g.cantidadpersonas} vacantes máximas
                           </p>
+
+                          {g.fechaCierre && (
+                            <p className="text-xs text-red-500 mt-2">
+                              Cerrado: {new Date(g.fechaCierre).toLocaleString()}
+                            </p>
+                          )}
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2 text-xs font-semibold text-gray-500">
-                          <MapPin size={12} />{" "}
-                          {g.docente
-                            ? `Docente: ${g.docente.nombre} ${g.docente.apellido}`
-                            : "Sin docente asignado"}
+
+                        <div className="mt-4 pt-3 border-t border-gray-100 space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-gray-500">
+                            <MapPin size={12} />
+                            {g.docente
+                              ? `Docente: ${g.docente.nombre} ${g.docente.apellido}`
+                              : "Sin docente asignado"}
+                          </div>
+
+                          <div className="flex flex-col md:flex-row gap-2">
+                            <select
+                              value={g.estado || "ACTIVO"}
+                              onChange={(e) => handleCambiarEstadoGrupo(g.id, e.target.value)}
+                              className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                              disabled={isLoading}
+                            >
+                              <option value="ACTIVO">Activo</option>
+                              <option value="PAUSADO">Pausado</option>
+                              <option value="CERRADO">Cerrado</option>
+                            </select>
+
+                            {g.estado !== "CERRADO" && (
+                              <button
+                                type="button"
+                                onClick={() => handleCerrarGrupo(g.id)}
+                                disabled={isLoading}
+                                className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                              >
+                                Cerrar grupo
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

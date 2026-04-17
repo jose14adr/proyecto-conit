@@ -8,6 +8,8 @@ import {
   eliminarEvaluacionGrupo,
   getTareasCalificablesByGrupo
 } from "../services/docenteService";
+import { verificarEmisionCertificado } from "../services/certificado-verificacion.service";
+import { emitirCertificadoDesdePlantilla } from "../services/certificado-final.service";
 
 function validarNota(valor) {
   if (valor === "" || valor === null || valor === undefined) {
@@ -426,6 +428,49 @@ const guardarConfigEvaluaciones = async () => {
   }
 };
 
+
+  const procesarCertificadoAutomatico = async (alumno) => {
+    try {
+      if (!alumno) return;
+
+      const verificacion = await verificarEmisionCertificado({
+        idalumno: Number(alumno.idalumno || alumno.id),
+        idgrupo: Number(grupoId),
+      });
+
+      if (!verificacion?.emitirAhora) {
+        return;
+      }
+
+      await emitirCertificadoDesdePlantilla({
+        idalumno: Number(verificacion.alumno.id),
+        idcurso: Number(verificacion.curso.id),
+        nombreAlumno: verificacion.alumno.nombreCompleto,
+        emailAlumno: verificacion.alumno.correo || "",
+        dniAlumno: verificacion.alumno.dni || "",
+        curso: verificacion.curso.nombre,
+        descripcion:
+          verificacion.curso.descripcion ||
+          "Por haber aprobado satisfactoriamente el curso",
+        horas:
+          verificacion.curso.horas !== null &&
+          verificacion.curso.horas !== undefined
+            ? Number(verificacion.curso.horas)
+            : undefined,
+        creditos:
+          verificacion.curso.creditos !== null &&
+          verificacion.curso.creditos !== undefined
+            ? Number(verificacion.curso.creditos)
+            : undefined,
+        fechaEmision: new Date().toISOString().slice(0, 10),
+      });
+
+      alert(`Certificado emitido automáticamente para ${verificacion.alumno.nombreCompleto} ✅`);
+    } catch (error) {
+      console.error("Error verificando/emitiendo certificado:", error);
+    }
+  };  
+
   const guardarModal = async () => {
     try {
       if (!modalAlumno) return;
@@ -454,6 +499,7 @@ const guardarConfigEvaluaciones = async () => {
       setSaving(true);
       await guardarNotas(modalAlumno.idmatricula, modalNotas);
       await refrescarDatos();
+      await procesarCertificadoAutomatico(modalAlumno);
       cerrarModal();
       alert("Cambios guardados correctamente ✅");
     } catch (error) {

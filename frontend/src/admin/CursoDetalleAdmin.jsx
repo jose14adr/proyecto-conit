@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Settings } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
@@ -45,6 +45,8 @@ import {
   deleteExamen,
   getSesionesVivoByCurso,
   crearSesionVivo,
+  getProgresoAlumnosByGrupo,
+  getProgresoDocenteByGrupo,
 } from "../services/docenteService";
 
 import {
@@ -471,6 +473,51 @@ function CursoDetalleDocente() {
     duracion: 60,
   });  
 
+  // ==============================
+  // PROGRESO
+  // ==============================
+  const [progresoData, setProgresoData] = useState({
+    resumen: {
+      totalAlumnos: 0,
+      totalTareas: 0,
+      totalExamenes: 0,
+      totalVideos: 0,
+      totalVideosListos: 0,
+      totalSesiones: 0,
+      promedioTareas: 0,
+      promedioExamenes: 0,
+      promedioVideos: 0,
+      promedioAsistencia: 0,
+      promedioGeneral: 0,
+      alumnosCompletaronTodo: 0,
+    },
+    alumnos: [],
+  });
+
+  const [progresoDocente, setProgresoDocente] = useState({
+    resumen: {
+      modulos: 0,
+      submodulos: 0,
+      lecciones: 0,
+      materiales: 0,
+      videos: 0,
+      videosListos: 0,
+      tareas: 0,
+      examenes: 0,
+      sesionesAsistencia: 0,
+      progresoPlanificacion: 0,
+      progresoContenido: 0,
+      progresoEvaluacion: 0,
+      progresoGestion: 0,
+      progresoDocente: 0,
+    },
+  });
+
+  const [cargandoProgreso, setCargandoProgreso] = useState(false);
+  const [busquedaProgreso, setBusquedaProgreso] = useState("");
+  const [progresoCargado, setProgresoCargado] = useState(false);
+  const [subTabProgresoAdmin, setSubTabProgresoAdmin] = useState("docente");
+
   
 // ==============================
 // CARGAR SESIONES EN VIVO
@@ -545,17 +592,79 @@ const guardarSesionVivoCurso = async (e) => {
   }
 };
 
-const formatearFechaSesion = (fecha) => {
-  if (!fecha) return "-";
+  const formatearFechaSesion = (fecha) => {
+    if (!fecha) return "-";
 
-  const value = new Date(fecha);
-  if (Number.isNaN(value.getTime())) return fecha;
+    const value = new Date(fecha);
+    if (Number.isNaN(value.getTime())) return fecha;
 
-  return value.toLocaleString("es-PE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-};
+    return value.toLocaleString("es-PE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  };
+
+  const cargarProgresoCurso = async (force = false) => {
+    try {
+      if (cargandoProgreso) return;
+      if (progresoCargado && !force) return;
+
+      setCargandoProgreso(true);
+
+      const [alumnosData, docenteData] = await Promise.all([
+        getProgresoAlumnosByGrupo(Number(id)),
+        getProgresoDocenteByGrupo(Number(id)),
+      ]);
+
+      setProgresoData(
+        alumnosData || {
+          resumen: {
+            totalAlumnos: 0,
+            totalTareas: 0,
+            totalExamenes: 0,
+            totalVideos: 0,
+            totalVideosListos: 0,
+            totalSesiones: 0,
+            promedioTareas: 0,
+            promedioExamenes: 0,
+            promedioVideos: 0,
+            promedioAsistencia: 0,
+            promedioGeneral: 0,
+            alumnosCompletaronTodo: 0,
+          },
+          alumnos: [],
+        }
+      );
+
+      setProgresoDocente(
+        docenteData || {
+          resumen: {
+            modulos: 0,
+            submodulos: 0,
+            lecciones: 0,
+            materiales: 0,
+            videos: 0,
+            videosListos: 0,
+            tareas: 0,
+            examenes: 0,
+            sesionesAsistencia: 0,
+            progresoPlanificacion: 0,
+            progresoContenido: 0,
+            progresoEvaluacion: 0,
+            progresoGestion: 0,
+            progresoDocente: 0,
+          },
+        }
+      );
+
+      setProgresoCargado(true);
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo cargar el progreso.");
+    } finally {
+      setCargandoProgreso(false);
+    }
+  };
 
 
   // ==============================
@@ -824,6 +933,16 @@ useEffect(() => {
     cargarSesionesVivoCurso();
   }
 }, [tabActiva, id]); //Cambiar por "}, [id]);" si se quiere cargar siempre apenas entrar al detalle de curso
+
+useEffect(() => {
+  if (tabActiva === "progreso" && !progresoCargado) {
+    cargarProgresoCurso();
+  }
+}, [tabActiva, id, progresoCargado]);
+
+useEffect(() => {
+  setProgresoCargado(false);
+}, [id]);
 
   const cargarTareasCurso = async () => {
     try {
@@ -2638,6 +2757,84 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
     return d.toLocaleDateString("es-PE");
   };
 
+  const progresoResumen = progresoData?.resumen || {
+    totalAlumnos: 0,
+    totalTareas: 0,
+    totalExamenes: 0,
+    totalVideos: 0,
+    totalVideosListos: 0,
+    totalSesiones: 0,
+    promedioTareas: 0,
+    promedioExamenes: 0,
+    promedioVideos: 0,
+    promedioAsistencia: 0,
+    promedioGeneral: 0,
+    alumnosCompletaronTodo: 0,
+  };
+
+  const progresoDocenteResumen = progresoDocente?.resumen || {
+    modulos: 0,
+    submodulos: 0,
+    lecciones: 0,
+    materiales: 0,
+    videos: 0,
+    videosListos: 0,
+    tareas: 0,
+    examenes: 0,
+    sesionesAsistencia: 0,
+    progresoPlanificacion: 0,
+    progresoContenido: 0,
+    progresoEvaluacion: 0,
+    progresoGestion: 0,
+    progresoDocente: 0,
+  };
+
+  const alumnosProgreso = progresoData?.alumnos || [];
+
+  const alumnosFiltradosProgreso = useMemo(() => {
+    const textoBusqueda = busquedaProgreso.toLowerCase().trim();
+
+    return alumnosProgreso.filter((fila) => {
+      const texto = `${fila.nombre || ""} ${fila.apellido || ""} ${fila.numdocumento || ""}`
+        .toLowerCase()
+        .trim();
+
+      return texto.includes(textoBusqueda);
+    });
+  }, [alumnosProgreso, busquedaProgreso]);
+
+  const obtenerClaseProgreso = (porcentaje = 0) => {
+    if (porcentaje >= 100) {
+      return {
+        label: "Completado",
+        bar: "bg-emerald-500",
+        badge: "bg-emerald-100 text-emerald-700",
+      };
+    }
+
+    if (porcentaje >= 70) {
+      return {
+        label: "Avanzado",
+        bar: "bg-blue-500",
+        badge: "bg-blue-100 text-blue-700",
+      };
+    }
+
+    if (porcentaje >= 40) {
+      return {
+        label: "En proceso",
+        bar: "bg-amber-500",
+        badge: "bg-amber-100 text-amber-700",
+      };
+    }
+
+    return {
+      label: "Inicial",
+      bar: "bg-rose-500",
+      badge: "bg-rose-100 text-rose-700",
+    };
+  };
+
   const obtenerEstadoVencimiento = (fechaLimite) => {
     if (!fechaLimite) return null;
 
@@ -2823,6 +3020,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
             { key: "asistencia", label: "Asistencia" },
             { key: "tareas", label: "Tareas" },
             { key: "modulos", label: "Módulos" },
+            { key: "progreso", label: "Progreso" },
           ].map((tab) => {
             const active = tabActiva === tab.key;
 
@@ -5204,6 +5402,414 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
           </DndContext>
             )}
           </div>
+        </div>
+      )}
+
+      {tabActiva === "progreso" && (
+        <div className="space-y-6">
+          <div className="rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Centro de control
+                </p>
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+                  Panel de progreso administrativo
+                </h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Revisa por separado el avance del docente y el rendimiento de los alumnos.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSubTabProgresoAdmin("docente")}
+                  className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                    subTabProgresoAdmin === "docente"
+                      ? "bg-slate-900 text-white shadow"
+                      : "text-slate-600 hover:bg-white"
+                  }`}
+                >
+                  Progreso docente
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSubTabProgresoAdmin("alumnos")}
+                  className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                    subTabProgresoAdmin === "alumnos"
+                      ? "bg-emerald-600 text-white shadow"
+                      : "text-slate-600 hover:bg-white"
+                  }`}
+                >
+                  Progreso alumnos
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {subTabProgresoAdmin === "docente" && (
+            <section className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="border-b border-slate-200 bg-slate-950 px-6 py-6 text-white">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-300">
+                      Gestión docente
+                    </p>
+                    <h4 className="mt-2 text-2xl font-black tracking-tight">
+                      Avance del docente dentro del curso
+                    </h4>
+                    <p className="mt-2 max-w-2xl text-sm text-slate-300">
+                      Mide cuánto ha avanzado el docente en planificación, contenido,
+                      evaluación y gestión del curso.
+                    </p>
+                  </div>
+
+                  <div className="rounded-[22px] border border-white/10 bg-white/10 px-5 py-4 text-center min-w-[170px]">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-300">
+                      Progreso total
+                    </p>
+                    <p className="mt-2 text-4xl font-black">
+                      {Number(progresoDocenteResumen.progresoDocente || 0).toFixed(0)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Módulos</p>
+                    <p className="mt-2 text-2xl font-black text-slate-900">
+                      {progresoDocenteResumen.modulos || 0}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      principales
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Submódulos</p>
+                    <p className="mt-2 text-2xl font-black text-slate-900">
+                      {progresoDocenteResumen.submodulos || 0}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Lecciones</p>
+                    <p className="mt-2 text-2xl font-black text-slate-900">
+                      {progresoDocenteResumen.lecciones || 0}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Materiales</p>
+                    <p className="mt-2 text-2xl font-black text-slate-900">
+                      {progresoDocenteResumen.materiales || 0}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Videos listos</p>
+                    <p className="mt-2 text-2xl font-black text-slate-900">
+                      {progresoDocenteResumen.videosListos || 0}/{progresoDocenteResumen.videos || 0}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Asistencia</p>
+                    <p className="mt-2 text-2xl font-black text-slate-900">
+                      {progresoDocenteResumen.sesionesAsistencia || 0}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">sesiones registradas</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    {
+                      label: "Planificación",
+                      value: Number(progresoDocenteResumen.progresoPlanificacion || 0),
+                      bar: "bg-blue-500",
+                      badge: "bg-blue-100 text-blue-700",
+                    },
+                    {
+                      label: "Contenido",
+                      value: Number(progresoDocenteResumen.progresoContenido || 0),
+                      bar: "bg-cyan-500",
+                      badge: "bg-cyan-100 text-cyan-700",
+                    },
+                    {
+                      label: "Evaluación",
+                      value: Number(progresoDocenteResumen.progresoEvaluacion || 0),
+                      bar: "bg-violet-500",
+                      badge: "bg-violet-100 text-violet-700",
+                    },
+                    {
+                      label: "Gestión",
+                      value: Number(progresoDocenteResumen.progresoGestion || 0),
+                      bar: "bg-amber-500",
+                      badge: "bg-amber-100 text-amber-700",
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-[22px] border border-slate-200 bg-white p-5"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-bold text-slate-800">{item.label}</p>
+                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${item.badge}`}>
+                          {item.value.toFixed(0)}%
+                        </span>
+                      </div>
+
+                      <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${item.bar} transition-all duration-500`}
+                          style={{ width: `${Math.min(item.value, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-sm font-semibold text-slate-700">
+                    Resumen rápido
+                  </p>
+                  <p className="mt-2 text-sm text-slate-500 leading-6">
+                    El progreso docente se construye con la estructura del curso,
+                    materiales cargados, videos listos, evaluaciones creadas y sesiones
+                    con asistencia registrada.
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {subTabProgresoAdmin === "alumnos" && (
+            <section className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="border-b border-emerald-100 bg-emerald-50 px-6 py-6">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-600">
+                      Rendimiento estudiantil
+                    </p>
+                    <h4 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+                      Avance de alumnos dentro del curso
+                    </h4>
+                    <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                      Sigue el avance por tareas, exámenes, videos y asistencia.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">General</p>
+                      <p className="mt-1 text-xl font-black text-slate-900">
+                        {Number(progresoResumen.promedioGeneral || 0).toFixed(0)}%
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">Tareas</p>
+                      <p className="mt-1 text-xl font-black text-blue-700">
+                        {Number(progresoResumen.promedioTareas || 0).toFixed(0)}%
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">Exámenes</p>
+                      <p className="mt-1 text-xl font-black text-violet-700">
+                        {Number(progresoResumen.promedioExamenes || 0).toFixed(0)}%
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">Videos</p>
+                      <p className="mt-1 text-xl font-black text-cyan-700">
+                        {Number(progresoResumen.promedioVideos || 0).toFixed(0)}%
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">Asistencia</p>
+                      <p className="mt-1 text-xl font-black text-amber-700">
+                        {Number(progresoResumen.promedioAsistencia || 0).toFixed(0)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-hidden">
+                <div className="grid grid-cols-12 gap-4 border-b border-slate-200 bg-slate-50 px-5 py-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                  <div className="col-span-12 2xl:col-span-3">Alumno</div>
+                  <div className="col-span-6 md:col-span-3 2xl:col-span-2">Tareas</div>
+                  <div className="col-span-6 md:col-span-3 2xl:col-span-2">Exámenes</div>
+                  <div className="col-span-6 md:col-span-3 2xl:col-span-2">Videos</div>
+                  <div className="col-span-6 md:col-span-3 2xl:col-span-1">Asistencia</div>
+                  <div className="col-span-12 2xl:col-span-2 2xl:text-right">Progreso</div>
+                </div>
+
+                {cargandoProgreso ? (
+                  <div className="space-y-3 p-5">
+                    {[1, 2, 3, 4].map((item) => (
+                      <div
+                        key={item}
+                        className="animate-pulse rounded-2xl border border-slate-200 p-4"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-full bg-slate-200" />
+                            <div className="space-y-2">
+                              <div className="h-4 w-48 rounded bg-slate-200" />
+                              <div className="h-3 w-28 rounded bg-slate-200" />
+                            </div>
+                          </div>
+                          <div className="h-4 w-16 rounded bg-slate-200" />
+                        </div>
+                        <div className="mt-4 h-2 w-full rounded-full bg-slate-200" />
+                      </div>
+                    ))}
+                  </div>
+                ) : alumnosFiltradosProgreso.length === 0 ? (
+                  <div className="p-10 text-center">
+                    <p className="font-semibold text-slate-700">
+                      No hay datos de progreso para mostrar.
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Revisa si el grupo tiene matrículas, tareas, exámenes, videos o asistencia registrada.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {alumnosFiltradosProgreso.map((fila) => {
+                      const porcentaje = Number(fila.progresoGeneral || 0);
+                      const clase = obtenerClaseProgreso(porcentaje);
+
+                      return (
+                        <div
+                          key={fila.idmatricula}
+                          className="px-5 py-5 transition hover:bg-emerald-50/30"
+                        >
+                          <div className="grid grid-cols-12 gap-4 items-center">
+                            <div className="col-span-12 2xl:col-span-3">
+                              <div className="flex items-center gap-3">
+                                <div className="h-12 w-12 overflow-hidden rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center">
+                                  {fila.foto_url ? (
+                                    <img
+                                      src={fila.foto_url}
+                                      alt={fila.nombre}
+                                      className="h-full w-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <span className="text-[11px] text-slate-400">Sin foto</span>
+                                  )}
+                                </div>
+
+                                <div className="min-w-0">
+                                  <p className="truncate text-base font-bold text-slate-900">
+                                    {fila.nombre} {fila.apellido}
+                                  </p>
+                                  <p className="text-sm text-slate-500">
+                                    DNI: {fila.numdocumento || "-"} · Matrícula #{fila.idmatricula}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="col-span-6 md:col-span-3 2xl:col-span-2">
+                              <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Tareas
+                                </p>
+                                <p className="mt-1 text-lg font-bold text-slate-900">
+                                  {fila.tareasEntregadas || 0}/{fila.totalTareas || 0}
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                  {Number(fila.progresoTareas || 0).toFixed(0)}%
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="col-span-6 md:col-span-3 2xl:col-span-2">
+                              <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Exámenes
+                                </p>
+                                <p className="mt-1 text-lg font-bold text-slate-900">
+                                  {fila.examenesRendidos || 0}/{fila.totalExamenes || 0}
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                  {Number(fila.progresoExamenes || 0).toFixed(0)}%
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="col-span-6 md:col-span-3 2xl:col-span-2">
+                              <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Videos
+                                </p>
+                                <p className="mt-1 text-lg font-bold text-slate-900">
+                                  {fila.videosCompletados || 0}/{fila.totalVideos || 0}
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                  {Number(fila.progresoVideos || 0).toFixed(0)}%
+                                </p>
+                                <p className="mt-1 text-[11px] text-slate-400">
+                                  Iniciados: {fila.videosIniciados || 0}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="col-span-6 md:col-span-3 2xl:col-span-1">
+                              <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Asistencia
+                                </p>
+                                <p className="mt-1 text-lg font-bold text-slate-900">
+                                  {Number(fila.progresoAsistencia || 0).toFixed(0)}%
+                                </p>
+                                <p className="text-[11px] text-slate-400 mt-1">
+                                  P:{fila.presentes || 0} · T:{fila.tardanzas || 0} · F:{fila.faltas || 0}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="col-span-12 2xl:col-span-2">
+                              <div className="flex items-center justify-between 2xl:justify-end gap-3">
+                                <span
+                                  className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${clase.badge}`}
+                                >
+                                  {clase.label}
+                                </span>
+                                <span className="text-2xl font-black text-slate-900">
+                                  {porcentaje.toFixed(0)}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4">
+                            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className={`h-full rounded-full ${clase.bar} transition-all duration-500`}
+                                style={{ width: `${Math.min(porcentaje, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
         </div>
       )}
 

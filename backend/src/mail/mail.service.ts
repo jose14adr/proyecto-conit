@@ -101,4 +101,35 @@ export class MailService implements OnModuleInit {
 
     await this.sendMail(correo, 'Se te asignó un curso', html);
   }
+
+  async sendCursoCerradoDocente(
+    nombre: string,
+    correo: string,
+    curso: string,
+    grupo: string,
+  ) {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>Gracias por ser parte de este proceso</h2>
+        <p>Hola ${nombre},</p>
+        <p>
+          El grupo <b>${grupo}</b> del curso <b>${curso}</b> ha finalizado.
+        </p>
+        <p>
+          Queremos agradecerte por tu dedicación, compromiso y por haber formado
+          parte del proceso de aprendizaje de nuestros estudiantes.
+        </p>
+        <p>Valoramos mucho tu aporte.</p>
+        <br />
+        <p>Saludos,<br />Equipo Conit</p>
+      </div>
+    `;
+
+    await this.sendMail(
+      correo,
+      'Gracias por acompañarnos en este curso',
+      html,
+    );
+  }
+
 }

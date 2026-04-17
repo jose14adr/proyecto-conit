@@ -1272,8 +1272,13 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
         totalAlumnos: 0,
         totalTareas: 0,
         totalExamenes: 0,
+        totalVideos: 0,
+        totalVideosListos: 0,
+        totalSesiones: 0,
         promedioTareas: 0,
         promedioExamenes: 0,
+        promedioVideos: 0,
+        promedioAsistencia: 0,
         promedioGeneral: 0,
         alumnosCompletaronTodo: 0,
       },
@@ -1281,7 +1286,9 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     };
   }
 
-  const alumnoIds = [...new Set(matriculasUnicas.map((m) => Number(m.idalumno)).filter(Boolean))];
+  const alumnoIds = [
+    ...new Set(matriculasUnicas.map((m) => Number(m.idalumno)).filter(Boolean)),
+  ];
   const matriculaIds = matriculasUnicas.map((m) => Number(m.id)).filter(Boolean);
 
   const { data: alumnos, error: errAlumnos } = await supabase
@@ -1291,6 +1298,9 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
 
   if (errAlumnos) throw new Error(errAlumnos.message);
 
+  // ======================================================
+  // TAREAS
+  // ======================================================
   const { data: tareasGrupo, error: errTareasGrupo } = await supabase
     .from("tarea")
     .select("id, titulo, idcurso, idgrupo")
@@ -1340,6 +1350,9 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     entregas = respuestasEntregas.flat();
   }
 
+  // ======================================================
+  // EXÁMENES
+  // ======================================================
   const { data: examenes, error: errExamenes } = await supabase
     .from("examen")
     .select("id, idgrupo, titulo, nota_maxima")
@@ -1368,10 +1381,118 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     intentos = respuestasIntentos.flat();
   }
 
+  // ======================================================
+  // VIDEOS DEL CURSO
+  // ======================================================
+  let modulosCurso = [];
+  let leccionesCurso = [];
+  let materialesVideo = [];
+  let progresoMateriales = [];
+
+  if (grupo.idcurso) {
+    const { data: modulos, error: errModulos } = await supabase
+      .from("curso_modulo")
+      .select("id, idcurso")
+      .eq("idcurso", Number(grupo.idcurso));
+
+    if (errModulos) throw new Error(errModulos.message);
+    modulosCurso = modulos || [];
+
+    const moduloIds = modulosCurso.map((m) => Number(m.id)).filter(Boolean);
+
+    if (moduloIds.length > 0) {
+      const respuestasLecciones = await Promise.all(
+        chunkArray(moduloIds, 100).map(async (moduloChunk) => {
+          const { data, error } = await supabase
+            .from("curso_leccion")
+            .select("id, idmodulo")
+            .in("idmodulo", moduloChunk);
+
+          if (error) throw new Error(error.message);
+          return data || [];
+        })
+      );
+
+      leccionesCurso = respuestasLecciones.flat();
+    }
+
+    const leccionIds = leccionesCurso.map((l) => Number(l.id)).filter(Boolean);
+
+    if (leccionIds.length > 0) {
+      const respuestasMateriales = await Promise.all(
+        chunkArray(leccionIds, 100).map(async (leccionChunk) => {
+          const { data, error } = await supabase
+            .from("leccion_material")
+            .select("id, idleccion, tipo, estado_video, titulo")
+            .in("idleccion", leccionChunk)
+            .in("tipo", ["video", "url_video"]);
+
+          if (error) throw new Error(error.message);
+          return data || [];
+        })
+      );
+
+      materialesVideo = respuestasMateriales.flat();
+    }
+
+    const materialIds = materialesVideo.map((m) => Number(m.id)).filter(Boolean);
+
+    if (materialIds.length > 0 && matriculaIds.length > 0) {
+      const respuestasProgresoMaterial = await Promise.all(
+        chunkArray(materialIds, 100).map(async (materialChunk) => {
+          const { data, error } = await supabase
+            .from("alumno_material_progreso")
+            .select(
+              "id, idmatricula, idmaterial, completado, porcentaje_visto, max_segundo_visto"
+            )
+            .in("idmaterial", materialChunk)
+            .in("idmatricula", matriculaIds);
+
+          if (error) throw new Error(error.message);
+          return data || [];
+        })
+      );
+
+      progresoMateriales = respuestasProgresoMaterial.flat();
+    }
+  }
+
+  // ======================================================
+  // ASISTENCIA
+  // IMPORTANTE:
+  // Aquí usamos idcurso = grupoId para mantener compatibilidad con
+  // cómo hoy ya se está guardando/consultando asistencia en la pantalla.
+  // ======================================================
+  let asistencias = [];
+
+  if (alumnoIds.length > 0) {
+    const { data, error } = await supabase
+      .from("asistencia")
+      .select("idalumno, fecha, estado")
+      .eq("idcurso", grupoId)
+      .in("idalumno", alumnoIds);
+
+    if (error) throw new Error(error.message);
+    asistencias = data || [];
+  }
+
+  const fechasAsistenciaUnicas = [
+    ...new Set(
+      (asistencias || [])
+        .map((a) => a.fecha)
+        .filter(Boolean)
+    ),
+  ];
+
+  const totalSesiones = fechasAsistenciaUnicas.length;
+
   const alumnosMap = new Map(
     (alumnos || []).map((alumno) => [Number(alumno.id), alumno])
   );
 
+  // ======================================================
+  // MAPAS DE TAREAS
+  // ======================================================
   const tareasPorMatricula = new Map();
   (entregas || []).forEach((entrega) => {
     const key = Number(entrega.idmatricula);
@@ -1381,6 +1502,9 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     tareasPorMatricula.get(key).add(Number(entrega.idtarea));
   });
 
+  // ======================================================
+  // MAPAS DE EXÁMENES
+  // ======================================================
   const examenesPorMatricula = new Map();
   (intentos || [])
     .filter((intento) => !!intento.finalizado)
@@ -1392,8 +1516,66 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
       examenesPorMatricula.get(key).add(Number(intento.idexamen));
     });
 
+  // ======================================================
+  // MAPAS DE VIDEOS
+  // ======================================================
+  const videosCompletadosPorMatricula = new Map();
+  const videosIniciadosPorMatricula = new Map();
+
+  (progresoMateriales || []).forEach((registro) => {
+    const key = Number(registro.idmatricula);
+    const materialId = Number(registro.idmaterial);
+    const porcentaje = Number(registro.porcentaje_visto || 0);
+    const completo = !!registro.completado || porcentaje >= 80;
+
+    if (!videosIniciadosPorMatricula.has(key)) {
+      videosIniciadosPorMatricula.set(key, new Set());
+    }
+    videosIniciadosPorMatricula.get(key).add(materialId);
+
+    if (completo) {
+      if (!videosCompletadosPorMatricula.has(key)) {
+        videosCompletadosPorMatricula.set(key, new Set());
+      }
+      videosCompletadosPorMatricula.get(key).add(materialId);
+    }
+  });
+
+  // ======================================================
+  // MAPA DE ASISTENCIA POR ALUMNO
+  // ======================================================
+  const asistenciaPorAlumno = new Map();
+
+  (asistencias || []).forEach((registro) => {
+    const alumnoId = Number(registro.idalumno);
+    const estado = String(registro.estado || "").toLowerCase();
+
+    if (!asistenciaPorAlumno.has(alumnoId)) {
+      asistenciaPorAlumno.set(alumnoId, {
+        presentes: 0,
+        tardanzas: 0,
+        faltas: 0,
+      });
+    }
+
+    const fila = asistenciaPorAlumno.get(alumnoId);
+
+    if (estado === "presente") fila.presentes += 1;
+    else if (estado === "tardanza") fila.tardanzas += 1;
+    else if (estado === "falta") fila.faltas += 1;
+  });
+
   const totalTareas = tareaIds.length;
   const totalExamenes = examenIds.length;
+  const totalVideos = materialesVideo.length;
+
+  const totalVideosListos = (materialesVideo || []).filter((material) => {
+    const tipo = String(material.tipo || "").toLowerCase();
+    const estado = String(material.estado_video || "").toLowerCase();
+
+    if (tipo === "url_video") return true;
+    return estado === "available" || estado === "listo";
+  }).length;
 
   const calcularPorcentaje = (completados, total) =>
     total > 0 ? Number(((completados / total) * 100).toFixed(2)) : 0;
@@ -1401,20 +1583,44 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
   const filas = matriculasUnicas.map((matricula) => {
     const alumno = alumnosMap.get(Number(matricula.idalumno));
 
-    const tareasEntregadas = tareasPorMatricula.get(Number(matricula.id))?.size || 0;
-    const examenesRendidos = examenesPorMatricula.get(Number(matricula.id))?.size || 0;
+    const tareasEntregadas =
+      tareasPorMatricula.get(Number(matricula.id))?.size || 0;
+    const examenesRendidos =
+      examenesPorMatricula.get(Number(matricula.id))?.size || 0;
+    const videosCompletados =
+      videosCompletadosPorMatricula.get(Number(matricula.id))?.size || 0;
+    const videosIniciados =
+      videosIniciadosPorMatricula.get(Number(matricula.id))?.size || 0;
+
+    const asistenciaAlumno = asistenciaPorAlumno.get(Number(matricula.idalumno)) || {
+      presentes: 0,
+      tardanzas: 0,
+      faltas: 0,
+    };
+
+    const puntajeAsistencia =
+      Number(asistenciaAlumno.presentes || 0) +
+      Number(asistenciaAlumno.tardanzas || 0) * 0.5;
 
     const progresoTareas = calcularPorcentaje(tareasEntregadas, totalTareas);
     const progresoExamenes = calcularPorcentaje(examenesRendidos, totalExamenes);
+    const progresoVideos = calcularPorcentaje(videosCompletados, totalVideos);
+    const progresoAsistencia = calcularPorcentaje(puntajeAsistencia, totalSesiones);
 
-    let progresoGeneral = 0;
-    if (totalTareas > 0 && totalExamenes > 0) {
-      progresoGeneral = Number(((progresoTareas + progresoExamenes) / 2).toFixed(2));
-    } else if (totalTareas > 0) {
-      progresoGeneral = progresoTareas;
-    } else if (totalExamenes > 0) {
-      progresoGeneral = progresoExamenes;
-    }
+    const componentes = [];
+    if (totalTareas > 0) componentes.push({ valor: progresoTareas, peso: 0.35 });
+    if (totalExamenes > 0) componentes.push({ valor: progresoExamenes, peso: 0.30 });
+    if (totalVideos > 0) componentes.push({ valor: progresoVideos, peso: 0.20 });
+    if (totalSesiones > 0) componentes.push({ valor: progresoAsistencia, peso: 0.15 });
+
+    const pesoTotal = componentes.reduce((acc, item) => acc + item.peso, 0);
+    const sumaPonderada = componentes.reduce(
+      (acc, item) => acc + item.valor * item.peso,
+      0
+    );
+
+    const progresoGeneral =
+      pesoTotal > 0 ? Number((sumaPonderada / pesoTotal).toFixed(2)) : 0;
 
     return {
       idmatricula: Number(matricula.id),
@@ -1425,12 +1631,27 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
       numdocumento: alumno?.numdocumento || "",
       foto_url: alumno?.foto_url || "",
       estado_matricula: matricula?.estado || "",
+
       tareasEntregadas,
       totalTareas,
+      progresoTareas,
+
       examenesRendidos,
       totalExamenes,
-      progresoTareas,
       progresoExamenes,
+
+      videosIniciados,
+      videosCompletados,
+      totalVideos,
+      progresoVideos,
+
+      presentes: Number(asistenciaAlumno.presentes || 0),
+      tardanzas: Number(asistenciaAlumno.tardanzas || 0),
+      faltas: Number(asistenciaAlumno.faltas || 0),
+      puntajeAsistencia,
+      totalSesiones,
+      progresoAsistencia,
+
       progresoGeneral,
     };
   });
@@ -1439,7 +1660,8 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     filas.length > 0
       ? Number(
           (
-            filas.reduce((acc, fila) => acc + Number(fila[campo] || 0), 0) / filas.length
+            filas.reduce((acc, fila) => acc + Number(fila[campo] || 0), 0) /
+            filas.length
           ).toFixed(2)
         )
       : 0;
@@ -1451,14 +1673,257 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
       totalAlumnos: filas.length,
       totalTareas,
       totalExamenes,
+      totalVideos,
+      totalVideosListos,
+      totalSesiones,
       promedioTareas: promedio("progresoTareas"),
       promedioExamenes: promedio("progresoExamenes"),
+      promedioVideos: promedio("progresoVideos"),
+      promedioAsistencia: promedio("progresoAsistencia"),
       promedioGeneral: promedio("progresoGeneral"),
-      alumnosCompletaronTodo: filas.filter((fila) => Number(fila.progresoGeneral) >= 100).length,
+      alumnosCompletaronTodo: filas.filter((fila) => {
+        const cumpleTareas = fila.totalTareas === 0 || fila.progresoTareas >= 100;
+        const cumpleExamenes = fila.totalExamenes === 0 || fila.progresoExamenes >= 100;
+        const cumpleVideos = fila.totalVideos === 0 || fila.progresoVideos >= 100;
+        const cumpleAsistencia = fila.totalSesiones === 0 || fila.progresoAsistencia >= 100;
+
+        return cumpleTareas && cumpleExamenes && cumpleVideos && cumpleAsistencia;
+      }).length,
     },
     alumnos: filas.sort((a, b) =>
-      `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`, "es")
+      `${a.apellido} ${a.nombre}`.localeCompare(
+        `${b.apellido} ${b.nombre}`,
+        "es"
+      )
     ),
+  };
+};
+
+
+
+export const getProgresoDocenteByGrupo = async (idgrupo) => {
+  const grupoId = Number(idgrupo);
+
+  if (!grupoId) {
+    throw new Error("Grupo inválido para calcular el progreso docente.");
+  }
+
+  const { data: grupo, error: errGrupo } = await supabase
+    .from("grupo")
+    .select("id, idcurso, nombregrupo")
+    .eq("id", grupoId)
+    .maybeSingle();
+
+  if (errGrupo) throw new Error(errGrupo.message);
+  if (!grupo) throw new Error("No se encontró el grupo.");
+
+  // =========================================
+  // MÓDULOS / SUBMÓDULOS
+  // =========================================
+  let modulosCurso = [];
+  if (grupo.idcurso) {
+    const { data, error } = await supabase
+      .from("curso_modulo")
+      .select("id, idcurso, idpadre")
+      .eq("idcurso", Number(grupo.idcurso))
+      .order("orden", { ascending: true })
+      .order("id", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    modulosCurso = data || [];
+  }
+
+  const modulosPrincipales = modulosCurso.filter((m) => !m.idpadre);
+  const submodulos = modulosCurso.filter((m) => !!m.idpadre);
+  const moduloIds = modulosCurso.map((m) => Number(m.id)).filter(Boolean);
+
+  // =========================================
+  // LECCIONES
+  // =========================================
+  let lecciones = [];
+  if (moduloIds.length > 0) {
+    const respuestasLecciones = await Promise.all(
+      chunkArray(moduloIds, 100).map(async (moduloChunk) => {
+        const { data, error } = await supabase
+          .from("curso_leccion")
+          .select("id, idmodulo")
+          .in("idmodulo", moduloChunk);
+
+        if (error) throw new Error(error.message);
+        return data || [];
+      })
+    );
+
+    lecciones = respuestasLecciones.flat();
+  }
+
+  const leccionIds = lecciones.map((l) => Number(l.id)).filter(Boolean);
+
+  // =========================================
+  // MATERIALES / VIDEOS
+  // =========================================
+  let materiales = [];
+  if (leccionIds.length > 0) {
+    const respuestasMateriales = await Promise.all(
+      chunkArray(leccionIds, 100).map(async (leccionChunk) => {
+        const { data, error } = await supabase
+          .from("leccion_material")
+          .select("id, idleccion, tipo, estado_video")
+          .in("idleccion", leccionChunk);
+
+        if (error) throw new Error(error.message);
+        return data || [];
+      })
+    );
+
+    materiales = respuestasMateriales.flat();
+  }
+
+  const videos = materiales.filter((m) => {
+    const tipo = String(m.tipo || "").toLowerCase();
+    return tipo === "video" || tipo === "url_video";
+  });
+
+  const videosListos = videos.filter((m) => {
+    const tipo = String(m.tipo || "").toLowerCase();
+    const estado = String(m.estado_video || "").toLowerCase();
+
+    if (tipo === "url_video") return true;
+    return estado === "available" || estado === "listo";
+  });
+
+  // =========================================
+  // TAREAS
+  // =========================================
+  const { data: tareasGrupo, error: errTareasGrupo } = await supabase
+    .from("tarea")
+    .select("id, idcurso, idgrupo")
+    .eq("idgrupo", grupoId);
+
+  if (errTareasGrupo) throw new Error(errTareasGrupo.message);
+
+  let tareasSinGrupo = [];
+  if (grupo.idcurso) {
+    const { data, error } = await supabase
+      .from("tarea")
+      .select("id, idcurso, idgrupo")
+      .eq("idcurso", Number(grupo.idcurso))
+      .is("idgrupo", null);
+
+    if (error) throw new Error(error.message);
+    tareasSinGrupo = data || [];
+  }
+
+  const tareas = Array.from(
+    new Map(
+      [...(tareasGrupo || []), ...tareasSinGrupo].map((t) => [Number(t.id), t])
+    ).values()
+  );
+
+  // =========================================
+  // EXÁMENES
+  // =========================================
+  const { data: examenes, error: errExamenes } = await supabase
+    .from("examen")
+    .select("id, idgrupo")
+    .eq("idgrupo", grupoId);
+
+  if (errExamenes) throw new Error(errExamenes.message);
+
+  // =========================================
+  // ASISTENCIA
+  // Compatibilidad con cómo hoy se usa en la vista
+  // =========================================
+  let asistencias = [];
+  {
+    const { data, error } = await supabase
+      .from("asistencia")
+      .select("fecha")
+      .eq("idcurso", grupoId);
+
+    if (error) throw new Error(error.message);
+    asistencias = data || [];
+  }
+
+  const sesionesAsistencia = [
+    ...new Set((asistencias || []).map((a) => a.fecha).filter(Boolean)),
+  ].length;
+
+  // =========================================
+  // CÁLCULOS DE PROGRESO DOCENTE
+  // Primera versión: avance del curso armado/gestionado
+  // =========================================
+  const puntajeModulos =
+    modulosPrincipales.length > 0
+      ? Math.min(modulosPrincipales.length * 25, 100)
+      : 0;
+
+  const puntajeSubmodulos =
+    submodulos.length > 0 ? Math.min(submodulos.length * 15, 100) : 0;
+
+  const puntajeLecciones =
+    lecciones.length > 0 ? Math.min(lecciones.length * 10, 100) : 0;
+
+  const progresoPlanificacion = Number(
+    ((puntajeModulos + puntajeSubmodulos + puntajeLecciones) / 3).toFixed(2)
+  );
+
+  const puntajeMateriales =
+    materiales.length > 0 ? Math.min(materiales.length * 5, 100) : 0;
+
+  const puntajeVideos =
+    videos.length > 0 ? Math.min(videos.length * 15, 100) : 0;
+
+  const puntajeVideosListos =
+    videos.length > 0
+      ? Number(((videosListos.length / videos.length) * 100).toFixed(2))
+      : 0;
+
+  const progresoContenido = Number(
+    ((puntajeMateriales + puntajeVideos + puntajeVideosListos) / 3).toFixed(2)
+  );
+
+  const puntajeTareas =
+    tareas.length > 0 ? Math.min(tareas.length * 20, 100) : 0;
+
+  const puntajeExamenes =
+    (examenes || []).length > 0 ? Math.min(examenes.length * 30, 100) : 0;
+
+  const progresoEvaluacion = Number(
+    ((puntajeTareas + puntajeExamenes) / 2).toFixed(2)
+  );
+
+  const progresoGestion =
+    sesionesAsistencia > 0 ? Math.min(sesionesAsistencia * 15, 100) : 0;
+
+  const progresoDocente = Number(
+    (
+      progresoPlanificacion * 0.3 +
+      progresoContenido * 0.3 +
+      progresoEvaluacion * 0.25 +
+      progresoGestion * 0.15
+    ).toFixed(2)
+  );
+
+  return {
+    grupoId,
+    cursoId: Number(grupo.idcurso) || null,
+    resumen: {
+      modulos: modulosPrincipales.length,
+      submodulos: submodulos.length,
+      lecciones: lecciones.length,
+      materiales: materiales.length,
+      videos: videos.length,
+      videosListos: videosListos.length,
+      tareas: tareas.length,
+      examenes: (examenes || []).length,
+      sesionesAsistencia,
+      progresoPlanificacion,
+      progresoContenido,
+      progresoEvaluacion,
+      progresoGestion,
+      progresoDocente,
+    },
   };
 };
 

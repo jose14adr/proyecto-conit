@@ -43,6 +43,7 @@ import { MailModule } from './mail/mail.module';
 import { S3Service } from './s3/s3.service';
 import { S3Module } from './s3/s3.module';
 import { CertificadoModule } from './certificado/certificado.module';
+import { AlumnoMaterialProgresoModule } from './alumno-material-progreso/alumno-material-progreso.module';
 
 @Module({
   imports: [
@@ -112,6 +113,7 @@ import { CertificadoModule } from './certificado/certificado.module';
     MailModule,
     S3Module,
     CertificadoModule,
+    AlumnoMaterialProgresoModule,
   ],
 
   controllers: [AppController],

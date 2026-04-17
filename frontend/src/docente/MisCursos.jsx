@@ -124,15 +124,15 @@ function MisCursos() {
   // ==============================
   // Navegación
   // ==============================
-  const irACurso = (cursoId) => {
-    navigate(`/docente/cursos/${cursoId}`)
+  const irACurso = (grupoId) => {
+    navigate(`/docente/cursos/${grupoId}`)
   }
 
   const seleccionarCurso = (curso) => {
     setQuery(curso.nombre || "")
     setOpen(false)
     setActiveIndex(-1)
-    irACurso(curso.id)
+    irACurso(curso.idgrupo)
   }
 
   // ==============================
@@ -299,7 +299,7 @@ function MisCursos() {
 
                   return (
                     <button
-                      key={c.id}
+                      key={c.idgrupo}
                       type="button"
                       onMouseEnter={() => setActiveIndex(idx)}
                       onClick={() => seleccionarCurso(c)}
@@ -385,8 +385,8 @@ function MisCursos() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {cursosFiltrados.map((c) => (
               <button
-                key={c.id}
-                onClick={() => irACurso(c.id)}
+                key={c.idgrupo}
+                onClick={() => irACurso(c.idgrupo)}
                 className="group text-left rounded-3xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-lg hover:border-blue-300 transition-all duration-200"
               >
                 <div className="flex items-start justify-between gap-3">
