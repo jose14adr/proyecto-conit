@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { randomBytes } from 'crypto';
 import { Alumno } from './entities/alumno.entity';
 import { Usuario } from 'src/usuario/entities/usuario.entity';
 import * as bcrypt from 'bcrypt';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AlumnoService {
@@ -13,6 +15,7 @@ export class AlumnoService {
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
   ) {}
 
   async findAll() {
@@ -32,71 +35,125 @@ export class AlumnoService {
   }
 
   async create(data: any) {
-    return await this.dataSource.transaction(async (manager) => {
+    // 1. Ejecutamos la transacción en la base de datos
+    const resultado = await this.dataSource.transaction(async (manager) => {
       const { contrasenia, crearUsuario, ...datosAlumno } = data;
 
-      let usuarioCreadoId: number | null = null;
+      let usuarioCreado: Usuario | null = null;
 
-      // 1. Crear usuario
+      // Crear credenciales y tokens si se solicita
       if (crearUsuario && contrasenia) {
         const hashedPassword = await bcrypt.hash(contrasenia, 10);
+        const token = randomBytes(32).toString('hex');
+        const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-        const nuevoUsuario = await manager.save(
+        usuarioCreado = await manager.save(
           manager.create(Usuario, {
             correo: datosAlumno.correo,
-            contrasenia: hashedPassword,
+            contrasenia: hashedPassword, // ¡Hasheada!
             rol: 'ALUMNO',
             idempresa: 1,
+            emailVerificado: false,
+            tokenVerificacion: token,
+            tokenVerificacionExpira: expiracion,
           }),
         );
-        usuarioCreadoId = nuevoUsuario.id;
       }
 
-      // 2. Crear alumno
+      // Crear el perfil del alumno
       const alumnoParams: any = {
         ...datosAlumno,
         nombre_editado: true,
       };
 
-      if (usuarioCreadoId) {
-        alumnoParams.idusuario = usuarioCreadoId;
+      if (usuarioCreado) {
+        alumnoParams.idusuario = usuarioCreado.id;
       }
 
       const alumno = manager.create(Alumno, alumnoParams);
-      return await manager.save(alumno);
+      const alumnoGuardado = await manager.save(alumno);
+
+      return { alumnoGuardado, usuarioCreado };
     });
+
+    // 2. Enviar el correo de verificación (Fuera de la transacción por si el correo falla)
+    if (resultado.usuarioCreado?.tokenVerificacion) {
+      try {
+        await this.mailService.sendEmailVerificacion(
+          resultado.alumnoGuardado.nombre || 'Alumno',
+          resultado.usuarioCreado.correo,
+          resultado.usuarioCreado.tokenVerificacion,
+        );
+      } catch (error) {
+        console.error(
+          'No se pudo enviar el correo de verificación al alumno',
+          error,
+        );
+      }
+    }
+
+    return resultado.alumnoGuardado;
   }
 
   async update(id: number, data: any) {
-    return await this.dataSource.transaction(async (manager) => {
+    // 1. Transacción de base de datos
+    const resultado = await this.dataSource.transaction(async (manager) => {
       const alumno = await manager.findOne(Alumno, { where: { id } });
       if (!alumno) throw new NotFoundException('Alumno no encontrado');
 
       const { crearUsuario, contrasenia, ...datosActualizar } = data;
+      let nuevoUsuario: Usuario | null = null;
 
+      // Si se edita el alumno y deciden crearle su usuario
       if (crearUsuario && contrasenia && !alumno.idusuario) {
         const hashedPassword = await bcrypt.hash(contrasenia, 10);
+        const token = randomBytes(32).toString('hex');
+        const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-        const nuevoUsuario = await manager.save(
+        nuevoUsuario = await manager.save(
           manager.create(Usuario, {
             correo: datosActualizar.correo || alumno.correo,
             contrasenia: hashedPassword,
             rol: 'ALUMNO',
             idempresa: 1,
+            emailVerificado: false,
+            tokenVerificacion: token,
+            tokenVerificacionExpira: expiracion,
           }),
         );
         datosActualizar.idusuario = nuevoUsuario.id;
       }
 
       await manager.update(Alumno, id, datosActualizar);
-      return await manager.findOne(Alumno, { where: { id } });
+      const alumnoActualizado = await manager.findOne(Alumno, {
+        where: { id },
+      });
+
+      return { alumnoActualizado, nuevoUsuario };
     });
+
+    if (resultado.nuevoUsuario?.tokenVerificacion) {
+      try {
+        await this.mailService.sendEmailVerificacion(
+          resultado.alumnoActualizado?.nombre || 'Alumno',
+          resultado.nuevoUsuario.correo,
+          resultado.nuevoUsuario.tokenVerificacion,
+        );
+      } catch (error) {
+        console.error(
+          'No se pudo enviar el correo de verificación al alumno',
+          error,
+        );
+      }
+    }
+
+    return resultado.alumnoActualizado;
   }
 
   async remove(id: number) {
     await this.alumnoRepository.update(id, { estado: false });
 
-    // Inhabilitamos también su usuario
+    // Inhabilitamos también su usuario para revocar acceso
     const alumno = await this.findOne(id);
     if (alumno.idusuario) {
       await this.usuarioRepository.update(alumno.idusuario, { estado: false });
@@ -108,6 +165,7 @@ export class AlumnoService {
   async habilitar(id: number) {
     await this.alumnoRepository.update(id, { estado: true });
 
+    // Habilitar credenciales
     const alumno = await this.findOne(id);
     if (alumno.idusuario) {
       await this.usuarioRepository.update(alumno.idusuario, { estado: true });

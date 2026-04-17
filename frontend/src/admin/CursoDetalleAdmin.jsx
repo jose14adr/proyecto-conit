@@ -2,7 +2,16 @@ import { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
+import XLSX from "xlsx-js-style";
+import toast from "react-hot-toast";
 import autoTable from "jspdf-autotable";
+
+// Importaciones de Admin
+import { obtenerCursoPorId } from "../services/curso.service";
+import { obtenerGruposPorCurso } from "../services/grupo.service";
+import { obtenerAlumnosPorCursoAdmin } from "../services/matricula.service";
+
+// Importaciones de Docente (Gestión académica)
 import {
   guardarAsistenciaCurso,
   getAsistenciaCursoPorFecha,
@@ -31,7 +40,18 @@ import {
   guardarNotaEntregaYRegistro,
   getEvaluacionesTareaDisponiblesByGrupo,
   asignarEvaluacionATarea,
+  getMaterialLeccionDownloadUrl,
+  crearExamen,
+  getExamenesByLeccion,
+  getExamenDetalle,
+  getEvaluacionesExamenDisponiblesByGrupo,
+  asignarEvaluacionAExamen,
+  deleteExamen,
+  actualizarExamen,
+  getSesionesVivoByCurso,
+  crearSesionVivo,
 } from "../services/docenteService";
+
 import {
   DndContext,
   PointerSensor,
@@ -48,10 +68,10 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { obtenerCursoPorId } from "../services/curso.service";
-import { obtenerGruposPorCurso } from "../services/grupo.service";
-import { obtenerAlumnosPorCursoAdmin } from "../services/matricula.service";
 
+// ==========================================
+// DND-KIT: COMPONENTES SORTABLE
+// ==========================================
 function SortableModuloItem({ modulo, children }) {
   const {
     attributes,
@@ -202,22 +222,28 @@ function SortableMaterialItem({ material, children }) {
   );
 }
 
+// ==========================================
+// VIMEO & YOUTUBE UTILS
+// ==========================================
 const getYoutubeEmbedUrl = (url) => {
   if (!url) return null;
   const regExp =
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/i;
   const match = url.match(regExp);
-  return match?.[1] ? `https://www.youtube.com/embed/${match[1]}` : null;
+  if (!match?.[1]) return null;
+  return `https://www.youtube.com/embed/${match[1]}`;
 };
 
 const getVimeoEmbedUrl = (url) => {
   if (!url) return null;
   const match = url.match(/(?:vimeo\.com\/(?:video\/)?)(\d+)/i);
-  return match?.[1] ? `https://player.vimeo.com/video/${match[1]}` : null;
+  if (!match?.[1]) return null;
+  return `https://player.vimeo.com/video/${match[1]}`;
 };
 
-const getEmbedVideoUrl = (url) =>
-  getYoutubeEmbedUrl(url) || getVimeoEmbedUrl(url) || null;
+const getEmbedVideoUrl = (url) => {
+  return getYoutubeEmbedUrl(url) || getVimeoEmbedUrl(url) || null;
+};
 
 function VideoEmbed({ url }) {
   const embedUrl = getEmbedVideoUrl(url);
@@ -246,6 +272,136 @@ function VideoEmbed({ url }) {
   );
 }
 
+// ==========================================
+// CONSTANTES EXÁMENES
+// ==========================================
+const TIPOS_PREGUNTA_CON_OPCIONES = ["unica", "multiple"];
+const TIPOS_PREGUNTA_TEXTO = ["texto_corto", "texto_largo"];
+
+const obtenerDefaultsPorTipoPregunta = (tipo) => {
+  switch (tipo) {
+    case "texto_corto":
+      return {
+        max_caracteres: 50,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Escribe una respuesta corta",
+      };
+    case "texto_largo":
+      return {
+        max_caracteres: 200,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Escribe una respuesta más extensa",
+      };
+    case "numerica":
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "Ingresa un número",
+      };
+    case "archivo":
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "pdf,jpg,png,doc,docx",
+        texto_placeholder: "Sube tu archivo",
+      };
+    default:
+      return {
+        max_caracteres: null,
+        permitir_decimales: true,
+        tamano_max_mb: 10,
+        extensiones_permitidas: "",
+        texto_placeholder: "",
+      };
+  }
+};
+
+const crearPreguntaVacia = (tipo = "unica") => ({
+  enunciado: "",
+  puntaje: 1,
+  tipo_pregunta: tipo,
+  respuesta_texto: "",
+  texto_placeholder: obtenerDefaultsPorTipoPregunta(tipo).texto_placeholder,
+  max_caracteres: obtenerDefaultsPorTipoPregunta(tipo).max_caracteres,
+  permitir_decimales: obtenerDefaultsPorTipoPregunta(tipo).permitir_decimales,
+  tamano_max_mb: obtenerDefaultsPorTipoPregunta(tipo).tamano_max_mb,
+  extensiones_permitidas:
+    obtenerDefaultsPorTipoPregunta(tipo).extensiones_permitidas,
+  opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
+    ? [
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+        { texto: "", es_correcta: false },
+      ]
+    : [],
+});
+
+const crearExamenVacio = () => ({
+  id: null,
+  titulo: "",
+  descripcion: "",
+  duracion_minutos: 30,
+  intentos_permitidos: 1,
+  nota_maxima: 20,
+  preguntas: [crearPreguntaVacia()],
+});
+
+const normalizarPreguntaExamen = (pregunta = {}) => {
+  const tipo = pregunta.tipo_pregunta || "unica";
+  const defaults = obtenerDefaultsPorTipoPregunta(tipo);
+
+  return {
+    id: pregunta.id || null,
+    enunciado: pregunta.enunciado || "",
+    puntaje: Number(pregunta.puntaje || 1),
+    tipo_pregunta: tipo,
+    respuesta_texto: pregunta.respuesta_texto || "",
+    texto_placeholder:
+      pregunta.texto_placeholder !== undefined &&
+      pregunta.texto_placeholder !== null
+        ? pregunta.texto_placeholder
+        : defaults.texto_placeholder,
+    max_caracteres:
+      pregunta.max_caracteres !== undefined && pregunta.max_caracteres !== null
+        ? Number(pregunta.max_caracteres)
+        : defaults.max_caracteres,
+    permitir_decimales:
+      pregunta.permitir_decimales !== undefined &&
+      pregunta.permitir_decimales !== null
+        ? !!pregunta.permitir_decimales
+        : defaults.permitir_decimales,
+    tamano_max_mb:
+      pregunta.tamano_max_mb !== undefined && pregunta.tamano_max_mb !== null
+        ? Number(pregunta.tamano_max_mb)
+        : defaults.tamano_max_mb,
+    extensiones_permitidas:
+      pregunta.extensiones_permitidas !== undefined &&
+      pregunta.extensiones_permitidas !== null
+        ? pregunta.extensiones_permitidas
+        : defaults.extensiones_permitidas,
+    opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
+      ? (pregunta.opciones || []).length > 0
+        ? (pregunta.opciones || []).map((opcion) => ({
+            id: opcion.id || null,
+            texto: opcion.texto || "",
+            es_correcta: !!opcion.es_correcta,
+          }))
+        : crearPreguntaVacia(tipo).opciones
+      : [],
+  };
+};
+
+// ==========================================
+// COMPONENTE PRINCIPAL
+// ==========================================
 export default function CursoDetalleAdmin() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -253,17 +409,16 @@ export default function CursoDetalleAdmin() {
   const [curso, setCurso] = useState(null);
   const [alumnos, setAlumnos] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [tabActiva, setTabActiva] = useState("resumen");
   const hoy = new Date().toISOString().slice(0, 10);
 
-  // Asistencia
+  // ASISTENCIA
   const [fechaAsistencia, setFechaAsistencia] = useState(hoy);
   const [asistenciaMap, setAsistenciaMap] = useState({});
   const [busquedaAsistencia, setBusquedaAsistencia] = useState("");
   const [filtroAsistencia, setFiltroAsistencia] = useState("todos");
 
-  // Tareas
+  // TAREAS
   const [mostrarFormTarea, setMostrarFormTarea] = useState(false);
   const [guardandoTarea, setGuardandoTarea] = useState(false);
   const [cargandoTareas, setCargandoTareas] = useState(false);
@@ -286,7 +441,7 @@ export default function CursoDetalleAdmin() {
   });
   const [moduloDestinoTarea, setModuloDestinoTarea] = useState(null);
 
-  // Módulos
+  // MÓDULOS
   const [modulos, setModulos] = useState([]);
   const [modulosOrdenados, setModulosOrdenados] = useState([]);
   const [cargandoModulos, setCargandoModulos] = useState(false);
@@ -303,13 +458,43 @@ export default function CursoDetalleAdmin() {
   const [guardandoLeccion, setGuardandoLeccion] = useState(false);
   const [formLeccion, setFormLeccion] = useState({});
 
+  // MATERIALES & VIDEOS
   const [mostrarMateriales, setMostrarMateriales] = useState({});
   const [mostrarFormMaterial, setMostrarFormMaterial] = useState({});
   const [guardandoMaterial, setGuardandoMaterial] = useState(false);
   const [formMaterial, setFormMaterial] = useState({});
   const [subidaMaterialProgress, setSubidaMaterialProgress] = useState({});
   const [subidaMaterialEstado, setSubidaMaterialEstado] = useState({});
+  const [notificacionesVideo, setNotificacionesVideo] = useState([]);
 
+  // EXAMENES
+  const [mostrarFormExamen, setMostrarFormExamen] = useState({});
+  const [guardandoExamen, setGuardandoExamen] = useState(false);
+  const [formExamen, setFormExamen] = useState({});
+  const [configExamenOpen, setConfigExamenOpen] = useState(false);
+  const [examenConfigActual, setExamenConfigActual] = useState(null);
+  const [evaluacionesExamenDisponibles, setEvaluacionesExamenDisponibles] =
+    useState([]);
+  const [evaluacionSeleccionadaExamen, setEvaluacionSeleccionadaExamen] =
+    useState("");
+  const [cargandoConfigExamen, setCargandoConfigExamen] = useState(false);
+  const [guardandoConfigExamen, setGuardandoConfigExamen] = useState(false);
+  const [examenEditandoId, setExamenEditandoId] = useState(null);
+  const [leccionExamenEditandoId, setLeccionExamenEditandoId] = useState(null);
+
+  // SESIONES EN VIVO
+  const [sesionesVivo, setSesionesVivo] = useState([]);
+  const [cargandoSesionesVivo, setCargandoSesionesVivo] = useState(false);
+  const [mostrarFormSesionVivo, setMostrarFormSesionVivo] = useState(false);
+  const [guardandoSesionVivo, setGuardandoSesionVivo] = useState(false);
+  const [formSesionVivo, setFormSesionVivo] = useState({
+    titulo: "",
+    descripcion: "",
+    fecha: "",
+    duracion: 60,
+  });
+
+  // SENSORES DND-KIT
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
@@ -317,6 +502,7 @@ export default function CursoDetalleAdmin() {
     }),
   );
 
+  // EDICIÓN
   const [editandoModuloId, setEditandoModuloId] = useState(null);
   const [formEditarModulo, setFormEditarModulo] = useState({
     titulo: "",
@@ -350,12 +536,20 @@ export default function CursoDetalleAdmin() {
   const [cargandoConfigTarea, setCargandoConfigTarea] = useState(false);
   const [guardandoConfigTarea, setGuardandoConfigTarea] = useState(false);
 
+  // ==============================
+  // EFECTOS (CARGA DE DATOS)
+  // ==============================
+  const showMessage = (tipo, texto) => {
+    if (tipo === "success") toast.success(texto);
+    else toast.error(texto);
+  };
+
   const exportarPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
     doc.text("Reporte de Asistencia", 14, 15);
     doc.setFontSize(11);
-    doc.text(`Curso: ${curso?.nombre || ""}`, 14, 22);
+    doc.text(`Curso: ${curso?.nombre || curso?.nombrecurso || ""}`, 14, 22);
     doc.text(`Fecha: ${fechaAsistencia}`, 14, 28);
     const rows = alumnos.map((a) => {
       const key = a.idalumno || a.id;
@@ -376,11 +570,253 @@ export default function CursoDetalleAdmin() {
     doc.save(`asistencia_${curso?.nombre || "curso"}_${fechaAsistencia}.pdf`);
   };
 
+  const exportarExcel = () => {
+    const totalAlumnos = alumnosFiltradosAsistencia.length;
+    const totalPresentes = alumnosFiltradosAsistencia.filter((a) => {
+      const key = a.idalumno || a.id;
+      return asistenciaMap[key]?.estado === "presente";
+    }).length;
+
+    const totalTardanzas = alumnosFiltradosAsistencia.filter((a) => {
+      const key = a.idalumno || a.id;
+      return asistenciaMap[key]?.estado === "tardanza";
+    }).length;
+
+    const totalFaltas = alumnosFiltradosAsistencia.filter((a) => {
+      const key = a.idalumno || a.id;
+      return asistenciaMap[key]?.estado === "falta";
+    }).length;
+
+    const totalSinRegistro = alumnosFiltradosAsistencia.filter((a) => {
+      const key = a.idalumno || a.id;
+      return !asistenciaMap[key]?.estado;
+    }).length;
+
+    const wsData = [
+      ["REPORTE DE ASISTENCIA"],
+      [""],
+      ["DATOS DEL CURSO"],
+      ["Curso", curso?.nombre || curso?.nombrecurso || ""],
+      ["Grupo", curso?.grupo || "Sin grupo"],
+      ["Horario", curso?.horario || "Sin horario"],
+      ["Fecha consultada", fechaAsistencia],
+      [""],
+      ["RESUMEN"],
+      ["Total alumnos", totalAlumnos],
+      ["Presentes", totalPresentes],
+      ["Tardanzas", totalTardanzas],
+      ["Faltas", totalFaltas],
+      ["Sin registro", totalSinRegistro],
+      [""],
+      ["DETALLE DE ASISTENCIA"],
+      ["N°", "Alumno", "DNI", "Estado", "Justificación", "Observación"],
+      ...alumnosFiltradosAsistencia.map((a, index) => {
+        const key = a.idalumno || a.id;
+        const asistencia = asistenciaMap[key] || {};
+        return [
+          index + 1,
+          `${a.nombre || ""} ${a.apellido || ""}`.trim(),
+          a.numdocumento || "-",
+          asistencia.estado || "Sin registro",
+          asistencia.tipo_justificacion || "-",
+          asistencia.observacion || "-",
+        ];
+      }),
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    ws["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 5 } },
+      { s: { r: 8, c: 0 }, e: { r: 8, c: 5 } },
+      { s: { r: 15, c: 0 }, e: { r: 15, c: 5 } },
+    ];
+
+    ws["!cols"] = [
+      { wch: 8 },
+      { wch: 30 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 18 },
+      { wch: 35 },
+    ];
+
+    const borderAll = {
+      top: { style: "thin", color: { rgb: "D1D5DB" } },
+      bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+      left: { style: "thin", color: { rgb: "D1D5DB" } },
+      right: { style: "thin", color: { rgb: "D1D5DB" } },
+    };
+
+    const styleTitle = {
+      font: { bold: true, sz: 16, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: "1E3A8A" } },
+      alignment: { horizontal: "center", vertical: "center" },
+    };
+
+    const styleSection = {
+      font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: "2563EB" } },
+      alignment: { horizontal: "left", vertical: "center" },
+      border: borderAll,
+    };
+
+    const styleLabel = {
+      font: { bold: true, color: { rgb: "111827" } },
+      fill: { fgColor: { rgb: "E5E7EB" } },
+      border: borderAll,
+    };
+
+    const styleValue = {
+      border: borderAll,
+      alignment: { vertical: "center" },
+    };
+
+    const styleHeader = {
+      font: { bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: "0F766E" } },
+      alignment: { horizontal: "center", vertical: "center" },
+      border: borderAll,
+    };
+
+    const styleCell = {
+      border: borderAll,
+      alignment: { vertical: "center", wrapText: true },
+    };
+
+    const styleCentered = {
+      border: borderAll,
+      alignment: { horizontal: "center", vertical: "center" },
+    };
+
+    // Título
+    ws["A1"].s = styleTitle;
+
+    // Secciones
+    ws["A3"].s = styleSection;
+    ws["A9"].s = styleSection;
+    ws["A16"].s = styleSection;
+
+    // Datos del curso
+    ["A4", "A5", "A6", "A7"].forEach((cell) => {
+      if (ws[cell]) ws[cell].s = styleLabel;
+    });
+    ["B4", "B5", "B6", "B7"].forEach((cell) => {
+      if (ws[cell]) ws[cell].s = styleValue;
+    });
+
+    // Resumen
+    ["A10", "A11", "A12", "A13", "A14"].forEach((cell) => {
+      if (ws[cell]) ws[cell].s = styleLabel;
+    });
+    ["B10", "B11", "B12", "B13", "B14"].forEach((cell) => {
+      if (ws[cell]) ws[cell].s = styleCentered;
+    });
+
+    // Encabezado tabla
+    ["A17", "B17", "C17", "D17", "E17", "F17"].forEach((cell) => {
+      if (ws[cell]) ws[cell].s = styleHeader;
+    });
+
+    // Filas de detalle
+    for (let row = 18; row < 18 + alumnosFiltradosAsistencia.length; row++) {
+      if (ws[`A${row}`]) ws[`A${row}`].s = styleCentered;
+      if (ws[`B${row}`]) ws[`B${row}`].s = styleCell;
+      if (ws[`C${row}`]) ws[`C${row}`].s = styleCentered;
+      if (ws[`D${row}`]) ws[`D${row}`].s = styleCentered;
+      if (ws[`E${row}`]) ws[`E${row}`].s = styleCentered;
+      if (ws[`F${row}`]) ws[`F${row}`].s = styleCell;
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
+
+    XLSX.writeFile(
+      wb,
+      `asistencia_${curso?.nombre || curso?.nombrecurso || "curso"}_${fechaAsistencia}.xlsx`,
+    );
+  };
+
+  const cargarTareasCurso = async () => {
+    try {
+      setCargandoTareas(true);
+      const data = await getTareasByCurso(id);
+      setTareas(data || []);
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudieron cargar las tareas",
+      );
+    } finally {
+      setCargandoTareas(false);
+    }
+  };
+
+  const handleDragEndTareas = async (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = tareasOrdenadas.findIndex(
+      (item) => `tarea-${item.id}` === String(active.id),
+    );
+    const newIndex = tareasOrdenadas.findIndex(
+      (item) => `tarea-${item.id}` === String(over.id),
+    );
+    if (oldIndex === -1 || newIndex === -1) return;
+    const nuevaLista = arrayMove(tareasOrdenadas, oldIndex, newIndex);
+    setTareasOrdenadas(nuevaLista);
+    try {
+      await moverTareaOrden(nuevaLista);
+      await cargarTareasCurso();
+    } catch (error) {
+      showMessage("error", error?.message || "No se pudo reordenar las tareas");
+      await cargarTareasCurso();
+    }
+  };
+
+  const cargarModulosCurso = async () => {
+    try {
+      setCargandoModulos(true);
+      const modulosData = await getModulosByCurso(id);
+      const modulosConDetalle = await Promise.all(
+        (modulosData || []).map(async (modulo) => {
+          const submodulosConDetalle = await Promise.all(
+            (modulo.submodulos || []).map(async (submodulo) => {
+              const lecciones = await getLeccionesByModulo(submodulo.id);
+              const leccionesConMateriales = await Promise.all(
+                (lecciones || []).map(async (leccion) => {
+                  const [materiales, examenes] = await Promise.all([
+                    getMaterialesByLeccion(leccion.id),
+                    getExamenesByLeccion(leccion.id),
+                  ]);
+                  return {
+                    ...leccion,
+                    materiales: materiales || [],
+                    examenes: examenes || [],
+                  };
+                }),
+              );
+              return { ...submodulo, lecciones: leccionesConMateriales || [] };
+            }),
+          );
+          return { ...modulo, submodulos: submodulosConDetalle || [] };
+        }),
+      );
+      setModulos(modulosConDetalle);
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudieron cargar los módulos",
+      );
+    } finally {
+      setCargandoModulos(false);
+    }
+  };
+
   useEffect(() => {
     const cargarDatos = async () => {
       try {
         setLoading(true);
-
         let cursoData = null;
         try {
           cursoData = await obtenerCursoPorId(id);
@@ -413,7 +849,6 @@ export default function CursoDetalleAdmin() {
           ...(cursoData || {}),
           grupos: Array.isArray(gruposData) ? gruposData : [],
         };
-
         setCurso(cursoConGrupos);
         setAlumnos(Array.isArray(alumnosData) ? alumnosData : []);
 
@@ -440,9 +875,15 @@ export default function CursoDetalleAdmin() {
   useEffect(() => {
     if (tabActiva === "tareas" || tabActiva === "modulos") cargarTareasCurso();
   }, [tabActiva, id]);
+
   useEffect(() => {
     if (tabActiva === "modulos") cargarModulosCurso();
   }, [tabActiva, id]);
+
+  useEffect(() => {
+    if (tabActiva === "resumen") cargarSesionesVivoCurso();
+  }, [tabActiva, id]);
+
   useEffect(() => {
     setModulosOrdenados(modulos || []);
   }, [modulos]);
@@ -450,47 +891,9 @@ export default function CursoDetalleAdmin() {
     setTareasOrdenadas(tareas || []);
   }, [tareas]);
 
-  const cargarTareasCurso = async () => {
-    try {
-      setCargandoTareas(true);
-      const data = await getTareasByCurso(id);
-      setTareas(data || []);
-    } catch (error) {
-      alert(error?.message || "No se pudieron cargar las tareas");
-    } finally {
-      setCargandoTareas(false);
-    }
-  };
-
-  const cargarModulosCurso = async () => {
-    try {
-      setCargandoModulos(true);
-      const modulosData = await getModulosByCurso(id);
-      const modulosConDetalle = await Promise.all(
-        (modulosData || []).map(async (modulo) => {
-          const submodulosConDetalle = await Promise.all(
-            (modulo.submodulos || []).map(async (submodulo) => {
-              const lecciones = await getLeccionesByModulo(submodulo.id);
-              const leccionesConMateriales = await Promise.all(
-                (lecciones || []).map(async (leccion) => {
-                  const materiales = await getMaterialesByLeccion(leccion.id);
-                  return { ...leccion, materiales: materiales || [] };
-                }),
-              );
-              return { ...submodulo, lecciones: leccionesConMateriales || [] };
-            }),
-          );
-          return { ...modulo, submodulos: submodulosConDetalle || [] };
-        }),
-      );
-      setModulos(modulosConDetalle);
-    } catch (error) {
-      alert(error?.message || "No se pudieron cargar los módulos");
-    } finally {
-      setCargandoModulos(false);
-    }
-  };
-
+  // ==============================
+  // FUNCIONES: ASISTENCIA
+  // ==============================
   const cargarAsistenciaPorFecha = async (fecha) => {
     try {
       const data = await getAsistenciaCursoPorFecha(id, fecha);
@@ -504,7 +907,7 @@ export default function CursoDetalleAdmin() {
       });
       setAsistenciaMap(map);
     } catch (error) {
-      alert(error?.message || "Error cargando asistencia");
+      showMessage("error", error?.message || "Error cargando asistencia");
     }
   };
 
@@ -512,6 +915,7 @@ export default function CursoDetalleAdmin() {
     setFechaAsistencia(hoy);
     await cargarAsistenciaPorFecha(hoy);
   };
+
   const actualizarEstadoAsistencia = (idalumno, nuevoEstado) => {
     setAsistenciaMap((prev) => ({
       ...prev,
@@ -526,12 +930,14 @@ export default function CursoDetalleAdmin() {
       },
     }));
   };
+
   const actualizarJustificacion = (idalumno, valor) => {
     setAsistenciaMap((prev) => ({
       ...prev,
       [idalumno]: { ...(prev[idalumno] || {}), tipo_justificacion: valor },
     }));
   };
+
   const actualizarObservacion = (idalumno, valor) => {
     setAsistenciaMap((prev) => ({
       ...prev,
@@ -551,14 +957,23 @@ export default function CursoDetalleAdmin() {
       }));
       const incompletos = payload.filter((p) => !p.estado);
       if (incompletos.length > 0)
-        return alert("Todos los alumnos deben tener estado de asistencia.");
+        return showMessage(
+          "error",
+          "Todos los alumnos deben tener estado de asistencia.",
+        );
       await guardarAsistenciaCurso(Number(id), payload);
-      alert("Asistencia guardada correctamente ✅");
+      showMessage("success", "Asistencia guardada correctamente ✅");
     } catch (error) {
-      alert(error?.message || "No se pudo guardar la asistencia");
+      showMessage(
+        "error",
+        error?.message || "No se pudo guardar la asistencia",
+      );
     }
   };
 
+  // ==============================
+  // FUNCIONES: TAREAS
+  // ==============================
   const handleChangeTarea = (e) => {
     const { name, value, type, checked } = e.target;
     setFormTarea((prev) => {
@@ -571,10 +986,12 @@ export default function CursoDetalleAdmin() {
       return next;
     });
   };
+
   const handleFileChangeTarea = (e) => {
     const { name, files } = e.target;
     setFormTarea((prev) => ({ ...prev, [name]: files?.[0] || null }));
   };
+
   const limpiarFormTarea = () => {
     setFormTarea({
       titulo: "",
@@ -590,6 +1007,7 @@ export default function CursoDetalleAdmin() {
     });
     setModuloDestinoTarea(null);
   };
+
   const abrirFormTareaDesdeModulo = (modulo) => {
     setModuloDestinoTarea(modulo);
     setMostrarFormTarea(true);
@@ -600,13 +1018,17 @@ export default function CursoDetalleAdmin() {
     e.preventDefault();
     try {
       if (!formTarea.titulo.trim())
-        return alert("Ingresa el título de la tarea.");
+        return showMessage("error", "Ingresa el título de la tarea.");
       if (!formTarea.descripcion.trim())
-        return alert("Ingresa la descripción de la tarea.");
+        return showMessage("error", "Ingresa la descripción de la tarea.");
       if (!formTarea.fechaInicio || !formTarea.fechaLimite)
-        return alert("Completa la fecha de inicio y la fecha límite.");
+        return showMessage(
+          "error",
+          "Completa la fecha de inicio y la fecha límite.",
+        );
       if (!formTarea.tipoEntrega)
-        return alert("Selecciona el tipo de entrega.");
+        return showMessage("error", "Selecciona el tipo de entrega.");
+
       setGuardandoTarea(true);
       await crearTarea({
         cursoId: curso?.id ?? null,
@@ -623,12 +1045,12 @@ export default function CursoDetalleAdmin() {
         calificable: formTarea.calificable,
         idmodulo: moduloDestinoTarea?.id ?? null,
       });
-      alert("Tarea creada correctamente ✅");
+      showMessage("success", "Tarea creada correctamente ✅");
       limpiarFormTarea();
       setMostrarFormTarea(false);
       await cargarTareasCurso();
     } catch (error) {
-      alert(error?.message || "Error al crear la tarea");
+      showMessage("error", error?.message || "Error al crear la tarea");
     } finally {
       setGuardandoTarea(false);
     }
@@ -644,7 +1066,10 @@ export default function CursoDetalleAdmin() {
         ),
       );
     } catch (error) {
-      alert(error?.message || "No se pudo actualizar el estado de la tarea");
+      showMessage(
+        "error",
+        error?.message || "No se pudo actualizar el estado de la tarea",
+      );
     }
   };
 
@@ -658,25 +1083,151 @@ export default function CursoDetalleAdmin() {
         delete copia[tareaId];
         return copia;
       });
-      alert("Tarea eliminada correctamente");
+      showMessage("success", "Tarea eliminada correctamente");
     } catch (error) {
-      alert(error?.message || "No se pudo eliminar la tarea");
+      showMessage("error", error?.message || "No se pudo eliminar la tarea");
     }
   };
 
-  const toggleTarea = (tareaId) => {
+  const toggleTarea = (tareaId) =>
     setTareasAbiertas((prev) => ({ ...prev, [tareaId]: !prev[tareaId] }));
+
+  const abrirDetalleTarea = async (tarea) => {
+    try {
+      setCargandoDetalleTarea(true);
+      const data = await getEntregasByTarea(tarea.id);
+      setTareaDetalle(tarea);
+      setEntregasTarea(data?.entregas || []);
+      setTareasAbiertas((prev) => ({ ...prev, [tarea.id]: true }));
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudo cargar el detalle de la tarea",
+      );
+    } finally {
+      setCargandoDetalleTarea(false);
+    }
   };
 
+  const cerrarDetalleTarea = () => {
+    setTareaDetalle(null);
+    setEntregasTarea([]);
+  };
+
+  const actualizarNotaLocalEntrega = (idmatricula, valor) => {
+    setEntregasTarea((prev) =>
+      prev.map((item) =>
+        item.idmatricula === idmatricula ? { ...item, nota: valor } : item,
+      ),
+    );
+  };
+
+  const guardarNotaEntrega = async (fila) => {
+    try {
+      setGuardandoNotaEntrega((prev) => ({
+        ...prev,
+        [fila.idmatricula]: true,
+      }));
+      await guardarNotaEntregaYRegistro({
+        tareaId: tareaDetalle.id,
+        idmatricula: fila.idmatricula,
+        nota: fila.nota,
+      });
+      showMessage("success", "Nota guardada correctamente ✅");
+      const data = await getEntregasByTarea(tareaDetalle.id);
+      setEntregasTarea(data?.entregas || []);
+    } catch (error) {
+      showMessage("error", error?.message || "No se pudo guardar la nota");
+    } finally {
+      setGuardandoNotaEntrega((prev) => ({
+        ...prev,
+        [fila.idmatricula]: false,
+      }));
+    }
+  };
+
+  const abrirConfigTarea = async (tarea) => {
+    try {
+      if (!curso?.idgrupo)
+        return showMessage("error", "Este curso no tiene grupo asociado.");
+      if (!tarea.calificable)
+        return showMessage(
+          "error",
+          "Esta tarea no está marcada como calificable.",
+        );
+      setCargandoConfigTarea(true);
+      setTareaConfigActual(tarea);
+      setConfigTareaOpen(true);
+      const data = await getEvaluacionesTareaDisponiblesByGrupo(
+        curso.idgrupo,
+        tarea.id,
+      );
+      setEvaluacionesTareaDisponibles(data || []);
+      const evaluacionActual = (data || []).find(
+        (ev) => Number(ev.idtarea) === Number(tarea.id),
+      );
+      setEvaluacionSeleccionadaTarea(
+        evaluacionActual ? String(evaluacionActual.id) : "",
+      );
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudo abrir la configuración de la tarea.",
+      );
+      cerrarConfigTarea();
+    } finally {
+      setCargandoConfigTarea(false);
+    }
+  };
+
+  const cerrarConfigTarea = () => {
+    setConfigTareaOpen(false);
+    setTareaConfigActual(null);
+    setEvaluacionesTareaDisponibles([]);
+    setEvaluacionSeleccionadaTarea("");
+  };
+
+  const guardarConfiguracionTarea = async () => {
+    try {
+      if (!tareaConfigActual?.id)
+        return showMessage("error", "No se encontró la tarea a configurar.");
+      if (!evaluacionSeleccionadaTarea)
+        return showMessage("error", "Selecciona una evaluación de tipo tarea.");
+      setGuardandoConfigTarea(true);
+      await asignarEvaluacionATarea({
+        tareaId: tareaConfigActual.id,
+        evaluacionId: Number(evaluacionSeleccionadaTarea),
+        grupoId: curso?.idgrupo,
+      });
+      await cargarTareasCurso();
+      showMessage(
+        "success",
+        "La tarea fue vinculada correctamente a la evaluación ✅",
+      );
+      cerrarConfigTarea();
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudo guardar la configuración de la tarea.",
+      );
+    } finally {
+      setGuardandoConfigTarea(false);
+    }
+  };
+
+  // ==============================
+  // FUNCIONES: MÓDULOS
+  // ==============================
   const handleChangeModulo = (e) => {
     const { name, value } = e.target;
     setFormModulo((prev) => ({ ...prev, [name]: value }));
   };
+
   const guardarModuloCurso = async (e) => {
     e.preventDefault();
     try {
       if (!formModulo.titulo.trim())
-        return alert("Ingresa el título del módulo.");
+        return showMessage("error", "Ingresa el título del módulo.");
       setGuardandoModulo(true);
       await crearModulo({
         cursoId: Number(id),
@@ -686,21 +1237,51 @@ export default function CursoDetalleAdmin() {
       setFormModulo({ titulo: "", descripcion: "" });
       setMostrarFormModulo(false);
       await cargarModulosCurso();
-      alert("Módulo creado correctamente ✅");
+      showMessage("success", "Módulo creado correctamente ✅");
     } catch (error) {
-      alert(error?.message || "No se pudo crear el módulo");
+      showMessage("error", error?.message || "No se pudo crear el módulo");
     } finally {
       setGuardandoModulo(false);
     }
   };
+
   const eliminarModuloCurso = async (moduloId) => {
     if (!window.confirm("¿Seguro que deseas eliminar este módulo?")) return;
     try {
       await deleteModulo(moduloId);
       await cargarModulosCurso();
-      alert("Módulo eliminado correctamente");
+      showMessage("success", "Módulo eliminado correctamente");
     } catch (error) {
-      alert(error?.message || "No se pudo eliminar el módulo");
+      showMessage("error", error?.message || "No se pudo eliminar el módulo");
+    }
+  };
+
+  const iniciarEdicionModulo = (modulo) => {
+    setEditandoModuloId(modulo.id);
+    setFormEditarModulo({
+      titulo: modulo.titulo || "",
+      descripcion: modulo.descripcion || "",
+    });
+  };
+
+  const cancelarEdicionModulo = () => {
+    setEditandoModuloId(null);
+    setFormEditarModulo({ titulo: "", descripcion: "" });
+  };
+
+  const guardarEdicionModulo = async (moduloId) => {
+    try {
+      if (!formEditarModulo.titulo.trim())
+        return showMessage("error", "Ingresa el título del módulo.");
+      await actualizarModulo(moduloId, {
+        titulo: formEditarModulo.titulo,
+        descripcion: formEditarModulo.descripcion,
+      });
+      cancelarEdicionModulo();
+      await cargarModulosCurso();
+      showMessage("success", "Módulo actualizado correctamente ✅");
+    } catch (error) {
+      showMessage("error", error?.message || "No se pudo actualizar el módulo");
     }
   };
 
@@ -729,7 +1310,10 @@ export default function CursoDetalleAdmin() {
       }
       await cargarModulosCurso();
     } catch (error) {
-      alert(error?.message || "No se pudo reordenar los módulos");
+      showMessage(
+        "error",
+        error?.message || "No se pudo reordenar los módulos",
+      );
       await cargarModulosCurso();
     }
   };
@@ -750,33 +1334,9 @@ export default function CursoDetalleAdmin() {
     await persistirOrdenModulos(listaAnterior, nuevaLista);
   };
 
-  const iniciarEdicionModulo = (modulo) => {
-    setEditandoModuloId(modulo.id);
-    setFormEditarModulo({
-      titulo: modulo.titulo || "",
-      descripcion: modulo.descripcion || "",
-    });
-  };
-  const cancelarEdicionModulo = () => {
-    setEditandoModuloId(null);
-    setFormEditarModulo({ titulo: "", descripcion: "" });
-  };
-  const guardarEdicionModulo = async (moduloId) => {
-    try {
-      if (!formEditarModulo.titulo.trim())
-        return alert("Ingresa el título del módulo.");
-      await actualizarModulo(moduloId, {
-        titulo: formEditarModulo.titulo,
-        descripcion: formEditarModulo.descripcion,
-      });
-      cancelarEdicionModulo();
-      await cargarModulosCurso();
-      alert("Módulo actualizado correctamente ✅");
-    } catch (error) {
-      alert(error?.message || "No se pudo actualizar el módulo");
-    }
-  };
-
+  // ==============================
+  // FUNCIONES: SUBMÓDULOS
+  // ==============================
   const toggleFormSubModulo = (moduloId) => {
     setMostrarFormSubModulo((prev) => ({
       ...prev,
@@ -787,6 +1347,7 @@ export default function CursoDetalleAdmin() {
       [moduloId]: prev[moduloId] || { titulo: "", descripcion: "" },
     }));
   };
+
   const handleChangeSubModulo = (moduloId, e) => {
     const { name, value } = e.target;
     setFormSubModulo((prev) => ({
@@ -794,12 +1355,13 @@ export default function CursoDetalleAdmin() {
       [moduloId]: { ...(prev[moduloId] || {}), [name]: value },
     }));
   };
+
   const guardarSubModuloCurso = async (e, moduloPadreId) => {
     e.preventDefault();
     try {
       const data = formSubModulo[moduloPadreId] || {};
       if (!data.titulo?.trim())
-        return alert("Ingresa el título del submódulo.");
+        return showMessage("error", "Ingresa el título del submódulo.");
       setGuardandoSubModulo(true);
       await crearModulo({
         cursoId: Number(id),
@@ -813,9 +1375,9 @@ export default function CursoDetalleAdmin() {
       }));
       setMostrarFormSubModulo((prev) => ({ ...prev, [moduloPadreId]: false }));
       await cargarModulosCurso();
-      alert("Submódulo creado correctamente ✅");
+      showMessage("success", "Submódulo creado correctamente ✅");
     } catch (error) {
-      alert(error?.message || "No se pudo crear el submódulo");
+      showMessage("error", error?.message || "No se pudo crear el submódulo");
     } finally {
       setGuardandoSubModulo(false);
     }
@@ -844,8 +1406,102 @@ export default function CursoDetalleAdmin() {
       await moverSubModuloOrden(nuevaLista);
       await cargarModulosCurso();
     } catch (error) {
-      alert(error?.message || "No se pudo reordenar los submódulos");
+      showMessage(
+        "error",
+        error?.message || "No se pudo reordenar los submódulos",
+      );
       await cargarModulosCurso();
+    }
+  };
+
+  // ==============================
+  // FUNCIONES: LECCIONES
+  // ==============================
+  const toggleLeccionesModulo = (moduloId) =>
+    setMostrarLecciones((prev) => ({ ...prev, [moduloId]: !prev[moduloId] }));
+
+  const toggleFormLeccion = (moduloId) => {
+    setMostrarFormLeccion((prev) => ({ ...prev, [moduloId]: !prev[moduloId] }));
+    setFormLeccion((prev) => ({
+      ...prev,
+      [moduloId]: prev[moduloId] || { titulo: "", descripcion: "" },
+    }));
+  };
+
+  const handleChangeLeccion = (moduloId, e) => {
+    const { name, value } = e.target;
+    setFormLeccion((prev) => ({
+      ...prev,
+      [moduloId]: { ...(prev[moduloId] || {}), [name]: value },
+    }));
+  };
+
+  const guardarLeccionCurso = async (e, moduloId) => {
+    e.preventDefault();
+    try {
+      const data = formLeccion[moduloId] || {};
+      if (!data.titulo?.trim())
+        return showMessage("error", "Ingresa el título de la lección.");
+      setGuardandoLeccion(true);
+      await crearLeccion({
+        moduloId,
+        titulo: data.titulo,
+        descripcion: data.descripcion,
+      });
+      setFormLeccion((prev) => ({
+        ...prev,
+        [moduloId]: { titulo: "", descripcion: "" },
+      }));
+      setMostrarFormLeccion((prev) => ({ ...prev, [moduloId]: false }));
+      await cargarModulosCurso();
+      showMessage("success", "Lección creada correctamente ✅");
+    } catch (error) {
+      showMessage("error", error?.message || "No se pudo crear la lección");
+    } finally {
+      setGuardandoLeccion(false);
+    }
+  };
+
+  const eliminarLeccionCurso = async (leccionId) => {
+    if (!window.confirm("¿Seguro que deseas eliminar esta lección?")) return;
+    try {
+      await deleteLeccion(leccionId);
+      await cargarModulosCurso();
+      showMessage("success", "Lección eliminada correctamente");
+    } catch (error) {
+      showMessage("error", error?.message || "No se pudo eliminar la lección");
+    }
+  };
+
+  const iniciarEdicionLeccion = (leccion) => {
+    setEditandoLeccionId(leccion.id);
+    setFormEditarLeccion({
+      titulo: leccion.titulo || "",
+      descripcion: leccion.descripcion || "",
+    });
+  };
+
+  const cancelarEdicionLeccion = () => {
+    setEditandoLeccionId(null);
+    setFormEditarLeccion({ titulo: "", descripcion: "" });
+  };
+
+  const guardarEdicionLeccion = async (leccionId) => {
+    try {
+      if (!formEditarLeccion.titulo.trim())
+        return showMessage("error", "Ingresa el título de la lección.");
+      await actualizarLeccion(leccionId, {
+        titulo: formEditarLeccion.titulo,
+        descripcion: formEditarLeccion.descripcion,
+      });
+      cancelarEdicionLeccion();
+      await cargarModulosCurso();
+      showMessage("success", "Lección actualizada correctamente ✅");
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudo actualizar la lección",
+      );
     }
   };
 
@@ -879,117 +1535,23 @@ export default function CursoDetalleAdmin() {
       await moverLeccionOrden(nuevaLista);
       await cargarModulosCurso();
     } catch (error) {
-      alert(error?.message || "No se pudo reordenar las lecciones");
+      showMessage(
+        "error",
+        error?.message || "No se pudo reordenar las lecciones",
+      );
       await cargarModulosCurso();
     }
   };
 
-  const handleDragEndTareas = async (event) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = tareasOrdenadas.findIndex(
-      (item) => `tarea-${item.id}` === String(active.id),
-    );
-    const newIndex = tareasOrdenadas.findIndex(
-      (item) => `tarea-${item.id}` === String(over.id),
-    );
-    if (oldIndex === -1 || newIndex === -1) return;
-    const nuevaLista = arrayMove(tareasOrdenadas, oldIndex, newIndex);
-    setTareasOrdenadas(nuevaLista);
-    try {
-      await moverTareaOrden(nuevaLista);
-      await cargarTareasCurso();
-    } catch (error) {
-      alert(error?.message || "No se pudo reordenar las tareas");
-      await cargarTareasCurso();
-    }
-  };
-
-  const toggleLeccionesModulo = (moduloId) => {
-    setMostrarLecciones((prev) => ({ ...prev, [moduloId]: !prev[moduloId] }));
-  };
-  const toggleFormLeccion = (moduloId) => {
-    setMostrarFormLeccion((prev) => ({ ...prev, [moduloId]: !prev[moduloId] }));
-    setFormLeccion((prev) => ({
-      ...prev,
-      [moduloId]: prev[moduloId] || { titulo: "", descripcion: "" },
-    }));
-  };
-  const handleChangeLeccion = (moduloId, e) => {
-    const { name, value } = e.target;
-    setFormLeccion((prev) => ({
-      ...prev,
-      [moduloId]: { ...(prev[moduloId] || {}), [name]: value },
-    }));
-  };
-  const guardarLeccionCurso = async (e, moduloId) => {
-    e.preventDefault();
-    try {
-      const data = formLeccion[moduloId] || {};
-      if (!data.titulo?.trim())
-        return alert("Ingresa el título de la lección.");
-      setGuardandoLeccion(true);
-      await crearLeccion({
-        moduloId,
-        titulo: data.titulo,
-        descripcion: data.descripcion,
-      });
-      setFormLeccion((prev) => ({
-        ...prev,
-        [moduloId]: { titulo: "", descripcion: "" },
-      }));
-      setMostrarFormLeccion((prev) => ({ ...prev, [moduloId]: false }));
-      await cargarModulosCurso();
-      alert("Lección creada correctamente ✅");
-    } catch (error) {
-      alert(error?.message || "No se pudo crear la lección");
-    } finally {
-      setGuardandoLeccion(false);
-    }
-  };
-  const eliminarLeccionCurso = async (leccionId) => {
-    if (!window.confirm("¿Seguro que deseas eliminar esta lección?")) return;
-    try {
-      await deleteLeccion(leccionId);
-      await cargarModulosCurso();
-      alert("Lección eliminada correctamente");
-    } catch (error) {
-      alert(error?.message || "No se pudo eliminar la lección");
-    }
-  };
-  const iniciarEdicionLeccion = (leccion) => {
-    setEditandoLeccionId(leccion.id);
-    setFormEditarLeccion({
-      titulo: leccion.titulo || "",
-      descripcion: leccion.descripcion || "",
-    });
-  };
-  const cancelarEdicionLeccion = () => {
-    setEditandoLeccionId(null);
-    setFormEditarLeccion({ titulo: "", descripcion: "" });
-  };
-  const guardarEdicionLeccion = async (leccionId) => {
-    try {
-      if (!formEditarLeccion.titulo.trim())
-        return alert("Ingresa el título de la lección.");
-      await actualizarLeccion(leccionId, {
-        titulo: formEditarLeccion.titulo,
-        descripcion: formEditarLeccion.descripcion,
-      });
-      cancelarEdicionLeccion();
-      await cargarModulosCurso();
-      alert("Lección actualizada correctamente ✅");
-    } catch (error) {
-      alert(error?.message || "No se pudo actualizar la lección");
-    }
-  };
-
-  const toggleMaterialesLeccion = (leccionId) => {
+  // ==============================
+  // FUNCIONES: MATERIALES & VIDEOS (S3)
+  // ==============================
+  const toggleMaterialesLeccion = (leccionId) =>
     setMostrarMateriales((prev) => ({
       ...prev,
       [leccionId]: !prev[leccionId],
     }));
-  };
+
   const toggleFormMaterial = (leccionId) => {
     setMostrarFormMaterial((prev) => ({
       ...prev,
@@ -1007,6 +1569,7 @@ export default function CursoDetalleAdmin() {
       },
     }));
   };
+
   const handleChangeMaterial = (leccionId, e) => {
     const { name, value } = e.target;
     setFormMaterial((prev) => ({
@@ -1014,36 +1577,188 @@ export default function CursoDetalleAdmin() {
       [leccionId]: { ...(prev[leccionId] || {}), [name]: value },
     }));
   };
+
   const handleFileMaterial = (leccionId, e) => {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 20 * 1024 * 1024)
-      return alert("El archivo supera el límite permitido de 20 MB.");
+      return showMessage(
+        "error",
+        "El archivo supera el límite permitido de 20 MB.",
+      );
     setFormMaterial((prev) => ({
       ...prev,
       [leccionId]: { ...(prev[leccionId] || {}), file },
     }));
   };
 
+  const crearIdNotificacion = () =>
+    `video-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const actualizarNotificacionVideo = (id, patch) => {
+    setNotificacionesVideo((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    );
+  };
+
+  const eliminarNotificacionVideo = (id) => {
+    setNotificacionesVideo((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const esperarVideoListoEnSegundoPlano = async (
+    leccionId,
+    materialId,
+    notificacionId,
+    intentosMax = 40,
+  ) => {
+    let intentos = 0;
+    const intervalo = setInterval(async () => {
+      try {
+        intentos += 1;
+        const materiales = await getMaterialesByLeccion(leccionId);
+        const material = (materiales || []).find(
+          (m) => Number(m.id) === Number(materialId),
+        );
+        if (!material) {
+          if (intentos >= intentosMax) {
+            clearInterval(intervalo);
+            actualizarNotificacionVideo(notificacionId, {
+              estado: "warning",
+              mensaje: "No se encontró el video para verificar su estado.",
+            });
+          }
+          return;
+        }
+        const estado = (material.estado_video || "").toLowerCase();
+        if (estado === "available" || estado === "listo") {
+          clearInterval(intervalo);
+          actualizarNotificacionVideo(notificacionId, {
+            estado: "success",
+            mensaje: "Video cargado correctamente ✅",
+            progreso: 100,
+          });
+          await cargarModulosCurso();
+          setTimeout(() => eliminarNotificacionVideo(notificacionId), 5000);
+          return;
+        }
+        if (intentos >= intentosMax) {
+          clearInterval(intervalo);
+          actualizarNotificacionVideo(notificacionId, {
+            estado: "info",
+            mensaje:
+              "El video sigue procesándose en Vimeo. Revisa en unos minutos.",
+          });
+        }
+      } catch (error) {
+        clearInterval(intervalo);
+        actualizarNotificacionVideo(notificacionId, {
+          estado: "error",
+          mensaje: "Error verificando el estado del video.",
+          error,
+        });
+      }
+    }, 8000);
+  };
+
+  const subirVideoEnSegundoPlano = async (leccionId, data) => {
+    const notificacionId = crearIdNotificacion();
+    setNotificacionesVideo((prev) => [
+      {
+        id: notificacionId,
+        leccionId,
+        titulo: data.titulo,
+        estado: "uploading",
+        mensaje: "Subiendo video...",
+        progreso: 0,
+      },
+      ...prev,
+    ]);
+    try {
+      const material = await addMaterialLeccion(leccionId, {
+        titulo: data.titulo,
+        tipo: data.tipo,
+        contenido_texto: data.contenido_texto,
+        video_url: null,
+        enlace_url: null,
+        file: data.file,
+        onProgress: (percent) => {
+          actualizarNotificacionVideo(notificacionId, {
+            progreso: percent,
+            estado: percent >= 100 ? "processing" : "uploading",
+            mensaje:
+              percent >= 100
+                ? "Procesando video en Vimeo..."
+                : "Subiendo video...",
+          });
+        },
+      });
+      await cargarModulosCurso();
+      const estado = (material?.estado_video || "").toLowerCase();
+      if (estado === "available" || estado === "listo") {
+        actualizarNotificacionVideo(notificacionId, {
+          estado: "success",
+          mensaje: "Video cargado correctamente ✅",
+          progreso: 100,
+        });
+        setTimeout(() => eliminarNotificacionVideo(notificacionId), 5000);
+        return;
+      }
+      actualizarNotificacionVideo(notificacionId, {
+        estado: "processing",
+        mensaje: "Video subido. Vimeo lo está procesando...",
+        progreso: 100,
+      });
+      await esperarVideoListoEnSegundoPlano(
+        leccionId,
+        material.id,
+        notificacionId,
+      );
+    } catch (error) {
+      console.error(error);
+      actualizarNotificacionVideo(notificacionId, {
+        estado: "error",
+        mensaje: error?.message || "No se pudo subir el video.",
+      });
+    }
+  };
+
   const guardarMaterialCurso = async (e, leccionId) => {
     e.preventDefault();
     try {
       const data = formMaterial[leccionId] || {};
-      if (!data.titulo?.trim()) return alert("Ingresa el título del material.");
-      if (!data.tipo) return alert("Selecciona el tipo de material.");
+      if (!data.titulo?.trim())
+        return showMessage("error", "Ingresa el título del material.");
+      if (!data.tipo)
+        return showMessage("error", "Selecciona el tipo de material.");
       if (data.tipo === "texto" && !data.contenido_texto?.trim())
-        return alert("Ingresa el contenido del material.");
+        return showMessage("error", "Ingresa el contenido del material.");
       if (data.tipo === "url_video" && !data.video_url?.trim())
-        return alert("Ingresa la URL del video.");
+        return showMessage("error", "Ingresa la URL del video.");
       if (data.tipo === "enlace" && !data.enlace_url?.trim())
-        return alert("Ingresa el enlace.");
+        return showMessage("error", "Ingresa el enlace.");
       if ((data.tipo === "archivo" || data.tipo === "video") && !data.file)
-        return alert("Selecciona un archivo.");
+        return showMessage("error", "Selecciona un archivo.");
+
+      if (data.tipo === "video") {
+        subirVideoEnSegundoPlano(leccionId, data);
+        setFormMaterial((prev) => ({
+          ...prev,
+          [leccionId]: {
+            titulo: "",
+            tipo: "texto",
+            contenido_texto: "",
+            video_url: "",
+            enlace_url: "",
+            file: null,
+          },
+        }));
+        setMostrarFormMaterial((prev) => ({ ...prev, [leccionId]: false }));
+        return;
+      }
 
       setGuardandoMaterial(true);
       setSubidaMaterialEstado((prev) => ({
         ...prev,
-        [leccionId]:
-          data.tipo === "video" ? "Subiendo video..." : "Subiendo archivo...",
+        [leccionId]: "Subiendo archivo...",
       }));
       setSubidaMaterialProgress((prev) => ({ ...prev, [leccionId]: 0 }));
 
@@ -1053,22 +1768,17 @@ export default function CursoDetalleAdmin() {
         contenido_texto: data.contenido_texto,
         video_url: data.tipo === "url_video" ? data.video_url : null,
         enlace_url: data.tipo === "enlace" ? data.enlace_url : null,
-        file:
-          data.tipo === "archivo" || data.tipo === "video" ? data.file : null,
+        file: data.tipo === "archivo" ? data.file : null,
         onProgress: (percent) => {
           setSubidaMaterialProgress((prev) => ({
             ...prev,
             [leccionId]: percent,
           }));
-          if (percent >= 100) {
+          if (percent >= 100)
             setSubidaMaterialEstado((prev) => ({
               ...prev,
-              [leccionId]:
-                data.tipo === "video"
-                  ? "Procesando video en Vimeo..."
-                  : "Procesando archivo...",
+              [leccionId]: "Procesando archivo...",
             }));
-          }
         },
       });
 
@@ -1085,16 +1795,113 @@ export default function CursoDetalleAdmin() {
       }));
       setMostrarFormMaterial((prev) => ({ ...prev, [leccionId]: false }));
       await cargarModulosCurso();
-      if (data.tipo === "video") await esperarVideoDisponible(leccionId);
-      alert("Material agregado correctamente ✅");
+      showMessage("success", "Material agregado correctamente ✅");
     } catch (error) {
-      alert(error?.message || "No se pudo agregar el material");
+      showMessage("error", error?.message || "No se pudo agregar el material");
     } finally {
       setGuardandoMaterial(false);
       setTimeout(() => {
         setSubidaMaterialProgress((prev) => ({ ...prev, [leccionId]: 0 }));
         setSubidaMaterialEstado((prev) => ({ ...prev, [leccionId]: "" }));
       }, 1200);
+    }
+  };
+
+  const abrirArchivoMaterial = async (material) => {
+    try {
+      if (material.object_key) {
+        const url = await getMaterialLeccionDownloadUrl(material.object_key);
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      if (material.archivo_url) {
+        window.open(material.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      throw new Error("El material no tiene una ruta válida.");
+    } catch (error) {
+      showMessage("error", error?.message || "No se pudo abrir el archivo.");
+    }
+  };
+
+  const eliminarMaterialCurso = async (materialId) => {
+    if (!window.confirm("¿Seguro que deseas eliminar este material?")) return;
+    try {
+      await deleteMaterialLeccion(materialId);
+      await cargarModulosCurso();
+      showMessage("success", "Material eliminado correctamente");
+    } catch (error) {
+      showMessage("error", error?.message || "No se pudo eliminar el material");
+    }
+  };
+
+  const iniciarEdicionMaterial = (material) => {
+    setEditandoMaterialId(material.id);
+    setFormEditarMaterial({
+      titulo: material.titulo || "",
+      tipo: material.tipo || "texto",
+      contenido_texto: material.contenido_texto || "",
+      video_url: material.video_url || "",
+      enlace_url: material.enlace_url || "",
+    });
+  };
+
+  const cancelarEdicionMaterial = () => {
+    setEditandoMaterialId(null);
+    setFormEditarMaterial({
+      titulo: "",
+      tipo: "texto",
+      contenido_texto: "",
+      video_url: "",
+      enlace_url: "",
+    });
+  };
+
+  const guardarEdicionMaterial = async (materialId) => {
+    try {
+      if (!formEditarMaterial.titulo.trim())
+        return showMessage("error", "Ingresa el título del material.");
+      if (
+        formEditarMaterial.tipo === "texto" &&
+        !formEditarMaterial.contenido_texto.trim()
+      )
+        return showMessage("error", "Ingresa el contenido del material.");
+      if (
+        formEditarMaterial.tipo === "url_video" &&
+        !formEditarMaterial.video_url.trim()
+      )
+        return showMessage("error", "Ingresa la URL del video.");
+      if (
+        formEditarMaterial.tipo === "enlace" &&
+        !formEditarMaterial.enlace_url.trim()
+      )
+        return showMessage("error", "Ingresa el enlace.");
+
+      await actualizarMaterialLeccion(materialId, {
+        titulo: formEditarMaterial.titulo,
+        tipo: formEditarMaterial.tipo,
+        contenido_texto:
+          formEditarMaterial.tipo === "texto"
+            ? formEditarMaterial.contenido_texto
+            : null,
+        video_url:
+          formEditarMaterial.tipo === "url_video"
+            ? formEditarMaterial.video_url
+            : null,
+        enlace_url:
+          formEditarMaterial.tipo === "enlace"
+            ? formEditarMaterial.enlace_url
+            : null,
+      });
+
+      cancelarEdicionMaterial();
+      await cargarModulosCurso();
+      showMessage("success", "Material actualizado correctamente ✅");
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudo actualizar el material",
+      );
     }
   };
 
@@ -1140,214 +1947,523 @@ export default function CursoDetalleAdmin() {
       await moverMaterialOrden(nuevaLista);
       await cargarModulosCurso();
     } catch (error) {
-      alert(error?.message || "No se pudo reordenar los materiales");
-      await cargarModulosCurso();
-    }
-  };
-
-  const eliminarMaterialCurso = async (materialId) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este material?")) return;
-    try {
-      await deleteMaterialLeccion(materialId);
-      await cargarModulosCurso();
-      alert("Material eliminado correctamente");
-    } catch (error) {
-      alert(error?.message || "No se pudo eliminar el material");
-    }
-  };
-
-  const iniciarEdicionMaterial = (material) => {
-    setEditandoMaterialId(material.id);
-    setFormEditarMaterial({
-      titulo: material.titulo || "",
-      tipo: material.tipo || "texto",
-      contenido_texto: material.contenido_texto || "",
-      video_url: material.video_url || "",
-      enlace_url: material.enlace_url || "",
-    });
-  };
-  const cancelarEdicionMaterial = () => {
-    setEditandoMaterialId(null);
-    setFormEditarMaterial({
-      titulo: "",
-      tipo: "texto",
-      contenido_texto: "",
-      video_url: "",
-      enlace_url: "",
-    });
-  };
-  const guardarEdicionMaterial = async (materialId) => {
-    try {
-      if (!formEditarMaterial.titulo.trim())
-        return alert("Ingresa el título del material.");
-      if (
-        formEditarMaterial.tipo === "texto" &&
-        !formEditarMaterial.contenido_texto.trim()
-      )
-        return alert("Ingresa el contenido del material.");
-      if (
-        formEditarMaterial.tipo === "url_video" &&
-        !formEditarMaterial.video_url.trim()
-      )
-        return alert("Ingresa la URL del video.");
-      if (
-        formEditarMaterial.tipo === "enlace" &&
-        !formEditarMaterial.enlace_url.trim()
-      )
-        return alert("Ingresa el enlace.");
-
-      await actualizarMaterialLeccion(materialId, {
-        titulo: formEditarMaterial.titulo,
-        tipo: formEditarMaterial.tipo,
-        contenido_texto:
-          formEditarMaterial.tipo === "texto"
-            ? formEditarMaterial.contenido_texto
-            : null,
-        video_url:
-          formEditarMaterial.tipo === "url_video"
-            ? formEditarMaterial.video_url
-            : null,
-        enlace_url:
-          formEditarMaterial.tipo === "enlace"
-            ? formEditarMaterial.enlace_url
-            : null,
-      });
-
-      cancelarEdicionMaterial();
-      await cargarModulosCurso();
-      alert("Material actualizado correctamente ✅");
-    } catch (error) {
-      alert(error?.message || "No se pudo actualizar el material");
-    }
-  };
-
-  const abrirDetalleTarea = async (tarea) => {
-    try {
-      setCargandoDetalleTarea(true);
-      const data = await getEntregasByTarea(tarea.id);
-      setTareaDetalle(tarea);
-      setEntregasTarea(data?.entregas || []);
-      setTareasAbiertas((prev) => ({ ...prev, [tarea.id]: true }));
-    } catch (error) {
-      alert(error?.message || "No se pudo cargar el detalle de la tarea");
-    } finally {
-      setCargandoDetalleTarea(false);
-    }
-  };
-
-  const esperarVideoDisponible = async (leccionId, intentos = 12) => {
-    for (let i = 0; i < intentos; i++) {
-      const materiales = await getMaterialesByLeccion(leccionId);
-      const hayProcesando = materiales.some(
-        (m) =>
-          m.tipo === "video" &&
-          m.estado_video &&
-          !["available", "listo"].includes(m.estado_video),
+      showMessage(
+        "error",
+        error?.message || "No se pudo reordenar los materiales",
       );
-      if (!hayProcesando) {
-        await cargarModulosCurso();
-        return;
+      await cargarModulosCurso();
+    }
+  };
+
+  // ==============================
+  // EXÁMENES SE AGREGARÁN AQUÍ
+  // ==============================
+
+  // ==============================
+  // FUNCIONES: EXÁMENES
+  // ==============================
+  const toggleFormExamen = (leccionId) => {
+    const estabaAbierto = !!mostrarFormExamen[leccionId];
+    if (estabaAbierto) {
+      setMostrarFormExamen((prev) => ({ ...prev, [leccionId]: false }));
+      setFormExamen((prev) => ({ ...prev, [leccionId]: crearExamenVacio() }));
+      setExamenEditandoId(null);
+      setLeccionExamenEditandoId(null);
+      return;
+    }
+    setMostrarFormExamen((prev) => ({ ...prev, [leccionId]: true }));
+    setFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: prev[leccionId] || crearExamenVacio(),
+    }));
+    setExamenEditandoId(null);
+    setLeccionExamenEditandoId(null);
+  };
+
+  const cancelarEdicionExamen = (leccionId) => {
+    setExamenEditandoId(null);
+    setLeccionExamenEditandoId(null);
+    setMostrarFormExamen((prev) => ({ ...prev, [leccionId]: false }));
+    setFormExamen((prev) => ({ ...prev, [leccionId]: crearExamenVacio() }));
+  };
+
+  const handleChangeExamen = (leccionId, field, value) => {
+    setFormExamen((prev) => ({
+      ...prev,
+      [leccionId]: {
+        ...(prev[leccionId] || crearExamenVacio()),
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleChangePreguntaExamen = (
+    leccionId,
+    preguntaIndex,
+    field,
+    value,
+  ) => {
+    setFormExamen((prev) => {
+      const actual = prev[leccionId] || crearExamenVacio();
+      const preguntas = [...(actual.preguntas || [])];
+      const preguntaActual = preguntas[preguntaIndex] || crearPreguntaVacia();
+
+      if (field === "tipo_pregunta") {
+        const tipoNuevo = value;
+        const defaults = obtenerDefaultsPorTipoPregunta(tipoNuevo);
+        preguntas[preguntaIndex] = {
+          ...preguntaActual,
+          tipo_pregunta: tipoNuevo,
+          texto_placeholder: defaults.texto_placeholder,
+          max_caracteres: defaults.max_caracteres,
+          permitir_decimales: defaults.permitir_decimales,
+          tamano_max_mb: defaults.tamano_max_mb,
+          extensiones_permitidas: defaults.extensiones_permitidas,
+          respuesta_texto:
+            tipoNuevo === "numerica" || TIPOS_PREGUNTA_TEXTO.includes(tipoNuevo)
+              ? preguntaActual.respuesta_texto || ""
+              : "",
+          opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipoNuevo)
+            ? (preguntaActual.opciones || []).length >= 2
+              ? preguntaActual.opciones
+              : crearPreguntaVacia(tipoNuevo).opciones
+            : [],
+        };
+      } else {
+        preguntas[preguntaIndex] = { ...preguntaActual, [field]: value };
       }
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
-    await cargarModulosCurso();
+      return { ...prev, [leccionId]: { ...actual, preguntas } };
+    });
   };
 
-  const cerrarDetalleTarea = () => {
-    setTareaDetalle(null);
-    setEntregasTarea([]);
+  const handleChangeOpcionExamen = (
+    leccionId,
+    preguntaIndex,
+    opcionIndex,
+    field,
+    value,
+  ) => {
+    setFormExamen((prev) => {
+      const actual = prev[leccionId] || crearExamenVacio();
+      const preguntas = [...(actual.preguntas || [])];
+      const pregunta = {
+        ...(preguntas[preguntaIndex] || crearPreguntaVacia()),
+      };
+      const opciones = [...(pregunta.opciones || [])];
+
+      if (field === "es_correcta") {
+        if (pregunta.tipo_pregunta === "unica") {
+          pregunta.opciones = opciones.map((op, idx) => ({
+            ...op,
+            es_correcta: idx === opcionIndex,
+          }));
+        } else {
+          pregunta.opciones = opciones.map((op, idx) =>
+            idx === opcionIndex ? { ...op, es_correcta: !!value } : op,
+          );
+        }
+      } else {
+        pregunta.opciones = opciones.map((op, idx) =>
+          idx === opcionIndex ? { ...op, [field]: value } : op,
+        );
+      }
+      preguntas[preguntaIndex] = pregunta;
+      return { ...prev, [leccionId]: { ...actual, preguntas } };
+    });
   };
-  const actualizarNotaLocalEntrega = (idmatricula, valor) => {
-    setEntregasTarea((prev) =>
-      prev.map((item) =>
-        item.idmatricula === idmatricula ? { ...item, nota: valor } : item,
-      ),
+
+  const agregarOpcion = (leccionId, preguntaIndex) => {
+    setFormExamen((prev) => {
+      const actual = prev[leccionId] || crearExamenVacio();
+      const preguntas = [...(actual.preguntas || [])];
+      const pregunta = {
+        ...(preguntas[preguntaIndex] || crearPreguntaVacia()),
+      };
+      if (!TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta))
+        return prev;
+      pregunta.opciones = [
+        ...(pregunta.opciones || []),
+        { texto: "", es_correcta: false },
+      ];
+      preguntas[preguntaIndex] = pregunta;
+      return { ...prev, [leccionId]: { ...actual, preguntas } };
+    });
+  };
+
+  const quitarOpcion = (leccionId, preguntaIndex, opcionIndex) => {
+    setFormExamen((prev) => {
+      const actual = prev[leccionId] || crearExamenVacio();
+      const preguntas = [...(actual.preguntas || [])];
+      const pregunta = {
+        ...(preguntas[preguntaIndex] || crearPreguntaVacia()),
+      };
+      if (!TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta))
+        return prev;
+      const opciones = [...(pregunta.opciones || [])];
+      opciones.splice(opcionIndex, 1);
+      pregunta.opciones =
+        opciones.length >= 2
+          ? opciones
+          : [
+              { texto: "", es_correcta: false },
+              { texto: "", es_correcta: false },
+            ];
+      preguntas[preguntaIndex] = pregunta;
+      return { ...prev, [leccionId]: { ...actual, preguntas } };
+    });
+  };
+
+  const agregarPreguntaExamen = (leccionId) => {
+    setFormExamen((prev) => {
+      const actual = prev[leccionId] || crearExamenVacio();
+      return {
+        ...prev,
+        [leccionId]: {
+          ...actual,
+          preguntas: [...(actual.preguntas || []), crearPreguntaVacia()],
+        },
+      };
+    });
+  };
+
+  const eliminarPreguntaExamen = (leccionId, preguntaIndex) => {
+    setFormExamen((prev) => {
+      const actual = prev[leccionId] || crearExamenVacio();
+      const preguntas = [...(actual.preguntas || [])];
+      preguntas.splice(preguntaIndex, 1);
+      return {
+        ...prev,
+        [leccionId]: {
+          ...actual,
+          preguntas: preguntas.length ? preguntas : [crearPreguntaVacia()],
+        },
+      };
+    });
+  };
+
+  const validarPreguntaExamen = (pregunta) => {
+    if (!pregunta?.enunciado?.trim())
+      return "Cada pregunta debe tener enunciado.";
+    const tipo = pregunta.tipo_pregunta || "unica";
+
+    if (tipo === "texto_corto") {
+      if (!pregunta.respuesta_texto?.trim())
+        return "Las preguntas de texto corto deben tener una respuesta de referencia.";
+      if (Number(pregunta.max_caracteres || 50) > 50)
+        return "Texto corto solo permite hasta 50 caracteres.";
+      return null;
+    }
+    if (tipo === "texto_largo") {
+      if (!pregunta.respuesta_texto?.trim())
+        return "Las preguntas de texto largo deben tener una respuesta de referencia.";
+      if (Number(pregunta.max_caracteres || 200) > 200)
+        return "Texto largo solo permite hasta 200 caracteres.";
+      return null;
+    }
+    if (tipo === "numerica") {
+      if (
+        pregunta.respuesta_texto === null ||
+        pregunta.respuesta_texto === undefined ||
+        String(pregunta.respuesta_texto).trim() === ""
+      ) {
+        return "Las preguntas numéricas deben tener una respuesta numérica de referencia.";
+      }
+      const valor = String(pregunta.respuesta_texto).trim();
+      const regex = pregunta.permitir_decimales ? /^-?\d+(\.\d+)?$/ : /^-?\d+$/;
+      if (!regex.test(valor))
+        return pregunta.permitir_decimales
+          ? "La respuesta de referencia debe ser un número válido."
+          : "La respuesta de referencia debe ser un número entero.";
+      return null;
+    }
+    if (tipo === "archivo") {
+      if (Number(pregunta.tamano_max_mb || 0) <= 0)
+        return "Las preguntas de archivo deben tener un tamaño máximo válido.";
+      return null;
+    }
+
+    const opcionesCompletas = (pregunta.opciones || []).filter((op) =>
+      op.texto?.trim(),
     );
+    if (
+      opcionesCompletas.length < 2 ||
+      opcionesCompletas.length !== (pregunta.opciones || []).length
+    ) {
+      return "Las preguntas de opciones deben tener al menos 2 opciones completas.";
+    }
+    const correctas = (pregunta.opciones || []).filter(
+      (op) => op.es_correcta,
+    ).length;
+    if (tipo === "unica" && correctas !== 1)
+      return "Las preguntas de opción única deben tener exactamente una respuesta correcta.";
+    if (tipo === "multiple" && correctas < 1)
+      return "Las preguntas de opción múltiple deben tener al menos una respuesta correcta.";
+    return null;
   };
-  const guardarNotaEntrega = async (fila) => {
+
+  const guardarExamenLeccion = async (e, leccionId) => {
+    e.preventDefault();
     try {
-      setGuardandoNotaEntrega((prev) => ({
-        ...prev,
-        [fila.idmatricula]: true,
-      }));
-      await guardarNotaEntregaYRegistro({
-        tareaId: tareaDetalle.id,
-        idmatricula: fila.idmatricula,
-        nota: fila.nota,
-      });
-      alert("Nota guardada correctamente ✅");
-      const data = await getEntregasByTarea(tareaDetalle.id);
-      setEntregasTarea(data?.entregas || []);
+      const data = formExamen[leccionId] || crearExamenVacio();
+      if (!data?.titulo?.trim())
+        return showMessage("error", "Ingresa el título del examen.");
+      if (!data.preguntas?.length)
+        return showMessage("error", "Agrega al menos una pregunta.");
+
+      const errorPregunta = data.preguntas
+        .map(validarPreguntaExamen)
+        .find(Boolean);
+      if (errorPregunta) return showMessage("error", errorPregunta);
+
+      setGuardandoExamen(true);
+      const payload = {
+        leccionId,
+        grupoId: curso?.idgrupo,
+        titulo: data.titulo,
+        descripcion: data.descripcion,
+        duracion_minutos: Number(data.duracion_minutos || 30),
+        intentos_permitidos: Number(data.intentos_permitidos || 1),
+        nota_maxima: Number(data.nota_maxima || 20),
+        preguntas: data.preguntas.map((pregunta) => ({
+          enunciado: pregunta.enunciado,
+          puntaje: Number(pregunta.puntaje || 1),
+          tipo_pregunta: pregunta.tipo_pregunta || "unica",
+          respuesta_texto:
+            TIPOS_PREGUNTA_TEXTO.includes(pregunta.tipo_pregunta) ||
+            pregunta.tipo_pregunta === "numerica"
+              ? pregunta.respuesta_texto || null
+              : null,
+          texto_placeholder: pregunta.texto_placeholder || null,
+          max_caracteres:
+            pregunta.tipo_pregunta === "texto_corto"
+              ? Number(pregunta.max_caracteres || 50)
+              : pregunta.tipo_pregunta === "texto_largo"
+                ? Number(pregunta.max_caracteres || 200)
+                : null,
+          permitir_decimales:
+            pregunta.tipo_pregunta === "numerica"
+              ? !!pregunta.permitir_decimales
+              : true,
+          tamano_max_mb:
+            pregunta.tipo_pregunta === "archivo"
+              ? Number(pregunta.tamano_max_mb || 10)
+              : 10,
+          extensiones_permitidas:
+            pregunta.tipo_pregunta === "archivo"
+              ? pregunta.extensiones_permitidas || null
+              : null,
+          opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(pregunta.tipo_pregunta)
+            ? (pregunta.opciones || []).map((opcion) => ({
+                texto: opcion.texto,
+                es_correcta: !!opcion.es_correcta,
+              }))
+            : [],
+        })),
+      };
+
+      if (data.id) {
+        await actualizarExamen(data.id, payload);
+        showMessage("success", "Examen actualizado correctamente ✅");
+      } else {
+        await crearExamen(payload);
+        showMessage("success", "Examen creado correctamente ✅");
+      }
+
+      setExamenEditandoId(null);
+      setLeccionExamenEditandoId(null);
+      setMostrarFormExamen((prev) => ({ ...prev, [leccionId]: false }));
+      setFormExamen((prev) => ({ ...prev, [leccionId]: crearExamenVacio() }));
+      await cargarModulosCurso();
     } catch (error) {
-      alert(error?.message || "No se pudo guardar la nota");
+      showMessage(
+        "error",
+        error?.message || "No se pudo crear o actualizar el examen",
+      );
     } finally {
-      setGuardandoNotaEntrega((prev) => ({
-        ...prev,
-        [fila.idmatricula]: false,
-      }));
+      setGuardandoExamen(false);
     }
   };
 
-  const abrirConfigTarea = async (tarea) => {
+  const cargarExamenParaEdicion = async (examen, leccionId) => {
     try {
-      if (!curso?.idgrupo) return alert("Este curso no tiene grupo asociado.");
-      if (!tarea.calificable)
-        return alert("Esta tarea no está marcada como calificable.");
-      setCargandoConfigTarea(true);
-      setTareaConfigActual(tarea);
-      setConfigTareaOpen(true);
-      const data = await getEvaluacionesTareaDisponiblesByGrupo(
+      setGuardandoExamen(true);
+      const detalle = await getExamenDetalle(examen.id);
+      setFormExamen((prev) => ({
+        ...prev,
+        [leccionId]: {
+          id: detalle.id,
+          titulo: detalle.titulo || "",
+          descripcion: detalle.descripcion || "",
+          duracion_minutos: Number(detalle.duracion_minutos || 30),
+          intentos_permitidos: Number(detalle.intentos_permitidos || 1),
+          nota_maxima: Number(detalle.nota_maxima || 20),
+          preguntas:
+            (detalle.preguntas || []).length > 0
+              ? detalle.preguntas.map(normalizarPreguntaExamen)
+              : [crearPreguntaVacia()],
+        },
+      }));
+      setExamenEditandoId(Number(examen.id));
+      setLeccionExamenEditandoId(Number(leccionId));
+      setMostrarFormExamen((prev) => ({ ...prev, [leccionId]: true }));
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudo cargar el examen para edición.",
+      );
+    } finally {
+      setGuardandoExamen(false);
+    }
+  };
+
+  const abrirConfigExamen = async (examen) => {
+    try {
+      if (!curso?.idgrupo)
+        return showMessage("error", "Este curso no tiene grupo asociado.");
+      setCargandoConfigExamen(true);
+      setExamenConfigActual(examen);
+      setConfigExamenOpen(true);
+      const data = await getEvaluacionesExamenDisponiblesByGrupo(
         curso.idgrupo,
-        tarea.id,
+        examen.id,
       );
-      setEvaluacionesTareaDisponibles(data || []);
+      setEvaluacionesExamenDisponibles(data || []);
       const evaluacionActual = (data || []).find(
-        (ev) => Number(ev.idtarea) === Number(tarea.id),
+        (ev) => Number(ev.idexamen) === Number(examen.id),
       );
-      setEvaluacionSeleccionadaTarea(
+      setEvaluacionSeleccionadaExamen(
         evaluacionActual ? String(evaluacionActual.id) : "",
       );
     } catch (error) {
-      alert(error?.message || "No se pudo abrir la configuración de la tarea.");
-      setConfigTareaOpen(false);
-      setTareaConfigActual(null);
-      setEvaluacionesTareaDisponibles([]);
-      setEvaluacionSeleccionadaTarea("");
+      showMessage(
+        "error",
+        error?.message || "No se pudo abrir la configuración del examen.",
+      );
+      cerrarConfigExamen();
     } finally {
-      setCargandoConfigTarea(false);
+      setCargandoConfigExamen(false);
     }
   };
 
-  const cerrarConfigTarea = () => {
-    setConfigTareaOpen(false);
-    setTareaConfigActual(null);
-    setEvaluacionesTareaDisponibles([]);
-    setEvaluacionSeleccionadaTarea("");
+  const cerrarConfigExamen = () => {
+    setConfigExamenOpen(false);
+    setExamenConfigActual(null);
+    setEvaluacionesExamenDisponibles([]);
+    setEvaluacionSeleccionadaExamen("");
   };
-  const guardarConfiguracionTarea = async () => {
+
+  const guardarConfiguracionExamen = async () => {
     try {
-      if (!tareaConfigActual?.id)
-        return alert("No se encontró la tarea a configurar.");
-      if (!evaluacionSeleccionadaTarea)
-        return alert("Selecciona una evaluación de tipo tarea.");
-      setGuardandoConfigTarea(true);
-      await asignarEvaluacionATarea({
-        tareaId: tareaConfigActual.id,
-        evaluacionId: Number(evaluacionSeleccionadaTarea),
+      if (!examenConfigActual?.id)
+        return showMessage("error", "No se encontró el examen a configurar.");
+      if (!evaluacionSeleccionadaExamen)
+        return showMessage(
+          "error",
+          "Selecciona una evaluación de tipo examen.",
+        );
+      setGuardandoConfigExamen(true);
+      await asignarEvaluacionAExamen({
+        examenId: examenConfigActual.id,
+        evaluacionId: Number(evaluacionSeleccionadaExamen),
         grupoId: curso?.idgrupo,
       });
-      await cargarTareasCurso();
-      alert("La tarea fue vinculada correctamente a la evaluación ✅");
-      cerrarConfigTarea();
+      await cargarModulosCurso();
+      showMessage(
+        "success",
+        "El examen fue vinculado correctamente a la evaluación ✅",
+      );
+      cerrarConfigExamen();
     } catch (error) {
-      alert(
-        error?.message || "No se pudo guardar la configuración de la tarea.",
+      showMessage(
+        "error",
+        error?.message || "No se pudo guardar la configuración del examen.",
       );
     } finally {
-      setGuardandoConfigTarea(false);
+      setGuardandoConfigExamen(false);
     }
   };
 
+  const eliminarExamenLeccion = async (examenId) => {
+    if (!window.confirm("¿Seguro que deseas eliminar este examen?")) return;
+    try {
+      await deleteExamen(examenId);
+      await cargarModulosCurso();
+      showMessage("success", "Examen eliminado correctamente");
+    } catch (error) {
+      showMessage("error", error?.message || "No se pudo eliminar el examen");
+    }
+  };
+
+  // ==============================
+  // FUNCIONES: SESIONES EN VIVO
+  // ==============================
+  const cargarSesionesVivoCurso = async () => {
+    try {
+      setCargandoSesionesVivo(true);
+      const data = await getSesionesVivoByCurso(Number(id));
+      setSesionesVivo(data || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setCargandoSesionesVivo(false);
+    }
+  };
+
+  const handleChangeSesionVivo = (e) => {
+    const { name, value } = e.target;
+    setFormSesionVivo((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const limpiarFormSesionVivo = () => {
+    setFormSesionVivo({ titulo: "", descripcion: "", fecha: "", duracion: 60 });
+  };
+
+  const guardarSesionVivoCurso = async (e) => {
+    e.preventDefault();
+    try {
+      if (!formSesionVivo.titulo.trim())
+        return showMessage("error", "Ingresa el título de la sesión en vivo.");
+      if (!formSesionVivo.fecha)
+        return showMessage("error", "Selecciona la fecha y hora de la sesión.");
+      if (!formSesionVivo.duracion || Number(formSesionVivo.duracion) <= 0)
+        return showMessage("error", "La duración debe ser mayor a 0.");
+
+      setGuardandoSesionVivo(true);
+      await crearSesionVivo({
+        idcurso: Number(id),
+        titulo: formSesionVivo.titulo,
+        descripcion: formSesionVivo.descripcion,
+        fecha: formSesionVivo.fecha,
+        duracion: Number(formSesionVivo.duracion),
+      });
+
+      limpiarFormSesionVivo();
+      setMostrarFormSesionVivo(false);
+      await cargarSesionesVivoCurso();
+      showMessage("success", "Sesión en vivo creada correctamente ✅");
+    } catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudo crear la sesión en vivo.",
+      );
+    } finally {
+      setGuardandoSesionVivo(false);
+    }
+  };
+
+  const formatearFechaSesion = (fecha) => {
+    if (!fecha) return "-";
+    const value = new Date(fecha);
+    if (Number.isNaN(value.getTime())) return fecha;
+    return value.toLocaleString("es-PE", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  };
+
+  // ==============================
+  // UTILIDADES Y FILTROS
+  // ==============================
   const alumnosFiltradosAsistencia = alumnos.filter((a) => {
     const key = a.idalumno || a.id;
     const asistencia = asistenciaMap[key] || {};
@@ -1370,20 +2486,19 @@ export default function CursoDetalleAdmin() {
     return coincideBusqueda && coincideEstado;
   });
 
-  const ausentes = alumnos.filter((a) => {
-    const key = a.idalumno || a.id;
-    return asistenciaMap[key]?.estado === "falta";
-  });
-  const tardanzas = alumnos.filter((a) => {
-    const key = a.idalumno || a.id;
-    return asistenciaMap[key]?.estado === "tardanza";
-  });
-  const presentes = alumnos.filter((a) => {
-    const key = a.idalumno || a.id;
-    return asistenciaMap[key]?.estado === "presente";
-  });
+  const ausentes = alumnos.filter(
+    (a) => asistenciaMap[a.idalumno || a.id]?.estado === "falta",
+  );
+  const tardanzas = alumnos.filter(
+    (a) => asistenciaMap[a.idalumno || a.id]?.estado === "tardanza",
+  );
+  const presentes = alumnos.filter(
+    (a) => asistenciaMap[a.idalumno || a.id]?.estado === "presente",
+  );
+
   const tareasRevisadas = tareas.filter((t) => t.revisada).length;
   const tareasPendientes = tareas.filter((t) => !t.revisada).length;
+
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
     return new Date(`${fecha}T00:00:00`).toLocaleDateString("es-PE");
@@ -1423,6 +2538,9 @@ export default function CursoDetalleAdmin() {
     };
   };
 
+  // ==============================
+  // RENDERIZADO
+  // ==============================
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-2xl shadow text-gray-500">
@@ -1627,7 +2745,6 @@ export default function CursoDetalleAdmin() {
         <div className="space-y-6">
           <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
             <h3 className="text-xl font-bold mb-4">Información general</h3>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-gray-500 mb-1">Curso</p>
@@ -1635,14 +2752,12 @@ export default function CursoDetalleAdmin() {
                   {curso.nombre || curso.nombrecurso || "Sin nombre"}
                 </p>
               </div>
-
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-gray-500 mb-1">Grupo</p>
                 <p className="font-semibold text-gray-900">
                   {curso.grupo || "Sin grupo"}
                 </p>
               </div>
-
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-gray-500 mb-1">Horario</p>
                 <p className="font-semibold text-gray-900">
@@ -1652,8 +2767,155 @@ export default function CursoDetalleAdmin() {
             </div>
           </div>
 
+          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold">Sesiones en vivo</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Programa clases en vivo con Google Meet para este curso.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMostrarFormSesionVivo((prev) => !prev)}
+                className="rounded-2xl bg-violet-600 px-4 py-2 text-white font-semibold hover:bg-violet-700 transition"
+              >
+                {mostrarFormSesionVivo ? "Cancelar" : "+ Crear sesión en vivo"}
+              </button>
+            </div>
+
+            {mostrarFormSesionVivo && (
+              <form
+                onSubmit={guardarSesionVivoCurso}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6 mt-6"
+              >
+                <div>
+                  <label className="block font-semibold mb-2">Título</label>
+                  <input
+                    type="text"
+                    name="titulo"
+                    value={formSesionVivo.titulo}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Ej. Clase en vivo - Introducción"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2">
+                    Duración (minutos)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    name="duracion"
+                    value={formSesionVivo.duracion}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">
+                    Descripción
+                  </label>
+                  <textarea
+                    name="descripcion"
+                    value={formSesionVivo.descripcion}
+                    onChange={handleChangeSesionVivo}
+                    rows={3}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Descripción breve de la sesión"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">
+                    Fecha y hora
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="fecha"
+                    value={formSesionVivo.fecha}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+                <div className="md:col-span-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={guardandoSesionVivo}
+                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                  >
+                    {guardandoSesionVivo
+                      ? "Creando sesión..."
+                      : "Guardar sesión"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-6">
+              {cargandoSesionesVivo ? (
+                <p className="text-sm text-gray-500">
+                  Cargando sesiones en vivo...
+                </p>
+              ) : sesionesVivo.length === 0 ? (
+                <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
+                  <p className="text-gray-700 font-medium">
+                    Aún no hay sesiones en vivo programadas.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Crea una sesión para que tus alumnos puedan unirse a la
+                    clase.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sesionesVivo.map((sesion) => (
+                    <div
+                      key={sesion.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <p className="text-lg font-bold text-slate-800">
+                            {sesion.titulo}
+                          </p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {sesion.descripcion || "Sin descripción"}
+                          </p>
+                          <div className="mt-3 space-y-1 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold">Fecha:</span>{" "}
+                              {formatearFechaSesion(sesion.fecha)}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Duración:</span>{" "}
+                              {sesion.duracion} min
+                            </p>
+                            <p>
+                              <span className="font-semibold">Estado:</span>{" "}
+                              {sesion.estado || "programada"}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <a
+                            href={sesion.link_reunion}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition"
+                          >
+                            Unirse a la sesión
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* PRESENTES */}
             <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
               <h3 className="text-lg font-bold mb-4">Presentes</h3>
               {presentes.length === 0 ? (
@@ -1662,24 +2924,23 @@ export default function CursoDetalleAdmin() {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {presentes.map((a) => {
-                    const key = a.idalumno || a.id;
-                    return (
-                      <div key={key} className="border rounded-xl p-3">
-                        <div className="font-medium">
-                          {a.nombre} {a.apellido}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          DNI: {a.numdocumento || "-"}
-                        </div>
+                  {presentes.map((a) => (
+                    <div
+                      key={a.idalumno || a.id}
+                      className="border rounded-xl p-3"
+                    >
+                      <div className="font-medium">
+                        {a.nombre} {a.apellido}
                       </div>
-                    );
-                  })}
+                      <div className="text-sm text-gray-500">
+                        DNI: {a.numdocumento || "-"}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* AUSENTES */}
             <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
               <h3 className="text-lg font-bold mb-4">Ausentes</h3>
               {ausentes.length === 0 ? (
@@ -1687,10 +2948,12 @@ export default function CursoDetalleAdmin() {
               ) : (
                 <div className="space-y-3">
                   {ausentes.map((a) => {
-                    const key = a.idalumno || a.id;
-                    const info = asistenciaMap[key] || {};
+                    const info = asistenciaMap[a.idalumno || a.id] || {};
                     return (
-                      <div key={key} className="border rounded-xl p-3">
+                      <div
+                        key={a.idalumno || a.id}
+                        className="border rounded-xl p-3"
+                      >
                         <div className="font-medium">
                           {a.nombre} {a.apellido}
                         </div>
@@ -1707,7 +2970,6 @@ export default function CursoDetalleAdmin() {
               )}
             </div>
 
-            {/* TARDANZAS */}
             <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
               <h3 className="text-lg font-bold mb-4">Tardanzas</h3>
               {tardanzas.length === 0 ? (
@@ -1715,10 +2977,12 @@ export default function CursoDetalleAdmin() {
               ) : (
                 <div className="space-y-3">
                   {tardanzas.map((a) => {
-                    const key = a.idalumno || a.id;
-                    const info = asistenciaMap[key] || {};
+                    const info = asistenciaMap[a.idalumno || a.id] || {};
                     return (
-                      <div key={key} className="border rounded-xl p-3">
+                      <div
+                        key={a.idalumno || a.id}
+                        className="border rounded-xl p-3"
+                      >
                         <div className="font-medium">
                           {a.nombre} {a.apellido}
                         </div>
@@ -1748,7 +3012,6 @@ export default function CursoDetalleAdmin() {
                 Registrar y consultar asistencia por fecha
               </p>
             </div>
-
             <div className="flex flex-col sm:flex-row sm:items-end gap-3">
               <div>
                 <label className="block font-semibold mb-2">
@@ -1761,7 +3024,6 @@ export default function CursoDetalleAdmin() {
                   className="border rounded-xl px-3 py-2"
                 />
               </div>
-
               <button
                 type="button"
                 onClick={() => cargarAsistenciaPorFecha(fechaAsistencia)}
@@ -1769,7 +3031,6 @@ export default function CursoDetalleAdmin() {
               >
                 Buscar
               </button>
-
               <button
                 type="button"
                 onClick={irAHoy}
@@ -1777,13 +3038,19 @@ export default function CursoDetalleAdmin() {
               >
                 Hoy
               </button>
-
               <button
                 type="button"
                 onClick={exportarPDF}
                 className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700"
               >
                 Exportar PDF
+              </button>
+              <button
+                type="button"
+                onClick={exportarExcel}
+                className="bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700"
+              >
+                Exportar Excel
               </button>
             </div>
           </div>
@@ -1802,7 +3069,6 @@ export default function CursoDetalleAdmin() {
                   className="w-full border rounded-xl px-3 py-2"
                 />
               </div>
-
               <div>
                 <label className="block font-semibold mb-2">
                   Filtrar estado
@@ -1849,7 +3115,6 @@ export default function CursoDetalleAdmin() {
                   {alumnosFiltradosAsistencia.map((a) => {
                     const key = a.idalumno || a.id;
                     const asistencia = asistenciaMap[key] || {};
-
                     return (
                       <tr key={key} className="border-b align-top">
                         <td className="py-3 px-2">
@@ -1867,15 +3132,12 @@ export default function CursoDetalleAdmin() {
                             )}
                           </div>
                         </td>
-
                         <td className="py-3 px-2">
                           <div className="font-medium">
                             {a.nombre} {a.apellido}
                           </div>
                         </td>
-
                         <td className="py-3 px-2">{a.numdocumento || "-"}</td>
-
                         <td className="py-3 px-2">
                           <input
                             type="radio"
@@ -1886,7 +3148,6 @@ export default function CursoDetalleAdmin() {
                             }
                           />
                         </td>
-
                         <td className="py-3 px-2">
                           <input
                             type="radio"
@@ -1897,7 +3158,6 @@ export default function CursoDetalleAdmin() {
                             }
                           />
                         </td>
-
                         <td className="py-3 px-2">
                           <input
                             type="radio"
@@ -1908,7 +3168,6 @@ export default function CursoDetalleAdmin() {
                             }
                           />
                         </td>
-
                         <td className="py-3 px-2">
                           {(asistencia.estado === "tardanza" ||
                             asistencia.estado === "falta") && (
@@ -1927,7 +3186,6 @@ export default function CursoDetalleAdmin() {
                             </select>
                           )}
                         </td>
-
                         <td className="py-3 px-2">
                           <input
                             value={asistencia.observacion || ""}
@@ -1945,7 +3203,6 @@ export default function CursoDetalleAdmin() {
               </table>
             </div>
           )}
-
           <div className="flex justify-end">
             <button
               type="button"
@@ -1970,7 +3227,6 @@ export default function CursoDetalleAdmin() {
                   seguimiento.
                 </p>
               </div>
-
               <button
                 type="button"
                 onClick={() => setMostrarFormTarea((prev) => !prev)}
@@ -1987,14 +3243,12 @@ export default function CursoDetalleAdmin() {
                   {tareas.length}
                 </p>
               </div>
-
               <div className="rounded-2xl border bg-amber-50 p-4">
                 <p className="text-sm text-amber-700">Pendientes</p>
                 <p className="text-2xl font-bold text-amber-700 mt-1">
                   {tareasPendientes}
                 </p>
               </div>
-
               <div className="rounded-2xl border bg-emerald-50 p-4">
                 <p className="text-sm text-emerald-700">Revisadas</p>
                 <p className="text-2xl font-bold text-emerald-700 mt-1">
@@ -2029,7 +3283,6 @@ export default function CursoDetalleAdmin() {
                     required
                   />
                 </div>
-
                 <div className="md:col-span-2">
                   <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer">
                     <input
@@ -2050,7 +3303,6 @@ export default function CursoDetalleAdmin() {
                     </div>
                   </label>
                 </div>
-
                 <div className="md:col-span-2">
                   <label className="block font-semibold mb-2">
                     Descripción
@@ -2064,7 +3316,6 @@ export default function CursoDetalleAdmin() {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block font-semibold mb-2">
                     Fecha de inicio
@@ -2078,7 +3329,6 @@ export default function CursoDetalleAdmin() {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block font-semibold mb-2">
                     Fecha límite
@@ -2092,7 +3342,6 @@ export default function CursoDetalleAdmin() {
                     required
                   />
                 </div>
-
                 <div>
                   <label className="block font-semibold mb-2">
                     Tipo de entrega
@@ -2110,7 +3359,6 @@ export default function CursoDetalleAdmin() {
                     <option value="link">Link</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block font-semibold mb-2">
                     Material de apoyo
@@ -2127,7 +3375,6 @@ export default function CursoDetalleAdmin() {
                     <option value="video">Video</option>
                   </select>
                 </div>
-
                 {formTarea.tipoApoyo === "texto" && (
                   <div className="md:col-span-2">
                     <label className="block font-semibold mb-2">
@@ -2142,7 +3389,6 @@ export default function CursoDetalleAdmin() {
                     />
                   </div>
                 )}
-
                 {formTarea.tipoApoyo === "archivo" && (
                   <div className="md:col-span-2">
                     <label className="block font-semibold mb-2">
@@ -2156,7 +3402,6 @@ export default function CursoDetalleAdmin() {
                     />
                   </div>
                 )}
-
                 {formTarea.tipoApoyo === "video" && (
                   <div className="md:col-span-2">
                     <label className="block font-semibold mb-2">
@@ -2171,7 +3416,6 @@ export default function CursoDetalleAdmin() {
                     />
                   </div>
                 )}
-
                 <div className="md:col-span-2 flex justify-end">
                   <button
                     type="submit"
@@ -2188,7 +3432,6 @@ export default function CursoDetalleAdmin() {
           <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold">Listado de tareas</h4>
-
               <button
                 type="button"
                 onClick={cargarTareasCurso}
@@ -2197,7 +3440,6 @@ export default function CursoDetalleAdmin() {
                 Recargar
               </button>
             </div>
-
             {cargandoTareas ? (
               <p className="text-gray-500">Cargando tareas...</p>
             ) : tareas.length === 0 ? (
@@ -2232,11 +3474,7 @@ export default function CursoDetalleAdmin() {
                       return (
                         <SortableTareaItem key={tarea.id} tarea={tarea}>
                           <div
-                            className={`overflow-hidden rounded-2xl border shadow-sm transition ${
-                              tarea.revisada
-                                ? "border-emerald-200 bg-emerald-50/60"
-                                : "border-gray-200 bg-white"
-                            }`}
+                            className={`overflow-hidden rounded-2xl border shadow-sm transition ${tarea.revisada ? "border-emerald-200 bg-emerald-50/60" : "border-gray-200 bg-white"}`}
                           >
                             <div
                               type="button"
@@ -2257,7 +3495,6 @@ export default function CursoDetalleAdmin() {
                                     <h5 className="text-lg font-bold text-gray-800">
                                       {tarea.titulo}
                                     </h5>
-
                                     {tarea.revisada ? (
                                       <span className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1">
                                         Revisada
@@ -2267,7 +3504,6 @@ export default function CursoDetalleAdmin() {
                                         Pendiente
                                       </span>
                                     )}
-
                                     {estadoFecha && (
                                       <span
                                         className={`inline-flex items-center rounded-full text-xs font-semibold px-3 py-1 ${estadoFecha.className}`}
@@ -2276,7 +3512,6 @@ export default function CursoDetalleAdmin() {
                                       </span>
                                     )}
                                   </div>
-
                                   <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-500">
                                     <span>
                                       <strong>Inicio:</strong>{" "}
@@ -2287,7 +3522,6 @@ export default function CursoDetalleAdmin() {
                                       {formatearFecha(tarea.fecha_limite)}
                                     </span>
                                   </div>
-
                                   {indicadorEvaluacion && (
                                     <div className="mt-3">
                                       <span
@@ -2298,7 +3532,6 @@ export default function CursoDetalleAdmin() {
                                     </div>
                                   )}
                                 </div>
-
                                 <div className="flex items-center gap-3">
                                   {tarea.calificable && (
                                     <button
@@ -2313,11 +3546,9 @@ export default function CursoDetalleAdmin() {
                                       <Settings className="w-4 h-4" />
                                     </button>
                                   )}
-
                                   <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1">
                                     {tarea.tipo_entrega || "Sin tipo"}
                                   </span>
-
                                   <span className="text-lg text-gray-500">
                                     {abierta ? "▲" : "▼"}
                                   </span>
@@ -2335,7 +3566,6 @@ export default function CursoDetalleAdmin() {
                                     {tarea.descripcion || "Sin descripción"}
                                   </div>
                                 </div>
-
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                   <div className="rounded-xl border bg-gray-50 p-3">
                                     <p className="text-gray-500">
@@ -2345,7 +3575,6 @@ export default function CursoDetalleAdmin() {
                                       {tarea.tipo_entrega || "-"}
                                     </p>
                                   </div>
-
                                   <div className="rounded-xl border bg-gray-50 p-3">
                                     <p className="text-gray-500">
                                       Tipo de apoyo
@@ -2363,13 +3592,11 @@ export default function CursoDetalleAdmin() {
                                     <p className="text-sm font-semibold text-gray-700 mb-2">
                                       Material de apoyo
                                     </p>
-
                                     {tarea.texto_apoyo && (
                                       <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700 mb-3 whitespace-pre-line">
                                         {tarea.texto_apoyo}
                                       </div>
                                     )}
-
                                     <div className="flex flex-wrap gap-2">
                                       {tarea.archivo_apoyo_url && (
                                         <a
@@ -2381,7 +3608,6 @@ export default function CursoDetalleAdmin() {
                                           Ver archivo de apoyo
                                         </a>
                                       )}
-
                                       {tarea.video_apoyo_url && (
                                         <a
                                           href={tarea.video_apoyo_url}
@@ -2408,7 +3634,6 @@ export default function CursoDetalleAdmin() {
                                           del tipo tarea.
                                         </p>
                                       </div>
-
                                       {indicadorEvaluacion && (
                                         <div className="mt-3">
                                           <span
@@ -2418,7 +3643,6 @@ export default function CursoDetalleAdmin() {
                                           </span>
                                         </div>
                                       )}
-
                                       <button
                                         type="button"
                                         onClick={() => abrirConfigTarea(tarea)}
@@ -2434,7 +3658,6 @@ export default function CursoDetalleAdmin() {
                                   <p className="text-sm font-semibold text-gray-700 mb-2">
                                     Entregas de alumnos
                                   </p>
-
                                   {cargandoDetalleTarea &&
                                   tareaDetalle?.id === tarea.id ? (
                                     <p className="text-sm text-gray-500">
@@ -2477,7 +3700,6 @@ export default function CursoDetalleAdmin() {
                                                 fila.fecha_entrega
                                                   ? new Date(fila.fecha_entrega)
                                                   : null;
-
                                               return (
                                                 <tr
                                                   key={fila.idmatricula}
@@ -2493,7 +3715,6 @@ export default function CursoDetalleAdmin() {
                                                       {fila.numdocumento || "-"}
                                                     </div>
                                                   </td>
-
                                                   <td className="px-3 py-3">
                                                     {fechaEntrega
                                                       ? fechaEntrega.toLocaleDateString(
@@ -2501,7 +3722,6 @@ export default function CursoDetalleAdmin() {
                                                         )
                                                       : "—"}
                                                   </td>
-
                                                   <td className="px-3 py-3">
                                                     {fechaEntrega
                                                       ? fechaEntrega.toLocaleTimeString(
@@ -2513,7 +3733,6 @@ export default function CursoDetalleAdmin() {
                                                         )
                                                       : "—"}
                                                   </td>
-
                                                   <td className="px-3 py-3">
                                                     {fila.entrego ? (
                                                       <div className="flex flex-wrap gap-2">
@@ -2529,7 +3748,6 @@ export default function CursoDetalleAdmin() {
                                                             Ver archivo
                                                           </a>
                                                         )}
-
                                                         {fila.comentario && (
                                                           <button
                                                             type="button"
@@ -2551,7 +3769,6 @@ export default function CursoDetalleAdmin() {
                                                             Ver texto
                                                           </button>
                                                         )}
-
                                                         {fila.enlace_url && (
                                                           <a
                                                             href={
@@ -2564,7 +3781,6 @@ export default function CursoDetalleAdmin() {
                                                             Abrir enlace
                                                           </a>
                                                         )}
-
                                                         {!fila.archivo_url &&
                                                           !fila.comentario &&
                                                           !fila.enlace_url && (
@@ -2579,7 +3795,6 @@ export default function CursoDetalleAdmin() {
                                                       </span>
                                                     )}
                                                   </td>
-
                                                   <td className="px-3 py-3">
                                                     <input
                                                       type="number"
@@ -2597,7 +3812,6 @@ export default function CursoDetalleAdmin() {
                                                       placeholder="0-20"
                                                     />
                                                   </td>
-
                                                   <td className="px-3 py-3">
                                                     <button
                                                       type="button"
@@ -2632,22 +3846,16 @@ export default function CursoDetalleAdmin() {
                                     </div>
                                   )}
                                 </div>
-
                                 <div className="flex flex-wrap justify-end gap-2 pt-2">
                                   <button
                                     type="button"
                                     onClick={() => cambiarEstadoRevision(tarea)}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium ${
-                                      tarea.revisada
-                                        ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                                        : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                                    }`}
+                                    className={`px-4 py-2 rounded-xl text-sm font-medium ${tarea.revisada ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
                                   >
                                     {tarea.revisada
                                       ? "Marcar como pendiente"
                                       : "Marcar como revisada"}
                                   </button>
-
                                   <button
                                     type="button"
                                     onClick={() => eliminarTareaCurso(tarea.id)}
@@ -2685,17 +3893,14 @@ export default function CursoDetalleAdmin() {
                       {modulos.length} módulo{modulos.length === 1 ? "" : "s"}
                     </span>
                   </div>
-
                   <h3 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">
                     Módulos del curso
                   </h3>
-
                   <p className="text-sm md:text-base text-slate-500 mt-2">
                     Organiza el curso por módulos, submódulos, lecciones y
                     materiales en una vista más clara, moderna y profesional.
                   </p>
                 </div>
-
                 <div className="flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -2704,7 +3909,6 @@ export default function CursoDetalleAdmin() {
                   >
                     Recargar
                   </button>
-
                   <button
                     type="button"
                     onClick={() => setMostrarFormModulo((prev) => !prev)}
@@ -2734,7 +3938,6 @@ export default function CursoDetalleAdmin() {
                     placeholder="Ej. Módulo 1 - Introducción"
                   />
                 </div>
-
                 <div>
                   <label className="block font-semibold mb-2">
                     Descripción
@@ -2748,7 +3951,6 @@ export default function CursoDetalleAdmin() {
                     placeholder="Descripción breve del módulo"
                   />
                 </div>
-
                 <div className="md:col-span-2 flex justify-end">
                   <button
                     type="submit"
@@ -2804,18 +4006,15 @@ export default function CursoDetalleAdmin() {
                                     <span className="inline-flex items-center rounded-full bg-blue-600 text-white text-xs font-bold px-3 py-1.5 shadow-sm">
                                       Módulo {index + 1}
                                     </span>
-
                                     <h4 className="text-xl md:text-2xl font-black tracking-tight text-slate-900">
                                       {modulo.titulo}
                                     </h4>
                                   </div>
-
                                   {modulo.descripcion && (
                                     <p className="text-sm md:text-base text-slate-500 mt-3 max-w-3xl">
                                       {modulo.descripcion}
                                     </p>
                                   )}
-
                                   <div className="mt-4 flex flex-wrap gap-2">
                                     <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs font-semibold">
                                       {modulo.submodulos?.length || 0} submódulo
@@ -2823,7 +4022,6 @@ export default function CursoDetalleAdmin() {
                                         ? ""
                                         : "s"}
                                     </span>
-
                                     <span className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
                                       {tareasDelModulo.length} tarea
                                       {tareasDelModulo.length === 1 ? "" : "s"}
@@ -2835,7 +4033,6 @@ export default function CursoDetalleAdmin() {
                                       <p className="text-sm font-semibold text-slate-600 mb-3">
                                         Tareas vinculadas al módulo
                                       </p>
-
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {tareasDelModulo.map((tarea) => (
                                           <div
@@ -2854,7 +4051,6 @@ export default function CursoDetalleAdmin() {
                                                   )}
                                                 </div>
                                               </div>
-
                                               <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-[11px] font-semibold">
                                                 {tarea.tipo_entrega || "Tarea"}
                                               </span>
@@ -2865,7 +4061,6 @@ export default function CursoDetalleAdmin() {
                                     </div>
                                   )}
                                 </div>
-
                                 <div className="flex flex-wrap gap-2">
                                   <button
                                     type="button"
@@ -2876,7 +4071,6 @@ export default function CursoDetalleAdmin() {
                                   >
                                     + Submódulo
                                   </button>
-
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -2886,7 +4080,6 @@ export default function CursoDetalleAdmin() {
                                   >
                                     + Tarea
                                   </button>
-
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -2896,7 +4089,6 @@ export default function CursoDetalleAdmin() {
                                   >
                                     {abierto ? "Ocultar" : "Ver contenido"}
                                   </button>
-
                                   <button
                                     type="button"
                                     onClick={() => iniciarEdicionModulo(modulo)}
@@ -2904,7 +4096,6 @@ export default function CursoDetalleAdmin() {
                                   >
                                     Editar
                                   </button>
-
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -2941,7 +4132,6 @@ export default function CursoDetalleAdmin() {
                                       placeholder="Ej. Submódulo 1.1"
                                     />
                                   </div>
-
                                   <div>
                                     <label className="block font-semibold mb-2">
                                       Descripción
@@ -2960,7 +4150,6 @@ export default function CursoDetalleAdmin() {
                                       placeholder="Descripción breve"
                                     />
                                   </div>
-
                                   <div className="md:col-span-2 flex justify-end">
                                     <button
                                       type="submit"
@@ -2993,7 +4182,6 @@ export default function CursoDetalleAdmin() {
                                       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                     />
                                   </div>
-
                                   <div>
                                     <label className="block font-semibold mb-2">
                                       Editar descripción
@@ -3010,7 +4198,6 @@ export default function CursoDetalleAdmin() {
                                       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                     />
                                   </div>
-
                                   <div className="md:col-span-2 flex justify-end gap-2">
                                     <button
                                       type="button"
@@ -3019,7 +4206,6 @@ export default function CursoDetalleAdmin() {
                                     >
                                       Cancelar
                                     </button>
-
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -3075,19 +4261,16 @@ export default function CursoDetalleAdmin() {
                                                         Submódulo {index + 1}.
                                                         {idxSub + 1}
                                                       </span>
-
                                                       <h5 className="text-lg font-bold text-slate-800">
                                                         {submodulo.titulo}
                                                       </h5>
                                                     </div>
-
                                                     {submodulo.descripcion && (
                                                       <p className="text-sm text-slate-500 mt-2">
                                                         {submodulo.descripcion}
                                                       </p>
                                                     )}
                                                   </div>
-
                                                   <div className="flex flex-wrap gap-2">
                                                     <button
                                                       type="button"
@@ -3100,7 +4283,6 @@ export default function CursoDetalleAdmin() {
                                                     >
                                                       + Lección
                                                     </button>
-
                                                     <button
                                                       type="button"
                                                       onClick={() =>
@@ -3112,7 +4294,6 @@ export default function CursoDetalleAdmin() {
                                                     >
                                                       Editar
                                                     </button>
-
                                                     <button
                                                       type="button"
                                                       onClick={() =>
@@ -3161,7 +4342,6 @@ export default function CursoDetalleAdmin() {
                                                         placeholder="Ej. Lección 1 - Introducción"
                                                       />
                                                     </div>
-
                                                     <div>
                                                       <label className="block font-semibold mb-2">
                                                         Descripción
@@ -3184,7 +4364,6 @@ export default function CursoDetalleAdmin() {
                                                         placeholder="Descripción breve"
                                                       />
                                                     </div>
-
                                                     <div className="md:col-span-2 flex justify-end">
                                                       <button
                                                         type="submit"
@@ -3281,14 +4460,12 @@ export default function CursoDetalleAdmin() {
                                                                           {idxLeccion +
                                                                             1}
                                                                         </span>
-
                                                                         <h5 className="text-lg font-bold text-slate-800">
                                                                           {
                                                                             leccion.titulo
                                                                           }
                                                                         </h5>
                                                                       </div>
-
                                                                       {leccion.descripcion && (
                                                                         <p className="text-sm text-slate-500 mt-2">
                                                                           {
@@ -3297,7 +4474,6 @@ export default function CursoDetalleAdmin() {
                                                                         </p>
                                                                       )}
                                                                     </div>
-
                                                                     <div className="flex flex-wrap gap-2">
                                                                       <button
                                                                         type="button"
@@ -3311,7 +4487,31 @@ export default function CursoDetalleAdmin() {
                                                                         +
                                                                         Material
                                                                       </button>
-
+                                                                      <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                          toggleFormExamen(
+                                                                            leccion.id,
+                                                                          )
+                                                                        }
+                                                                        disabled={
+                                                                          !!examenEditandoId &&
+                                                                          Number(
+                                                                            leccionExamenEditandoId,
+                                                                          ) !==
+                                                                            Number(
+                                                                              leccion.id,
+                                                                            )
+                                                                        }
+                                                                        className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm disabled:opacity-50"
+                                                                      >
+                                                                        {mostrarFormExamen[
+                                                                          leccion
+                                                                            .id
+                                                                        ]
+                                                                          ? "Cerrar examen"
+                                                                          : "+ Examen"}
+                                                                      </button>
                                                                       <button
                                                                         type="button"
                                                                         onClick={() =>
@@ -3325,7 +4525,6 @@ export default function CursoDetalleAdmin() {
                                                                           ? "Ocultar materiales"
                                                                           : "Ver materiales"}
                                                                       </button>
-
                                                                       <button
                                                                         type="button"
                                                                         onClick={() =>
@@ -3337,7 +4536,6 @@ export default function CursoDetalleAdmin() {
                                                                       >
                                                                         Editar
                                                                       </button>
-
                                                                       <button
                                                                         type="button"
                                                                         onClick={() =>
@@ -3351,6 +4549,872 @@ export default function CursoDetalleAdmin() {
                                                                       </button>
                                                                     </div>
                                                                   </div>
+
+                                                                  {leccion
+                                                                    .examenes
+                                                                    ?.length >
+                                                                    0 && (
+                                                                    <div className="mt-4 space-y-3">
+                                                                      <p className="text-sm font-semibold text-slate-700">
+                                                                        Exámenes
+                                                                        de la
+                                                                        lección
+                                                                      </p>
+                                                                      {leccion.examenes
+                                                                        .filter(
+                                                                          (
+                                                                            examen,
+                                                                          ) => {
+                                                                            if (
+                                                                              examenEditandoId &&
+                                                                              Number(
+                                                                                leccionExamenEditandoId,
+                                                                              ) ===
+                                                                                Number(
+                                                                                  leccion.id,
+                                                                                )
+                                                                            ) {
+                                                                              return (
+                                                                                Number(
+                                                                                  examen.id,
+                                                                                ) ===
+                                                                                Number(
+                                                                                  examenEditandoId,
+                                                                                )
+                                                                              );
+                                                                            }
+                                                                            return true;
+                                                                          },
+                                                                        )
+                                                                        .map(
+                                                                          (
+                                                                            examen,
+                                                                            idxExamen,
+                                                                          ) => (
+                                                                            <div
+                                                                              key={
+                                                                                examen.id
+                                                                              }
+                                                                              className={`rounded-2xl border p-4 ${Number(examen.id) === Number(examenEditandoId) ? "border-amber-300 bg-amber-50" : "border-violet-200 bg-violet-50"}`}
+                                                                            >
+                                                                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                                                <div>
+                                                                                  <div className="flex flex-wrap items-center gap-2">
+                                                                                    <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
+                                                                                      Examen{" "}
+                                                                                      {idxExamen +
+                                                                                        1}
+                                                                                    </span>
+                                                                                    <h6 className="font-bold text-slate-800">
+                                                                                      {
+                                                                                        examen.titulo
+                                                                                      }
+                                                                                    </h6>
+                                                                                    {Number(
+                                                                                      examen.id,
+                                                                                    ) ===
+                                                                                      Number(
+                                                                                        examenEditandoId,
+                                                                                      ) && (
+                                                                                      <span className="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
+                                                                                        Editando
+                                                                                        ahora
+                                                                                      </span>
+                                                                                    )}
+                                                                                  </div>
+                                                                                  {examen.descripcion && (
+                                                                                    <p className="text-sm text-slate-500 mt-2">
+                                                                                      {
+                                                                                        examen.descripcion
+                                                                                      }
+                                                                                    </p>
+                                                                                  )}
+                                                                                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                      {examen.total_preguntas ||
+                                                                                        0}{" "}
+                                                                                      preguntas
+                                                                                    </span>
+                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                      {examen.duracion_minutos ||
+                                                                                        30}{" "}
+                                                                                      min
+                                                                                    </span>
+                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                      {examen.intentos_permitidos ||
+                                                                                        1}{" "}
+                                                                                      intento(s)
+                                                                                    </span>
+                                                                                    <span
+                                                                                      className={`inline-flex rounded-full border px-3 py-1 ${examen.evaluacion_nombre ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}
+                                                                                    >
+                                                                                      {examen.evaluacion_nombre
+                                                                                        ? `Evaluación asignada: ${examen.evaluacion_nombre}`
+                                                                                        : "Sin evaluación asignada"}
+                                                                                    </span>
+                                                                                  </div>
+                                                                                </div>
+                                                                                <div className="flex flex-wrap gap-2">
+                                                                                  <button
+                                                                                    type="button"
+                                                                                    onClick={() =>
+                                                                                      abrirConfigExamen(
+                                                                                        examen,
+                                                                                      )
+                                                                                    }
+                                                                                    className="rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+                                                                                  >
+                                                                                    Configurar
+                                                                                    nota
+                                                                                  </button>
+                                                                                  <button
+                                                                                    type="button"
+                                                                                    onClick={() =>
+                                                                                      cargarExamenParaEdicion(
+                                                                                        examen,
+                                                                                        leccion.id,
+                                                                                      )
+                                                                                    }
+                                                                                    disabled={
+                                                                                      guardandoExamen
+                                                                                    }
+                                                                                    className="rounded-2xl bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-200 disabled:opacity-60"
+                                                                                  >
+                                                                                    {Number(
+                                                                                      examen.id,
+                                                                                    ) ===
+                                                                                    Number(
+                                                                                      examenEditandoId,
+                                                                                    )
+                                                                                      ? "Editando..."
+                                                                                      : "Editar examen"}
+                                                                                  </button>
+                                                                                  <button
+                                                                                    type="button"
+                                                                                    onClick={() =>
+                                                                                      eliminarExamenLeccion(
+                                                                                        examen.id,
+                                                                                      )
+                                                                                    }
+                                                                                    className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
+                                                                                  >
+                                                                                    Eliminar
+                                                                                  </button>
+                                                                                </div>
+                                                                              </div>
+                                                                            </div>
+                                                                          ),
+                                                                        )}
+                                                                    </div>
+                                                                  )}
+
+                                                                  {mostrarFormExamen[
+                                                                    leccion.id
+                                                                  ] && (
+                                                                    <form
+                                                                      onSubmit={(
+                                                                        e,
+                                                                      ) =>
+                                                                        guardarExamenLeccion(
+                                                                          e,
+                                                                          leccion.id,
+                                                                        )
+                                                                      }
+                                                                      className="mt-5 border-t pt-5 space-y-5"
+                                                                    >
+                                                                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                                                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                                                          <div>
+                                                                            <p className="text-sm font-semibold text-amber-800">
+                                                                              {examenEditandoId
+                                                                                ? `Editando examen: ${formExamen[leccion.id]?.titulo || "Sin título"}`
+                                                                                : "Creando nuevo examen"}
+                                                                            </p>
+                                                                            <p className="text-xs text-amber-700 mt-1">
+                                                                              {examenEditandoId
+                                                                                ? "Mientras editas este examen, los demás exámenes de la lección se ocultan para evitar confusión."
+                                                                                : "Define la configuración general y luego agrega las preguntas."}
+                                                                            </p>
+                                                                          </div>
+                                                                          <div className="flex flex-wrap gap-2">
+                                                                            <button
+                                                                              type="button"
+                                                                              onClick={() =>
+                                                                                cancelarEdicionExamen(
+                                                                                  leccion.id,
+                                                                                )
+                                                                              }
+                                                                              className="rounded-2xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100"
+                                                                            >
+                                                                              Cancelar
+                                                                            </button>
+                                                                          </div>
+                                                                        </div>
+                                                                      </div>
+
+                                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                        <div>
+                                                                          <label className="block font-semibold mb-2">
+                                                                            Título
+                                                                            del
+                                                                            examen
+                                                                          </label>
+                                                                          <input
+                                                                            type="text"
+                                                                            value={
+                                                                              formExamen[
+                                                                                leccion
+                                                                                  .id
+                                                                              ]
+                                                                                ?.titulo ||
+                                                                              ""
+                                                                            }
+                                                                            onChange={(
+                                                                              e,
+                                                                            ) =>
+                                                                              handleChangeExamen(
+                                                                                leccion.id,
+                                                                                "titulo",
+                                                                                e
+                                                                                  .target
+                                                                                  .value,
+                                                                              )
+                                                                            }
+                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                            placeholder="Ej. Examen parcial"
+                                                                          />
+                                                                        </div>
+                                                                        <div>
+                                                                          <label className="block font-semibold mb-2">
+                                                                            Descripción
+                                                                          </label>
+                                                                          <input
+                                                                            type="text"
+                                                                            value={
+                                                                              formExamen[
+                                                                                leccion
+                                                                                  .id
+                                                                              ]
+                                                                                ?.descripcion ||
+                                                                              ""
+                                                                            }
+                                                                            onChange={(
+                                                                              e,
+                                                                            ) =>
+                                                                              handleChangeExamen(
+                                                                                leccion.id,
+                                                                                "descripcion",
+                                                                                e
+                                                                                  .target
+                                                                                  .value,
+                                                                              )
+                                                                            }
+                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                            placeholder="Descripción breve"
+                                                                          />
+                                                                        </div>
+                                                                        <div>
+                                                                          <label className="block font-semibold mb-2">
+                                                                            Duración
+                                                                            (minutos)
+                                                                          </label>
+                                                                          <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            value={
+                                                                              formExamen[
+                                                                                leccion
+                                                                                  .id
+                                                                              ]
+                                                                                ?.duracion_minutos ||
+                                                                              30
+                                                                            }
+                                                                            onChange={(
+                                                                              e,
+                                                                            ) =>
+                                                                              handleChangeExamen(
+                                                                                leccion.id,
+                                                                                "duracion_minutos",
+                                                                                e
+                                                                                  .target
+                                                                                  .value,
+                                                                              )
+                                                                            }
+                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                          />
+                                                                        </div>
+                                                                        <div>
+                                                                          <label className="block font-semibold mb-2">
+                                                                            Intentos
+                                                                            permitidos
+                                                                          </label>
+                                                                          <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            value={
+                                                                              formExamen[
+                                                                                leccion
+                                                                                  .id
+                                                                              ]
+                                                                                ?.intentos_permitidos ||
+                                                                              1
+                                                                            }
+                                                                            onChange={(
+                                                                              e,
+                                                                            ) =>
+                                                                              handleChangeExamen(
+                                                                                leccion.id,
+                                                                                "intentos_permitidos",
+                                                                                e
+                                                                                  .target
+                                                                                  .value,
+                                                                              )
+                                                                            }
+                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                          />
+                                                                        </div>
+                                                                      </div>
+
+                                                                      <div className="space-y-4">
+                                                                        {(
+                                                                          formExamen[
+                                                                            leccion
+                                                                              .id
+                                                                          ]
+                                                                            ?.preguntas ||
+                                                                          []
+                                                                        ).map(
+                                                                          (
+                                                                            pregunta,
+                                                                            preguntaIndex,
+                                                                          ) => (
+                                                                            <div
+                                                                              key={
+                                                                                preguntaIndex
+                                                                              }
+                                                                              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4"
+                                                                            >
+                                                                              <div className="flex items-center justify-between gap-3">
+                                                                                <h6 className="font-bold text-slate-800">
+                                                                                  Pregunta{" "}
+                                                                                  {preguntaIndex +
+                                                                                    1}
+                                                                                </h6>
+                                                                                <button
+                                                                                  type="button"
+                                                                                  onClick={() =>
+                                                                                    eliminarPreguntaExamen(
+                                                                                      leccion.id,
+                                                                                      preguntaIndex,
+                                                                                    )
+                                                                                  }
+                                                                                  className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200"
+                                                                                >
+                                                                                  Eliminar
+                                                                                </button>
+                                                                              </div>
+                                                                              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                                                                                <div className="md:col-span-3">
+                                                                                  <label className="block font-semibold mb-2">
+                                                                                    Enunciado
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="text"
+                                                                                    value={
+                                                                                      pregunta.enunciado ||
+                                                                                      ""
+                                                                                    }
+                                                                                    onChange={(
+                                                                                      e,
+                                                                                    ) =>
+                                                                                      handleChangePreguntaExamen(
+                                                                                        leccion.id,
+                                                                                        preguntaIndex,
+                                                                                        "enunciado",
+                                                                                        e
+                                                                                          .target
+                                                                                          .value,
+                                                                                      )
+                                                                                    }
+                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                    placeholder="Escribe la pregunta"
+                                                                                  />
+                                                                                </div>
+                                                                                <div>
+                                                                                  <label className="block font-semibold mb-2">
+                                                                                    Puntaje
+                                                                                  </label>
+                                                                                  <input
+                                                                                    type="number"
+                                                                                    min="1"
+                                                                                    step="0.01"
+                                                                                    value={
+                                                                                      pregunta.puntaje ||
+                                                                                      1
+                                                                                    }
+                                                                                    onChange={(
+                                                                                      e,
+                                                                                    ) =>
+                                                                                      handleChangePreguntaExamen(
+                                                                                        leccion.id,
+                                                                                        preguntaIndex,
+                                                                                        "puntaje",
+                                                                                        e
+                                                                                          .target
+                                                                                          .value,
+                                                                                      )
+                                                                                    }
+                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                  />
+                                                                                </div>
+                                                                                <div className="md:col-span-2">
+                                                                                  <label className="block font-semibold mb-2">
+                                                                                    Tipo
+                                                                                    de
+                                                                                    pregunta
+                                                                                  </label>
+                                                                                  <select
+                                                                                    value={
+                                                                                      pregunta.tipo_pregunta ||
+                                                                                      "unica"
+                                                                                    }
+                                                                                    onChange={(
+                                                                                      e,
+                                                                                    ) =>
+                                                                                      handleChangePreguntaExamen(
+                                                                                        leccion.id,
+                                                                                        preguntaIndex,
+                                                                                        "tipo_pregunta",
+                                                                                        e
+                                                                                          .target
+                                                                                          .value,
+                                                                                      )
+                                                                                    }
+                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                  >
+                                                                                    <option value="unica">
+                                                                                      Marcar
+                                                                                      una
+                                                                                      sola
+                                                                                      opción
+                                                                                    </option>
+                                                                                    <option value="multiple">
+                                                                                      Marcar
+                                                                                      varias
+                                                                                      opciones
+                                                                                    </option>
+                                                                                    <option value="texto_corto">
+                                                                                      Texto
+                                                                                      corto
+                                                                                    </option>
+                                                                                    <option value="texto_largo">
+                                                                                      Texto
+                                                                                      largo
+                                                                                    </option>
+                                                                                    <option value="numerica">
+                                                                                      Respuesta
+                                                                                      numérica
+                                                                                    </option>
+                                                                                    <option value="archivo">
+                                                                                      Subir
+                                                                                      archivo
+                                                                                    </option>
+                                                                                  </select>
+                                                                                </div>
+                                                                              </div>
+
+                                                                              {TIPOS_PREGUNTA_TEXTO.includes(
+                                                                                pregunta.tipo_pregunta,
+                                                                              ) && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                  <div>
+                                                                                    <label className="block font-semibold mb-2">
+                                                                                      Respuesta
+                                                                                      de
+                                                                                      referencia
+                                                                                    </label>
+                                                                                    <textarea
+                                                                                      value={
+                                                                                        pregunta.respuesta_texto ||
+                                                                                        ""
+                                                                                      }
+                                                                                      maxLength={
+                                                                                        pregunta.tipo_pregunta ===
+                                                                                        "texto_corto"
+                                                                                          ? 50
+                                                                                          : 200
+                                                                                      }
+                                                                                      onChange={(
+                                                                                        e,
+                                                                                      ) =>
+                                                                                        handleChangePreguntaExamen(
+                                                                                          leccion.id,
+                                                                                          preguntaIndex,
+                                                                                          "respuesta_texto",
+                                                                                          e
+                                                                                            .target
+                                                                                            .value,
+                                                                                        )
+                                                                                      }
+                                                                                      className="w-full min-h-[120px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      placeholder="Escribe la respuesta esperada"
+                                                                                    />
+                                                                                    <p className="mt-1 text-xs text-slate-500">
+                                                                                      Máximo{" "}
+                                                                                      {pregunta.tipo_pregunta ===
+                                                                                      "texto_corto"
+                                                                                        ? 50
+                                                                                        : 200}{" "}
+                                                                                      caracteres
+                                                                                    </p>
+                                                                                  </div>
+                                                                                  <div>
+                                                                                    <label className="block font-semibold mb-2">
+                                                                                      Placeholder
+                                                                                      para
+                                                                                      el
+                                                                                      alumno
+                                                                                    </label>
+                                                                                    <input
+                                                                                      type="text"
+                                                                                      value={
+                                                                                        pregunta.texto_placeholder ||
+                                                                                        ""
+                                                                                      }
+                                                                                      onChange={(
+                                                                                        e,
+                                                                                      ) =>
+                                                                                        handleChangePreguntaExamen(
+                                                                                          leccion.id,
+                                                                                          preguntaIndex,
+                                                                                          "texto_placeholder",
+                                                                                          e
+                                                                                            .target
+                                                                                            .value,
+                                                                                        )
+                                                                                      }
+                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      placeholder="Ej. Escribe tu respuesta aquí"
+                                                                                    />
+                                                                                  </div>
+                                                                                </div>
+                                                                              )}
+
+                                                                              {pregunta.tipo_pregunta ===
+                                                                                "numerica" && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                  <div>
+                                                                                    <label className="block font-semibold mb-2">
+                                                                                      Respuesta
+                                                                                      numérica
+                                                                                      correcta
+                                                                                    </label>
+                                                                                    <input
+                                                                                      type="text"
+                                                                                      value={
+                                                                                        pregunta.respuesta_texto ||
+                                                                                        ""
+                                                                                      }
+                                                                                      onChange={(
+                                                                                        e,
+                                                                                      ) =>
+                                                                                        handleChangePreguntaExamen(
+                                                                                          leccion.id,
+                                                                                          preguntaIndex,
+                                                                                          "respuesta_texto",
+                                                                                          e.target.value.replace(
+                                                                                            /[^\d.-]/g,
+                                                                                            "",
+                                                                                          ),
+                                                                                        )
+                                                                                      }
+                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      placeholder="Ej. 25 o 25.5"
+                                                                                    />
+                                                                                  </div>
+                                                                                  <div className="flex items-end">
+                                                                                    <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
+                                                                                      <input
+                                                                                        type="checkbox"
+                                                                                        checked={
+                                                                                          !!pregunta.permitir_decimales
+                                                                                        }
+                                                                                        onChange={(
+                                                                                          e,
+                                                                                        ) =>
+                                                                                          handleChangePreguntaExamen(
+                                                                                            leccion.id,
+                                                                                            preguntaIndex,
+                                                                                            "permitir_decimales",
+                                                                                            e
+                                                                                              .target
+                                                                                              .checked,
+                                                                                          )
+                                                                                        }
+                                                                                        className="h-4 w-4"
+                                                                                      />
+                                                                                      <div>
+                                                                                        <p className="font-semibold text-gray-800">
+                                                                                          Permitir
+                                                                                          decimales
+                                                                                        </p>
+                                                                                        <p className="text-sm text-gray-500">
+                                                                                          Si
+                                                                                          lo
+                                                                                          desactivas,
+                                                                                          solo
+                                                                                          se
+                                                                                          aceptarán
+                                                                                          enteros.
+                                                                                        </p>
+                                                                                      </div>
+                                                                                    </label>
+                                                                                  </div>
+                                                                                </div>
+                                                                              )}
+
+                                                                              {pregunta.tipo_pregunta ===
+                                                                                "archivo" && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                  <div>
+                                                                                    <label className="block font-semibold mb-2">
+                                                                                      Tamaño
+                                                                                      máximo
+                                                                                      (MB)
+                                                                                    </label>
+                                                                                    <input
+                                                                                      type="number"
+                                                                                      min="1"
+                                                                                      value={
+                                                                                        pregunta.tamano_max_mb ||
+                                                                                        10
+                                                                                      }
+                                                                                      onChange={(
+                                                                                        e,
+                                                                                      ) =>
+                                                                                        handleChangePreguntaExamen(
+                                                                                          leccion.id,
+                                                                                          preguntaIndex,
+                                                                                          "tamano_max_mb",
+                                                                                          e
+                                                                                            .target
+                                                                                            .value,
+                                                                                        )
+                                                                                      }
+                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                    />
+                                                                                  </div>
+                                                                                  <div>
+                                                                                    <label className="block font-semibold mb-2">
+                                                                                      Extensiones
+                                                                                      permitidas
+                                                                                    </label>
+                                                                                    <input
+                                                                                      type="text"
+                                                                                      value={
+                                                                                        pregunta.extensiones_permitidas ||
+                                                                                        ""
+                                                                                      }
+                                                                                      onChange={(
+                                                                                        e,
+                                                                                      ) =>
+                                                                                        handleChangePreguntaExamen(
+                                                                                          leccion.id,
+                                                                                          preguntaIndex,
+                                                                                          "extensiones_permitidas",
+                                                                                          e
+                                                                                            .target
+                                                                                            .value,
+                                                                                        )
+                                                                                      }
+                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      placeholder="pdf,jpg,png,doc,docx"
+                                                                                    />
+                                                                                    <p className="mt-1 text-xs text-slate-500">
+                                                                                      Separadas
+                                                                                      por
+                                                                                      coma,
+                                                                                      sin
+                                                                                      punto.
+                                                                                    </p>
+                                                                                  </div>
+                                                                                  <div className="md:col-span-2">
+                                                                                    <label className="block font-semibold mb-2">
+                                                                                      Texto
+                                                                                      de
+                                                                                      ayuda
+                                                                                    </label>
+                                                                                    <input
+                                                                                      type="text"
+                                                                                      value={
+                                                                                        pregunta.texto_placeholder ||
+                                                                                        ""
+                                                                                      }
+                                                                                      onChange={(
+                                                                                        e,
+                                                                                      ) =>
+                                                                                        handleChangePreguntaExamen(
+                                                                                          leccion.id,
+                                                                                          preguntaIndex,
+                                                                                          "texto_placeholder",
+                                                                                          e
+                                                                                            .target
+                                                                                            .value,
+                                                                                        )
+                                                                                      }
+                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      placeholder="Ej. Sube tu informe en PDF"
+                                                                                    />
+                                                                                  </div>
+                                                                                </div>
+                                                                              )}
+
+                                                                              {TIPOS_PREGUNTA_CON_OPCIONES.includes(
+                                                                                pregunta.tipo_pregunta,
+                                                                              ) && (
+                                                                                <>
+                                                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                    {(
+                                                                                      pregunta.opciones ||
+                                                                                      []
+                                                                                    ).map(
+                                                                                      (
+                                                                                        opcion,
+                                                                                        opcionIndex,
+                                                                                      ) => (
+                                                                                        <div
+                                                                                          key={
+                                                                                            opcionIndex
+                                                                                          }
+                                                                                          className={`rounded-2xl border p-4 ${opcion.es_correcta ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white"}`}
+                                                                                        >
+                                                                                          <label className="block font-semibold mb-2">
+                                                                                            Opción{" "}
+                                                                                            {opcionIndex +
+                                                                                              1}
+                                                                                          </label>
+                                                                                          <input
+                                                                                            type="text"
+                                                                                            value={
+                                                                                              opcion.texto ||
+                                                                                              ""
+                                                                                            }
+                                                                                            onChange={(
+                                                                                              e,
+                                                                                            ) =>
+                                                                                              handleChangeOpcionExamen(
+                                                                                                leccion.id,
+                                                                                                preguntaIndex,
+                                                                                                opcionIndex,
+                                                                                                "texto",
+                                                                                                e
+                                                                                                  .target
+                                                                                                  .value,
+                                                                                              )
+                                                                                            }
+                                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
+                                                                                            placeholder={`Texto de la opción ${opcionIndex + 1}`}
+                                                                                          />
+                                                                                          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                                                                                            <input
+                                                                                              type={
+                                                                                                pregunta.tipo_pregunta ===
+                                                                                                "multiple"
+                                                                                                  ? "checkbox"
+                                                                                                  : "radio"
+                                                                                              }
+                                                                                              name={`correcta-${leccion.id}-${preguntaIndex}`}
+                                                                                              checked={
+                                                                                                !!opcion.es_correcta
+                                                                                              }
+                                                                                              onChange={(
+                                                                                                e,
+                                                                                              ) =>
+                                                                                                handleChangeOpcionExamen(
+                                                                                                  leccion.id,
+                                                                                                  preguntaIndex,
+                                                                                                  opcionIndex,
+                                                                                                  "es_correcta",
+                                                                                                  e
+                                                                                                    .target
+                                                                                                    .checked,
+                                                                                                )
+                                                                                              }
+                                                                                              className="h-4 w-4"
+                                                                                            />
+                                                                                            {pregunta.tipo_pregunta ===
+                                                                                            "multiple"
+                                                                                              ? "Marcar como correcta"
+                                                                                              : "Respuesta correcta"}
+                                                                                          </label>
+                                                                                          <button
+                                                                                            type="button"
+                                                                                            onClick={() =>
+                                                                                              quitarOpcion(
+                                                                                                leccion.id,
+                                                                                                preguntaIndex,
+                                                                                                opcionIndex,
+                                                                                              )
+                                                                                            }
+                                                                                            className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200 mt-3 ml-2"
+                                                                                          >
+                                                                                            Eliminar
+                                                                                            opción
+                                                                                          </button>
+                                                                                        </div>
+                                                                                      ),
+                                                                                    )}
+                                                                                  </div>
+                                                                                  <button
+                                                                                    type="button"
+                                                                                    onClick={() =>
+                                                                                      agregarOpcion(
+                                                                                        leccion.id,
+                                                                                        preguntaIndex,
+                                                                                      )
+                                                                                    }
+                                                                                    className="rounded-xl bg-blue-100 text-blue-700 px-4 py-2 text-sm hover:bg-blue-200"
+                                                                                  >
+                                                                                    Añadir
+                                                                                    opción
+                                                                                  </button>
+                                                                                </>
+                                                                              )}
+                                                                            </div>
+                                                                          ),
+                                                                        )}
+                                                                      </div>
+
+                                                                      <div className="flex flex-wrap justify-between gap-3">
+                                                                        <button
+                                                                          type="button"
+                                                                          onClick={() =>
+                                                                            agregarPreguntaExamen(
+                                                                              leccion.id,
+                                                                            )
+                                                                          }
+                                                                          className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                                                                        >
+                                                                          +
+                                                                          Agregar
+                                                                          pregunta
+                                                                        </button>
+                                                                        <button
+                                                                          type="submit"
+                                                                          disabled={
+                                                                            guardandoExamen
+                                                                          }
+                                                                          className="rounded-2xl bg-violet-600 px-5 py-3 text-white font-semibold hover:bg-violet-700 disabled:opacity-60"
+                                                                        >
+                                                                          {guardandoExamen
+                                                                            ? "Guardando..."
+                                                                            : examenEditandoId
+                                                                              ? "Guardar cambios"
+                                                                              : "Guardar examen"}
+                                                                        </button>
+                                                                      </div>
+                                                                    </form>
+                                                                  )}
 
                                                                   {mostrarFormMaterial[
                                                                     leccion.id
@@ -3390,7 +5454,6 @@ export default function CursoDetalleAdmin() {
                                                                           placeholder="Ej. PDF de introducción"
                                                                         />
                                                                       </div>
-
                                                                       <div>
                                                                         <label className="block font-semibold mb-2">
                                                                           Tipo
@@ -3535,7 +5598,6 @@ export default function CursoDetalleAdmin() {
                                                                             }
                                                                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                           />
-
                                                                           {formMat.file && (
                                                                             <p className="text-sm text-gray-500 mt-2">
                                                                               Archivo
@@ -3564,7 +5626,6 @@ export default function CursoDetalleAdmin() {
                                                                                 ]
                                                                               }
                                                                             </span>
-
                                                                             {(subidaMaterialProgress[
                                                                               leccion
                                                                                 .id
@@ -3584,7 +5645,6 @@ export default function CursoDetalleAdmin() {
                                                                               </span>
                                                                             )}
                                                                           </div>
-
                                                                           {(subidaMaterialProgress[
                                                                             leccion
                                                                               .id
@@ -3601,7 +5661,7 @@ export default function CursoDetalleAdmin() {
                                                                             </div>
                                                                           ) : (
                                                                             <div className="flex items-center gap-2 text-amber-600 text-sm">
-                                                                              <span className="animate-spin w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full"></span>
+                                                                              <span className="animate-spin w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full"></span>{" "}
                                                                               Procesando
                                                                               en
                                                                               Vimeo...
@@ -3660,7 +5720,6 @@ export default function CursoDetalleAdmin() {
                                                                           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                         />
                                                                       </div>
-
                                                                       <div>
                                                                         <label className="block font-semibold mb-2">
                                                                           Editar
@@ -3689,7 +5748,6 @@ export default function CursoDetalleAdmin() {
                                                                           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                         />
                                                                       </div>
-
                                                                       <div className="md:col-span-2 flex justify-end gap-2">
                                                                         <button
                                                                           type="button"
@@ -3700,7 +5758,6 @@ export default function CursoDetalleAdmin() {
                                                                         >
                                                                           Cancelar
                                                                         </button>
-
                                                                         <button
                                                                           type="button"
                                                                           onClick={() =>
@@ -3780,7 +5837,7 @@ export default function CursoDetalleAdmin() {
                                                                                     material
                                                                                   }
                                                                                 >
-                                                                                  <div className="relative ml-0 md:ml-10 rounded-[18px] border border-slate-200 bg-slate-50 p-4">
+                                                                                  <div className="relative ml-0 md:ml-10 rounded-[18px] border border-slate-200 bg-white p-4 shadow-sm">
                                                                                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
                                                                                       <div>
                                                                                         <div className="flex items-center gap-2 flex-wrap">
@@ -3789,20 +5846,17 @@ export default function CursoDetalleAdmin() {
                                                                                             {idxMaterial +
                                                                                               1}
                                                                                           </span>
-
                                                                                           <span className="inline-flex items-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 uppercase">
                                                                                             {
                                                                                               material.tipo
                                                                                             }
                                                                                           </span>
                                                                                         </div>
-
                                                                                         <h6 className="font-bold text-slate-800 mt-2 text-base">
                                                                                           {
                                                                                             material.titulo
                                                                                           }
                                                                                         </h6>
-
                                                                                         {material.tipo ===
                                                                                           "video" &&
                                                                                           material.estado_video && (
@@ -3823,7 +5877,6 @@ export default function CursoDetalleAdmin() {
                                                                                               )}
                                                                                             </div>
                                                                                           )}
-
                                                                                         {material.contenido_texto && (
                                                                                           <p className="text-sm text-gray-500 mt-2 whitespace-pre-line">
                                                                                             {
@@ -3831,22 +5884,22 @@ export default function CursoDetalleAdmin() {
                                                                                             }
                                                                                           </p>
                                                                                         )}
-
                                                                                         <div className="flex flex-wrap gap-2 mt-3">
-                                                                                          {material.archivo_url && (
-                                                                                            <a
-                                                                                              href={
-                                                                                                material.archivo_url
+                                                                                          {(material.object_key ||
+                                                                                            material.archivo_url) && (
+                                                                                            <button
+                                                                                              type="button"
+                                                                                              onClick={() =>
+                                                                                                abrirArchivoMaterial(
+                                                                                                  material,
+                                                                                                )
                                                                                               }
-                                                                                              target="_blank"
-                                                                                              rel="noreferrer"
                                                                                               className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
                                                                                             >
                                                                                               Ver
                                                                                               archivo
-                                                                                            </a>
+                                                                                            </button>
                                                                                           )}
-
                                                                                           {material.video_url && (
                                                                                             <div className="mt-3 w-full">
                                                                                               <VideoEmbed
@@ -3856,7 +5909,6 @@ export default function CursoDetalleAdmin() {
                                                                                               />
                                                                                             </div>
                                                                                           )}
-
                                                                                           {material.enlace_url && (
                                                                                             <a
                                                                                               href={
@@ -3872,7 +5924,6 @@ export default function CursoDetalleAdmin() {
                                                                                           )}
                                                                                         </div>
                                                                                       </div>
-
                                                                                       <div className="flex flex-wrap gap-2">
                                                                                         <button
                                                                                           type="button"
@@ -3885,7 +5936,6 @@ export default function CursoDetalleAdmin() {
                                                                                         >
                                                                                           Editar
                                                                                         </button>
-
                                                                                         <button
                                                                                           type="button"
                                                                                           onClick={() =>
@@ -3931,7 +5981,6 @@ export default function CursoDetalleAdmin() {
                                                                                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                                           />
                                                                                         </div>
-
                                                                                         <div>
                                                                                           <label className="block font-semibold mb-2">
                                                                                             Tipo
@@ -3969,7 +6018,6 @@ export default function CursoDetalleAdmin() {
                                                                                             </option>
                                                                                           </select>
                                                                                         </div>
-
                                                                                         {formEditarMaterial.tipo ===
                                                                                           "texto" && (
                                                                                           <div className="md:col-span-2">
@@ -3999,7 +6047,6 @@ export default function CursoDetalleAdmin() {
                                                                                             />
                                                                                           </div>
                                                                                         )}
-
                                                                                         {formEditarMaterial.tipo ===
                                                                                           "url_video" && (
                                                                                           <div className="md:col-span-2">
@@ -4032,7 +6079,6 @@ export default function CursoDetalleAdmin() {
                                                                                             />
                                                                                           </div>
                                                                                         )}
-
                                                                                         {formEditarMaterial.tipo ===
                                                                                           "enlace" && (
                                                                                           <div className="md:col-span-2">
@@ -4063,7 +6109,6 @@ export default function CursoDetalleAdmin() {
                                                                                             />
                                                                                           </div>
                                                                                         )}
-
                                                                                         <div className="md:col-span-2 flex justify-end gap-2">
                                                                                           <button
                                                                                             type="button"
@@ -4074,7 +6119,6 @@ export default function CursoDetalleAdmin() {
                                                                                           >
                                                                                             Cancelar
                                                                                           </button>
-
                                                                                           <button
                                                                                             type="button"
                                                                                             onClick={() =>
@@ -4127,6 +6171,50 @@ export default function CursoDetalleAdmin() {
               </DndContext>
             )}
           </div>
+        </div>
+      )}
+
+      {/* NOTIFICACIONES DE VIDEO GLOBALES */}
+      {notificacionesVideo.length > 0 && (
+        <div className="fixed top-4 right-4 z-[80] space-y-3 w-[340px]">
+          {notificacionesVideo.map((item) => (
+            <div
+              key={item.id}
+              className={`rounded-2xl border shadow-lg p-4 bg-white ${item.estado === "success" ? "border-emerald-200" : item.estado === "error" ? "border-red-200" : item.estado === "warning" ? "border-amber-200" : "border-slate-200"}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-slate-800">
+                    {item.titulo || "Video"}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">{item.mensaje}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => eliminarNotificacionVideo(item.id)}
+                  className="text-xs rounded-lg border px-2 py-1 hover:bg-slate-50"
+                >
+                  ✕
+                </button>
+              </div>
+              {(item.estado === "uploading" ||
+                item.estado === "processing") && (
+                <div className="mt-3">
+                  <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${item.estado === "processing" ? "bg-amber-500" : "bg-blue-600"}`}
+                      style={{ width: `${item.progreso || 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {item.estado === "processing"
+                      ? "El video ya se subió. Vimeo lo está procesando."
+                      : `${Math.round(item.progreso || 0)}% completado`}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -4183,7 +6271,7 @@ export default function CursoDetalleAdmin() {
                       <option value="">-- Selecciona una evaluación --</option>
                       {evaluacionesTareaDisponibles.map((ev) => (
                         <option key={ev.id} value={ev.id}>
-                          {ev.nombre} ({Number(ev.porcentaje || 0)}%)
+                          {ev.nombre} ({Number(ev.porcentaje || 0)}%){" "}
                           {Number(ev.idtarea) === Number(tareaConfigActual?.id)
                             ? " · actualmente vinculada"
                             : ""}
@@ -4257,6 +6345,105 @@ export default function CursoDetalleAdmin() {
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 whitespace-pre-line text-sm text-slate-700 max-h-[420px] overflow-auto">
                 {entregaSeleccionada?.contenido || "Sin contenido"}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CONFIG EXAMEN */}
+      {configExamenOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
+            onClick={cerrarConfigExamen}
+          />
+          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-violet-900 via-violet-800 to-fuchsia-700 px-6 py-5 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold">
+                    Configurar nota de examen
+                  </h3>
+                  <p className="text-sm text-violet-100 mt-1">
+                    {examenConfigActual?.titulo || "Examen seleccionado"}
+                  </p>
+                </div>
+                <button
+                  onClick={cerrarConfigExamen}
+                  className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10 transition"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-5">
+              {cargandoConfigExamen ? (
+                <p className="text-slate-500">
+                  Cargando evaluaciones disponibles...
+                </p>
+              ) : (
+                <>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">Examen</p>
+                    <p className="text-base font-semibold text-slate-800 mt-1">
+                      {examenConfigActual?.titulo || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Seleccionar evaluación de tipo examen
+                    </label>
+                    <select
+                      value={evaluacionSeleccionadaExamen}
+                      onChange={(e) =>
+                        setEvaluacionSeleccionadaExamen(e.target.value)
+                      }
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                    >
+                      <option value="">-- Selecciona una evaluación --</option>
+                      {evaluacionesExamenDisponibles.map((ev) => (
+                        <option key={ev.id} value={ev.id}>
+                          {ev.nombre} ({Number(ev.porcentaje || 0)}%){" "}
+                          {Number(ev.idexamen) ===
+                          Number(examenConfigActual?.id)
+                            ? " · actualmente vinculada"
+                            : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {evaluacionesExamenDisponibles.length === 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                      No hay evaluaciones de tipo examen disponibles para este
+                      grupo. Primero configúralas en Registro de Notas.
+                    </div>
+                  )}
+                  <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                    Solo se muestran evaluaciones activas del tipo examen. Al
+                    guardar, este examen quedará vinculado a la evaluación.
+                  </div>
+                  <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                    <button
+                      onClick={cerrarConfigExamen}
+                      className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={guardarConfiguracionExamen}
+                      disabled={
+                        guardandoConfigExamen ||
+                        evaluacionesExamenDisponibles.length === 0
+                      }
+                      className={`rounded-xl px-5 py-3 text-sm font-semibold text-white transition ${guardandoConfigExamen || evaluacionesExamenDisponibles.length === 0 ? "bg-slate-400 cursor-not-allowed" : "bg-violet-600 hover:bg-violet-700"}`}
+                    >
+                      {guardandoConfigExamen
+                        ? "Guardando..."
+                        : "Guardar asignación"}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

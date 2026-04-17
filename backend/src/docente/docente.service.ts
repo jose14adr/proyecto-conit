@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { randomBytes } from 'crypto';
 import { Docente } from '../docente/entities/docente.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
 import * as bcrypt from 'bcrypt';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class DocenteService {
@@ -13,6 +15,7 @@ export class DocenteService {
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
   ) {}
 
   async findAll() {
@@ -35,13 +38,16 @@ export class DocenteService {
   }
 
   async create(data: any) {
-    return await this.dataSource.transaction(async (manager) => {
+    // 1. Transacción segura en Base de Datos
+    const resultado = await this.dataSource.transaction(async (manager) => {
       const { contrasenia, crearUsuario, ...datosDocente } = data;
 
-      let usuarioCreado: any = null;
+      let usuarioCreado: Usuario | null = null;
 
       if (crearUsuario && contrasenia) {
         const hashedPassword = await bcrypt.hash(contrasenia, 10);
+        const token = randomBytes(32).toString('hex');
+        const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
         usuarioCreado = await manager.save(
           manager.create(Usuario, {
@@ -49,6 +55,9 @@ export class DocenteService {
             contrasenia: hashedPassword,
             rol: 'DOCENTE',
             idempresa: 1,
+            emailVerificado: false,
+            tokenVerificacion: token,
+            tokenVerificacionExpira: expiracion,
           }),
         );
       }
@@ -60,12 +69,33 @@ export class DocenteService {
       }
 
       const docente = manager.create(Docente, docenteParams);
-      return await manager.save(docente);
+      const docenteGuardado = await manager.save(docente);
+
+      return { docenteGuardado, usuarioCreado };
     });
+
+    // 3. Enviar correo de verificación (Fuera de la transacción)
+    if (resultado.usuarioCreado?.tokenVerificacion) {
+      try {
+        await this.mailService.sendEmailVerificacion(
+          resultado.docenteGuardado?.nombre || 'Docente',
+          resultado.usuarioCreado.correo,
+          resultado.usuarioCreado.tokenVerificacion,
+        );
+      } catch (error) {
+        console.error(
+          'No se pudo enviar el correo de verificación al docente',
+          error,
+        );
+      }
+    }
+
+    return resultado.docenteGuardado;
   }
 
   async update(id: number, data: any) {
-    return await this.dataSource.transaction(async (manager) => {
+    // 1. Transacción segura
+    const resultado = await this.dataSource.transaction(async (manager) => {
       const docente = await manager.findOne(Docente, {
         where: { id },
         relations: ['usuario'],
@@ -74,16 +104,22 @@ export class DocenteService {
       if (!docente) throw new NotFoundException('Docente no encontrado');
 
       const { crearUsuario, contrasenia, ...datosActualizar } = data;
+      let nuevoUsuario: Usuario | null = null;
 
       if (crearUsuario && contrasenia && !docente.usuario) {
         const hashedPassword = await bcrypt.hash(contrasenia, 10);
+        const token = randomBytes(32).toString('hex');
+        const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-        const nuevoUsuario = await manager.save(
+        nuevoUsuario = await manager.save(
           manager.create(Usuario, {
             correo: datosActualizar.correo || docente.correo,
             contrasenia: hashedPassword,
             rol: 'DOCENTE',
             idempresa: 1,
+            emailVerificado: false,
+            tokenVerificacion: token,
+            tokenVerificacionExpira: expiracion,
           }),
         );
         datosActualizar.usuario = { id: nuevoUsuario.id };
@@ -91,11 +127,31 @@ export class DocenteService {
 
       await manager.update(Docente, id, datosActualizar);
 
-      return await manager.findOne(Docente, {
+      const docenteActualizado = await manager.findOne(Docente, {
         where: { id },
         relations: ['usuario', 'cursosAdicionales'],
       });
+
+      return { docenteActualizado, nuevoUsuario };
     });
+
+    // 2. Enviar correo si se creó el usuario recién
+    if (resultado.nuevoUsuario?.tokenVerificacion) {
+      try {
+        await this.mailService.sendEmailVerificacion(
+          resultado.docenteActualizado?.nombre || 'Docente',
+          resultado.nuevoUsuario.correo,
+          resultado.nuevoUsuario.tokenVerificacion,
+        );
+      } catch (error) {
+        console.error(
+          'No se pudo enviar el correo de verificación al docente',
+          error,
+        );
+      }
+    }
+
+    return resultado.docenteActualizado;
   }
 
   async remove(id: number) {

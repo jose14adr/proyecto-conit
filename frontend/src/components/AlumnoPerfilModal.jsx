@@ -12,8 +12,13 @@ import {
   Trash2,
   CheckCircle,
 } from "lucide-react";
-import { obtenerMatriculasPorAlumno } from "../services/matricula.service";
+import {
+  obtenerMatriculasPorAlumno,
+  actualizarPermisosCertificado,
+} from "../services/matricula.service";
 import toast from "react-hot-toast";
+import { Settings } from "lucide-react";
+import PermisosCertificadoModal from "./PermisosCertificadoModal";
 
 export default function AlumnoPerfilModal({
   alumno,
@@ -25,6 +30,7 @@ export default function AlumnoPerfilModal({
 }) {
   const [matriculas, setMatriculas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [certModalOpen, setCertModalOpen] = useState(null);
 
   useEffect(() => {
     const cargarMatriculas = async () => {
@@ -48,6 +54,68 @@ export default function AlumnoPerfilModal({
   }
 
   const esInactivo = alumno.estado === false;
+
+  const handleTogglePermiso = async (
+    matriculaId,
+    tipo,
+    estadoActual,
+    matriculaCompleta,
+  ) => {
+    try {
+      // Determinamos los nuevos estados
+      let nuevoPuedeVer = matriculaCompleta.puede_ver_certificado;
+      let nuevoPuedeDescargar = matriculaCompleta.puede_descargar_certificado;
+
+      if (tipo === "ver") {
+        nuevoPuedeVer = !estadoActual;
+        // Si quitamos el permiso de ver, forzamos quitar el de descargar
+        if (!nuevoPuedeVer) nuevoPuedeDescargar = false;
+      } else if (tipo === "descargar") {
+        nuevoPuedeDescargar = !estadoActual;
+      }
+
+      await actualizarPermisosCertificado(
+        matriculaId,
+        nuevoPuedeVer,
+        nuevoPuedeDescargar,
+      );
+
+      // Actualizamos el estado local para que la UI cambie instantáneamente
+      setMatriculas((prev) =>
+        prev.map((m) =>
+          m.id === matriculaId
+            ? {
+                ...m,
+                puede_ver_certificado: nuevoPuedeVer,
+                puede_descargar_certificado: nuevoPuedeDescargar,
+              }
+            : m,
+        ),
+      );
+      toast.success("Permisos actualizados");
+    } catch (error) {
+      toast.error("Error al actualizar permisos");
+      console.error(error);
+    }
+  };
+
+  const handleCertificadoActualizado = (
+    matriculaId,
+    puedeVer,
+    puedeDescargar,
+  ) => {
+    setMatriculas((prev) =>
+      prev.map((m) =>
+        m.id === matriculaId
+          ? {
+              ...m,
+              puede_ver_certificado: puedeVer,
+              puede_descargar_certificado: puedeDescargar,
+            }
+          : m,
+      ),
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
@@ -170,7 +238,7 @@ export default function AlumnoPerfilModal({
                             )}
                           </div>
                         </div>
-                        <div className="shrink-0">
+                        <div className="shrink-0 flex items-center gap-3">
                           <span
                             className={`text-xs font-bold px-3 py-1.5 rounded-full uppercase ${
                               matricula.estado === "pendiente"
@@ -182,6 +250,14 @@ export default function AlumnoPerfilModal({
                           >
                             {matricula.estado || "Inscrito"}
                           </span>
+
+                          <button
+                            onClick={() => setCertModalOpen(matricula)}
+                            className="p-2 text-emerald-600 hover:bg-emerald-100 bg-emerald-50 rounded-lg transition-colors border border-emerald-100 shadow-sm"
+                            title="Configurar Certificado"
+                          >
+                            <Settings size={18} />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -235,6 +311,13 @@ export default function AlumnoPerfilModal({
           </div>
         </div>
       </div>
+      {certModalOpen && (
+        <PermisosCertificadoModal
+          matricula={certModalOpen}
+          onClose={() => setCertModalOpen(null)}
+          onSuccess={handleCertificadoActualizado}
+        />
+      )}
     </div>
   );
 }

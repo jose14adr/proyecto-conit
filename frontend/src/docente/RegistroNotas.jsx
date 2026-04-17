@@ -162,9 +162,15 @@ export default function RegistroNotas() {
       } else if (filtroEstado === "pendientes") {
         coincideEstado = a.faltantes > 0;
       } else if (filtroEstado === "aprobados") {
-        coincideEstado = a.faltantes === 0 && Number(a.promedio) >= 11;
+        coincideEstado = a.faltantes === 0 && Number(a.promedio) >= 12;
+      } else if (filtroEstado === "recuperacion") {
+        coincideEstado =
+          a.faltantes === 0 &&
+          Number(a.promedio) >= 9 &&
+          Number(a.promedio) < 12;
       } else if (filtroEstado === "desaprobados") {
-        coincideEstado = a.faltantes === 0 && Number(a.promedio) < 11;
+        coincideEstado = a.faltantes === 0 && Number(a.promedio) < 9;
+
       }
 
       return coincideBusqueda && coincideEstado;
@@ -658,6 +664,7 @@ const guardarConfigEvaluaciones = async () => {
                     <option value="completos">Con notas completas</option>
                     <option value="pendientes">Con notas pendientes</option>
                     <option value="aprobados">Aprobados</option>
+                    <option value="recuperacion">Recuperación</option>
                     <option value="desaprobados">Desaprobados</option>
                   </select>
                 </div>
@@ -763,8 +770,10 @@ const guardarConfigEvaluaciones = async () => {
                       ) : (
                         <span
                           className={`font-bold ${
-                            Number(a.promedio) >= 11
+                            Number(a.promedio) >= 12
                               ? "text-emerald-600"
+                              : Number(a.promedio) >= 9
+                              ? "text-yellow-600"
                               : "text-rose-600"
                           }`}
                         >
@@ -778,9 +787,13 @@ const guardarConfigEvaluaciones = async () => {
                         <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
                           Incompleto ({a.faltantes})
                         </span>
-                      ) : Number(a.promedio) >= 11 ? (
+                      ) : Number(a.promedio) >= 12 ? (
                         <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                           Aprobado
+                        </span>
+                      ) : Number(a.promedio) >= 9 ? (
+                        <span className="inline-flex items-center rounded-full border border-yellow-200 bg-yellow-50 px-3 py-1 text-xs font-semibold text-yellow-700">
+                          Recuperación
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
@@ -1071,6 +1084,7 @@ const guardarConfigEvaluaciones = async () => {
                     >
                       <option value="manual">Manual</option>
                       <option value="tarea">Tarea</option>
+                      <option value="examen">Examen</option>
                     </select>
                   </td>
 

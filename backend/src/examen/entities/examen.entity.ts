@@ -3,7 +3,6 @@ import { Timestamp } from 'typeorm/browser';
 
 @Entity({ name: 'Examen' }) // Respeta el nombre exacto en BD
 export class Examen {
-
   @PrimaryGeneratedColumn()
   id: number;
 

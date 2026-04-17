@@ -9,6 +9,9 @@ import {
   CreditCard,
   Shield,
   UserCog,
+  Award,
+  Menu,
+  User,
 } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
@@ -19,6 +22,7 @@ export default function AdminLayout() {
   const navigate = useNavigate();
 
   const [adminData, setAdminData] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const cerrarSesion = () => {
     localStorage.removeItem("token");
@@ -48,115 +52,124 @@ export default function AdminLayout() {
     cargarPerfil();
   }, []);
 
-  const isPathActive = (path) => {
-    if (path === "/admin") {
-      return location.pathname === "/admin";
-    }
-    return location.pathname.startsWith(path);
-  };
-
-  const linkStyle =
-    "flex items-center gap-3 p-3 rounded-lg transition-all duration-200";
-  const activeStyle = "bg-indigo-600 text-white font-semibold shadow-md";
-  const inactiveStyle = "hover:bg-slate-800 text-gray-300 hover:text-white";
+  const menuItems = [
+    { to: "/admin", label: "Principal", icon: Home, exact: true },
+    { to: "/admin/perfil", label: "Mi Perfil", icon: User },
+    { to: "/admin/administradores", label: "Administradores", icon: UserCog },
+    { to: "/admin/docentes", label: "Docentes", icon: Library },
+    { to: "/admin/cursos", label: "Cursos", icon: BookOpen },
+    { to: "/admin/alumnos", label: "Alumnos", icon: FileText },
+    { to: "/admin/usuarios", label: "Lista de Usuarios", icon: Users },
+    { to: "/admin/certificados", label: "Certificados", icon: Award },
+    { to: "/admin/pagos", label: "Pagos", icon: CreditCard },
+    { to: "/admin/sesiones", label: "Control de Sesiones", icon: Shield },
+  ];
 
   return (
-    <div className="flex h-screen bg-gray-50 text-slate-800">
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col p-6 shadow-2xl z-20">
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold">
-            C
-          </div>
-          <h1 className="text-2xl font-bold tracking-widest">CONIT</h1>
+    <div className="flex h-screen w-screen bg-gray-50 text-slate-800 overflow-hidden">
+      {/* SIDEBAR DINÁMICO */}
+      <aside
+        className={`
+          ${sidebarOpen ? "w-64" : "w-20"}
+          bg-slate-900 text-white flex flex-col py-6 transition-all duration-300 shadow-2xl z-20 shrink-0
+        `}
+      >
+        {/* LOGO & BOTÓN MENU */}
+        <div
+          className={`flex items-center ${sidebarOpen ? "justify-between px-6" : "justify-center"} mb-8`}
+        >
+          {sidebarOpen && (
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center font-bold shrink-0">
+                C
+              </div>
+              <h1 className="text-2xl font-bold tracking-widest">CONIT</h1>
+            </div>
+          )}
+
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-slate-300 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-colors shrink-0"
+            title="Alternar menú"
+          >
+            <Menu size={24} />
+          </button>
         </div>
 
-        <nav className="flex-1 space-y-2 text-sm font-medium overflow-y-auto pr-2">
-          <Link
-            to="/admin"
-            className={`${linkStyle} ${isPathActive("/admin") ? activeStyle : inactiveStyle}`}
-          >
-            <Home size={20} /> Principal
-          </Link>
+        {/* NAVEGACIÓN */}
+        <nav className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.exact
+              ? location.pathname === item.to
+              : location.pathname.startsWith(item.to);
 
-          <Link
-            to="/admin/administradores"
-            className={`${linkStyle} ${isPathActive("/admin/administradores") ? activeStyle : inactiveStyle}`}
-          >
-            <UserCog size={20} /> Administradores
-          </Link>
-
-          <Link
-            to="/admin/docentes"
-            className={`${linkStyle} ${isPathActive("/admin/docentes") ? activeStyle : inactiveStyle}`}
-          >
-            <Library size={20} /> Docentes
-          </Link>
-          <Link
-            to="/admin/cursos"
-            className={`${linkStyle} ${isPathActive("/admin/cursos") ? activeStyle : inactiveStyle}`}
-          >
-            <BookOpen size={20} /> Cursos
-          </Link>
-          <Link
-            to="/admin/alumnos"
-            className={`${linkStyle} ${isPathActive("/admin/alumnos") ? activeStyle : inactiveStyle}`}
-          >
-            <FileText size={20} /> Alumnos
-          </Link>
-          <Link
-            to="/admin/usuarios"
-            className={`${linkStyle} ${isPathActive("/admin/usuarios") ? activeStyle : inactiveStyle}`}
-          >
-            <Users size={20} /> Lista de Usuarios
-          </Link>
-          <Link
-            to="/admin/pagos"
-            className={`${linkStyle} ${isPathActive("/admin/pagos") ? activeStyle : inactiveStyle}`}
-          >
-            <CreditCard size={20} /> Pagos
-          </Link>
-          <Link
-            to="/admin/sesiones"
-            className={`${linkStyle} ${isPathActive("/admin/sesiones") ? activeStyle : inactiveStyle}`}
-          >
-            <Shield size={20} /> Control de Sesiones
-          </Link>
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                title={!sidebarOpen ? item.label : ""}
+                className={`flex items-center transition-all duration-200 overflow-hidden
+                  ${isActive ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md" : "text-slate-400 hover:bg-white/10 hover:text-white"}
+                  ${sidebarOpen ? "rounded-xl px-4 py-3 justify-start gap-3" : "rounded-xl justify-center w-12 h-12 mx-auto"}
+                `}
+              >
+                <Icon size={20} className="shrink-0" />
+                {sidebarOpen && (
+                  <span className="whitespace-nowrap font-medium text-sm">
+                    {item.label}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Botón de Cerrar Sesión */}
-        <div className="pt-6 border-t border-slate-700/50 mt-4 shrink-0">
+        {/* BOTÓN CERRAR SESIÓN */}
+        <div className="pt-4 border-t border-slate-700/50 mt-2 px-3 shrink-0">
           <button
             onClick={cerrarSesion}
-            className="flex items-center w-full gap-3 p-3 text-red-400 rounded-lg hover:bg-red-500/10 hover:text-red-300 transition-colors text-sm font-medium"
+            title={!sidebarOpen ? "Cerrar Sesión" : ""}
+            className={`flex items-center text-red-400 transition-colors duration-200 hover:bg-red-500/10 hover:text-red-300
+              ${sidebarOpen ? "w-full gap-3 px-4 py-3 rounded-xl justify-start" : "w-12 h-12 rounded-xl justify-center mx-auto"}
+            `}
           >
-            <LogOut size={20} /> Cerrar Sesión
+            <LogOut size={20} className="shrink-0" />
+            {sidebarOpen && (
+              <span className="font-medium text-sm whitespace-nowrap">
+                Cerrar Sesión
+              </span>
+            )}
           </button>
         </div>
       </aside>
 
-      {/* Contenido Principal */}
+      {/* CONTENIDO PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-10">
           <h2 className="text-lg font-bold text-slate-800 tracking-tight">
             Panel de Administración
           </h2>
 
-          <div className="flex items-center gap-3 bg-gray-50 py-1.5 px-3 rounded-full border border-gray-100 shadow-sm">
-            {/* Avatar con dos iniciales */}
+          <Link
+            to="/admin/perfil"
+            className="flex items-center gap-3 bg-gray-50 py-1.5 px-3 rounded-full border border-gray-200 shadow-sm hover:bg-white hover:shadow-md hover:border-indigo-200 transition-all duration-200 cursor-pointer"
+            title="Ir a mi perfil"
+          >
+            {/* Avatar */}
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold uppercase shadow-sm">
               {adminData?.nombre ? adminData.nombre.charAt(0) : "A"}
               {adminData?.apellido ? adminData.apellido.charAt(0) : ""}
             </div>
 
-            {/* Nombre y Apellido completos */}
+            {/* Nombre */}
             <span className="font-semibold text-sm text-slate-700 capitalize pr-2">
               {adminData?.nombre || "Cargando..."} {adminData?.apellido || ""}
             </span>
-          </div>
+          </Link>
         </header>
 
-        <main className="flex-1 overflow-auto bg-gray-50">
+        <main className="flex-1 overflow-auto bg-gray-50 p-6">
           <Outlet />
         </main>
       </div>

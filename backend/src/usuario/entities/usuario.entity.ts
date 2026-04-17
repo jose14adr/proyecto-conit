@@ -22,4 +22,17 @@ export class Usuario {
 
   @Column({ type: 'boolean', default: true })
   estado: boolean;
+
+  @Column({ name: 'email_verificado', type: 'boolean', default: false })
+  emailVerificado: boolean;
+
+  @Column({ name: 'token_verificacion', type: 'varchar', nullable: true })
+  tokenVerificacion: string | null;
+
+  @Column({
+    name: 'token_verificacion_expira',
+    type: 'timestamp',
+    nullable: true,
+  })
+  tokenVerificacionExpira: Date | null;
 }

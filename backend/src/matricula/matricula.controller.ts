@@ -1,5 +1,6 @@
 import {
   Controller,
+  Patch,
   Post,
   Body,
   Get,
@@ -29,5 +30,14 @@ export class MatriculaController {
   @Get('curso/:idcurso/alumnos')
   getAlumnosPorCurso(@Param('idcurso') idcurso: number) {
     return this.matriculaService.obtenerAlumnosPorCurso(idcurso);
+  }
+
+  @Patch(':id/permisos-certificado')
+  actualizarPermisosCertificado(
+    @Param('id', ParseIntPipe) idMatricula: number,
+    @Body('puedeVer') puedeVer: boolean,
+    @Body('puedeDescargar') puedeDescargar: boolean,
+  ){
+    return this.matriculaService.actualizarPermisosCertificado(idMatricula, puedeVer, puedeDescargar);
   }
 }

@@ -23,14 +23,14 @@ export class CursoController {
     return this.cursoService.listarCursosAlumno();
   }
 
-  @Get(':id')
-  async obtenerCurso(@Param('id', ParseIntPipe) id: number) {
-    return this.cursoService.obtenerUnoCursoAlumno(id);
+  @Get('detalle/:id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.cursoService.obtenerUno(id);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.cursoService.obtenerUno(id);
+  async obtenerCurso(@Param('id', ParseIntPipe) id: number) {
+    return this.cursoService.obtenerUnoCursoAlumno(id);
   }
 
   @Delete(':id')

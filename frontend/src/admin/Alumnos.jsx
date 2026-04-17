@@ -23,6 +23,7 @@ import {
 export default function Alumnos() {
   //Buscar alumno
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("habilitados");
   const [alumnos, setAlumnos] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,8 +97,21 @@ export default function Alumnos() {
       alumno.numDocumento ||
       ""
     ).toLowerCase();
+    const correo = (alumno.correo || "").toLowerCase();
 
-    return nombreCompleto.includes(termino) || documento.includes(termino);
+    const coincideTexto =
+      nombreCompleto.includes(termino) ||
+      documento.includes(termino) ||
+      correo.includes(termino);
+
+    let coincideEstado = true;
+    if (filtroEstado === "habilitados") {
+      coincideEstado = alumno.estado === true || alumno.estado === null;
+    } else if (filtroEstado === "inhabilitados") {
+      coincideEstado = alumno.estado === false;
+    }
+
+    return coincideTexto && coincideEstado;
   });
 
   return (
@@ -137,6 +151,17 @@ export default function Alumnos() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
+          </div>
+          <div className="sm:w-48 shrink-0">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium cursor-pointer"
+            >
+              <option value="habilitados">Solo Habilitados</option>
+              <option value="inhabilitados">Solo Inhabilitados</option>
+              <option value="todos">Mostrar Todos</option>
+            </select>
           </div>
         </div>
 

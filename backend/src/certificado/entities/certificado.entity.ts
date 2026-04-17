@@ -6,10 +6,10 @@ export class Certificado {
   id: number;
 
   @Column({ type: 'varchar', nullable: true })
-  codigoCertificado: string;
+  codigocertificado: string;
 
   @Column({ type: 'date', nullable: true })
-  fechaEmision: Date;
+  fechaemision: Date;
 
   @Column({ type: 'varchar', nullable: true })
   origen: string;

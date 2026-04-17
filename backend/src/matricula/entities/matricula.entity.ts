@@ -1,10 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Alumno } from '../../alumno/entities/alumno.entity';
 import { Grupo } from '../../grupo/entities/grupo.entity';
 
-@Entity({ name: 'matricula' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'matricula' })
 export class Matricula {
-
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -21,14 +26,14 @@ export class Matricula {
   beneficio: string;
 
   @ManyToOne(() => Alumno)
-  @JoinColumn({ name: "idalumno" })
+  @JoinColumn({ name: 'idalumno' })
   alumno: Alumno;
 
   @Column({ type: 'integer', nullable: true })
   idadministrador: number;
 
   @ManyToOne(() => Grupo)
-  @JoinColumn({ name: "idgrupo" })
+  @JoinColumn({ name: 'idgrupo' })
   grupo: Grupo;
 
   @Column({ type: 'integer', nullable: true })
@@ -42,6 +47,12 @@ export class Matricula {
 
   @Column({ type: 'numeric', nullable: true })
   precio: number;
+
+  @Column({ type: 'boolean', default: false })
+  puede_ver_certificado: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  puede_descargar_certificado: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
   created_at: Date;

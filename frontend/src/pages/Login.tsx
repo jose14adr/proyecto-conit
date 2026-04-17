@@ -75,8 +75,14 @@ export default function Login() {
 
       const tokenData = JSON.parse(jsonPayload);
 
+      localStorage.removeItem("idalumno");
+
       // Guardamos la información del usuario en el localStorage para usarla en otras partes de la aplicación
       localStorage.setItem("usuario", JSON.stringify(tokenData));
+
+      if (tokenData.idalumno) {
+        localStorage.setItem("idalumno", tokenData.idalumno.toString());
+      }
 
       // Buscamos el rol del usuario en el token o en la respuesta del backend, dependiendo de dónde lo envíe el backend
       const userRole = tokenData.rol || respuesta.usuario?.rol;

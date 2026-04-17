@@ -1,10 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Docente } from '../../docente/entities/docente.entity';
 import { Curso } from '../../curso/entities/curso.entity';
 
-@Entity({ name: 'grupo' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'grupo' })
 export class Grupo {
-
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -23,15 +28,14 @@ export class Grupo {
   @Column({ type: 'integer' })
   cantidadpersonas: number;
 
-  @ManyToOne(
-    () => Curso,
-    (curso) => curso.grupos,
-    { nullable: true }
-  )
+  @Column({ type: 'text', nullable: true })
+  permisos_docente: string;
+
+  @ManyToOne(() => Curso, (curso) => curso.grupos, { nullable: true })
   @JoinColumn({ name: 'idcurso' })
   curso?: Curso;
 
   @ManyToOne(() => Docente, { nullable: true })
-    @JoinColumn({ name: 'iddocente' })
-    docente?: Docente;
+  @JoinColumn({ name: 'iddocente' })
+  docente?: Docente;
 }

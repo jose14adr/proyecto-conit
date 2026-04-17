@@ -42,7 +42,7 @@ const getDocenteActual = async () => {
   try {
     payload = JSON.parse(atob(token.split(".")[1]));
   } catch (e) {
-    throw new Error("No se pudo leer el token de sesión.");
+    throw new Error("No se pudo leer el token de sesión.", e);
   }
 
   const usuarioId = payload?.sub;
@@ -146,8 +146,11 @@ export const addDocumentoDocente = async (payload) => {
     iddocente: docente.id,
     nombre: payload.nombre,
     tipo: payload.tipo || "cv",
-    archivo_url: payload.archivo_url,
+    archivo_url: payload.archivo_url || null,
     mime_type: payload.mime_type || "application/pdf",
+    storage_provider: payload.storage_provider || "s3",
+    bucket: payload.bucket || null,
+    object_key: payload.object_key || null,
   };
 
   const { data, error } = await supabase
@@ -163,6 +166,27 @@ export const addDocumentoDocente = async (payload) => {
 // Eliminar documento del docente
 export const deleteDocumentoDocente = async (id) => {
   const docente = await getDocenteActual();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const { data: doc, error: findError } = await supabase
+    .from("docente_documento")
+    .select("id, iddocente, object_key")
+    .eq("id", id)
+    .eq("iddocente", docente.id)
+    .maybeSingle();
+
+  if (findError) throw new Error(findError.message);
+  if (!doc) throw new Error("No se encontró el documento.");
+
+  if (doc.object_key) {
+    await fetch(`${apiUrl}/s3/object`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key: doc.object_key }),
+    });
+  }
 
   const { error } = await supabase
     .from("docente_documento")
@@ -188,6 +212,8 @@ export const getCursosAdicionalesDocente = async () => {
 
   return data || [];
 };
+
+
 // Agregar curso adicional
 export const addCursoAdicionalDocente = async (payload) => {
   const docente = await getDocenteActual();
@@ -307,9 +333,10 @@ export const deleteHistorialDocente = async (id) => {
 export const getCursosDocente = async () => {
   const docente = await getDocenteActual();
 
+  // 👇 AÑADIDO: 'permisos_docente' a la consulta select
   const { data: grupos, error: errGrupos } = await supabase
     .from("grupo")
-    .select("id, idcurso, nombregrupo, horario, modalidad, cantidadpersonas")
+    .select("id, idcurso, nombregrupo, horario, modalidad, cantidadpersonas, permisos_docente")
     .eq("iddocente", docente.id);
 
   if (errGrupos) throw new Error(errGrupos.message);
@@ -337,12 +364,12 @@ export const getCursosDocente = async () => {
       horario: g.horario,
       modalidad: g.modalidad,
       cantidadpersonas: g.cantidadpersonas,
+      permisos_docente: g.permisos_docente, // Pasamos los permisos
       ...(curso || {}),
       nombre: curso?.nombrecurso || "Curso sin nombre",
     };
   });
 };
-
 
 
 // ======================================================
@@ -631,7 +658,7 @@ export const uploadFotoDocente = async (file) => {
 };
 
 // ======================================================
-// SUBIDA A STORAGE - PDF DOCUMENTO
+// SUBIDA A STORAGE - PDF DOCUMENTO - S3
 // ======================================================
 
 export const uploadPdfDocumentoDocente = async (file, tipo = "cv") => {
@@ -642,33 +669,60 @@ export const uploadPdfDocumentoDocente = async (file, tipo = "cv") => {
     throw new Error("Solo se permiten archivos PDF.");
   }
 
-  const extension = "pdf";
-  const fileName = `docente-${docente.id}-${tipo}-${Date.now()}.${extension}`;
-  const filePath = `docentes/documentos/${fileName}`;
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-  const { error: uploadError } = await supabase.storage
-    .from("documentos")
-    .upload(filePath, file, {
-      upsert: true,
-      contentType: "application/pdf",
-    });
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("docenteId", String(docente.id));
+  formData.append("tipo", tipo);
 
-  if (uploadError) throw new Error(uploadError.message);
+  const res = await fetch(`${apiUrl}/s3/upload-docente-documento`, {
+    method: "POST",
+    body: formData,
+  });
 
-  const { data } = supabase.storage.from("documentos").getPublicUrl(filePath);
+  const data = await res.json();
 
-  const publicUrl = data?.publicUrl;
-  if (!publicUrl) throw new Error("No se pudo obtener la URL pública del PDF.");
+  if (!res.ok || !data.ok) {
+    throw new Error(data?.message || "No se pudo subir el archivo.");
+  }
 
   const doc = await addDocumentoDocente({
     nombre: file.name,
     tipo,
-    archivo_url: publicUrl,
+    archivo_url: null,
     mime_type: "application/pdf",
+    storage_provider: "s3",
+    bucket: data.bucket,
+    object_key: data.key,
   });
 
   return doc;
 };
+
+//======================================================
+// DESCARGAR DOCUMENTOS DE DOCENTE
+//======================================================
+export const getDocumentoDocenteDownloadUrl = async (objectKey) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/s3/presign-download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ key: objectKey }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data?.message || "No se pudo obtener la URL del archivo.");
+  }
+
+  return data.downloadUrl;
+};
+
 
 // ======================================================
 // SUBIDA A STORAGE - PDF CURSO ADICIONAL
@@ -713,18 +767,21 @@ export const uploadPdfCursoAdicionalDocente = async (file, payload = {}) => {
 
 
 
-export const getCursoById = async (cursoId) => {
-  const grupoId = Number(cursoId);
+export const getCursoById = async (idFromUrl) => {
+  // El ID que viene de la URL es en realidad el ID del Grupo
+  const grupoId = Number(idFromUrl);
 
+  // 1. Buscamos el GRUPO por su propio ID (Esto trae el grupo correcto con sus permisos)
   const { data: grupo, error: errGrupo } = await supabase
     .from("grupo")
-    .select("id, idcurso, nombregrupo, horario")
-    .eq("id", grupoId)
+    .select("id, idcurso, nombregrupo, horario, permisos_docente")
+    .eq("id", grupoId) // <-- ¡Regresamos a buscar por ID de grupo!
     .maybeSingle();
 
   if (errGrupo) throw new Error(errGrupo.message);
   if (!grupo) return null;
 
+  // 2. Usamos el idcurso que venía en el grupo para traer la info del curso
   const { data: curso, error: errCurso } = await supabase
     .from("curso")
     .select("id, nombrecurso, descripcion")
@@ -734,6 +791,7 @@ export const getCursoById = async (cursoId) => {
   if (errCurso) throw new Error(errCurso.message);
   if (!curso) return null;
 
+  // 3. Enviamos el paquete completo a CursoDetalleDocente
   return {
     id: curso.id,
     idgrupo: grupo.id,
@@ -741,6 +799,8 @@ export const getCursoById = async (cursoId) => {
     descripcion: curso.descripcion,
     grupo: grupo.nombregrupo || "-",
     horario: grupo.horario || "-",
+    grupos: [grupo],
+    permisos_docente: grupo.permisos_docente || null, // ¡Aquí viajan los permisos sanos y salvos!
   };
 };
 
@@ -879,75 +939,112 @@ export const crearTarea = async (payload) => {
   let archivoApoyoUrl = null;
   let videoApoyoUrl = null;
 
+  let apoyoStorageProvider = null;
+  let apoyoBucket = null;
+  let apoyoObjectKey = null;
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   if (tipoApoyo === "archivo" && archivoApoyo) {
-    const extension = archivoApoyo.name.split(".").pop();
-    const fileName = `archivo_${Date.now()}.${extension}`;
-    const filePath = `${fileName}`;
+    const formData = new FormData();
+    formData.append("file", archivoApoyo);
+    formData.append("cursoId", String(cursoId));
+    formData.append("tipoApoyo", "archivo");
 
-    const { error: uploadError } = await supabase.storage
-      .from("tareas-apoyo")
-      .upload(filePath, archivoApoyo, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    const res = await fetch(`${apiUrl}/s3/upload-tarea-apoyo`, {
+      method: "POST",
+      body: formData,
+    });
 
-    if (uploadError) {
-      throw new Error(`Error subiendo archivo de apoyo: ${uploadError.message}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data?.message || "No se pudo subir el archivo de apoyo.");
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from("tareas-apoyo")
-      .getPublicUrl(filePath);
-
-    archivoApoyoUrl = publicUrlData?.publicUrl || null;
+    apoyoStorageProvider = "s3";
+    apoyoBucket = data.bucket;
+    apoyoObjectKey = data.key;
+    archivoApoyoUrl = null;
   }
 
   if (tipoApoyo === "video" && videoApoyo) {
-    const extension = videoApoyo.name.split(".").pop();
-    const fileName = `video_${Date.now()}.${extension}`;
-    const filePath = `${fileName}`;
+    const formData = new FormData();
+    formData.append("file", videoApoyo);
+    formData.append("cursoId", String(cursoId));
+    formData.append("tipoApoyo", "video");
 
-    const { error: uploadError } = await supabase.storage
-      .from("tareas-apoyo")
-      .upload(filePath, videoApoyo, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    const res = await fetch(`${apiUrl}/s3/upload-tarea-apoyo`, {
+      method: "POST",
+      body: formData,
+    });
 
-    if (uploadError) {
-      throw new Error(`Error subiendo video de apoyo: ${uploadError.message}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data?.message || "No se pudo subir el video de apoyo.");
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from("tareas-apoyo")
-      .getPublicUrl(filePath);
-
-    videoApoyoUrl = publicUrlData?.publicUrl || null;
+    apoyoStorageProvider = "s3";
+    apoyoBucket = data.bucket;
+    apoyoObjectKey = data.key;
+    videoApoyoUrl = null;
   }
 
+  let queryOrden = supabase
+    .from("tarea")
+    .select("orden")
+    .eq("idcurso", Number(cursoId));
+
+  if (idmodulo) {
+    queryOrden = queryOrden.eq("idmodulo", Number(idmodulo));
+  } else {
+    queryOrden = queryOrden.is("idmodulo", null);
+  }
+
+  if (idleccion) {
+    queryOrden = queryOrden.eq("idleccion", Number(idleccion));
+  } else {
+    queryOrden = queryOrden.is("idleccion", null);
+  }
+
+  const { data: ultimaTarea, error: errorUltimaTarea } = await queryOrden
+    .order("orden", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (errorUltimaTarea) {
+    throw new Error(`Error obteniendo orden de tarea: ${errorUltimaTarea.message}`);
+  }
+
+  const nuevoOrden = (ultimaTarea?.orden || 0) + 1;
+
   const { data, error } = await supabase
-  .from("tarea")
-  .insert([
-    {
-      idcurso: Number(cursoId),
-      idgrupo: grupoId ? Number(grupoId) : null,
-      titulo,
-      descripcion,
-      fecha_inicio: fechaInicio || null,
-      fecha_limite: fechaLimite,
-      tipo_entrega: tipoEntrega,
-      tipo_apoyo: tipoApoyo,
-      texto_apoyo: tipoApoyo === "texto" ? textoApoyo : null,
-      archivo_apoyo_url: archivoApoyoUrl,
-      video_apoyo_url: videoApoyoUrl,
-      calificable: Boolean(calificable),
-      idmodulo: idmodulo ? Number(idmodulo) : null,
-      idleccion: idleccion ? Number(idleccion) : null,
-      orden: nuevoOrden,
-    },
-  ])
-  .select()
-  .single();
+    .from("tarea")
+    .insert([
+      {
+        idcurso: Number(cursoId),
+        idgrupo: grupoId ? Number(grupoId) : null,
+        titulo,
+        descripcion,
+        fecha_inicio: fechaInicio || null,
+        fecha_limite: fechaLimite,
+        tipo_entrega: tipoEntrega,
+        tipo_apoyo: tipoApoyo,
+        texto_apoyo: tipoApoyo === "texto" ? textoApoyo : null,
+        archivo_apoyo_url: archivoApoyoUrl,
+        video_apoyo_url: videoApoyoUrl,
+        apoyo_storage_provider: apoyoStorageProvider,
+        apoyo_bucket: apoyoBucket,
+        apoyo_object_key: apoyoObjectKey,
+        calificable: Boolean(calificable),
+        idmodulo: idmodulo ? Number(idmodulo) : null,
+        idleccion: idleccion ? Number(idleccion) : null,
+        orden: nuevoOrden,
+      },
+    ])
+    .select()
+    .single();
 
   if (error) {
     throw new Error(`Error guardando tarea: ${error.message}`);
@@ -961,14 +1058,12 @@ export const crearTarea = async (payload) => {
 // HORARIO DOCENTE
 // ======================================================
 
-
-
 export const getHorarioDocente = async () => {
   const docenteActual = await getDocenteActual();
 
   const { data: grupos, error: errGrupos } = await supabase
     .from("grupo")
-    .select("id, nombregrupo, horario, modalidad, idcurso, iddocente")
+    .select("id, nombregrupo, horario, modalidad, idcurso, iddocente, permisos_docente")
     .eq("iddocente", Number(docenteActual.id));
 
   if (errGrupos) throw new Error(errGrupos.message);
@@ -990,65 +1085,18 @@ export const getHorarioDocente = async () => {
   }
 
   return grupos.map((g) => ({
-    curso: cursosMap[g.idcurso]?.nombrecurso || "Curso",
+    id: g.id,
+    // CORREGIDO: Devolvemos texto simple en lugar de objetos
+    curso: cursosMap[g.idcurso]?.nombrecurso || "Curso", 
     grupo: g.nombregrupo || "",
     modalidad: g.modalidad || "",
     hora: g.horario || "",
     dia: extraerDiaDesdeHorario(g.horario),
     salon: g.modalidad?.toLowerCase() === "presencial" ? g.salon || "" : "",
+    permisos_docente: g.permisos_docente, // Seguimos pasando los permisos intactos
   }));
 };
 
-export const getHorariosDocentes = async () => {
-  const { data: grupos, error: errGrupos } = await supabase
-    .from("grupo")
-    .select("id, nombregrupo, horario, modalidad, idcurso, iddocente");
-
-  if (errGrupos) throw new Error(errGrupos.message);
-
-  if (!grupos || grupos.length === 0) return [];
-
-  const cursoIds = [...new Set(grupos.map((g) => g.idcurso).filter(Boolean))];
-  const docenteIds = [...new Set(grupos.map((g) => g.iddocente).filter(Boolean))];
-
-  let cursosMap = {};
-  let docentesMap = {};
-
-  if (cursoIds.length > 0) {
-    const { data: cursos, error: errCursos } = await supabase
-      .from("curso")
-      .select("id, nombrecurso")
-      .in("id", cursoIds);
-
-    if (errCursos) throw new Error(errCursos.message);
-
-    cursosMap = Object.fromEntries((cursos || []).map((c) => [c.id, c]));
-  }
-
-  if (docenteIds.length > 0) {
-    const { data: docentes, error: errDocentes } = await supabase
-      .from("docente")
-      .select("id, nombre, apellido")
-      .in("id", docenteIds);
-
-    if (errDocentes) throw new Error(errDocentes.message);
-
-    docentesMap = Object.fromEntries((docentes || []).map((d) => [d.id, d]));
-  }
-
-  return grupos.map((g) => {
-    const docente = docentesMap[g.iddocente];
-    return {
-      docente: `${docente?.nombre || ""} ${docente?.apellido || ""}`.trim(),
-      curso: cursosMap[g.idcurso]?.nombrecurso || "Curso",
-      grupo: g.nombregrupo || "",
-      modalidad: g.modalidad || "",
-      hora: g.horario || "",
-      dia: extraerDiaDesdeHorario(g.horario),
-      salon: g.modalidad?.toLowerCase() === "presencial" ? g.salon || "" : "",
-    };
-  });
-};
 
 export const createCursoAdicionalDocente = async ({
   nombre,
@@ -1542,6 +1590,10 @@ export const addMaterialLeccion = async (leccionId, payload) => {
   let contenidoTexto = payload.contenido_texto || null;
   let enlaceUrl = payload.enlace_url || null;
 
+  let storageProvider = null;
+  let bucket = null;
+  let objectKey = null;
+
   if (payload.file) {
     const file = payload.file;
 
@@ -1605,23 +1657,27 @@ export const addMaterialLeccion = async (leccionId, payload) => {
         payload.onProgress(100);
       }
     } else {
-      const safeName = file.name.replace(/\s+/g, "_");
-      const fileName = `leccion-${leccionId}-${Date.now()}-${safeName}`;
-      const filePath = `cursos/lecciones/${fileName}`;
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-      const { error: uploadError } = await supabase.storage
-        .from("documentos")
-        .upload(filePath, file, {
-          upsert: true,
-        });
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("leccionId", String(leccionId));
 
-      if (uploadError) throw new Error(uploadError.message);
+      const res = await fetch(`${apiUrl}/s3/upload-leccion-material`, {
+        method: "POST",
+        body: formData,
+      });
 
-      const { data: publicData } = supabase.storage
-        .from("documentos")
-        .getPublicUrl(filePath);
+      const data = await res.json();
 
-      archivoUrl = publicData?.publicUrl || null;
+      if (!res.ok || !data.ok) {
+        throw new Error(data?.message || "No se pudo subir el archivo.");
+      }
+
+      storageProvider = "s3";
+      bucket = data.bucket;
+      objectKey = data.key;
+      archivoUrl = null;
 
       if (typeof payload.onProgress === "function") {
         payload.onProgress(100);
@@ -1660,6 +1716,9 @@ export const addMaterialLeccion = async (leccionId, payload) => {
     nombre_archivo: nombreArchivo,
     tamano_bytes: tamanoBytes,
     mime_type: mimeType,
+    storage_provider: storageProvider,
+    bucket,
+    object_key: objectKey,
     orden: nuevoOrden,
   };
 
@@ -1700,6 +1759,27 @@ export const actualizarMaterialLeccion = async (materialId, payload) => {
 };
 
 export const deleteMaterialLeccion = async (materialId) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const { data: material, error: findError } = await supabase
+    .from("leccion_material")
+    .select("id, object_key")
+    .eq("id", Number(materialId))
+    .maybeSingle();
+
+  if (findError) throw new Error(findError.message);
+  if (!material) throw new Error("No se encontró el material.");
+
+  if (material.object_key) {
+    await fetch(`${apiUrl}/s3/object`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key: material.object_key }),
+    });
+  }
+
   const { error } = await supabase
     .from("leccion_material")
     .delete()
@@ -1750,6 +1830,26 @@ export const moverMaterialLeccion = async (materialId, direccion) => {
   if (errorSwap2) throw new Error(errorSwap2.message);
 
   return true;
+};
+
+export const getMaterialLeccionDownloadUrl = async (objectKey) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/s3/presign-download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ key: objectKey }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data?.message || "No se pudo obtener la URL del archivo.");
+  }
+
+  return data.downloadUrl;
 };
 
 export const moverMaterialOrden = async (materialesOrdenados) => {
@@ -1890,12 +1990,13 @@ export const actualizarEvaluacionesGrupo = async (evaluaciones) => {
 
   const payload = evaluaciones.map((ev, index) => ({
     id: Number(ev.id),
-    idgrupo: Number(ev.idgrupo), // 
+    idgrupo: Number(ev.idgrupo),
     nombre: String(ev.nombre || "").trim(),
     porcentaje: Number(ev.porcentaje || 0),
     orden: Number(ev.orden ?? index + 1),
     tipo: ev.tipo || "manual",
     idtarea: ev.tipo === "tarea" && ev.idtarea ? Number(ev.idtarea) : null,
+    idexamen: ev.tipo === "examen" && ev.idexamen ? Number(ev.idexamen) : null,
     activa: ev.activa ?? true,
   }));
 
@@ -1913,6 +2014,7 @@ export const crearEvaluacionGrupo = async ({
   porcentaje,
   tipo = "manual",
   idtarea = null,
+  idexamen = null,
   orden = 1,
 }) => {
   const { data, error } = await supabase
@@ -1924,6 +2026,7 @@ export const crearEvaluacionGrupo = async ({
         porcentaje: Number(porcentaje || 0),
         tipo,
         idtarea: tipo === "tarea" && idtarea ? Number(idtarea) : null,
+        idexamen: tipo === "examen" && idexamen ? Number(idexamen) : null,
         orden: Number(orden),
         activa: true,
       },
@@ -2286,5 +2389,513 @@ export const updatePasswordDocente = async (newPassword) => {
   });
 
   if (error) throw new Error(error.message || "No se pudo actualizar la contraseña");
+  return data;
+};
+
+
+export const getPendientesRevisionByGrupo = async (grupoId) => {
+  const idGrupo = Number(grupoId);
+
+  const { data: tareas, error: errTareas } = await supabase
+    .from("tarea")
+    .select("id")
+    .eq("idgrupo", idGrupo);
+
+  if (errTareas) throw new Error(errTareas.message);
+
+  const tareaIds = (tareas || []).map((t) => Number(t.id));
+  if (tareaIds.length === 0) return 0;
+
+  const { data: matriculas, error: errMat } = await supabase
+    .from("matricula")
+    .select("id")
+    .eq("idgrupo", idGrupo);
+
+  if (errMat) throw new Error(errMat.message);
+
+  const matriculaIds = (matriculas || []).map((m) => Number(m.id));
+  if (matriculaIds.length === 0) return 0;
+
+  const { data: entregas, error: errEntregas } = await supabase
+    .from("tarea_entrega")
+    .select("id")
+    .in("idtarea", tareaIds)
+    .in("idmatricula", matriculaIds)
+    .eq("revisado", false);
+
+  if (errEntregas) throw new Error(errEntregas.message);
+
+  return (entregas || []).length;
+};
+
+
+
+
+// ==============================
+// EXÁMENES
+// ==============================
+
+const TIPOS_PREGUNTA_CON_OPCIONES = ["unica", "multiple"];
+const TIPOS_PREGUNTA_TEXTO = ["texto_corto", "texto_largo"];
+
+const normalizarConfiguracionPregunta = (pregunta = {}) => {
+  const tipoPregunta = pregunta.tipo_pregunta || "unica";
+
+  return {
+    tipo_pregunta: tipoPregunta,
+    respuesta_texto:
+      TIPOS_PREGUNTA_TEXTO.includes(tipoPregunta) || tipoPregunta === "numerica"
+        ? (pregunta.respuesta_texto || "").trim() || null
+        : null,
+    texto_placeholder:
+      !TIPOS_PREGUNTA_CON_OPCIONES.includes(tipoPregunta)
+        ? (pregunta.texto_placeholder || "").trim() || null
+        : null,
+    max_caracteres:
+      tipoPregunta === "texto_corto"
+        ? Number(pregunta.max_caracteres || 50)
+        : tipoPregunta === "texto_largo"
+        ? Number(pregunta.max_caracteres || 200)
+        : null,
+    permitir_decimales:
+      tipoPregunta === "numerica"
+        ? Boolean(pregunta.permitir_decimales)
+        : true,
+    tamano_max_mb:
+      tipoPregunta === "archivo"
+        ? Number(pregunta.tamano_max_mb || 10)
+        : 10,
+    extensiones_permitidas:
+      tipoPregunta === "archivo"
+        ? (pregunta.extensiones_permitidas || "").trim() || null
+        : null,
+  };
+};
+
+export const crearExamen = async ({
+  leccionId,
+  grupoId,
+  titulo,
+  descripcion,
+  duracion_minutos,
+  intentos_permitidos,
+  nota_maxima,
+  preguntas,
+}) => {
+  const { data: examen, error: errExamen } = await supabase
+    .from("examen")
+    .insert({
+      idleccion: Number(leccionId),
+      idgrupo: Number(grupoId),
+      titulo: titulo?.trim(),
+      descripcion: descripcion?.trim() || null,
+      duracion_minutos: Number(duracion_minutos || 30),
+      intentos_permitidos: Number(intentos_permitidos || 1),
+      nota_maxima: Number(nota_maxima || 20),
+      estado: true,
+    })
+    .select()
+    .single();
+
+  if (errExamen) throw new Error(errExamen.message);
+
+  for (let i = 0; i < (preguntas || []).length; i++) {
+    const pregunta = preguntas[i];
+    const config = normalizarConfiguracionPregunta(pregunta);
+    const tipoPregunta = config.tipo_pregunta;
+
+    const { data: preguntaDB, error: errPregunta } = await supabase
+      .from("examen_pregunta")
+      .insert({
+        idexamen: Number(examen.id),
+        enunciado: pregunta.enunciado?.trim(),
+        puntaje: Number(pregunta.puntaje || 1),
+        orden: i + 1,
+        estado: true,
+        tipo_pregunta: tipoPregunta,
+        respuesta_texto: config.respuesta_texto,
+        texto_placeholder: config.texto_placeholder,
+        max_caracteres: config.max_caracteres,
+        permitir_decimales: config.permitir_decimales,
+        tamano_max_mb: config.tamano_max_mb,
+        extensiones_permitidas: config.extensiones_permitidas,
+      })
+      .select()
+      .single();
+
+    if (errPregunta) throw new Error(errPregunta.message);
+
+    if (TIPOS_PREGUNTA_CON_OPCIONES.includes(tipoPregunta)) {
+      const opciones = (pregunta.opciones || [])
+        .filter((op) => op.texto?.trim())
+        .map((op, idx) => ({
+          idpregunta: Number(preguntaDB.id),
+          texto: op.texto?.trim(),
+          es_correcta: !!op.es_correcta,
+          orden: idx + 1,
+        }));
+
+      if (opciones.length > 0) {
+        const { error: errOpciones } = await supabase
+          .from("examen_opcion")
+          .insert(opciones);
+
+        if (errOpciones) throw new Error(errOpciones.message);
+      }
+    }
+  }
+
+  return examen;
+};
+
+export const getExamenDetalle = async (examenId) => {
+  const idExamen = Number(examenId);
+
+  const { data: examen, error: errExamen } = await supabase
+    .from("examen")
+    .select("*")
+    .eq("id", idExamen)
+    .maybeSingle();
+
+  if (errExamen) throw new Error(errExamen.message);
+  if (!examen) throw new Error("No se encontró el examen.");
+
+  const { data: preguntasDB, error: errPreg } = await supabase
+    .from("examen_pregunta")
+    .select(
+      `
+      id,
+      idexamen,
+      enunciado,
+      puntaje,
+      orden,
+      estado,
+      tipo_pregunta,
+      respuesta_texto,
+      texto_placeholder,
+      max_caracteres,
+      permitir_decimales,
+      tamano_max_mb,
+      extensiones_permitidas
+      `
+    )
+    .eq("idexamen", idExamen)
+    .eq("estado", true)
+    .order("orden", { ascending: true });
+
+  if (errPreg) throw new Error(errPreg.message);
+
+  const preguntaIds = (preguntasDB || []).map((p) => Number(p.id));
+  let opcionesDB = [];
+
+  if (preguntaIds.length > 0) {
+    const { data: opciones, error: errOpciones } = await supabase
+      .from("examen_opcion")
+      .select("id, idpregunta, texto, es_correcta, orden")
+      .in("idpregunta", preguntaIds)
+      .order("orden", { ascending: true });
+
+    if (errOpciones) throw new Error(errOpciones.message);
+    opcionesDB = opciones || [];
+  }
+
+  return {
+    ...examen,
+    preguntas: (preguntasDB || []).map((pregunta) => {
+      const tipo = pregunta.tipo_pregunta || "unica";
+
+      return {
+        id: Number(pregunta.id),
+        enunciado: pregunta.enunciado || "",
+        puntaje: Number(pregunta.puntaje || 1),
+        tipo_pregunta: tipo,
+        respuesta_texto: pregunta.respuesta_texto || "",
+        texto_placeholder: pregunta.texto_placeholder || "",
+        max_caracteres:
+          pregunta.max_caracteres !== null && pregunta.max_caracteres !== undefined
+            ? Number(pregunta.max_caracteres)
+            : tipo === "texto_corto"
+            ? 50
+            : tipo === "texto_largo"
+            ? 200
+            : null,
+        permitir_decimales:
+          pregunta.permitir_decimales !== null && pregunta.permitir_decimales !== undefined
+            ? !!pregunta.permitir_decimales
+            : true,
+        tamano_max_mb:
+          pregunta.tamano_max_mb !== null && pregunta.tamano_max_mb !== undefined
+            ? Number(pregunta.tamano_max_mb)
+            : 10,
+        extensiones_permitidas: pregunta.extensiones_permitidas || "",
+        opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
+          ? opcionesDB
+              .filter((opcion) => Number(opcion.idpregunta) === Number(pregunta.id))
+              .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0))
+              .map((opcion) => ({
+                id: Number(opcion.id),
+                texto: opcion.texto || "",
+                es_correcta: !!opcion.es_correcta,
+              }))
+          : [],
+      };
+    }),
+  };
+};
+
+export const getExamenesByLeccion = async (leccionId) => {
+  const { data: examenes, error } = await supabase
+    .from("examen")
+    .select("*")
+    .eq("idleccion", Number(leccionId))
+    .eq("estado", true)
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const examenIds = (examenes || []).map((e) => Number(e.id));
+
+  let preguntas = [];
+  let evaluaciones = [];
+
+  if (examenIds.length > 0) {
+    const { data: preguntasDB, error: errPreg } = await supabase
+      .from("examen_pregunta")
+      .select("id, idexamen")
+      .in("idexamen", examenIds);
+
+    if (errPreg) throw new Error(errPreg.message);
+    preguntas = preguntasDB || [];
+
+    const { data: evaluacionesDB, error: errEval } = await supabase
+      .from("evaluacion_config")
+      .select("id, nombre, porcentaje, idexamen, tipo, activa")
+      .in("idexamen", examenIds)
+      .eq("tipo", "examen")
+      .eq("activa", true);
+
+    if (errEval) throw new Error(errEval.message);
+    evaluaciones = evaluacionesDB || [];
+  }
+
+  return (examenes || []).map((examen) => {
+    const total_preguntas = preguntas.filter(
+      (p) => Number(p.idexamen) === Number(examen.id)
+    ).length;
+
+    const evaluacion = evaluaciones.find(
+      (ev) => Number(ev.idexamen) === Number(examen.id)
+    );
+
+    return {
+      ...examen,
+      total_preguntas,
+      evaluacion_nombre: evaluacion?.nombre || "",
+      evaluacion_porcentaje: evaluacion?.porcentaje ?? null,
+    };
+  });
+};
+
+export const getEvaluacionesExamenDisponiblesByGrupo = async (
+  grupoId,
+  examenIdActual = null
+) => {
+  const { data, error } = await supabase
+    .from("evaluacion_config")
+    .select("id, idgrupo, nombre, porcentaje, tipo, idexamen, activa, orden")
+    .eq("idgrupo", Number(grupoId))
+    .eq("tipo", "examen")
+    .eq("activa", true)
+    .order("orden", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const examenActual = examenIdActual ? Number(examenIdActual) : null;
+
+  return (data || []).filter((ev) => {
+    if (!ev.idexamen) return true;
+    return Number(ev.idexamen) === examenActual;
+  });
+};
+
+export const asignarEvaluacionAExamen = async ({
+  examenId,
+  evaluacionId,
+  grupoId,
+}) => {
+  const idExamen = Number(examenId);
+  const idEvaluacion = Number(evaluacionId);
+  const idGrupo = Number(grupoId);
+
+  if (!idExamen || !idEvaluacion || !idGrupo) {
+    throw new Error("Faltan datos para vincular el examen con la evaluación.");
+  }
+
+  const { data: evaluacion, error: errEval } = await supabase
+    .from("evaluacion_config")
+    .select("id, idgrupo, tipo, activa")
+    .eq("id", idEvaluacion)
+    .eq("idgrupo", idGrupo)
+    .eq("tipo", "examen")
+    .eq("activa", true)
+    .maybeSingle();
+
+  if (errEval) throw new Error(errEval.message);
+  if (!evaluacion) {
+    throw new Error("La evaluación seleccionada no es válida para este grupo.");
+  }
+
+  const { error } = await supabase
+    .from("evaluacion_config")
+    .update({ idexamen: idExamen })
+    .eq("id", idEvaluacion);
+
+  if (error) throw new Error(error.message);
+
+  return true;
+};
+
+export const deleteExamen = async (examenId) => {
+  const { error } = await supabase
+    .from("examen")
+    .delete()
+    .eq("id", Number(examenId));
+
+  if (error) throw new Error(error.message);
+
+  return true;
+};
+
+export const actualizarExamen = async (examenId, datosExamen) => {
+  const idExamen = Number(examenId);
+
+  const { error: errExamen } = await supabase
+    .from("examen")
+    .update({
+      titulo: datosExamen.titulo?.trim(),
+      descripcion: datosExamen.descripcion?.trim() || null,
+      duracion_minutos: Number(datosExamen.duracion_minutos || 30),
+      intentos_permitidos: Number(datosExamen.intentos_permitidos || 1),
+      nota_maxima: Number(datosExamen.nota_maxima || 20),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", idExamen);
+
+  if (errExamen) throw new Error(errExamen.message);
+
+  const { data: preguntasActuales, error: errPreguntasActuales } = await supabase
+    .from("examen_pregunta")
+    .select("id")
+    .eq("idexamen", idExamen);
+
+  if (errPreguntasActuales) throw new Error(errPreguntasActuales.message);
+
+  const preguntaIds = (preguntasActuales || []).map((p) => Number(p.id));
+
+  if (preguntaIds.length > 0) {
+    const { error: errEliminarOpciones } = await supabase
+      .from("examen_opcion")
+      .delete()
+      .in("idpregunta", preguntaIds);
+
+    if (errEliminarOpciones) throw new Error(errEliminarOpciones.message);
+  }
+
+  const { error: errEliminarPreguntas } = await supabase
+    .from("examen_pregunta")
+    .delete()
+    .eq("idexamen", idExamen);
+
+  if (errEliminarPreguntas) throw new Error(errEliminarPreguntas.message);
+
+  for (let i = 0; i < (datosExamen.preguntas || []).length; i++) {
+    const pregunta = datosExamen.preguntas[i];
+    const config = normalizarConfiguracionPregunta(pregunta);
+    const tipoPregunta = config.tipo_pregunta;
+
+    const { data: preguntaDB, error: errPregunta } = await supabase
+      .from("examen_pregunta")
+      .insert({
+        idexamen: idExamen,
+        enunciado: pregunta.enunciado?.trim(),
+        puntaje: Number(pregunta.puntaje || 1),
+        orden: i + 1,
+        estado: true,
+        tipo_pregunta: tipoPregunta,
+        respuesta_texto: config.respuesta_texto,
+        texto_placeholder: config.texto_placeholder,
+        max_caracteres: config.max_caracteres,
+        permitir_decimales: config.permitir_decimales,
+        tamano_max_mb: config.tamano_max_mb,
+        extensiones_permitidas: config.extensiones_permitidas,
+      })
+      .select()
+      .single();
+
+    if (errPregunta) throw new Error(errPregunta.message);
+
+    if (TIPOS_PREGUNTA_CON_OPCIONES.includes(tipoPregunta)) {
+      const opciones = (pregunta.opciones || [])
+        .filter((op) => op.texto?.trim())
+        .map((opcion, idx) => ({
+          idpregunta: Number(preguntaDB.id),
+          texto: opcion.texto?.trim(),
+          es_correcta: !!opcion.es_correcta,
+          orden: idx + 1,
+        }));
+
+      if (opciones.length > 0) {
+        const { error: errOpciones } = await supabase
+          .from("examen_opcion")
+          .insert(opciones);
+
+        if (errOpciones) throw new Error(errOpciones.message);
+      }
+    }
+  }
+
+  return await getExamenDetalle(idExamen);
+};
+
+// ==============================
+// SESIONES EN VIVO
+// ==============================
+
+export const getSesionesVivoByCurso = async (cursoId) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/sesion-vivo/curso/${cursoId}`);
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message || "No se pudieron cargar las sesiones en vivo.");
+  }
+
+  return data || [];
+};
+
+export const crearSesionVivo = async (payload) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/sesion-vivo`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      idcurso: Number(payload.idcurso),
+      titulo: payload.titulo,
+      descripcion: payload.descripcion,
+      fecha: payload.fecha,
+      duracion: Number(payload.duracion),
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message || "No se pudo crear la sesión en vivo.");
+  }
+
   return data;
 };

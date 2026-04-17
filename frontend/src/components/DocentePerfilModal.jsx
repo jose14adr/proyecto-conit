@@ -20,7 +20,8 @@ import {
 } from "lucide-react";
 import PerfilDocumentosHistorial from "../docente/PerfilDocumentosHistorial";
 import toast from "react-hot-toast";
-import api from "../services/api";
+
+import { obtenerCargaAcademicaDocente } from "../services/docente.service";
 
 export default function DocentePerfilModal({
   docente,
@@ -41,8 +42,8 @@ export default function DocentePerfilModal({
   const cargarCargaAcademica = async () => {
     setIsLoadingCarga(true);
     try {
-      const response = await api.get(`/grupo/docente/${docente.id}`);
-      setCargaAcademica(response.data);
+      const data = await obtenerCargaAcademicaDocente(docente.id);
+      setCargaAcademica(data || []);
     } catch (error) {
       console.warn("No se pudo cargar la carga académica", error);
       setCargaAcademica(docente.grupos || []);
@@ -193,6 +194,7 @@ export default function DocentePerfilModal({
 
               {/* COLUMNA DERECHA */}
               <div className="md:col-span-2 space-y-6">
+                {/* RESUMEN PROFESIONAL */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
                     <Briefcase size={20} className="text-indigo-600" />
@@ -282,7 +284,6 @@ export default function DocentePerfilModal({
                               Dictando
                             </span>
 
-                            {/* EL BOTÓN AHORA ABRE EL MODAL DE PERMISOS */}
                             {onConfigurarPermisos && (
                               <button
                                 onClick={(e) => {

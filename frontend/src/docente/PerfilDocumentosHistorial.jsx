@@ -4,6 +4,7 @@ import {
   deleteDocumentoDocente,
   addHistorialDocente,
   deleteHistorialDocente,
+  getDocumentoDocenteDownloadUrl,
 } from "../services/docenteService";
 
 const TIPOS_DOCUMENTO = {
@@ -107,6 +108,52 @@ function PerfilDocumentosHistorial({
       showMessage("error", error?.message || "No se pudo subir el documento.");
     } finally {
       setSubiendo((prev) => ({ ...prev, [bucketKey]: false }));
+    }
+  };
+
+  const abrirDocumento = async (doc) => {
+    try {
+      if (doc.object_key) {
+        const url = await getDocumentoDocenteDownloadUrl(doc.object_key);
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      if (doc.archivo_url) {
+        window.open(doc.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      throw new Error("El documento no tiene una ruta válida.");
+    } catch (error) {
+      console.error(error);
+      showMessage("error", error?.message || "No se pudo abrir el documento.");
+    }
+  };
+
+  const descargarDocumento = async (doc) => {
+    try {
+      let url = null;
+
+      if (doc.object_key) {
+        url = await getDocumentoDocenteDownloadUrl(doc.object_key);
+      } else if (doc.archivo_url) {
+        url = doc.archivo_url;
+      }
+
+      if (!url) {
+        throw new Error("El documento no tiene una ruta válida.");
+      }
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = doc.nombre || "documento.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error(error);
+      showMessage("error", error?.message || "No se pudo descargar el documento.");
     }
   };
 
@@ -239,6 +286,8 @@ function PerfilDocumentosHistorial({
           documentos={docsAcademicos}
           emptyText="Aún no hay documentos académicos registrados."
           onDelete={eliminarDocumento}
+          onOpen={abrirDocumento}
+          onDownload={descargarDocumento}
         />
       </SectionCard>
 
@@ -259,6 +308,8 @@ function PerfilDocumentosHistorial({
           documentos={docsExperiencia}
           emptyText="No hay documentos de experiencia laboral registrados."
           onDelete={eliminarDocumento}
+          onOpen={abrirDocumento}
+          onDownload={descargarDocumento}
         />
       </SectionCard>
 
@@ -284,6 +335,8 @@ function PerfilDocumentosHistorial({
           documentos={docsCvOtros}
           emptyText="No hay CV ni otros documentos registrados."
           onDelete={eliminarDocumento}
+          onOpen={abrirDocumento}
+          onDownload={descargarDocumento}
         />
       </SectionCard>
 
@@ -415,7 +468,13 @@ function UploadButton({ label, onFileSelect, disabled = false }) {
   );
 }
 
-function DocumentsList({ documentos = [], emptyText, onDelete }) {
+function DocumentsList({
+  documentos = [],
+  emptyText,
+  onDelete,
+  onOpen,
+  onDownload,
+}) {
   if (!documentos.length) {
     return <p className="text-sm text-slate-500">{emptyText}</p>;
   }
@@ -433,22 +492,21 @@ function DocumentsList({ documentos = [], emptyText, onDelete }) {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <a
-              href={doc.archivo_url}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => onOpen?.(doc)}
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
             >
               Ver PDF
-            </a>
+            </button>
 
-            <a
-              href={doc.archivo_url}
-              download
+            <button
+              type="button"
+              onClick={() => onDownload?.(doc)}
               className="rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white transition hover:bg-indigo-700"
             >
               Descargar
-            </a>
+            </button>
 
             <button
               type="button"

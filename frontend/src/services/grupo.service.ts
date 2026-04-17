@@ -5,10 +5,16 @@ export const obtenerGruposPorCurso = async (idcurso: number) => {
   return response.data;
 };
 
-export const asignarDocenteAGrupo = async (idGrupo: number, idDocente: number) => {
-  const response = await api.patch(`/grupo/${idGrupo}/asignar-docente`, {
-    idDocente,
-  });
+export const asignarDocenteAGrupo = async (idGrupo: number, idDocente: number, permisos?: any) => {
+  const payload: any = { 
+    idDocente 
+  };
+
+  if (permisos) {
+    payload.permisos = permisos;
+  }
+
+  const response = await api.patch(`/grupo/${idGrupo}/asignar-docente`, payload);
   return response.data;
 };
 

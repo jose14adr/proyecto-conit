@@ -27,9 +27,11 @@ export class GrupoController {
   asignarDocente(
     @Param('id', ParseIntPipe) idGrupo: number,
     @Body('idDocente', ParseIntPipe) idDocente: number,
+    @Body('permisos') permisos: any,
   ) {
-    return this.grupoService.asignarDocente(idGrupo, idDocente);
+    return this.grupoService.asignarDocente(idGrupo, idDocente, permisos);
   }
+
   @Get('docente/:iddocente')
   getGruposPorDocente(@Param('iddocente', ParseIntPipe) iddocente: number) {
     return this.grupoService.gruposPorDocente(iddocente);
