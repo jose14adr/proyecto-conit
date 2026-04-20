@@ -18,7 +18,7 @@ const extraerDiaDesdeHorario = (horario) => {
 
   return "";
 };
- 
+
 // Obtener usuario autenticado actual
 const getCurrentUser = async () => {
   const {
@@ -65,8 +65,6 @@ const getDocenteActual = async () => {
   return data;
 };
 
-
-
 // Helper para agrupar arrays en trozos
 const chunkArray = (arr, size = 100) => {
   const chunks = [];
@@ -74,6 +72,17 @@ const chunkArray = (arr, size = 100) => {
     chunks.push(arr.slice(i, i + size));
   }
   return chunks;
+};
+
+const getGrupoById = async (grupoId) => {
+  const { data, error } = await supabase
+    .from("grupo")
+    .select("id, idcurso, nombregrupo, horario, modalidad, salon")
+    .eq("id", Number(grupoId))
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data || null;
 };
 
 // ======================================================
@@ -209,10 +218,8 @@ export const getCursosAdicionalesDocente = async () => {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-
   return data || [];
 };
-
 
 // Agregar curso adicional
 export const addCursoAdicionalDocente = async (payload) => {
@@ -251,15 +258,11 @@ export const deleteCursoAdicionalDocente = async (id) => {
 // HISTORIAL DOCENTE
 // ======================================================
 
-// Obtener historial docente
-// Primero intenta usar la tabla nueva docente_historial_detalle.
-// Si no existe o falla, intenta una tabla previa más simple.
 export const getHistorialDocente = async (docenteIdParam = null) => {
   const docente = docenteIdParam
     ? { id: docenteIdParam }
     : await getDocenteActual();
 
-  // Intento 1: tabla nueva detallada
   const { data: dataDetalle, error: errorDetalle } = await supabase
     .from("docente_historial_detalle")
     .select("*")
@@ -270,7 +273,6 @@ export const getHistorialDocente = async (docenteIdParam = null) => {
     return dataDetalle || [];
   }
 
-  // Intento 2: posible tabla anterior
   const { data: dataLegacy, error: errorLegacy } = await supabase
     .from("historial_docente")
     .select("*")
@@ -281,8 +283,11 @@ export const getHistorialDocente = async (docenteIdParam = null) => {
     return dataLegacy || [];
   }
 
-  // Si ambas fallan, devolvemos vacío para no romper la pantalla
-  console.warn("No se pudo leer historial docente:", errorDetalle?.message, errorLegacy?.message);
+  console.warn(
+    "No se pudo leer historial docente:",
+    errorDetalle?.message,
+    errorLegacy?.message
+  );
   return [];
 };
 
@@ -369,13 +374,11 @@ export const getCursosDocente = async () => {
   });
 };
 
-
-
 // ======================================================
-// ALUMNOS POR CURSO
+// ALUMNOS POR GRUPO
 // ======================================================
 
-export const getAlumnosByCurso = async (idgrupo) => {
+export const getAlumnosByGrupo = async (idgrupo) => {
   try {
     const grupoId = Number(idgrupo);
 
@@ -389,9 +392,7 @@ export const getAlumnosByCurso = async (idgrupo) => {
 
     const matriculasUnicas = Array.from(
       new Map(
-        matriculas
-          .filter((m) => m.idalumno)
-          .map((m) => [m.idalumno, m])
+        matriculas.filter((m) => m.idalumno).map((m) => [m.idalumno, m])
       ).values()
     );
 
@@ -440,7 +441,6 @@ export const getAlumnosByCurso = async (idgrupo) => {
         if (!alumno) return null;
 
         const nota = notasMap.get(m.id) || {};
-
         const n1 = nota.nota1;
         const n2 = nota.nota2;
         const n3 = nota.nota3;
@@ -463,7 +463,11 @@ export const getAlumnosByCurso = async (idgrupo) => {
     console.error("Error obteniendo alumnos:", error);
     return [];
   }
-};  
+};
+
+// Alias temporal para compatibilidad con componentes viejos
+export const getAlumnosByCurso = getAlumnosByGrupo;
+
 // ======================================================
 // GUARDAR NOTAS
 // ======================================================
@@ -515,10 +519,9 @@ export const guardarNotas = async (idmatricula, notas) => {
 // APROBADOS / REPORTE DE NOTAS
 // ======================================================
 
-export const getAprobadosByCurso = async (idgrupo) => {
+export const getAprobadosByGrupo = async (idgrupo) => {
   const grupoId = Number(idgrupo);
 
-  // 1. Traer matrículas del grupo
   const { data: matriculas, error: errMat } = await supabase
     .from("matricula")
     .select("id, idalumno, idgrupo")
@@ -527,12 +530,9 @@ export const getAprobadosByCurso = async (idgrupo) => {
   if (errMat) throw new Error(errMat.message);
   if (!matriculas || matriculas.length === 0) return [];
 
-  // 2. Dejar solo una matrícula por alumno dentro del grupo
   const matriculasUnicas = Array.from(
     new Map(
-      matriculas
-        .filter((m) => m.idalumno)
-        .map((m) => [m.idalumno, m])
+      matriculas.filter((m) => m.idalumno).map((m) => [m.idalumno, m])
     ).values()
   );
 
@@ -541,7 +541,6 @@ export const getAprobadosByCurso = async (idgrupo) => {
   const matriculaIds = matriculasUnicas.map((m) => m.id);
   const alumnoIds = matriculasUnicas.map((m) => m.idalumno);
 
-  // 3. Traer alumnos
   const { data: alumnos, error: errAlumnos } = await supabase
     .from("alumno")
     .select("*")
@@ -551,7 +550,6 @@ export const getAprobadosByCurso = async (idgrupo) => {
 
   const alumnosMap = new Map((alumnos || []).map((a) => [a.id, a]));
 
-  // 4. Traer notas de esas matrículas
   const { data: notas, error: errNotas } = await supabase
     .from("nota")
     .select("idmatricula, evaluacion, nota")
@@ -559,7 +557,6 @@ export const getAprobadosByCurso = async (idgrupo) => {
 
   if (errNotas) throw new Error(errNotas.message);
 
-  // 5. Agrupar notas por matrícula
   const notasMap = new Map();
 
   (notas || []).forEach((n) => {
@@ -578,7 +575,6 @@ export const getAprobadosByCurso = async (idgrupo) => {
     if (Number(n.evaluacion) === 3) fila.nota3 = Number(n.nota);
   });
 
-  // 6. Armar resultado final, una fila por alumno
   return matriculasUnicas
     .map((m) => {
       const alumno = alumnosMap.get(m.idalumno);
@@ -624,6 +620,9 @@ export const getAprobadosByCurso = async (idgrupo) => {
     })
     .filter(Boolean);
 };
+
+// Alias temporal
+export const getAprobadosByCurso = getAprobadosByGrupo;
 
 // ======================================================
 // SUBIDA A STORAGE - FOTO
@@ -722,7 +721,6 @@ export const getDocumentoDocenteDownloadUrl = async (objectKey) => {
   return data.downloadUrl;
 };
 
-
 // ======================================================
 // SUBIDA A STORAGE - PDF CURSO ADICIONAL
 // ======================================================
@@ -764,10 +762,12 @@ export const uploadPdfCursoAdicionalDocente = async (file, payload = {}) => {
   return curso;
 };
 
+// ======================================================
+// DETALLE DE CURSO/GRUPO EN VISTA DOCENTE
+// ======================================================
 
-
-export const getCursoById = async (cursoId) => {
-  const grupoId = Number(cursoId);
+export const getCursoById = async (grupoIdParam) => {
+  const grupoId = Number(grupoIdParam);
 
   const { data: grupo, error: errGrupo } = await supabase
     .from("grupo")
@@ -797,6 +797,8 @@ export const getCursoById = async (cursoId) => {
   };
 };
 
+// Alias opcional más claro
+export const getDetalleGrupoDocente = getCursoById;
 
 export const getMaterialesCurso = async (cursoId) => {
   const { data, error } = await supabase
@@ -808,8 +810,6 @@ export const getMaterialesCurso = async (cursoId) => {
   if (error) throw new Error(error.message);
   return data || [];
 };
-
-
 
 export const addMaterialCurso = async (cursoId, payload) => {
   let archivoUrl = null;
@@ -855,27 +855,34 @@ export const addMaterialCurso = async (cursoId, payload) => {
   return data;
 };
 
+// ======================================================
+// ASISTENCIA
+// NOTA:
+// Se mantiene compatibilidad con tu esquema actual:
+// hoy parece que guardas grupoId dentro de asistencia.idcurso
+// ======================================================
 
-
-export const getAsistenciaCursoPorFecha = async (cursoId, fecha) => {
-  const { data, error } = await supabase
+export const getAsistenciaCursoPorFecha = async (grupoId, fecha) => {
+  let query = supabase
     .from("asistencia")
     .select("*")
-    .eq("idcurso", Number(cursoId))
-    .eq("fecha", fecha);
+    .eq("idcurso", Number(grupoId)); // compatibilidad actual
 
+  if (fecha) {
+    query = query.eq("fecha", fecha);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data || [];
 };
 
-
-
-export const guardarAsistenciaCurso = async (cursoId, asistencias) => {
+export const guardarAsistenciaCurso = async (grupoId, asistencias) => {
   for (const item of asistencias) {
     const { data: existente, error: errBuscar } = await supabase
       .from("asistencia")
       .select("id")
-      .eq("idcurso", Number(cursoId))
+      .eq("idcurso", Number(grupoId)) // compatibilidad actual
       .eq("idalumno", Number(item.idalumno))
       .eq("fecha", item.fecha)
       .maybeSingle();
@@ -883,7 +890,7 @@ export const guardarAsistenciaCurso = async (cursoId, asistencias) => {
     if (errBuscar) throw new Error(errBuscar.message);
 
     const payload = {
-      idcurso: Number(cursoId),
+      idcurso: Number(grupoId), // compatibilidad actual
       idalumno: Number(item.idalumno),
       fecha: item.fecha,
       estado: item.estado,
@@ -899,9 +906,7 @@ export const guardarAsistenciaCurso = async (cursoId, asistencias) => {
 
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabase
-        .from("asistencia")
-        .insert(payload);
+      const { error } = await supabase.from("asistencia").insert(payload);
 
       if (error) throw new Error(error.message);
     }
@@ -910,6 +915,9 @@ export const guardarAsistenciaCurso = async (cursoId, asistencias) => {
   return true;
 };
 
+// ======================================================
+// TAREAS
+// ======================================================
 
 export const crearTarea = async (payload) => {
   const {
@@ -929,6 +937,10 @@ export const crearTarea = async (payload) => {
     idleccion = null,
   } = payload;
 
+  if (!grupoId) {
+    throw new Error("El grupo es obligatorio para crear la tarea.");
+  }
+
   let archivoApoyoUrl = null;
   let videoApoyoUrl = null;
 
@@ -941,7 +953,8 @@ export const crearTarea = async (payload) => {
   if (tipoApoyo === "archivo" && archivoApoyo) {
     const formData = new FormData();
     formData.append("file", archivoApoyo);
-    formData.append("cursoId", String(cursoId));
+    formData.append("cursoId", String(cursoId || 0));
+    formData.append("grupoId", String(grupoId));
     formData.append("tipoApoyo", "archivo");
 
     const res = await fetch(`${apiUrl}/s3/upload-tarea-apoyo`, {
@@ -964,7 +977,8 @@ export const crearTarea = async (payload) => {
   if (tipoApoyo === "video" && videoApoyo) {
     const formData = new FormData();
     formData.append("file", videoApoyo);
-    formData.append("cursoId", String(cursoId));
+    formData.append("cursoId", String(cursoId || 0));
+    formData.append("grupoId", String(grupoId));
     formData.append("tipoApoyo", "video");
 
     const res = await fetch(`${apiUrl}/s3/upload-tarea-apoyo`, {
@@ -987,7 +1001,7 @@ export const crearTarea = async (payload) => {
   let queryOrden = supabase
     .from("tarea")
     .select("orden")
-    .eq("idcurso", Number(cursoId));
+    .eq("idgrupo", Number(grupoId));
 
   if (idmodulo) {
     queryOrden = queryOrden.eq("idmodulo", Number(idmodulo));
@@ -1016,8 +1030,8 @@ export const crearTarea = async (payload) => {
     .from("tarea")
     .insert([
       {
-        idcurso: Number(cursoId),
-        idgrupo: grupoId ? Number(grupoId) : null,
+        idcurso: cursoId ? Number(cursoId) : null,
+        idgrupo: Number(grupoId),
         titulo,
         descripcion,
         fecha_inicio: fechaInicio || null,
@@ -1046,19 +1060,56 @@ export const crearTarea = async (payload) => {
   return data;
 };
 
+export const getTareasByGrupo = async (grupoId) => {
+  const { data: tareas, error } = await supabase
+    .from("tarea")
+    .select("*")
+    .eq("idgrupo", Number(grupoId))
+    .order("orden", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const listaTareas = tareas || [];
+  if (listaTareas.length === 0) return [];
+
+  const tareaIds = listaTareas.map((t) => Number(t.id)).filter(Boolean);
+
+  const { data: evaluaciones, error: errorEvaluaciones } = await supabase
+    .from("evaluacion_config")
+    .select("id, idtarea, nombre, porcentaje, tipo, activa")
+    .in("idtarea", tareaIds)
+    .eq("tipo", "tarea")
+    .eq("activa", true);
+
+  if (errorEvaluaciones) throw new Error(errorEvaluaciones.message);
+
+  return listaTareas.map((tarea) => {
+    const evaluacion = (evaluaciones || []).find(
+      (ev) => Number(ev.idtarea) === Number(tarea.id)
+    );
+
+    return {
+      ...tarea,
+      evaluacion_nombre: evaluacion?.nombre || "",
+      evaluacion_porcentaje: evaluacion?.porcentaje ?? null,
+    };
+  });
+};
+
+// Alias temporal
+export const getTareasByCurso = getTareasByGrupo;
 
 // ======================================================
 // HORARIO DOCENTE
 // ======================================================
-
-
 
 export const getHorarioDocente = async () => {
   const docenteActual = await getDocenteActual();
 
   const { data: grupos, error: errGrupos } = await supabase
     .from("grupo")
-    .select("id, nombregrupo, horario, modalidad, idcurso, iddocente")
+    .select("id, nombregrupo, horario, modalidad, salon, idcurso, iddocente")
     .eq("iddocente", Number(docenteActual.id));
 
   if (errGrupos) throw new Error(errGrupos.message);
@@ -1092,7 +1143,7 @@ export const getHorarioDocente = async () => {
 export const getHorariosDocentes = async () => {
   const { data: grupos, error: errGrupos } = await supabase
     .from("grupo")
-    .select("id, nombregrupo, horario, modalidad, idcurso, iddocente");
+    .select("id, nombregrupo, horario, modalidad, salon, idcurso, iddocente");
 
   if (errGrupos) throw new Error(errGrupos.message);
 
@@ -1192,45 +1243,9 @@ export const createCursoAdicionalDocente = async ({
   return data;
 };
 
-export const getTareasByCurso = async (cursoId) => {
-  const { data: tareas, error } = await supabase
-    .from("tarea")
-    .select("*")
-    .eq("idcurso", Number(cursoId))
-    .order("orden", { ascending: true })
-    .order("id", { ascending: true });
-
-  if (error) throw new Error(error.message);
-
-  const listaTareas = tareas || [];
-
-  if (listaTareas.length === 0) {
-    return [];
-  }
-
-  const tareaIds = listaTareas.map((t) => Number(t.id)).filter(Boolean);
-
-  const { data: evaluaciones, error: errorEvaluaciones } = await supabase
-    .from("evaluacion_config")
-    .select("id, idtarea, nombre, porcentaje, tipo, activa")
-    .in("idtarea", tareaIds)
-    .eq("tipo", "tarea")
-    .eq("activa", true);
-
-  if (errorEvaluaciones) throw new Error(errorEvaluaciones.message);
-
-  return listaTareas.map((tarea) => {
-    const evaluacion = (evaluaciones || []).find(
-      (ev) => Number(ev.idtarea) === Number(tarea.id)
-    );
-
-    return {
-      ...tarea,
-      evaluacion_nombre: evaluacion?.nombre || "",
-      evaluacion_porcentaje: evaluacion?.porcentaje ?? null,
-    };
-  });
-};  
+// ======================================================
+// PROGRESO DE ALUMNOS POR GRUPO
+// ======================================================
 
 export const getProgresoAlumnosByGrupo = async (idgrupo) => {
   const grupoId = Number(idgrupo);
@@ -1299,9 +1314,9 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
   if (errAlumnos) throw new Error(errAlumnos.message);
 
   // ======================================================
-  // TAREAS
+  // TAREAS SOLO DEL GRUPO
   // ======================================================
-  const { data: tareasGrupo, error: errTareasGrupo } = await supabase
+  const { data: tareas, error: errTareasGrupo } = await supabase
     .from("tarea")
     .select("id, titulo, idcurso, idgrupo")
     .eq("idgrupo", grupoId)
@@ -1310,27 +1325,7 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
 
   if (errTareasGrupo) throw new Error(errTareasGrupo.message);
 
-  let tareasSinGrupo = [];
-  if (grupo.idcurso) {
-    const { data, error } = await supabase
-      .from("tarea")
-      .select("id, titulo, idcurso, idgrupo")
-      .eq("idcurso", Number(grupo.idcurso))
-      .is("idgrupo", null)
-      .order("orden", { ascending: true })
-      .order("id", { ascending: true });
-
-    if (error) throw new Error(error.message);
-    tareasSinGrupo = data || [];
-  }
-
-  const tareas = Array.from(
-    new Map(
-      [...(tareasGrupo || []), ...tareasSinGrupo].map((t) => [Number(t.id), t])
-    ).values()
-  );
-
-  const tareaIds = tareas.map((t) => Number(t.id)).filter(Boolean);
+  const tareaIds = (tareas || []).map((t) => Number(t.id)).filter(Boolean);
 
   let entregas = [];
   if (tareaIds.length > 0 && matriculaIds.length > 0) {
@@ -1382,86 +1377,82 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
   }
 
   // ======================================================
-  // VIDEOS DEL CURSO
+  // VIDEOS DEL GRUPO
   // ======================================================
-  let modulosCurso = [];
-  let leccionesCurso = [];
+  let modulosGrupo = [];
+  let leccionesGrupo = [];
   let materialesVideo = [];
   let progresoMateriales = [];
 
-  if (grupo.idcurso) {
-    const { data: modulos, error: errModulos } = await supabase
-      .from("curso_modulo")
-      .select("id, idcurso")
-      .eq("idcurso", Number(grupo.idcurso));
+  const { data: modulos, error: errModulos } = await supabase
+    .from("curso_modulo")
+    .select("id, idcurso, idgrupo")
+    .eq("idgrupo", Number(grupoId));
 
-    if (errModulos) throw new Error(errModulos.message);
-    modulosCurso = modulos || [];
+  if (errModulos) throw new Error(errModulos.message);
+  modulosGrupo = modulos || [];
 
-    const moduloIds = modulosCurso.map((m) => Number(m.id)).filter(Boolean);
+  const moduloIds = modulosGrupo.map((m) => Number(m.id)).filter(Boolean);
 
-    if (moduloIds.length > 0) {
-      const respuestasLecciones = await Promise.all(
-        chunkArray(moduloIds, 100).map(async (moduloChunk) => {
-          const { data, error } = await supabase
-            .from("curso_leccion")
-            .select("id, idmodulo")
-            .in("idmodulo", moduloChunk);
+  if (moduloIds.length > 0) {
+    const respuestasLecciones = await Promise.all(
+      chunkArray(moduloIds, 100).map(async (moduloChunk) => {
+        const { data, error } = await supabase
+          .from("curso_leccion")
+          .select("id, idmodulo")
+          .in("idmodulo", moduloChunk);
 
-          if (error) throw new Error(error.message);
-          return data || [];
-        })
-      );
+        if (error) throw new Error(error.message);
+        return data || [];
+      })
+    );
 
-      leccionesCurso = respuestasLecciones.flat();
-    }
+    leccionesGrupo = respuestasLecciones.flat();
+  }
 
-    const leccionIds = leccionesCurso.map((l) => Number(l.id)).filter(Boolean);
+  const leccionIds = leccionesGrupo.map((l) => Number(l.id)).filter(Boolean);
 
-    if (leccionIds.length > 0) {
-      const respuestasMateriales = await Promise.all(
-        chunkArray(leccionIds, 100).map(async (leccionChunk) => {
-          const { data, error } = await supabase
-            .from("leccion_material")
-            .select("id, idleccion, tipo, estado_video, titulo")
-            .in("idleccion", leccionChunk)
-            .in("tipo", ["video", "url_video"]);
+  if (leccionIds.length > 0) {
+    const respuestasMateriales = await Promise.all(
+      chunkArray(leccionIds, 100).map(async (leccionChunk) => {
+        const { data, error } = await supabase
+          .from("leccion_material")
+          .select("id, idleccion, tipo, estado_video, titulo")
+          .in("idleccion", leccionChunk)
+          .in("tipo", ["video", "url_video"]);
 
-          if (error) throw new Error(error.message);
-          return data || [];
-        })
-      );
+        if (error) throw new Error(error.message);
+        return data || [];
+      })
+    );
 
-      materialesVideo = respuestasMateriales.flat();
-    }
+    materialesVideo = respuestasMateriales.flat();
+  }
 
-    const materialIds = materialesVideo.map((m) => Number(m.id)).filter(Boolean);
+  const materialIds = materialesVideo.map((m) => Number(m.id)).filter(Boolean);
 
-    if (materialIds.length > 0 && matriculaIds.length > 0) {
-      const respuestasProgresoMaterial = await Promise.all(
-        chunkArray(materialIds, 100).map(async (materialChunk) => {
-          const { data, error } = await supabase
-            .from("alumno_material_progreso")
-            .select(
-              "id, idmatricula, idmaterial, completado, porcentaje_visto, max_segundo_visto"
-            )
-            .in("idmaterial", materialChunk)
-            .in("idmatricula", matriculaIds);
+  if (materialIds.length > 0 && matriculaIds.length > 0) {
+    const respuestasProgresoMaterial = await Promise.all(
+      chunkArray(materialIds, 100).map(async (materialChunk) => {
+        const { data, error } = await supabase
+          .from("alumno_material_progreso")
+          .select(
+            "id, idmatricula, idmaterial, completado, porcentaje_visto, max_segundo_visto"
+          )
+          .in("idmaterial", materialChunk)
+          .in("idmatricula", matriculaIds);
 
-          if (error) throw new Error(error.message);
-          return data || [];
-        })
-      );
+        if (error) throw new Error(error.message);
+        return data || [];
+      })
+    );
 
-      progresoMateriales = respuestasProgresoMaterial.flat();
-    }
+    progresoMateriales = respuestasProgresoMaterial.flat();
   }
 
   // ======================================================
   // ASISTENCIA
-  // IMPORTANTE:
-  // Aquí usamos idcurso = grupoId para mantener compatibilidad con
-  // cómo hoy ya se está guardando/consultando asistencia en la pantalla.
+  // compatibilidad actual
   // ======================================================
   let asistencias = [];
 
@@ -1477,11 +1468,7 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
   }
 
   const fechasAsistenciaUnicas = [
-    ...new Set(
-      (asistencias || [])
-        .map((a) => a.fecha)
-        .filter(Boolean)
-    ),
+    ...new Set((asistencias || []).map((a) => a.fecha).filter(Boolean)),
   ];
 
   const totalSesiones = fechasAsistenciaUnicas.length;
@@ -1490,9 +1477,6 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     (alumnos || []).map((alumno) => [Number(alumno.id), alumno])
   );
 
-  // ======================================================
-  // MAPAS DE TAREAS
-  // ======================================================
   const tareasPorMatricula = new Map();
   (entregas || []).forEach((entrega) => {
     const key = Number(entrega.idmatricula);
@@ -1502,9 +1486,6 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     tareasPorMatricula.get(key).add(Number(entrega.idtarea));
   });
 
-  // ======================================================
-  // MAPAS DE EXÁMENES
-  // ======================================================
   const examenesPorMatricula = new Map();
   (intentos || [])
     .filter((intento) => !!intento.finalizado)
@@ -1516,9 +1497,6 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
       examenesPorMatricula.get(key).add(Number(intento.idexamen));
     });
 
-  // ======================================================
-  // MAPAS DE VIDEOS
-  // ======================================================
   const videosCompletadosPorMatricula = new Map();
   const videosIniciadosPorMatricula = new Map();
 
@@ -1541,9 +1519,6 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     }
   });
 
-  // ======================================================
-  // MAPA DE ASISTENCIA POR ALUMNO
-  // ======================================================
   const asistenciaPorAlumno = new Map();
 
   (asistencias || []).forEach((registro) => {
@@ -1699,7 +1674,9 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
   };
 };
 
-
+// ======================================================
+// PROGRESO DOCENTE POR GRUPO
+// ======================================================
 
 export const getProgresoDocenteByGrupo = async (idgrupo) => {
   const grupoId = Number(idgrupo);
@@ -1718,21 +1695,18 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
   if (!grupo) throw new Error("No se encontró el grupo.");
 
   // =========================================
-  // MÓDULOS / SUBMÓDULOS
+  // MÓDULOS / SUBMÓDULOS SOLO DEL GRUPO
   // =========================================
-  let modulosCurso = [];
-  if (grupo.idcurso) {
-    const { data, error } = await supabase
-      .from("curso_modulo")
-      .select("id, idcurso, idpadre")
-      .eq("idcurso", Number(grupo.idcurso))
-      .order("orden", { ascending: true })
-      .order("id", { ascending: true });
+  const { data: modulosGrupo, error: errModulos } = await supabase
+    .from("curso_modulo")
+    .select("id, idcurso, idgrupo, idpadre")
+    .eq("idgrupo", Number(grupoId))
+    .order("orden", { ascending: true })
+    .order("id", { ascending: true });
 
-    if (error) throw new Error(error.message);
-    modulosCurso = data || [];
-  }
+  if (errModulos) throw new Error(errModulos.message);
 
+  const modulosCurso = modulosGrupo || [];
   const modulosPrincipales = modulosCurso.filter((m) => !m.idpadre);
   const submodulos = modulosCurso.filter((m) => !!m.idpadre);
   const moduloIds = modulosCurso.map((m) => Number(m.id)).filter(Boolean);
@@ -1793,32 +1767,14 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
   });
 
   // =========================================
-  // TAREAS
+  // TAREAS SOLO DEL GRUPO
   // =========================================
-  const { data: tareasGrupo, error: errTareasGrupo } = await supabase
+  const { data: tareas, error: errTareasGrupo } = await supabase
     .from("tarea")
     .select("id, idcurso, idgrupo")
     .eq("idgrupo", grupoId);
 
   if (errTareasGrupo) throw new Error(errTareasGrupo.message);
-
-  let tareasSinGrupo = [];
-  if (grupo.idcurso) {
-    const { data, error } = await supabase
-      .from("tarea")
-      .select("id, idcurso, idgrupo")
-      .eq("idcurso", Number(grupo.idcurso))
-      .is("idgrupo", null);
-
-    if (error) throw new Error(error.message);
-    tareasSinGrupo = data || [];
-  }
-
-  const tareas = Array.from(
-    new Map(
-      [...(tareasGrupo || []), ...tareasSinGrupo].map((t) => [Number(t.id), t])
-    ).values()
-  );
 
   // =========================================
   // EXÁMENES
@@ -1832,18 +1788,14 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
 
   // =========================================
   // ASISTENCIA
-  // Compatibilidad con cómo hoy se usa en la vista
+  // compatibilidad actual
   // =========================================
-  let asistencias = [];
-  {
-    const { data, error } = await supabase
-      .from("asistencia")
-      .select("fecha")
-      .eq("idcurso", grupoId);
+  const { data: asistencias, error: errAsistencias } = await supabase
+    .from("asistencia")
+    .select("fecha")
+    .eq("idcurso", grupoId);
 
-    if (error) throw new Error(error.message);
-    asistencias = data || [];
-  }
+  if (errAsistencias) throw new Error(errAsistencias.message);
 
   const sesionesAsistencia = [
     ...new Set((asistencias || []).map((a) => a.fecha).filter(Boolean)),
@@ -1851,7 +1803,6 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
 
   // =========================================
   // CÁLCULOS DE PROGRESO DOCENTE
-  // Primera versión: avance del curso armado/gestionado
   // =========================================
   const puntajeModulos =
     modulosPrincipales.length > 0
@@ -1884,7 +1835,7 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
   );
 
   const puntajeTareas =
-    tareas.length > 0 ? Math.min(tareas.length * 20, 100) : 0;
+    (tareas || []).length > 0 ? Math.min(tareas.length * 20, 100) : 0;
 
   const puntajeExamenes =
     (examenes || []).length > 0 ? Math.min(examenes.length * 30, 100) : 0;
@@ -1915,7 +1866,7 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
       materiales: materiales.length,
       videos: videos.length,
       videosListos: videosListos.length,
-      tareas: tareas.length,
+      tareas: (tareas || []).length,
       examenes: (examenes || []).length,
       sesionesAsistencia,
       progresoPlanificacion,
@@ -1926,7 +1877,6 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
     },
   };
 };
-
 
 export const marcarTareaRevisada = async (tareaId, revisada) => {
   const { data, error } = await supabase
@@ -1959,11 +1909,18 @@ export const moverTarea = async (tareaId, direccion) => {
 
   if (errorActual) throw new Error(errorActual.message);
   if (!actual) throw new Error("No se encontró la tarea.");
+  if (!actual.idgrupo) throw new Error("La tarea no tiene grupo asociado.");
 
   let query = supabase
     .from("tarea")
     .select("*")
-    .eq("idcurso", actual.idcurso);
+    .eq("idgrupo", Number(actual.idgrupo));
+
+  if (actual.idmodulo) query = query.eq("idmodulo", Number(actual.idmodulo));
+  else query = query.is("idmodulo", null);
+
+  if (actual.idleccion) query = query.eq("idleccion", Number(actual.idleccion));
+  else query = query.is("idleccion", null);
 
   if (direccion === "arriba") {
     query = query.lt("orden", actual.orden).order("orden", { ascending: false });
@@ -1971,12 +1928,13 @@ export const moverTarea = async (tareaId, direccion) => {
     query = query.gt("orden", actual.orden).order("orden", { ascending: true });
   }
 
-  const { data: vecino, error: errorVecino } = await query.limit(1).maybeSingle();
+  const { data: vecino, error: errorVecino } = await query
+    .limit(1)
+    .maybeSingle();
 
   if (errorVecino) throw new Error(errorVecino.message);
   if (!vecino) return actual;
 
-  // intercambiar orden
   const { error: errorSwap1 } = await supabase
     .from("tarea")
     .update({ orden: vecino.orden })
@@ -1994,7 +1952,7 @@ export const moverTarea = async (tareaId, direccion) => {
   return true;
 };
 
-//Arrastrar orden
+// Arrastrar orden
 export const moverTareaOrden = async (tareasOrdenadas) => {
   try {
     const updates = tareasOrdenadas.map((tarea, index) =>
@@ -2018,7 +1976,6 @@ export const moverTareaOrden = async (tareasOrdenadas) => {
   }
 };
 
-
 // ======================================================
 // MÓDULOS / LECCIONES / MATERIALES DE LECCIÓN
 // ======================================================
@@ -2028,11 +1985,11 @@ const LIMITE_ARCHIVO_LECCION = 20 * 1024 * 1024; // 20 MB
 // ------------------------------
 // MÓDULOS
 // ------------------------------
-export const getModulosByCurso = async (cursoId) => {
+export const getModulosByGrupo = async (grupoId) => {
   const { data: modulosRaw, error: modulosError } = await supabase
     .from("curso_modulo")
     .select("*")
-    .eq("idcurso", Number(cursoId))
+    .eq("idgrupo", Number(grupoId))
     .order("orden", { ascending: true })
     .order("id", { ascending: true });
 
@@ -2054,8 +2011,12 @@ export const getModulosByCurso = async (cursoId) => {
   }));
 };
 
+// Alias temporal
+export const getModulosByCurso = getModulosByGrupo;
+
 export const crearModulo = async ({
   cursoId,
+  grupoId,
   titulo,
   descripcion,
   idpadre = null,
@@ -2064,10 +2025,14 @@ export const crearModulo = async ({
     throw new Error("El título del módulo es obligatorio.");
   }
 
+  if (!grupoId) {
+    throw new Error("El grupo es obligatorio para crear módulos.");
+  }
+
   let query = supabase
     .from("curso_modulo")
     .select("orden")
-    .eq("idcurso", Number(cursoId));
+    .eq("idgrupo", Number(grupoId));
 
   if (idpadre) {
     query = query.eq("idpadre", Number(idpadre));
@@ -2087,7 +2052,8 @@ export const crearModulo = async ({
   const { data, error } = await supabase
     .from("curso_modulo")
     .insert({
-      idcurso: Number(cursoId),
+      idcurso: cursoId ? Number(cursoId) : null,
+      idgrupo: Number(grupoId),
       titulo: titulo.trim(),
       descripcion: descripcion?.trim() || null,
       idpadre: idpadre ? Number(idpadre) : null,
@@ -2138,11 +2104,13 @@ export const moverModulo = async (moduloId, direccion) => {
 
   if (errorActual) throw new Error(errorActual.message);
   if (!actual) throw new Error("No se encontró el módulo.");
+  if (!actual.idgrupo) throw new Error("El módulo no tiene grupo asociado.");
 
   let query = supabase
     .from("curso_modulo")
     .select("*")
-    .eq("idcurso", actual.idcurso);
+    .eq("idgrupo", Number(actual.idgrupo))
+    .is("idpadre", null);
 
   if (direccion === "arriba") {
     query = query.lt("orden", actual.orden).order("orden", { ascending: false });
@@ -2613,26 +2581,15 @@ export const moverMaterialOrden = async (materialesOrdenados) => {
   }
 };
 
-//===================================
+// ===================================
 // Registro de notas
-//===================================
+// ===================================
 
 export const getRegistroNotasByGrupo = async (grupoId) => {
   try {
     const idGrupo = Number(grupoId);
 
-    // 1. Matrículas del grupo
-    const { data: matriculas, error: errMat } = await supabase
-      .from("matricula")
-      .select("id, idalumno, idgrupo")
-      .eq("idgrupo", idGrupo);
-
-    if (errMat) throw errMat;
-    if (!matriculas || matriculas.length === 0) {
-      return { evaluaciones: [], alumnos: [] };
-    }
-
-    // 2. Evaluaciones configuradas
+    // 1. Evaluaciones del grupo
     const { data: evaluaciones, error: errEval } = await supabase
       .from("evaluacion_config")
       .select("*")
@@ -2641,6 +2598,22 @@ export const getRegistroNotasByGrupo = async (grupoId) => {
       .order("orden", { ascending: true });
 
     if (errEval) throw errEval;
+
+    // 2. Matrículas del grupo
+    const { data: matriculas, error: errMat } = await supabase
+      .from("matricula")
+      .select("id, idalumno, idgrupo")
+      .eq("idgrupo", idGrupo);
+
+    if (errMat) throw errMat;
+
+    // Si no hay alumnos, igual devolvemos las evaluaciones
+    if (!matriculas || matriculas.length === 0) {
+      return {
+        evaluaciones: evaluaciones || [],
+        alumnos: [],
+      };
+    }
 
     // 3. Alumnos
     const alumnoIds = [...new Set(matriculas.map((m) => m.idalumno).filter(Boolean))];
@@ -2674,9 +2647,7 @@ export const getRegistroNotasByGrupo = async (grupoId) => {
     });
 
     const matriculasUnicas = Array.from(
-      new Map(
-        matriculas.map((m) => [`${m.idgrupo}-${m.idalumno}`, m])
-      ).values()
+      new Map(matriculas.map((m) => [`${m.idgrupo}-${m.idalumno}`, m])).values()
     );
 
     const alumnos = matriculasUnicas.map((m) => {
@@ -2719,10 +2690,9 @@ export const getRegistroNotasByGrupo = async (grupoId) => {
   }
 };
 
-
-//===================================
+// ===================================
 // Actualizar evaluaciones
-//===================================
+// ===================================
 export const actualizarEvaluacionesGrupo = async (evaluaciones) => {
   if (!evaluaciones || evaluaciones.length === 0) return true;
 
@@ -2786,8 +2756,11 @@ export const eliminarEvaluacionGrupo = async (evaluacionId) => {
   return true;
 };
 
-//Notas con tareas calificables
-export const getEvaluacionesTareaDisponiblesByGrupo = async (grupoId, tareaIdActual = null) => {
+// Notas con tareas calificables
+export const getEvaluacionesTareaDisponiblesByGrupo = async (
+  grupoId,
+  tareaIdActual = null
+) => {
   const { data, error } = await supabase
     .from("evaluacion_config")
     .select("id, idgrupo, nombre, porcentaje, tipo, idtarea, activa, orden")
@@ -2843,10 +2816,9 @@ export const asignarEvaluacionATarea = async ({
   return true;
 };
 
-
-//==============================
-//Tareas calificables
-//==============================
+// ==============================
+// Tareas calificables
+// ==============================
 
 export const getTareasCalificablesByGrupo = async (grupoId) => {
   const { data, error } = await supabase
@@ -2859,9 +2831,6 @@ export const getTareasCalificablesByGrupo = async (grupoId) => {
   if (error) throw new Error(error.message);
   return data || [];
 };
-
-
-
 
 export const getEntregasByTarea = async (tareaId) => {
   const { data: tarea, error: errTarea } = await supabase
@@ -2911,13 +2880,8 @@ export const getEntregasByTarea = async (tareaId) => {
 
   if (errEntregas) throw new Error(errEntregas.message);
 
-  const alumnosMap = new Map(
-    (alumnos || []).map((a) => [Number(a.id), a])
-  );
-
-  const entregaMap = new Map(
-    (entregas || []).map((e) => [Number(e.idmatricula), e])
-  );
+  const alumnosMap = new Map((alumnos || []).map((a) => [Number(a.id), a]));
+  const entregaMap = new Map((entregas || []).map((e) => [Number(e.idmatricula), e]));
 
   const filas = matriculasUnicas.map((m) => {
     const alumno = alumnosMap.get(Number(m.idalumno));
@@ -2954,7 +2918,10 @@ export const guardarNotaEntregaYRegistro = async ({
   const notaNumerica =
     nota === "" || nota === null || nota === undefined ? null : Number(nota);
 
-  if (notaNumerica !== null && (Number.isNaN(notaNumerica) || notaNumerica < 0 || notaNumerica > 20)) {
+  if (
+    notaNumerica !== null &&
+    (Number.isNaN(notaNumerica) || notaNumerica < 0 || notaNumerica > 20)
+  ) {
     throw new Error("La nota debe estar entre 0 y 20.");
   }
 
@@ -2991,28 +2958,28 @@ export const guardarNotaEntregaYRegistro = async ({
   if (errEntrega) throw new Error(errEntrega.message);
 
   if (entrega) {
-  const { error: errUpdate } = await supabase
-    .from("tarea_entrega")
-    .update({
-      nota: notaNumerica,
-      revisado: notaNumerica !== null,
-    })
-    .eq("id", Number(entrega.id));
+    const { error: errUpdate } = await supabase
+      .from("tarea_entrega")
+      .update({
+        nota: notaNumerica,
+        revisado: notaNumerica !== null,
+      })
+      .eq("id", Number(entrega.id));
 
-  if (errUpdate) throw new Error(errUpdate.message);
-} else {
-  const { error: errInsert } = await supabase
-    .from("tarea_entrega")
-    .insert({
-      idtarea: Number(tareaId),
-      idmatricula: Number(idmatricula),
-      idalumno: null, // opcional si no lo tienes
-      nota: notaNumerica,
-      revisado: notaNumerica !== null,
-    });
+    if (errUpdate) throw new Error(errUpdate.message);
+  } else {
+    const { error: errInsert } = await supabase
+      .from("tarea_entrega")
+      .insert({
+        idtarea: Number(tareaId),
+        idmatricula: Number(idmatricula),
+        idalumno: null,
+        nota: notaNumerica,
+        revisado: notaNumerica !== null,
+      });
 
-  if (errInsert) throw new Error(errInsert.message);
-}
+    if (errInsert) throw new Error(errInsert.message);
+  }
 
   await guardarNotas(Number(idmatricula), {
     [Number(evaluacion.id)]: notaNumerica,
@@ -3021,10 +2988,9 @@ export const guardarNotaEntregaYRegistro = async ({
   return true;
 };
 
-
-//==============================
-//Mover Sub Módulos
-//==============================
+// ==============================
+// Mover Sub Módulos
+// ==============================
 
 export const moverSubModulo = async (submoduloId, direccion) => {
   const { data: actual, error: errorActual } = await supabase
@@ -3036,11 +3002,12 @@ export const moverSubModulo = async (submoduloId, direccion) => {
   if (errorActual) throw new Error(errorActual.message);
   if (!actual) throw new Error("No se encontró el submódulo.");
   if (!actual.idpadre) throw new Error("El elemento indicado no es un submódulo.");
+  if (!actual.idgrupo) throw new Error("El submódulo no tiene grupo asociado.");
 
   let query = supabase
     .from("curso_modulo")
     .select("*")
-    .eq("idcurso", Number(actual.idcurso))
+    .eq("idgrupo", Number(actual.idgrupo))
     .eq("idpadre", Number(actual.idpadre));
 
   if (direccion === "arriba") {
@@ -3071,8 +3038,7 @@ export const moverSubModulo = async (submoduloId, direccion) => {
   return true;
 };
 
-
-//Arrastrar submódulo y lección
+// Arrastrar submódulo y lección
 export const moverSubModuloOrden = async (submodulosOrdenados) => {
   try {
     const updates = submodulosOrdenados.map((submodulo, index) =>
@@ -3119,8 +3085,7 @@ export const moverLeccionOrden = async (leccionesOrdenadas) => {
   }
 };
 
-
-//Actualizar contraseña docente
+// Actualizar contraseña docente
 export const updatePasswordDocente = async (newPassword) => {
   const { data, error } = await supabase.auth.updateUser({
     password: newPassword,
@@ -3129,7 +3094,6 @@ export const updatePasswordDocente = async (newPassword) => {
   if (error) throw new Error(error.message || "No se pudo actualizar la contraseña");
   return data;
 };
-
 
 export const getPendientesRevisionByGrupo = async (grupoId) => {
   const idGrupo = Number(grupoId);
@@ -3166,9 +3130,6 @@ export const getPendientesRevisionByGrupo = async (grupoId) => {
   return (entregas || []).length;
 };
 
-
-
-
 // ==============================
 // EXÁMENES
 // ==============================
@@ -3196,13 +3157,9 @@ const normalizarConfiguracionPregunta = (pregunta = {}) => {
         ? Number(pregunta.max_caracteres || 200)
         : null,
     permitir_decimales:
-      tipoPregunta === "numerica"
-        ? Boolean(pregunta.permitir_decimales)
-        : true,
+      tipoPregunta === "numerica" ? Boolean(pregunta.permitir_decimales) : true,
     tamano_max_mb:
-      tipoPregunta === "archivo"
-        ? Number(pregunta.tamano_max_mb || 10)
-        : 10,
+      tipoPregunta === "archivo" ? Number(pregunta.tamano_max_mb || 10) : 10,
     extensiones_permitidas:
       tipoPregunta === "archivo"
         ? (pregunta.extensiones_permitidas || "").trim() || null
@@ -3300,8 +3257,7 @@ export const getExamenDetalle = async (examenId) => {
 
   const { data: preguntasDB, error: errPreg } = await supabase
     .from("examen_pregunta")
-    .select(
-      `
+    .select(`
       id,
       idexamen,
       enunciado,
@@ -3315,8 +3271,7 @@ export const getExamenDetalle = async (examenId) => {
       permitir_decimales,
       tamano_max_mb,
       extensiones_permitidas
-      `
-    )
+    `)
     .eq("idexamen", idExamen)
     .eq("estado", true)
     .order("orden", { ascending: true });
@@ -3358,7 +3313,8 @@ export const getExamenDetalle = async (examenId) => {
             ? 200
             : null,
         permitir_decimales:
-          pregunta.permitir_decimales !== null && pregunta.permitir_decimales !== undefined
+          pregunta.permitir_decimales !== null &&
+          pregunta.permitir_decimales !== undefined
             ? !!pregunta.permitir_decimales
             : true,
         tamano_max_mb:
@@ -3599,18 +3555,19 @@ export const actualizarExamen = async (examenId, datosExamen) => {
 // SESIONES EN VIVO
 // ==============================
 
-export const getSesionesVivoByCurso = async (cursoId) => {
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+export const getSesionesVivoByGrupo = async (grupoId) => {
+  const { data, error } = await supabase
+    .from("sesion_vivo")
+    .select("*")
+    .eq("idgrupo", Number(grupoId))
+    .order("fecha", { ascending: true });
 
-  const res = await fetch(`${apiUrl}/sesion-vivo/curso/${cursoId}`);
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data?.message || "No se pudieron cargar las sesiones en vivo.");
-  }
-
+  if (error) throw new Error(error.message);
   return data || [];
 };
+
+// Alias temporal
+export const getSesionesVivoByCurso = getSesionesVivoByGrupo;
 
 export const crearSesionVivo = async (payload) => {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -3621,7 +3578,8 @@ export const crearSesionVivo = async (payload) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      idcurso: Number(payload.idcurso),
+      idcurso: payload.idcurso ? Number(payload.idcurso) : null,
+      idgrupo: Number(payload.idgrupo),
       titulo: payload.titulo,
       descripcion: payload.descripcion,
       fecha: payload.fecha,

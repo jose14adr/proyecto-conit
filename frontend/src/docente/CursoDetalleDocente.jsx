@@ -6,15 +6,15 @@ import XLSX from "xlsx-js-style";
 import autoTable from "jspdf-autotable";
 import {
   getCursoById,
-  getAlumnosByCurso,
+  getAlumnosByGrupo,
   guardarAsistenciaCurso,
   getAsistenciaCursoPorFecha,
   crearTarea,
-  getTareasByCurso,
+  getTareasByGrupo,
   marcarTareaRevisada,
   deleteTarea,
   moverTareaOrden,
-  getModulosByCurso,
+  getModulosByGrupo,
   crearModulo,
   actualizarModulo,
   deleteModulo,
@@ -45,7 +45,7 @@ import {
   asignarEvaluacionAExamen,
   deleteExamen,
   actualizarExamen,
-  getSesionesVivoByCurso,
+  getSesionesVivoByGrupo,
   crearSesionVivo,
   getProgresoAlumnosByGrupo,
 } from "../services/docenteService";
@@ -312,10 +312,12 @@ function VideoEmbed({ url }) {
 function CursoDetalleDocente() {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [curso, setCurso] = useState(null);
   const [alumnos, setAlumnos] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const grupoIdActual = Number(id);
+  const cursoIdActual = Number(curso?.id || 0);
 
   // ==============================
   // Tabs
@@ -417,7 +419,6 @@ function CursoDetalleDocente() {
   const [notificacionesVideo, setNotificacionesVideo] = useState([]);
   
 
-  const [notificacionesVideo, setNotificacionesVideo] = useState([]);
 
   // ==============================
   // EXAMENES
@@ -509,7 +510,11 @@ function CursoDetalleDocente() {
 const cargarSesionesVivoCurso = async () => {
   try {
     setCargandoSesionesVivo(true);
-    const data = await getSesionesVivoByCurso(Number(id));
+    if (!grupoIdActual) {
+      setSesionesVivo([]);
+      return;
+    }
+    const data = await getSesionesVivoByGrupo(grupoIdActual);
     setSesionesVivo(data || []);
   } catch (error) {
     console.error(error);
@@ -553,10 +558,15 @@ const guardarSesionVivoCurso = async (e) => {
       return alert("La duración debe ser mayor a 0.");
     }
 
+    if (!grupoIdActual) {
+      return alert("No se pudo identificar el grupo para la sesión en vivo.");
+    }
+
     setGuardandoSesionVivo(true);
 
     await crearSesionVivo({
-      idcurso: Number(id),
+      idgrupo: grupoIdActual,
+      idcurso: cursoIdActual,
       titulo: formSesionVivo.titulo,
       descripcion: formSesionVivo.descripcion,
       fecha: formSesionVivo.fecha,
@@ -802,7 +812,7 @@ const formatearFechaSesion = (fecha) => {
 
         const [cursoData, alumnosData, asistenciaData] = await Promise.all([
           getCursoById(id),
-          getAlumnosByCurso(id),
+          getAlumnosByGrupo(id),
           getAsistenciaCursoPorFecha(id, hoy),
         ]);
 
@@ -830,10 +840,11 @@ const formatearFechaSesion = (fecha) => {
   }, [id, hoy]);
 
   useEffect(() => {
-  if (tabActiva === "tareas" || tabActiva === "modulos") {
-    cargarTareasCurso();
-  }
-}, [tabActiva, id]);
+    if (!grupoIdActual) return;
+    if (tabActiva === "tareas" || tabActiva === "modulos") {
+      cargarTareasCurso();
+    }
+  }, [tabActiva, grupoIdActual]);
 
   useEffect(() => {
     if (tabActiva === "progreso" && !progresoCargado) {
@@ -846,10 +857,11 @@ const formatearFechaSesion = (fecha) => {
   }, [id]);
 
   useEffect(() => {
+    if (!grupoIdActual) return;
     if (tabActiva === "modulos") {
       cargarModulosCurso();
     }
-  }, [tabActiva, id]);
+  }, [tabActiva, grupoIdActual]);
 
   useEffect(() => {
   setModulosOrdenados(modulos || []);
@@ -860,15 +872,20 @@ useEffect(() => {
 }, [tareas]);
 
 useEffect(() => {
+  if (!grupoIdActual) return;
   if (tabActiva === "resumen") {
     cargarSesionesVivoCurso();
   }
-}, [tabActiva, id]); //Cambiar por "}, [id]);" si se quiere cargar siempre apenas entrar al detalle de curso
+}, [tabActiva, grupoIdActual]);
 
   const cargarTareasCurso = async () => {
     try {
       setCargandoTareas(true);
-      const data = await getTareasByCurso(id);
+      if (!grupoIdActual) {
+        setTareas([]);
+        return;
+      }
+      const data = await getTareasByGrupo(grupoIdActual);
       setTareas(data || []);
     } catch (error) {
       console.error(error);
@@ -916,54 +933,59 @@ useEffect(() => {
   };
 
   const cargarModulosCurso = async () => {
-  try {
-    setCargandoModulos(true);
+    try {
+      setCargandoModulos(true);
 
-    const modulosData = await getModulosByCurso(id);
+      if (!grupoIdActual) {
+        setModulos([]);
+        return;
+      }
 
-    const modulosConDetalle = await Promise.all(
-      (modulosData || []).map(async (modulo) => {
-        const submodulosConDetalle = await Promise.all(
-          (modulo.submodulos || []).map(async (submodulo) => {
-            const lecciones = await getLeccionesByModulo(submodulo.id);
+      const modulosData = await getModulosByGrupo(grupoIdActual);
 
-            const leccionesConMateriales = await Promise.all(
-              (lecciones || []).map(async (leccion) => {
-                const [materiales, examenes] = await Promise.all([
-                  getMaterialesByLeccion(leccion.id),
-                  getExamenesByLeccion(leccion.id),
-                ]);
+      const modulosConDetalle = await Promise.all(
+        (modulosData || []).map(async (modulo) => {
+          const submodulosConDetalle = await Promise.all(
+            (modulo.submodulos || []).map(async (submodulo) => {
+              const lecciones = await getLeccionesByModulo(submodulo.id);
 
-                return {
-                  ...leccion,
-                  materiales: materiales || [],
-                  examenes: examenes || [],
-                };
-              })
-            );
+              const leccionesConMateriales = await Promise.all(
+                (lecciones || []).map(async (leccion) => {
+                  const [materiales, examenes] = await Promise.all([
+                    getMaterialesByLeccion(leccion.id),
+                    getExamenesByLeccion(leccion.id),
+                  ]);
 
-            return {
-              ...submodulo,
-              lecciones: leccionesConMateriales || [],
-            };
-          })
-        );
+                  return {
+                    ...leccion,
+                    materiales: materiales || [],
+                    examenes: examenes || [],
+                  };
+                })
+              );
 
-        return {
-          ...modulo,
-          submodulos: submodulosConDetalle || [],
-        };
-      })
-    );
+              return {
+                ...submodulo,
+                lecciones: leccionesConMateriales || [],
+              };
+            })
+          );
 
-    setModulos(modulosConDetalle);
-  } catch (error) {
-    console.error(error);
-    alert(error?.message || "No se pudieron cargar los módulos");
-  } finally {
-    setCargandoModulos(false);
-  }
-};
+          return {
+            ...modulo,
+            submodulos: submodulosConDetalle || [],
+          };
+        })
+      );
+
+      setModulos(modulosConDetalle);
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo cargar la estructura del curso.");
+    } finally {
+      setCargandoModulos(false);
+    }
+  };
 
   const cargarAsistenciaPorFecha = async (fecha) => {
     try {
@@ -1258,10 +1280,15 @@ useEffect(() => {
         return alert("Ingresa el título del módulo.");
       }
 
+      if (!grupoIdActual) {
+        return alert("No se pudo identificar el grupo real para crear el módulo.");
+      }
+
       setGuardandoModulo(true);
 
       await crearModulo({
-        cursoId: Number(id),
+        grupoId: grupoIdActual,
+        cursoId: cursoIdActual,
         titulo: formModulo.titulo,
         descripcion: formModulo.descripcion,
       });
@@ -1546,10 +1573,15 @@ const guardarSubModuloCurso = async (e, moduloPadreId) => {
       return alert("Ingresa el título del submódulo.");
     }
 
+    if (!grupoIdActual) {
+      return alert("No se pudo identificar el grupo real para crear el submódulo.");
+    }
+
     setGuardandoSubModulo(true);
 
     await crearModulo({
-      cursoId: Number(id),
+      grupoId: grupoIdActual,
+      cursoId: cursoIdActual,
       titulo: data.titulo,
       descripcion: data.descripcion,
       idpadre: moduloPadreId,
@@ -1561,11 +1593,6 @@ const guardarSubModuloCurso = async (e, moduloPadreId) => {
         titulo: "",
         descripcion: "",
       },
-    }));
-
-    setMostrarFormSubModulo((prev) => ({
-      ...prev,
-      [moduloPadreId]: false,
     }));
 
     await cargarModulosCurso();

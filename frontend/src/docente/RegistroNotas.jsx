@@ -280,6 +280,7 @@ export default function RegistroNotas() {
       porcentaje: String(ev.porcentaje ?? 0),
       tipo: ev.tipo || "manual",
       idtarea: ev.idtarea ?? null,
+      idexamen: ev.idexamen ?? null,
       orden: ev.orden ?? index + 1,
       activa: ev.activa ?? true,
       isNew: false,
@@ -303,6 +304,7 @@ const cambiarEvaluacionDraft = (index, field, value) => {
 
       if (field === "tipo") {
         next.idtarea = null;
+        next.idexamen = null;
       }
 
       return next;
@@ -316,14 +318,16 @@ const agregarEvaluacionDraft = () => {
     ...prev,
     {
       id: `new-${Date.now()}`,
-      idgrupo: grupoId, // 
+      idgrupo: grupoId,
       nombre: "",
       porcentaje: "",
       tipo: "manual",
+      idtarea: null,
+      idexamen: null,
       orden: prev.length + 1,
       activa: true,
       isNew: true,
-    },
+    }
   ]);
 };
 
@@ -359,11 +363,17 @@ const guardarConfigEvaluaciones = async () => {
       return;
     }
 
-    if (limpias.some((ev) => Number.isNaN(ev.porcentaje) || ev.porcentaje < 0 || ev.porcentaje > 100)) {
+    if (
+      limpias.some(
+        (ev) =>
+          Number.isNaN(ev.porcentaje) ||
+          ev.porcentaje < 0 ||
+          ev.porcentaje > 100
+      )
+    ) {
       alert("Cada porcentaje debe estar entre 0 y 100.");
       return;
     }
-
 
     const suma = limpias.reduce((acc, ev) => acc + Number(ev.porcentaje || 0), 0);
     if (Number(suma.toFixed(2)) !== 100) {
@@ -379,9 +389,21 @@ const guardarConfigEvaluaciones = async () => {
         .map((ev) => Number(ev.id))
     );
 
+    // antes de eliminar evaluaciones, conviene validar si tienen notas registradas
     const paraEliminar = (evaluaciones || []).filter(
       (ev) => !draftIds.has(Number(ev.id))
     );
+
+    if (paraEliminar.length > 0) {
+      const confirmado = window.confirm(
+        "Vas a eliminar evaluaciones existentes. Si esas evaluaciones ya tienen notas registradas, podrían quedar desvinculadas. ¿Deseas continuar?"
+      );
+
+      if (!confirmado) {
+        setConfigSaving(false);
+        return;
+      }
+    }
 
     for (const ev of paraEliminar) {
       await eliminarEvaluacionGrupo(ev.id);
@@ -393,14 +415,17 @@ const guardarConfigEvaluaciones = async () => {
     if (existentes.length > 0) {
       await actualizarEvaluacionesGrupo(
         existentes.map((ev, index) => ({
-          id: ev.id,
-          idgrupo: ev.idgrupo || grupoId, //
+          id: Number(ev.id),
+          idgrupo: Number(ev.idgrupo || grupoId),
           nombre: ev.nombre,
-          porcentaje: ev.porcentaje,
+          porcentaje: Number(ev.porcentaje),
           orden: index + 1,
-          tipo: ev.tipo,
-          idtarea: null,
-          activa: true,
+          tipo: ev.tipo || "manual",
+          idtarea:
+            ev.tipo === "tarea" && ev.idtarea ? Number(ev.idtarea) : null,
+          idexamen:
+            ev.tipo === "examen" && ev.idexamen ? Number(ev.idexamen) : null,
+          activa: ev.activa ?? true,
         }))
       );
     }
@@ -408,11 +433,14 @@ const guardarConfigEvaluaciones = async () => {
     for (let i = 0; i < nuevas.length; i++) {
       const ev = nuevas[i];
       await crearEvaluacionGrupo({
-        idgrupo: grupoId,
+        idgrupo: Number(grupoId),
         nombre: ev.nombre,
-        porcentaje: ev.porcentaje,
-        tipo: ev.tipo,
-        idtarea: null,
+        porcentaje: Number(ev.porcentaje),
+        tipo: ev.tipo || "manual",
+        idtarea:
+          ev.tipo === "tarea" && ev.idtarea ? Number(ev.idtarea) : null,
+        idexamen:
+          ev.tipo === "examen" && ev.idexamen ? Number(ev.idexamen) : null,
         orden: existentes.length + i + 1,
       });
     }
@@ -422,7 +450,7 @@ const guardarConfigEvaluaciones = async () => {
     alert("Configuración de evaluaciones guardada correctamente ✅");
   } catch (error) {
     console.error("Error guardando configuración:", error);
-    alert("Ocurrió un error al guardar la configuración.");
+    alert(error?.message || "Ocurrió un error al guardar la configuración.");
   } finally {
     setConfigSaving(false);
   }
