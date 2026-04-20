@@ -1,3 +1,4 @@
+import { Empresa } from '../../empresa/entities/empresa.entity';
 import {
   Entity,
   Column,
@@ -70,4 +71,11 @@ export class Curso {
 
   @OneToMany(() => SesionVivo, (sesionVivo) => sesionVivo.curso)
   sesionesVivo: SesionVivo[];
+
+  @Column({ type: 'int', nullable: true })
+  idempresa: number | null;
+
+  @ManyToOne(() => Empresa, { nullable: true })
+  @JoinColumn({ name: 'idempresa' })
+  empresa?: Empresa;
 }

@@ -1,8 +1,18 @@
-import { Injectable, BadRequestException, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SesionVivo } from './entities/sesion-vivo.entity';
-import { GoogleMeetService } from '../google-meet/google-meet.service';
+import { Curso } from '../curso/entities/curso.entity';
+import { EmpresaService } from '../empresa/empresa.service';
+import { MeetingProviderFactory } from '../meeting/meeting-provider.factory';
+import {
+  CreateMeetingInput,
+  MeetingProvider,
+} from '../meeting/meeting-provider.interface';
 
 @Injectable()
 export class SesionVivoService {
@@ -10,8 +20,11 @@ export class SesionVivoService {
     @InjectRepository(SesionVivo)
     private readonly sesionVivoRepository: Repository<SesionVivo>,
 
-    @Optional()
-    private readonly googleMeetService?: GoogleMeetService,
+    @InjectRepository(Curso)
+    private readonly cursoRepository: Repository<Curso>,
+
+    private readonly empresaService: EmpresaService,
+    private readonly meetingProviderFactory: MeetingProviderFactory,
   ) {}
 
   async obtenerSesiones(): Promise<SesionVivo[]> {
@@ -29,6 +42,40 @@ export class SesionVivoService {
       relations: ['curso'],
       order: { fecha: 'ASC' },
     });
+  }
+
+  private normalizarProvider(provider?: string): MeetingProvider {
+    const valor = String(provider || 'google').toLowerCase().trim();
+
+    if (valor === 'google' || valor === 'zoom' || valor === 'teams') {
+      return valor;
+    }
+
+    throw new BadRequestException(
+      `Proveedor de reuniones no válido: ${provider}`,
+    );
+  }
+
+  private async obtenerProviderDesdeCurso(idcurso: number): Promise<MeetingProvider> {
+    const curso = await this.cursoRepository.findOne({
+      where: { id: Number(idcurso) },
+      relations: ['empresa'],
+    });
+
+    if (!curso) {
+      throw new NotFoundException('Curso no encontrado');
+    }
+
+    if (curso.empresa?.meetingProvider) {
+      return this.normalizarProvider(curso.empresa.meetingProvider);
+    }
+
+    if (curso.idempresa) {
+      const provider = await this.empresaService.getMeetingProvider(curso.idempresa);
+      return this.normalizarProvider(provider);
+    }
+
+    return 'google';
   }
 
   async crearSesion(payload: {
@@ -64,22 +111,18 @@ export class SesionVivoService {
       fechaInicio.getTime() + Number(payload.duracion) * 60 * 1000,
     );
 
-    let link = '';
+    const provider = await this.obtenerProviderDesdeCurso(Number(payload.idcurso));
 
-    try {
-      if (this.googleMeetService) {
-        const meet = await this.googleMeetService.crearSesionMeet({
-          titulo: payload.titulo.trim(),
-          descripcion: payload.descripcion?.trim() || '',
-          fechaInicioIso: fechaInicio.toISOString(),
-          fechaFinIso: fechaFin.toISOString(),
-        });
+    const providerService = this.meetingProviderFactory.getProvider(provider);
 
-        link = meet?.meetLink || meet?.htmlLink || '';
-      }
-    } catch (error) {
-      console.error('⚠️ Error creando Meet:', error);
-    }
+    const meetingInput: CreateMeetingInput = {
+      titulo: payload.titulo.trim(),
+      descripcion: payload.descripcion?.trim() || '',
+      fechaInicioIso: fechaInicio.toISOString(),
+      fechaFinIso: fechaFin.toISOString(),
+    };
+
+    const meeting = await providerService.createMeeting(meetingInput);
 
     const sesion = this.sesionVivoRepository.create({
       curso: { id: Number(payload.idcurso) } as any,
@@ -87,7 +130,11 @@ export class SesionVivoService {
       descripcion: payload.descripcion?.trim() || '',
       fecha: fechaInicio,
       duracion: Number(payload.duracion),
-      link_reunion: link,
+      link_reunion: meeting.joinUrl,
+      provider: meeting.provider,
+      external_meeting_id: meeting.externalMeetingId || null,
+      host_url: meeting.hostUrl || null,
+      metadata: meeting.metadata || null,
       estado: 'programada',
     });
 

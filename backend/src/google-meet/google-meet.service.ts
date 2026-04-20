@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
+import {
+  CreateMeetingInput,
+  CreateMeetingResult,
+  IMeetingProviderService,
+} from '../meeting/meeting-provider.interface';
 
 @Injectable()
-export class GoogleMeetService {
+export class GoogleMeetService implements IMeetingProviderService {
   private oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -78,6 +83,25 @@ export class GoogleMeetService {
       eventId: created.id,
       meetLink,
       htmlLink: created.htmlLink,
+    };
+  }
+
+  async createMeeting(
+    input: CreateMeetingInput,
+  ): Promise<CreateMeetingResult> {
+    const meet = await this.crearSesionMeet({
+      titulo: input.titulo,
+      descripcion: input.descripcion || '',
+      fechaInicioIso: input.fechaInicioIso,
+      fechaFinIso: input.fechaFinIso,
+    });
+
+    return {
+      provider: 'google',
+      externalMeetingId: meet?.eventId || null,
+      joinUrl: meet?.meetLink || meet?.htmlLink || '',
+      hostUrl: meet?.htmlLink || null,
+      metadata: meet,
     };
   }
 }
