@@ -1,11 +1,11 @@
-import { useState } from "react";
-import PagoTarjeta from "./PagoTarjeta";
-import PagoIzipay from "./PagoIzipay";
-import PagoPaypal from "./PagoPaypal";
+import { useState } from "react"
+import PagoTarjeta from "./PagoTarjeta"
+import PagoIzipay from "./PagoIzipay"
+import PagoPaypal from "./PagoPaypal"
 
-export default function Checkout({ curso_id, onClose }) {
+export default function Checkout({ curso, onClose }) {
 
-  const [metodo, setMetodo] = useState("");
+  const [metodo, setMetodo] = useState("")
 
   return (
     <div>
@@ -15,21 +15,20 @@ export default function Checkout({ curso_id, onClose }) {
         <button onClick={() => setMetodo("tarjeta")}>💳 Tarjeta</button>
         <button onClick={() => setMetodo("yape")}>📱 Yape</button>
         <button onClick={() => setMetodo("paypal")}>🌎 PayPal</button>
-    </div>
+      </div>
 
       {/* 🔥 Render dinámico */}
       {metodo === "tarjeta" && (
-        <PagoTarjeta curso_id={curso_id} onClose={onClose} />
+        <PagoTarjeta curso={curso} onClose={onClose} />
       )}
 
       {metodo === "yape" && (
-        <PagoIzipay curso_id={curso_id} onClose={onClose} />
+        <PagoIzipay curso={curso} onClose={onClose} />
       )}
 
       {metodo === "paypal" && (
-        <PagoPaypal curso_id={curso_id} onClose={onClose} />
+        <PagoPaypal curso={curso} onClose={onClose} />
       )}
-
     </div>
-  );
+  )
 }

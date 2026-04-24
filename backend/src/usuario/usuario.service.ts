@@ -5,10 +5,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+
 import { Usuario } from './entities/usuario.entity';
 import { Alumno } from '../alumno/entities/alumno.entity';
 import { Docente } from '../docente/entities/docente.entity';
 import { Administrador } from '../administrador/entities/administrador.entity';
+
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -16,40 +18,59 @@ export class UsuarioService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+
     private readonly dataSource: DataSource,
   ) {}
 
+  // ✅ CREAR USUARIO
   async create(datosUsuario: Partial<Usuario>): Promise<Usuario> {
+    if (datosUsuario.contrasenia) {
+      datosUsuario.contrasenia = await bcrypt.hash(
+        datosUsuario.contrasenia,
+        10,
+      );
+    }
+
     const nuevoUsuario = this.usuarioRepository.create(datosUsuario);
     return await this.usuarioRepository.save(nuevoUsuario);
   }
 
+  // ✅ BUSCAR POR CORREO
   async findOneByCorreo(correo: string): Promise<Usuario | null> {
     return await this.usuarioRepository.findOne({ where: { correo } });
   }
 
+  // ✅ LISTAR
   async findAll(): Promise<Usuario[]> {
     return await this.usuarioRepository.find({
       order: { id: 'DESC' },
     });
   }
 
+  // ✅ BUSCAR POR ID
   async findOne(id: number): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findOne({ where: { id } });
+
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
     }
+
     return usuario;
   }
 
+  // ✅ UPDATE COMPLETO (ROL + MIGRACIÓN)
   async update(id: number, data: any) {
     return await this.dataSource.transaction(async (manager) => {
       const usuario = await manager.findOne(Usuario, { where: { id } });
-      if (!usuario) throw new NotFoundException('Usuario no encontrado');
+
+      if (!usuario) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
 
       const rolAntiguo = usuario.rol;
       const rolNuevo = data.rol;
 
+      // 🔐 ENCRIPTAR PASSWORD SI VIENE
       if (data.contrasenia) {
         usuario.contrasenia = await bcrypt.hash(data.contrasenia, 10);
       }
@@ -58,9 +79,11 @@ export class UsuarioService {
         usuario.correo = data.correo;
       }
 
+      // 🔥 CAMBIO DE ROL CON MIGRACIÓN
       if (rolNuevo && rolAntiguo !== rolNuevo) {
         let perfilDatos: any = null;
 
+        // 🔻 ELIMINAR PERFIL ANTERIOR
         if (rolAntiguo === 'ALUMNO') {
           const perfil = await manager.findOne(Alumno, {
             where: { idusuario: id },
@@ -69,7 +92,9 @@ export class UsuarioService {
             perfilDatos = { ...perfil };
             await manager.delete(Alumno, perfil.id);
           }
-        } else if (rolAntiguo === 'DOCENTE') {
+        }
+
+        if (rolAntiguo === 'DOCENTE') {
           const perfil = await manager.findOne(Docente, {
             where: { usuario: { id } },
           });
@@ -77,7 +102,9 @@ export class UsuarioService {
             perfilDatos = { ...perfil };
             await manager.delete(Docente, perfil.id);
           }
-        } else if (rolAntiguo === 'ADMINISTRADOR' || rolAntiguo === 'ADMIN') {
+        }
+
+        if (rolAntiguo === 'ADMINISTRADOR' || rolAntiguo === 'ADMIN') {
           const perfil = await manager.findOne(Administrador, {
             where: { idusuario: id },
           });
@@ -87,12 +114,15 @@ export class UsuarioService {
           }
         }
 
+        // 🔄 PREPARAR DATOS PARA MIGRACIÓN
         const datosMigracion = perfilDatos
           ? {
               nombre: perfilDatos.nombre || 'Por editar',
               apellido: perfilDatos.apellido || 'Por editar',
               tipodocumento:
-                perfilDatos.tipodocumento || perfilDatos.tipoDocumento || 'DNI',
+                perfilDatos.tipodocumento ||
+                perfilDatos.tipoDocumento ||
+                'DNI',
               numdocumento:
                 perfilDatos.numdocumento ||
                 perfilDatos.numDocumento ||
@@ -101,7 +131,7 @@ export class UsuarioService {
               direccion: perfilDatos.direccion || '',
               correo: perfilDatos.correo || usuario.correo,
               idusuario: id,
-              usuario: { id: id },
+              usuario: { id },
             }
           : {
               nombre: 'Usuario',
@@ -112,12 +142,15 @@ export class UsuarioService {
               direccion: '',
               correo: usuario.correo,
               idusuario: id,
-              usuario: { id: id },
+              usuario: { id },
             };
 
+        // 🔺 CREAR NUEVO PERFIL SEGÚN ROL
         if (rolNuevo === 'ALUMNO') {
           await manager.save(manager.create(Alumno, datosMigracion));
-        } else if (rolNuevo === 'DOCENTE') {
+        }
+
+        if (rolNuevo === 'DOCENTE') {
           await manager.save(
             manager.create(Docente, {
               ...datosMigracion,
@@ -125,7 +158,9 @@ export class UsuarioService {
               numDocumento: datosMigracion.numdocumento,
             }),
           );
-        } else if (rolNuevo === 'ADMINISTRADOR' || rolNuevo === 'ADMIN') {
+        }
+
+        if (rolNuevo === 'ADMINISTRADOR' || rolNuevo === 'ADMIN') {
           await manager.save(manager.create(Administrador, datosMigracion));
         }
 
@@ -136,57 +171,66 @@ export class UsuarioService {
     });
   }
 
+  // ✅ DESHABILITAR
   async remove(id: number) {
     await this.usuarioRepository.update(id, { estado: false });
     return { message: 'Usuario deshabilitado correctamente' };
   }
 
+  // ✅ HABILITAR
   async habilitar(id: number) {
     await this.usuarioRepository.update(id, { estado: true });
     return { message: 'Usuario habilitado correctamente' };
   }
 
+  // 🔐 CAMBIAR CONTRASEÑA CON HISTORIAL
   async actualizarContrasenia(id: number, contrasenia: string) {
     const usuario = await this.usuarioRepository.findOne({ where: { id } });
+
     if (!usuario) {
-      throw new NotFoundException('Usuario no encontrado en la base de datos');
+      throw new NotFoundException('Usuario no encontrado');
     }
 
     let historial: string[] = [];
-    if (Array.isArray(usuario.historialcontrasenias)) {
-      historial = usuario.historialcontrasenias;
-    } else if (typeof usuario.historialcontrasenias === 'string') {
-      historial = (usuario.historialcontrasenias as string)
-        .replace(/^{|}$/g, '')
-        .split(',');
-    }
-    historial = historial.filter((pass) => pass && pass.trim() !== '');
 
-    const esIgualActual = await bcrypt.compare(
+    const raw: any = usuario.historialcontrasenias ?? [];
+
+historial = Array.isArray(raw)
+  ? raw
+  : typeof raw === 'string'
+  ? raw.replace(/^{|}$/g, '').split(',')
+  : [];
+
+    historial = historial.filter((p) => p && p.trim() !== '');
+
+    // ❌ MISMA CONTRASEÑA
+    const esActual = await bcrypt.compare(
       contrasenia,
       usuario.contrasenia,
     );
-    if (esIgualActual) {
+
+    if (esActual) {
       throw new BadRequestException(
-        'La contraseña es igual a la que usas actualmente',
+        'La contraseña es igual a la actual',
       );
     }
 
-    for (const hashAntiguo of historial) {
-      const esUsada = await bcrypt.compare(contrasenia, hashAntiguo);
-      if (esUsada) {
+    // ❌ HISTORIAL
+    for (const hash of historial) {
+      const usada = await bcrypt.compare(contrasenia, hash);
+      if (usada) {
         throw new BadRequestException(
           'La contraseña ya fue utilizada anteriormente',
         );
       }
     }
 
-    const hashedPassword = await bcrypt.hash(contrasenia, 10);
+    const hashed = await bcrypt.hash(contrasenia, 10);
 
     const nuevoHistorial = [usuario.contrasenia, ...historial].slice(0, 3);
 
     await this.usuarioRepository.update(id, {
-      contrasenia: hashedPassword,
+      contrasenia: hashed,
       historialcontrasenias: nuevoHistorial,
     });
   }

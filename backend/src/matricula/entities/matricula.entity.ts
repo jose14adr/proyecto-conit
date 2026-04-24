@@ -32,7 +32,7 @@ export class Matricula {
   @Column({ type: 'integer', nullable: true })
   idadministrador: number;
 
-  @ManyToOne(() => Grupo)
+  @ManyToOne(() => Grupo, (grupo) => grupo.matriculas)
   @JoinColumn({ name: 'idgrupo' })
   grupo: Grupo;
 

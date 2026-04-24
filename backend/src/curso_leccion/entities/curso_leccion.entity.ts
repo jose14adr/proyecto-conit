@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, CreateDateColumn } from 'typeorm';
 import { CursoModulo } from '../../curso_modulo/entities/curso_modulo.entity';
 import { LeccionMaterial } from '../../leccion-material/entities/leccion-material.entity';
+import { Examen } from '../../examen/entities/examen.entity';
 
 @Entity('curso_leccion')
 export class CursoLeccion {
@@ -30,5 +31,11 @@ export class CursoLeccion {
     (leccionMaterial) => leccionMaterial.curso_leccion
   )
   materiales: LeccionMaterial[];
+
+  @OneToMany(
+    () => Examen,
+    (examen) => examen.curso_leccion
+  )
+  examenes: Examen[];
 
 }

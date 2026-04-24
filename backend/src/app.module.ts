@@ -32,17 +32,20 @@ import { MultimediaModule } from './multimedia/multimedia.module';
 import { SoporteModule } from './soporte/soporte.module';
 import { ExamenModule } from './examen/examen.module';
 import { PensionModule } from './pension/pension.module';
-
 import { DocenteCursoAdicionalModule } from './docente-curso-adicional/docente-curso-adicional.module';
-
-import { S3Module } from './s3/s3.module';
+import { ExamenPreguntaModule } from './examen_pregunta/examen_pregunta.module';
+import { ExamenOpcionModule } from './examen_opcion/examen_opcion.module';
+import { ExamenIntentoModule } from './examen_intento/examen_intento.module';
+import { GoogleMeetService } from './google-meet/google-meet.service';
 import { GoogleMeetModule } from './google-meet/google-meet.module';
+import { MailService } from './mail/mail.service';
 import { MailModule } from './mail/mail.module';
+import { S3Service } from './s3/s3.service';
+import { S3Module } from './s3/s3.module';
 import { CertificadoModule } from './certificado/certificado.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: join(__dirname, '..', '.env'),
@@ -100,8 +103,10 @@ import { CertificadoModule } from './certificado/certificado.module';
     SoporteModule,
     ExamenModule,
     PensionModule,
-
     DocenteCursoAdicionalModule,
+    ExamenPreguntaModule,
+    ExamenOpcionModule,
+    ExamenIntentoModule,
     S3Module,
     GoogleMeetModule,
     MailModule,
@@ -109,6 +114,6 @@ import { CertificadoModule } from './certificado/certificado.module';
   ],
 
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, GoogleMeetService, MailService, S3Service],
 })
 export class AppModule {}

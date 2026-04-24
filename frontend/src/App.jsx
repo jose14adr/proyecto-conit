@@ -33,7 +33,7 @@ import Soporte from "./alumno/Soporte";
 
 import CursoDetalleAdmin from "./admin/CursoDetalleAdmin";
 
-// ADMIN
+// ADMIN (Lazy Loaded)
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const Dashboard = lazy(() => import("./admin/Dashboard"));
 const Administradores = lazy(() => import("./admin/Administradores"));
@@ -43,7 +43,6 @@ const Alumnos = lazy(() => import("./admin/Alumnos"));
 const Usuarios = lazy(() => import("./admin/Usuarios"));
 const Pagos = lazy(() => import("./admin/Pagos"));
 const ControlSesiones = lazy(() => import("./admin/ControlSesiones"));
-// Agregamos el módulo de Certificados
 const Certificados = lazy(() => import("./admin/Certificados"));
 const PerfilAdministrador = lazy(() => import("./admin/PerfilAdministrador"));
 

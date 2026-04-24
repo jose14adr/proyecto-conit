@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { SesionVivo } from './entities/sesion-vivo.entity';
 import { GoogleMeetService } from '../google-meet/google-meet.service';
 
@@ -8,28 +9,24 @@ import { GoogleMeetService } from '../google-meet/google-meet.service';
 export class SesionVivoService {
   constructor(
     @InjectRepository(SesionVivo)
-    private sesionVivoRepository: Repository<SesionVivo>,
-    private googleMeetService: GoogleMeetService,
+    private readonly sesionVivoRepository: Repository<SesionVivo>,
+    private readonly googleMeetService: GoogleMeetService,
   ) {}
 
   async obtenerSesiones(): Promise<SesionVivo[]> {
-    return this.sesionVivoRepository.find({
+    return await this.sesionVivoRepository.find({
       relations: ['curso', 'curso.grupos', 'curso.grupos.docente'],
-      order: {
-        fecha: 'ASC',
-      },
+      order: { fecha: 'ASC' },
     });
   }
 
   async obtenerSesionesPorCurso(idcurso: number): Promise<SesionVivo[]> {
-    return this.sesionVivoRepository.find({
+    return await this.sesionVivoRepository.find({
       where: {
         curso: { id: idcurso } as any,
       },
       relations: ['curso'],
-      order: {
-        fecha: 'ASC',
-      },
+      order: { fecha: 'ASC' },
     });
   }
 
@@ -39,50 +36,63 @@ export class SesionVivoService {
     descripcion?: string;
     fecha: string;
     duracion: number;
-    }): Promise<SesionVivo> {
+  }): Promise<SesionVivo> {
     if (!payload.idcurso) {
-        throw new BadRequestException('Falta idcurso.');
+      throw new BadRequestException('Falta idcurso.');
     }
 
-    if (!payload.titulo?.trim()) {
-        throw new BadRequestException('El título es obligatorio.');
+    if (!payload.titulo || payload.titulo.trim() === '') {
+      throw new BadRequestException('El título es obligatorio.');
     }
 
     if (!payload.fecha) {
-        throw new BadRequestException('La fecha es obligatoria.');
+      throw new BadRequestException('La fecha es obligatoria.');
     }
 
-    if (!payload.duracion || Number(payload.duracion) <= 0) {
-        throw new BadRequestException('La duración debe ser mayor a 0.');
+    if (!payload.duracion || payload.duracion <= 0) {
+      throw new BadRequestException('La duración debe ser mayor a 0.');
     }
 
     const fechaInicio = new Date(payload.fecha);
 
-    if (Number.isNaN(fechaInicio.getTime())) {
-        throw new BadRequestException('La fecha no es válida.');
+    if (isNaN(fechaInicio.getTime())) {
+      throw new BadRequestException('La fecha no es válida.');
     }
 
-    const fechaFin = new Date(
-        fechaInicio.getTime() + Number(payload.duracion) * 60 * 1000,
-    );
+    const fechaFin = new Date(fechaInicio.getTime() + payload.duracion * 60000);
 
-    const meet = await this.googleMeetService.crearSesionMeet({
-        titulo: payload.titulo.trim(),
-        descripcion: payload.descripcion?.trim() || '',
-        fechaInicioIso: fechaInicio.toISOString(),
-        fechaFinIso: fechaFin.toISOString(),
+    let link = '';
+
+    // 🛡️ Bloque Try/Catch para evitar que el sistema caiga si Google Meet falla (De la nube)
+    try {
+      if (this.googleMeetService) {
+        const meet = await this.googleMeetService.crearSesionMeet({
+          titulo: payload.titulo.trim(),
+          descripcion: payload.descripcion?.trim() || '',
+          fechaInicioIso: fechaInicio.toISOString(),
+          fechaFinIso: fechaFin.toISOString(),
+        });
+
+        link = meet?.meetLink || meet?.htmlLink || '';
+      }
+    } catch (error) {
+      console.error(
+        '⚠️ Error creando Meet (La sesión se guardará sin link):',
+        error,
+      );
+    }
+
+    // 💾 Creación con tus tipos de datos precisos
+    const sesion = this.sesionVivoRepository.create({
+      curso: { id: payload.idcurso } as any,
+      titulo: payload.titulo.trim(),
+      descripcion: payload.descripcion?.trim() || null, // Guardado como null en vez de string vacío
+      fecha: fechaInicio,
+      duracion: payload.duracion,
+      link_reunion: link,
+      estado: 'programada',
     });
 
-    const sesion = new SesionVivo();
-    sesion.curso = { id: Number(payload.idcurso) } as any;
-    sesion.titulo = payload.titulo.trim();
-    sesion.descripcion = payload.descripcion?.trim() || null;
-    sesion.fecha = fechaInicio;
-    sesion.duracion = Number(payload.duracion);
-    sesion.link_reunion = meet.meetLink || meet.htmlLink || '';
-    sesion.estado = 'programada';
-
-    const guardada = await this.sesionVivoRepository.save(sesion);  
-    return guardada;
-    }
+    return await this.sesionVivoRepository.save(sesion);
+  }
 }

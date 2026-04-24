@@ -30,13 +30,12 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto, ip: string, dispositivo: string) {
-    // Validación del token de reCaptcha
+    // 🔐 Validación del token de reCaptcha
     if (!loginDto.recaptchaToken) {
       throw new UnauthorizedException('Falta el token de reCaptcha');
     }
 
     const secretkey = process.env.RECAPTCHA_SECRET_KEY;
-
     const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretkey}&response=${loginDto.recaptchaToken}`;
 
     try {
@@ -48,7 +47,7 @@ export class AuthService {
       if (!recaptchaData.success) {
         throw new UnauthorizedException('Validación de reCaptcha fallida');
       }
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Error al verificar reCaptcha');
     }
 
@@ -58,6 +57,7 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado');
     }
 
+    // 🔐 Validación de contraseña (soporta legacy sin hash)
     let isPasswordValid = await bcrypt.compare(
       loginDto.contrasenia,
       usuario.contrasenia,
@@ -71,6 +71,12 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
+    // ⚠️ Bloquear login si no verificó correo
+    if (!usuario.emailVerificado) {
+      throw new UnauthorizedException('Debes verificar tu correo');
+    }
+
+    // 📊 Historial login
     let sessionId: number | null = null;
     try {
       const sesion = await this.historialLoginService.registrarIngreso(
@@ -148,6 +154,7 @@ export class AuthService {
       rol: usuario.rol,
       code: hashedCode,
     };
+
     const token = this.jwtService.sign(payload, { expiresIn: '5m' });
 
     const resetLink = `http://localhost:5173/reset-password?token=${token}`;
@@ -195,6 +202,7 @@ export class AuthService {
 
       // Buscamos al usuario en la base de datos
       const usuario = await this.usuarioService.findOneByCorreo(payload.correo);
+
       if (!usuario) {
         throw new UnauthorizedException('Usuario no encontrado');
       }
@@ -208,14 +216,12 @@ export class AuthService {
       return { message: 'Contraseña restablecida exitosamente' };
     } catch (error) {
       console.error('Error al restablecer contraseña:', error);
-      // Si el error es nuestro BadRequestException (contraseña repetida o código inválido), lo lanzamos tal cual
+      // Si el error es nuestro BadRequestException, lo lanzamos tal cual
       if (error instanceof BadRequestException) {
         throw error;
       }
       // Si el token es inválido o expiró, respondemos con un mensaje genérico
-      throw new UnauthorizedException(
-        'El enlace de restablecimiento no es válido o ha expirado',
-      );
+      throw new UnauthorizedException('El enlace no es válido o expiró');
     }
   }
 

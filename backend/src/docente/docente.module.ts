@@ -7,10 +7,7 @@ import { DocenteController } from './docente.controller';
 import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Docente, Usuario]),
-    MailModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Docente, Usuario]), MailModule],
   controllers: [DocenteController],
   providers: [DocenteService],
 })

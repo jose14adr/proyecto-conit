@@ -54,6 +54,33 @@ export class ExamenService {
 
     return preguntasConOpciones;
   }
+
+  // 🔹 Iniciar examen (Verifica si el alumno tiene intentos disponibles)
+  async iniciar(examenId: number, idAlumno: number) {
+    const { data: examen } = await supabase
+      .from('examen')
+      .select('*')
+      .eq('id', examenId)
+      .single();
+
+    if (!examen) throw new Error('Examen no encontrado.');
+
+    const { data: intentos } = await supabase
+      .from('examen_intento')
+      .select('*')
+      .eq('examen_id', examenId)
+      .eq('alumno_id', idAlumno);
+
+    // Asegurarse de que intentos sea siempre un array
+    const listaIntentos = intentos || [];
+
+    if (listaIntentos.length >= examen.intentos_permitidos) {
+      throw new Error('Ya no tienes intentos disponibles');
+    }
+
+    return { ok: true };
+  }
+
   // 🔹 Guardar respuestas del examen y calcular la nota
   async responder(examenId: number, respuestas: Record<string, number>) {
     const idExamen = Number(examenId);
@@ -126,7 +153,7 @@ export class ExamenService {
       .from('examen_intento')
       .insert({
         examen_id: idExamen,
-        alumno_id: 1, // Aquí debe ir el ID del alumno logueado
+        alumno_id: 1, // NOTA: Aquí debe ir el ID del alumno logueado en el futuro
         puntaje_total: puntajeTotal,
         puntaje_obtenido: puntajeObtenido,
         nota: notaFinal,

@@ -38,7 +38,7 @@ const CAMPOS = [
 ];
 
 const MUESTRAS = {
-  alumno: "José Díaz Ramírez",
+  alumno: "NOMBRE DESEADO",
   curso: "POR HABER APROBADO SATISFACTORIAMENTE EL CURSO",
   descripcion: "Diseño y desarrollo web con enfoque práctico",
   fecha: "08/04/2026",
@@ -194,12 +194,12 @@ export default function Certificados() {
 
   const escala = useMemo(
     () => Math.min(1, PREVIEW_WIDTH / canvasWidth),
-    [canvasWidth]
+    [canvasWidth],
   );
 
   const seleccionado = useMemo(
     () => elementos.find((el) => el.id === seleccionadoId) || null,
-    [elementos, seleccionadoId]
+    [elementos, seleccionadoId],
   );
 
   const aplicarPlantillaEnEditor = (data) => {
@@ -228,7 +228,7 @@ export default function Certificados() {
     setElementos(
       Array.isArray(data.configJson) && data.configJson.length
         ? data.configJson
-        : crearElementosBase()
+        : crearElementosBase(),
     );
     setSeleccionadoId(null);
     setEsPlantillaActiva(!!data.activa);
@@ -337,8 +337,8 @@ export default function Certificados() {
               };
               img.onerror = () => resolve(null);
               img.src = src;
-            })
-        )
+            }),
+        ),
       );
 
       if (!cancelled) {
@@ -355,7 +355,7 @@ export default function Certificados() {
 
   const actualizarElemento = (id, cambios) => {
     setElementos((prev) =>
-      prev.map((el) => (el.id === id ? { ...el, ...cambios } : el))
+      prev.map((el) => (el.id === id ? { ...el, ...cambios } : el)),
     );
   };
 
@@ -471,7 +471,7 @@ export default function Certificados() {
         nombre: file.name,
       });
 
-        nuevaImagen.localPreviewUrl = resultado.localPreviewUrl;
+      nuevaImagen.localPreviewUrl = resultado.localPreviewUrl;
 
       setElementos((prev) => [...prev, nuevaImagen]);
       setSeleccionadoId(nuevaImagen.id);
@@ -532,7 +532,7 @@ export default function Certificados() {
     if (!plantilla) return;
 
     const confirmado = window.confirm(
-      `¿Seguro que deseas eliminar la plantilla "${plantilla.nombre}"?`
+      `¿Seguro que deseas eliminar la plantilla "${plantilla.nombre}"?`,
     );
 
     if (!confirmado) return;
@@ -583,7 +583,9 @@ export default function Certificados() {
       <div className="bg-white rounded-2xl shadow p-5 space-y-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Plantillas guardadas</h3>
+            <h3 className="text-lg font-bold text-gray-800">
+              Plantillas guardadas
+            </h3>
             <p className="text-sm text-gray-500">
               Carga, activa o elimina una plantilla existente.
             </p>
@@ -696,7 +698,9 @@ export default function Certificados() {
               <input
                 type="number"
                 value={canvasHeight}
-                onChange={(e) => setCanvasHeight(Number(e.target.value) || 1131)}
+                onChange={(e) =>
+                  setCanvasHeight(Number(e.target.value) || 1131)
+                }
                 className="w-full border border-gray-300 rounded-lg px-3 py-2"
               />
             </div>

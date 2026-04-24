@@ -3356,6 +3356,161 @@ function CursoDetalleDocente() {
                 </p>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setMostrarFormSesionVivo((prev) => !prev)}
+                className="rounded-2xl bg-violet-600 px-4 py-2 text-white font-semibold hover:bg-violet-700 transition"
+              >
+                {mostrarFormSesionVivo ? "Cancelar" : "+ Crear sesión en vivo"}
+              </button>
+            </div>
+
+            {mostrarFormSesionVivo && (
+              <form
+                onSubmit={guardarSesionVivoCurso}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6 mt-6"
+              >
+                <div>
+                  <label className="block font-semibold mb-2">Título</label>
+                  <input
+                    type="text"
+                    name="titulo"
+                    value={formSesionVivo.titulo}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Ej. Clase en vivo - Introducción"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-2">
+                    Duración (minutos)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    name="duracion"
+                    value={formSesionVivo.duracion}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">
+                    Descripción
+                  </label>
+                  <textarea
+                    name="descripcion"
+                    value={formSesionVivo.descripcion}
+                    onChange={handleChangeSesionVivo}
+                    rows={3}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Descripción breve de la sesión"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">
+                    Fecha y hora
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="fecha"
+                    value={formSesionVivo.fecha}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={guardandoSesionVivo}
+                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                  >
+                    {guardandoSesionVivo
+                      ? "Creando sesión..."
+                      : "Guardar sesión"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-6">
+              {cargandoSesionesVivo ? (
+                <p className="text-sm text-gray-500">
+                  Cargando sesiones en vivo...
+                </p>
+              ) : sesionesVivo.length === 0 ? (
+                <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
+                  <p className="text-gray-700 font-medium">
+                    Aún no hay sesiones en vivo programadas.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Crea una sesión para que tus alumnos puedan unirse a la
+                    clase.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sesionesVivo.map((sesion) => (
+                    <div
+                      key={sesion.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <p className="text-lg font-bold text-slate-800">
+                            {sesion.titulo}
+                          </p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {sesion.descripcion || "Sin descripción"}
+                          </p>
+
+                          <div className="mt-3 space-y-1 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold">Fecha:</span>{" "}
+                              {formatearFechaSesion(sesion.fecha)}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Duración:</span>{" "}
+                              {sesion.duracion} min
+                            </p>
+                            <p>
+                              <span className="font-semibold">Estado:</span>{" "}
+                              {sesion.estado || "programada"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <a
+                            href={sesion.link_reunion}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition"
+                          >
+                            Unirse a la sesión
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold">Sesiones en vivo</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Programa clases en vivo con Google Meet para este curso.
+                </p>
+              </div>
+
               {permisos.gestionar_sesiones && (
                 <button
                   type="button"

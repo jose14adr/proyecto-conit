@@ -213,34 +213,34 @@ export class CertificadoService {
 
   async uploadPlantillaAsset(file: Express.Multer.File) {
     if (!this.bucket) {
-        throw new BadRequestException(
+      throw new BadRequestException(
         'AWS_S3_BUCKET no está configurado en el backend',
-        );
+      );
     }
 
     if (!file?.mimetype?.startsWith('image/')) {
-        throw new BadRequestException('Solo se permiten imágenes');
+      throw new BadRequestException('Solo se permiten imágenes');
     }
 
     const safeName = this.sanitizeFilename(file.originalname || 'archivo.png');
     const key = `${this.prefix}/${Date.now()}-${randomUUID()}-${safeName}`;
 
     await this.s3.send(
-        new PutObjectCommand({
+      new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
         Body: file.buffer,
         ContentType: file.mimetype || 'image/png',
-        }),
+      }),
     );
 
     const temporaryUrl = await this.buildSignedReadUrl(key);
 
     return {
-        key,
-        temporaryUrl,
+      key,
+      temporaryUrl,
     };
-    }
+  }
 
   async createPlantilla(dto: SavePlantillaDto) {
     const activa = dto.activa !== false;

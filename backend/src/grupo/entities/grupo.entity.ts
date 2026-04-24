@@ -4,9 +4,12 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Docente } from '../../docente/entities/docente.entity';
 import { Curso } from '../../curso/entities/curso.entity';
+import { Matricula } from '../../matricula/entities/matricula.entity';
+import { Examen } from '../../examen/entities/examen.entity';
 
 @Entity({ name: 'grupo' })
 export class Grupo {
@@ -38,4 +41,10 @@ export class Grupo {
   @ManyToOne(() => Docente, { nullable: true })
   @JoinColumn({ name: 'iddocente' })
   docente?: Docente;
+
+  @OneToMany(() => Matricula, (matricula) => matricula.grupo)
+  matriculas: Matricula[];
+
+  @OneToMany(() => Examen, (examen) => examen.grupo)
+  examenesGrupo: Examen[];
 }

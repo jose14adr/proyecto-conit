@@ -8,8 +8,8 @@ import {
   Users,
   CreditCard,
   Shield,
-  UserCog,
   Award,
+  UserCog,
   Menu,
   User,
 } from "lucide-react";
@@ -33,10 +33,12 @@ export default function AdminLayout() {
     const cargarPerfil = async () => {
       try {
         const data = await obtenerPerfilAdministrador();
-        setAdminData(data);
+
+        // ✅ Si viene bien del backend
         if (data && data.nombre) {
           setAdminData(data);
         } else {
+          // 🔥 fallback usando localStorage
           const localUser = JSON.parse(localStorage.getItem("usuario") || "{}");
           const nombreFallback = localUser.correo
             ? localUser.correo.split("@")[0]
@@ -49,6 +51,7 @@ export default function AdminLayout() {
         cerrarSesion();
       }
     };
+
     cargarPerfil();
   }, []);
 

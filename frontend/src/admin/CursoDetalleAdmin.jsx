@@ -13,6 +13,8 @@ import { obtenerAlumnosPorCursoAdmin } from "../services/matricula.service";
 
 // Importaciones de Docente (Gestión académica)
 import {
+  getCursoById,
+  getAlumnosByCurso,
   guardarAsistenciaCurso,
   getAsistenciaCursoPorFecha,
   crearTarea,
@@ -25,22 +27,25 @@ import {
   actualizarModulo,
   deleteModulo,
   moverModulo,
+  moverSubModulo,
   moverSubModuloOrden,
   getLeccionesByModulo,
   crearLeccion,
   actualizarLeccion,
   deleteLeccion,
+  moverLeccion,
   moverLeccionOrden,
   getMaterialesByLeccion,
   addMaterialLeccion,
   actualizarMaterialLeccion,
   deleteMaterialLeccion,
+  moverMaterialLeccion,
   moverMaterialOrden,
+  getMaterialLeccionDownloadUrl,
   getEntregasByTarea,
   guardarNotaEntregaYRegistro,
   getEvaluacionesTareaDisponiblesByGrupo,
   asignarEvaluacionATarea,
-  getMaterialLeccionDownloadUrl,
   crearExamen,
   getExamenesByLeccion,
   getExamenDetalle,
@@ -80,13 +85,17 @@ function SortableModuloItem({ modulo, children }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: String(modulo.id) });
+  } = useSortable({
+    id: String(modulo.id),
+  });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.75 : 1,
     zIndex: isDragging ? 30 : "auto",
   };
+
   return (
     <div ref={setNodeRef} style={style} className="relative">
       <div
@@ -97,6 +106,7 @@ function SortableModuloItem({ modulo, children }) {
       >
         ⋮⋮
       </div>
+
       {children}
     </div>
   );
@@ -110,13 +120,17 @@ function SortableTareaItem({ tarea, children }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `tarea-${tarea.id}` });
+  } = useSortable({
+    id: `tarea-${tarea.id}`,
+  });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.75 : 1,
     zIndex: isDragging ? 30 : "auto",
   };
+
   return (
     <div ref={setNodeRef} style={style} className="relative">
       <div
@@ -127,11 +141,15 @@ function SortableTareaItem({ tarea, children }) {
       >
         ⋮⋮
       </div>
+
       {children}
     </div>
   );
 }
 
+//===================================
+//Arrastrar lección y submódulo
+//===================================
 function SortableSubModuloItem({ submodulo, children }) {
   const {
     attributes,
@@ -140,13 +158,17 @@ function SortableSubModuloItem({ submodulo, children }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `submodulo-${submodulo.id}` });
+  } = useSortable({
+    id: `submodulo-${submodulo.id}`,
+  });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.75 : 1,
     zIndex: isDragging ? 30 : "auto",
   };
+
   return (
     <div ref={setNodeRef} style={style} className="relative">
       <div
@@ -157,6 +179,7 @@ function SortableSubModuloItem({ submodulo, children }) {
       >
         ⋮⋮
       </div>
+
       {children}
     </div>
   );
@@ -170,13 +193,17 @@ function SortableLeccionItem({ leccion, children }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `leccion-${leccion.id}` });
+  } = useSortable({
+    id: `leccion-${leccion.id}`,
+  });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.75 : 1,
     zIndex: isDragging ? 30 : "auto",
   };
+
   return (
     <div ref={setNodeRef} style={style} className="relative">
       <div
@@ -187,11 +214,13 @@ function SortableLeccionItem({ leccion, children }) {
       >
         ⋮⋮
       </div>
+
       {children}
     </div>
   );
 }
 
+//Arrastrar materiales
 function SortableMaterialItem({ material, children }) {
   const {
     attributes,
@@ -200,13 +229,17 @@ function SortableMaterialItem({ material, children }) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `material-${material.id}` });
+  } = useSortable({
+    id: `material-${material.id}`,
+  });
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.75 : 1,
     zIndex: isDragging ? 30 : "auto",
   };
+
   return (
     <div ref={setNodeRef} style={style} className="relative">
       <div
@@ -217,6 +250,7 @@ function SortableMaterialItem({ material, children }) {
       >
         ⋮⋮
       </div>
+
       {children}
     </div>
   );
@@ -227,10 +261,13 @@ function SortableMaterialItem({ material, children }) {
 // ==========================================
 const getYoutubeEmbedUrl = (url) => {
   if (!url) return null;
+
   const regExp =
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/i;
+
   const match = url.match(regExp);
   if (!match?.[1]) return null;
+
   return `https://www.youtube.com/embed/${match[1]}`;
 };
 
@@ -247,6 +284,7 @@ const getEmbedVideoUrl = (url) => {
 
 function VideoEmbed({ url }) {
   const embedUrl = getEmbedVideoUrl(url);
+
   if (!embedUrl) {
     return (
       <a
@@ -259,6 +297,7 @@ function VideoEmbed({ url }) {
       </a>
     );
   }
+
   return (
     <div className="overflow-hidden rounded-2xl border bg-black">
       <iframe
@@ -402,31 +441,47 @@ const normalizarPreguntaExamen = (pregunta = {}) => {
 // ==========================================
 // COMPONENTE PRINCIPAL
 // ==========================================
-export default function CursoDetalleAdmin() {
+function CursoDetalleDocente() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [curso, setCurso] = useState(null);
   const [alumnos, setAlumnos] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ==============================
+  // Tabs
+  // ==============================
   const [tabActiva, setTabActiva] = useState("resumen");
+
+  // ==============================
+  // Fecha actual
+  // ==============================
   const hoy = new Date().toISOString().slice(0, 10);
 
-  // ASISTENCIA
+  // ==============================
+  // Asistencia
+  // ==============================
   const [fechaAsistencia, setFechaAsistencia] = useState(hoy);
   const [asistenciaMap, setAsistenciaMap] = useState({});
+
+  //Filtrado asistencia
   const [busquedaAsistencia, setBusquedaAsistencia] = useState("");
   const [filtroAsistencia, setFiltroAsistencia] = useState("todos");
 
-  // TAREAS
+  // ==============================
+  // Tareas
+  // ==============================
   const [mostrarFormTarea, setMostrarFormTarea] = useState(false);
   const [guardandoTarea, setGuardandoTarea] = useState(false);
   const [cargandoTareas, setCargandoTareas] = useState(false);
   const [tareas, setTareas] = useState([]);
   const [tareasOrdenadas, setTareasOrdenadas] = useState([]);
   const [tareasAbiertas, setTareasAbiertas] = useState({});
+
   const [modalEntregaOpen, setModalEntregaOpen] = useState(false);
   const [entregaSeleccionada, setEntregaSeleccionada] = useState(null);
+
   const [formTarea, setFormTarea] = useState({
     titulo: "",
     descripcion: "",
@@ -439,15 +494,22 @@ export default function CursoDetalleAdmin() {
     videoApoyo: null,
     calificable: false,
   });
+
   const [moduloDestinoTarea, setModuloDestinoTarea] = useState(null);
 
-  // MÓDULOS
+  // ==============================
+  // Módulos / Lecciones / Materiales
+  // ==============================
   const [modulos, setModulos] = useState([]);
   const [modulosOrdenados, setModulosOrdenados] = useState([]);
   const [cargandoModulos, setCargandoModulos] = useState(false);
+
   const [mostrarFormModulo, setMostrarFormModulo] = useState(false);
   const [guardandoModulo, setGuardandoModulo] = useState(false);
-  const [formModulo, setFormModulo] = useState({ titulo: "", descripcion: "" });
+  const [formModulo, setFormModulo] = useState({
+    titulo: "",
+    descripcion: "",
+  });
 
   const [mostrarFormSubModulo, setMostrarFormSubModulo] = useState({});
   const [guardandoSubModulo, setGuardandoSubModulo] = useState(false);
@@ -467,16 +529,14 @@ export default function CursoDetalleAdmin() {
   const [subidaMaterialEstado, setSubidaMaterialEstado] = useState({});
   const [notificacionesVideo, setNotificacionesVideo] = useState([]);
 
-  // EXAMENES
+// EXAMENES
   const [mostrarFormExamen, setMostrarFormExamen] = useState({});
   const [guardandoExamen, setGuardandoExamen] = useState(false);
   const [formExamen, setFormExamen] = useState({});
   const [configExamenOpen, setConfigExamenOpen] = useState(false);
   const [examenConfigActual, setExamenConfigActual] = useState(null);
-  const [evaluacionesExamenDisponibles, setEvaluacionesExamenDisponibles] =
-    useState([]);
-  const [evaluacionSeleccionadaExamen, setEvaluacionSeleccionadaExamen] =
-    useState("");
+  const [evaluacionesExamenDisponibles, setEvaluacionesExamenDisponibles] = useState([]);
+  const [evaluacionSeleccionadaExamen, setEvaluacionSeleccionadaExamen] = useState("");
   const [cargandoConfigExamen, setCargandoConfigExamen] = useState(false);
   const [guardandoConfigExamen, setGuardandoConfigExamen] = useState(false);
   const [examenEditandoId, setExamenEditandoId] = useState(null);
@@ -508,11 +568,13 @@ export default function CursoDetalleAdmin() {
     titulo: "",
     descripcion: "",
   });
+
   const [editandoLeccionId, setEditandoLeccionId] = useState(null);
   const [formEditarLeccion, setFormEditarLeccion] = useState({
     titulo: "",
     descripcion: "",
   });
+
   const [editandoMaterialId, setEditandoMaterialId] = useState(null);
   const [formEditarMaterial, setFormEditarMaterial] = useState({
     titulo: "",
@@ -527,12 +589,17 @@ export default function CursoDetalleAdmin() {
   const [cargandoDetalleTarea, setCargandoDetalleTarea] = useState(false);
   const [guardandoNotaEntrega, setGuardandoNotaEntrega] = useState({});
 
+  // ==============================
+  //Asignar notas a una tarea
+  // ==============================
+
+// ==============================
+  // CONFIGURACIÓN DE TAREAS (Recuperado de la nube)
+  // ==============================
   const [configTareaOpen, setConfigTareaOpen] = useState(false);
   const [tareaConfigActual, setTareaConfigActual] = useState(null);
-  const [evaluacionesTareaDisponibles, setEvaluacionesTareaDisponibles] =
-    useState([]);
-  const [evaluacionSeleccionadaTarea, setEvaluacionSeleccionadaTarea] =
-    useState("");
+  const [evaluacionesTareaDisponibles, setEvaluacionesTareaDisponibles] = useState([]);
+  const [evaluacionSeleccionadaTarea, setEvaluacionSeleccionadaTarea] = useState("");
   const [cargandoConfigTarea, setCargandoConfigTarea] = useState(false);
   const [guardandoConfigTarea, setGuardandoConfigTarea] = useState(false);
 
@@ -543,17 +610,20 @@ export default function CursoDetalleAdmin() {
     if (tipo === "success") toast.success(texto);
     else toast.error(texto);
   };
-
   const exportarPDF = () => {
     const doc = new jsPDF();
+
     doc.setFontSize(16);
     doc.text("Reporte de Asistencia", 14, 15);
+
     doc.setFontSize(11);
     doc.text(`Curso: ${curso?.nombre || curso?.nombrecurso || ""}`, 14, 22);
     doc.text(`Fecha: ${fechaAsistencia}`, 14, 28);
+
     const rows = alumnos.map((a) => {
       const key = a.idalumno || a.id;
       const asistencia = asistenciaMap[key] || {};
+
       return [
         `${a.nombre || ""} ${a.apellido || ""}`.trim(),
         a.numdocumento || "-",
@@ -562,15 +632,17 @@ export default function CursoDetalleAdmin() {
         asistencia.observacion || "-",
       ];
     });
+
     autoTable(doc, {
       startY: 35,
       head: [["Alumno", "DNI", "Estado", "Justificación", "Observación"]],
       body: rows,
     });
+
     doc.save(`asistencia_${curso?.nombre || "curso"}_${fechaAsistencia}.pdf`);
   };
 
-  const exportarExcel = () => {
+const exportarExcel = () => {
     const totalAlumnos = alumnosFiltradosAsistencia.length;
     const totalPresentes = alumnosFiltradosAsistencia.filter((a) => {
       const key = a.idalumno || a.id;
@@ -817,7 +889,7 @@ export default function CursoDetalleAdmin() {
     const cargarDatos = async () => {
       try {
         setLoading(true);
-        let cursoData = null;
+let cursoData = null;
         try {
           cursoData = await obtenerCursoPorId(id);
         } catch (e) {
@@ -853,30 +925,39 @@ export default function CursoDetalleAdmin() {
         setAlumnos(Array.isArray(alumnosData) ? alumnosData : []);
 
         const map = {};
-        (Array.isArray(asistenciaData) ? asistenciaData : []).forEach(
-          (item) => {
-            map[item.idalumno] = {
-              estado: item.estado || "",
-              tipo_justificacion: item.tipo_justificacion || "",
-              observacion: item.observacion || "",
-            };
-          },
-        );
+        (asistenciaData || []).forEach((item) => {
+          map[item.idalumno] = {
+            estado: item.estado || "",
+            tipo_justificacion: item.tipo_justificacion || "",
+            observacion: item.observacion || "",
+          };
+        });
         setAsistenciaMap(map);
       } catch (error) {
-        console.error("Error fatal:", error);
+        console.error(error);
+        alert(error?.message || "Error cargando detalle del curso");
       } finally {
         setLoading(false);
       }
     };
+
     cargarDatos();
   }, [id, hoy]);
 
   useEffect(() => {
-    if (tabActiva === "tareas" || tabActiva === "modulos") cargarTareasCurso();
+  if (tabActiva === "tareas" || tabActiva === "modulos") {
+    cargarTareasCurso();
+  }
+}, [tabActiva, id]);
+
+  useEffect(() => {
+    if (tabActiva === "modulos") {
+      cargarModulosCurso();
+    }
   }, [tabActiva, id]);
 
   useEffect(() => {
+useEffect(() => {
     if (tabActiva === "modulos") cargarModulosCurso();
   }, [tabActiva, id]);
 
@@ -887,6 +968,7 @@ export default function CursoDetalleAdmin() {
   useEffect(() => {
     setModulosOrdenados(modulos || []);
   }, [modulos]);
+
   useEffect(() => {
     setTareasOrdenadas(tareas || []);
   }, [tareas]);
@@ -897,6 +979,7 @@ export default function CursoDetalleAdmin() {
   const cargarAsistenciaPorFecha = async (fecha) => {
     try {
       const data = await getAsistenciaCursoPorFecha(id, fecha);
+
       const map = {};
       (data || []).forEach((item) => {
         map[item.idalumno] = {
@@ -905,9 +988,10 @@ export default function CursoDetalleAdmin() {
           observacion: item.observacion || "",
         };
       });
+
       setAsistenciaMap(map);
     } catch (error) {
-      showMessage("error", error?.message || "Error cargando asistencia");
+showMessage("error", error?.message || "Error cargando asistencia");
     }
   };
 
@@ -934,14 +1018,20 @@ export default function CursoDetalleAdmin() {
   const actualizarJustificacion = (idalumno, valor) => {
     setAsistenciaMap((prev) => ({
       ...prev,
-      [idalumno]: { ...(prev[idalumno] || {}), tipo_justificacion: valor },
+      [idalumno]: {
+        ...(prev[idalumno] || {}),
+        tipo_justificacion: valor,
+      },
     }));
   };
 
   const actualizarObservacion = (idalumno, valor) => {
     setAsistenciaMap((prev) => ({
       ...prev,
-      [idalumno]: { ...(prev[idalumno] || {}), observacion: valor },
+      [idalumno]: {
+        ...(prev[idalumno] || {}),
+        observacion: valor,
+      },
     }));
   };
 
@@ -955,16 +1045,18 @@ export default function CursoDetalleAdmin() {
           asistenciaMap[a.idalumno || a.id]?.tipo_justificacion || null,
         observacion: asistenciaMap[a.idalumno || a.id]?.observacion || null,
       }));
+
       const incompletos = payload.filter((p) => !p.estado);
-      if (incompletos.length > 0)
+if (incompletos.length > 0) {
         return showMessage(
           "error",
           "Todos los alumnos deben tener estado de asistencia.",
         );
+      }
       await guardarAsistenciaCurso(Number(id), payload);
       showMessage("success", "Asistencia guardada correctamente ✅");
     } catch (error) {
-      showMessage(
+showMessage(
         "error",
         error?.message || "No se pudo guardar la asistencia",
       );
@@ -975,6 +1067,7 @@ export default function CursoDetalleAdmin() {
   // FUNCIONES: TAREAS
   // ==============================
   const handleChangeTarea = (e) => {
+const handleChangeTarea = (e) => {
     const { name, value, type, checked } = e.target;
     setFormTarea((prev) => {
       const next = { ...prev, [name]: type === "checkbox" ? checked : value };
@@ -989,7 +1082,11 @@ export default function CursoDetalleAdmin() {
 
   const handleFileChangeTarea = (e) => {
     const { name, files } = e.target;
-    setFormTarea((prev) => ({ ...prev, [name]: files?.[0] || null }));
+
+    setFormTarea((prev) => ({
+      ...prev,
+      [name]: files?.[0] || null,
+    }));
   };
 
   const limpiarFormTarea = () => {
@@ -1009,27 +1106,33 @@ export default function CursoDetalleAdmin() {
   };
 
   const abrirFormTareaDesdeModulo = (modulo) => {
-    setModuloDestinoTarea(modulo);
-    setMostrarFormTarea(true);
-    setTabActiva("tareas");
-  };
+  setModuloDestinoTarea(modulo);
+  setMostrarFormTarea(true);
+  setTabActiva("tareas");
+};
 
   const guardarTareaCurso = async (e) => {
     e.preventDefault();
+
     try {
-      if (!formTarea.titulo.trim())
+if (!formTarea.titulo.trim()) {
         return showMessage("error", "Ingresa el título de la tarea.");
-      if (!formTarea.descripcion.trim())
+      }
+      if (!formTarea.descripcion.trim()) {
         return showMessage("error", "Ingresa la descripción de la tarea.");
-      if (!formTarea.fechaInicio || !formTarea.fechaLimite)
+      }
+      if (!formTarea.fechaInicio || !formTarea.fechaLimite) {
         return showMessage(
           "error",
           "Completa la fecha de inicio y la fecha límite.",
         );
-      if (!formTarea.tipoEntrega)
+      }
+      if (!formTarea.tipoEntrega) {
         return showMessage("error", "Selecciona el tipo de entrega.");
+      }
 
       setGuardandoTarea(true);
+
       await crearTarea({
         cursoId: curso?.id ?? null,
         grupoId: curso?.idgrupo ?? null,
@@ -1045,12 +1148,12 @@ export default function CursoDetalleAdmin() {
         calificable: formTarea.calificable,
         idmodulo: moduloDestinoTarea?.id ?? null,
       });
-      showMessage("success", "Tarea creada correctamente ✅");
+showMessage("success", "Tarea creada correctamente ✅");
       limpiarFormTarea();
       setMostrarFormTarea(false);
       await cargarTareasCurso();
     } catch (error) {
-      showMessage("error", error?.message || "Error al crear la tarea");
+showMessage("error", error?.message || "Error al crear la tarea");
     } finally {
       setGuardandoTarea(false);
     }
@@ -1059,14 +1162,16 @@ export default function CursoDetalleAdmin() {
   const cambiarEstadoRevision = async (tarea) => {
     try {
       const nuevoEstado = !tarea.revisada;
+
       await marcarTareaRevisada(tarea.id, nuevoEstado);
+
       setTareas((prev) =>
         prev.map((item) =>
-          item.id === tarea.id ? { ...item, revisada: nuevoEstado } : item,
-        ),
+          item.id === tarea.id ? { ...item, revisada: nuevoEstado } : item
+        )
       );
     } catch (error) {
-      showMessage(
+showMessage(
         "error",
         error?.message || "No se pudo actualizar el estado de la tarea",
       );
@@ -1074,16 +1179,19 @@ export default function CursoDetalleAdmin() {
   };
 
   const eliminarTareaCurso = async (tareaId) => {
-    if (!window.confirm("¿Seguro que deseas eliminar esta tarea?")) return;
+    const confirmado = window.confirm("¿Seguro que deseas eliminar esta tarea?");
+    if (!confirmado) return;
+
     try {
       await deleteTarea(tareaId);
       setTareas((prev) => prev.filter((item) => item.id !== tareaId));
+
       setTareasAbiertas((prev) => {
         const copia = { ...prev };
         delete copia[tareaId];
         return copia;
       });
-      showMessage("success", "Tarea eliminada correctamente");
+showMessage("success", "Tarea eliminada correctamente");
     } catch (error) {
       showMessage("error", error?.message || "No se pudo eliminar la tarea");
     }
@@ -1220,39 +1328,48 @@ export default function CursoDetalleAdmin() {
   // ==============================
   const handleChangeModulo = (e) => {
     const { name, value } = e.target;
-    setFormModulo((prev) => ({ ...prev, [name]: value }));
+    setFormModulo((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const guardarModuloCurso = async (e) => {
     e.preventDefault();
+
     try {
-      if (!formModulo.titulo.trim())
+if (!formModulo.titulo.trim()) {
         return showMessage("error", "Ingresa el título del módulo.");
+      }
       setGuardandoModulo(true);
+
       await crearModulo({
         cursoId: Number(id),
         titulo: formModulo.titulo,
         descripcion: formModulo.descripcion,
       });
+
       setFormModulo({ titulo: "", descripcion: "" });
       setMostrarFormModulo(false);
       await cargarModulosCurso();
       showMessage("success", "Módulo creado correctamente ✅");
     } catch (error) {
-      showMessage("error", error?.message || "No se pudo crear el módulo");
+showMessage("error", error?.message || "No se pudo crear el módulo");
     } finally {
       setGuardandoModulo(false);
     }
   };
 
   const eliminarModuloCurso = async (moduloId) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este módulo?")) return;
+    const confirmado = window.confirm("¿Seguro que deseas eliminar este módulo?");
+    if (!confirmado) return;
+
     try {
       await deleteModulo(moduloId);
       await cargarModulosCurso();
       showMessage("success", "Módulo eliminado correctamente");
     } catch (error) {
-      showMessage("error", error?.message || "No se pudo eliminar el módulo");
+showMessage("error", error?.message || "No se pudo eliminar el módulo");
     }
   };
 
@@ -1271,8 +1388,9 @@ export default function CursoDetalleAdmin() {
 
   const guardarEdicionModulo = async (moduloId) => {
     try {
-      if (!formEditarModulo.titulo.trim())
+      if (!formEditarModulo.titulo.trim()) {
         return showMessage("error", "Ingresa el título del módulo.");
+      }
       await actualizarModulo(moduloId, {
         titulo: formEditarModulo.titulo,
         descripcion: formEditarModulo.descripcion,
@@ -1285,32 +1403,12 @@ export default function CursoDetalleAdmin() {
     }
   };
 
-  const persistirOrdenModulos = async (listaAnterior, listaNueva) => {
+  const moverModuloCurso = async (moduloId, direccion) => {
     try {
-      const trabajo = [...listaAnterior];
-      for (let nuevoIndex = 0; nuevoIndex < listaNueva.length; nuevoIndex++) {
-        const idActual = Number(listaNueva[nuevoIndex].id);
-        let indexActualEnTrabajo = trabajo.findIndex(
-          (item) => Number(item.id) === idActual,
-        );
-        while (indexActualEnTrabajo > nuevoIndex) {
-          await moverModulo(idActual, "arriba");
-          const temp = trabajo[indexActualEnTrabajo - 1];
-          trabajo[indexActualEnTrabajo - 1] = trabajo[indexActualEnTrabajo];
-          trabajo[indexActualEnTrabajo] = temp;
-          indexActualEnTrabajo--;
-        }
-        while (indexActualEnTrabajo < nuevoIndex) {
-          await moverModulo(idActual, "abajo");
-          const temp = trabajo[indexActualEnTrabajo + 1];
-          trabajo[indexActualEnTrabajo + 1] = trabajo[indexActualEnTrabajo];
-          trabajo[indexActualEnTrabajo] = temp;
-          indexActualEnTrabajo++;
-        }
-      }
+      await moverModulo(moduloId, direccion);
       await cargarModulosCurso();
     } catch (error) {
-      showMessage(
+showMessage(
         "error",
         error?.message || "No se pudo reordenar los módulos",
       );
@@ -1318,31 +1416,216 @@ export default function CursoDetalleAdmin() {
     }
   };
 
-  const handleDragEndModulos = async (event) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = modulosOrdenados.findIndex(
-      (item) => String(item.id) === String(active.id),
-    );
-    const newIndex = modulosOrdenados.findIndex(
-      (item) => String(item.id) === String(over.id),
-    );
-    if (oldIndex === -1 || newIndex === -1) return;
-    const listaAnterior = [...modulosOrdenados];
-    const nuevaLista = arrayMove(modulosOrdenados, oldIndex, newIndex);
-    setModulosOrdenados(nuevaLista);
-    await persistirOrdenModulos(listaAnterior, nuevaLista);
-  };
+  const persistirOrdenModulos = async (listaAnterior, listaNueva) => {
+  try {
+    const trabajo = [...listaAnterior];
 
-  // ==============================
+    for (let nuevoIndex = 0; nuevoIndex < listaNueva.length; nuevoIndex++) {
+      const idActual = Number(listaNueva[nuevoIndex].id);
+      let indexActualEnTrabajo = trabajo.findIndex(
+        (item) => Number(item.id) === idActual
+      );
+
+      while (indexActualEnTrabajo > nuevoIndex) {
+        await moverModulo(idActual, "arriba");
+
+        const temp = trabajo[indexActualEnTrabajo - 1];
+        trabajo[indexActualEnTrabajo - 1] = trabajo[indexActualEnTrabajo];
+        trabajo[indexActualEnTrabajo] = temp;
+
+        indexActualEnTrabajo--;
+      }
+
+      while (indexActualEnTrabajo < nuevoIndex) {
+        await moverModulo(idActual, "abajo");
+
+        const temp = trabajo[indexActualEnTrabajo + 1];
+        trabajo[indexActualEnTrabajo + 1] = trabajo[indexActualEnTrabajo];
+        trabajo[indexActualEnTrabajo] = temp;
+
+        indexActualEnTrabajo++;
+      }
+    }
+
+    await cargarModulosCurso();
+  } catch (error) {
+    console.error(error);
+    alert(error?.message || "No se pudo reordenar los módulos");
+    await cargarModulosCurso();
+  }
+};
+
+//Movimientos de módulos
+const handleDragEndModulos = async (event) => {
+  const { active, over } = event;
+
+  if (!over || active.id === over.id) return;
+
+  const oldIndex = modulosOrdenados.findIndex(
+    (item) => String(item.id) === String(active.id)
+  );
+  const newIndex = modulosOrdenados.findIndex(
+    (item) => String(item.id) === String(over.id)
+  );
+
+  if (oldIndex === -1 || newIndex === -1) return;
+
+  const listaAnterior = [...modulosOrdenados];
+  const nuevaLista = arrayMove(modulosOrdenados, oldIndex, newIndex);
+
+  setModulosOrdenados(nuevaLista);
+  await persistirOrdenModulos(listaAnterior, nuevaLista);
+};
+
+// ==============================
   // FUNCIONES: SUBMÓDULOS
   // ==============================
   const toggleFormSubModulo = (moduloId) => {
+  setMostrarFormSubModulo((prev) => ({
+    ...prev,
+    [moduloId]: !prev[moduloId],
+  }));
+
+  setFormSubModulo((prev) => ({
+    ...prev,
+    [moduloId]: prev[moduloId] || {
+      titulo: "",
+      descripcion: "",
+    },
+  }));
+};
+
+const handleChangeSubModulo = (moduloId, e) => {
+  const { name, value } = e.target;
+
+  setFormSubModulo((prev) => ({
+    ...prev,
+    [moduloId]: {
+      ...(prev[moduloId] || {}),
+      [name]: value,
+    },
+  }));
+};
+
+//Submódulos
+
+const guardarSubModuloCurso = async (e, moduloPadreId) => {
+  e.preventDefault();
+
+  try {
+    const data = formSubModulo[moduloPadreId] || {};
+
+    if (!data.titulo?.trim()) {
+      return alert("Ingresa el título del submódulo.");
+    }
+
+    setGuardandoSubModulo(true);
+
+    await crearModulo({
+      cursoId: Number(id),
+      titulo: data.titulo,
+      descripcion: data.descripcion,
+      idpadre: moduloPadreId,
+    });
+
+    setFormSubModulo((prev) => ({
+      ...prev,
+      [moduloPadreId]: {
+        titulo: "",
+        descripcion: "",
+      },
+    }));
+
     setMostrarFormSubModulo((prev) => ({
+      ...prev,
+      [moduloPadreId]: false,
+    }));
+
+    await cargarModulosCurso();
+    alert("Submódulo creado correctamente ✅");
+  } catch (error) {
+    console.error(error);
+    alert(error?.message || "No se pudo crear el submódulo");
+  } finally {
+    setGuardandoSubModulo(false);
+  }
+};
+
+//Mover material
+const handleDragEndMateriales = async (
+  event,
+  moduloId,
+  submoduloId,
+  leccion
+) => {
+  const { active, over } = event;
+
+  if (!over || active.id === over.id) return;
+
+  const materiales = leccion.materiales || [];
+
+  const oldIndex = materiales.findIndex(
+    (item) => `material-${item.id}` === String(active.id)
+  );
+  const newIndex = materiales.findIndex(
+    (item) => `material-${item.id}` === String(over.id)
+  );
+
+  if (oldIndex === -1 || newIndex === -1) return;
+
+  const nuevaLista = arrayMove(materiales, oldIndex, newIndex);
+
+  setModulos((prev) =>
+    prev.map((m) =>
+      Number(m.id) === Number(moduloId)
+        ? {
+            ...m,
+            submodulos: (m.submodulos || []).map((s) =>
+              Number(s.id) === Number(submoduloId)
+                ? {
+                    ...s,
+                    lecciones: (s.lecciones || []).map((l) =>
+                      Number(l.id) === Number(leccion.id)
+                        ? { ...l, materiales: nuevaLista }
+                        : l
+                    ),
+                  }
+                : s
+            ),
+          }
+        : m
+    )
+  );
+
+  try {
+    await moverMaterialOrden(nuevaLista);
+    await cargarModulosCurso();
+  } catch (error) {
+    console.error(error);
+    alert(error?.message || "No se pudo reordenar los materiales");
+    await cargarModulosCurso();
+  }
+};
+
+const moverSubModuloCurso = async (submoduloId, direccion) => {
+  try {
+    await moverSubModulo(submoduloId, direccion);
+    await cargarModulosCurso();
+  } catch (error) {
+    console.error(error);
+    alert(error?.message || "No se pudo mover el submódulo");
+  }
+};
+
+  // ==============================
+  // LECCIONES
+  // ==============================
+  const toggleLeccionesModulo = (moduloId) => {
+    setMostrarLecciones((prev) => ({
       ...prev,
       [moduloId]: !prev[moduloId],
     }));
-    setFormSubModulo((prev) => ({
+setFormSubModulo((prev) => ({
       ...prev,
       [moduloId]: prev[moduloId] || { titulo: "", descripcion: "" },
     }));
@@ -1360,8 +1643,9 @@ export default function CursoDetalleAdmin() {
     e.preventDefault();
     try {
       const data = formSubModulo[moduloPadreId] || {};
-      if (!data.titulo?.trim())
+      if (!data.titulo?.trim()) {
         return showMessage("error", "Ingresa el título del submódulo.");
+      }
       setGuardandoSubModulo(true);
       await crearModulo({
         cursoId: Number(id),
@@ -1430,7 +1714,7 @@ export default function CursoDetalleAdmin() {
 
   const handleChangeLeccion = (moduloId, e) => {
     const { name, value } = e.target;
-    setFormLeccion((prev) => ({
+setFormLeccion((prev) => ({
       ...prev,
       [moduloId]: { ...(prev[moduloId] || {}), [name]: value },
     }));
@@ -1438,17 +1722,18 @@ export default function CursoDetalleAdmin() {
 
   const guardarLeccionCurso = async (e, moduloId) => {
     e.preventDefault();
-    try {
+try {
       const data = formLeccion[moduloId] || {};
-      if (!data.titulo?.trim())
+      if (!data.titulo?.trim()) {
         return showMessage("error", "Ingresa el título de la lección.");
+      }
       setGuardandoLeccion(true);
       await crearLeccion({
         moduloId,
         titulo: data.titulo,
         descripcion: data.descripcion,
       });
-      setFormLeccion((prev) => ({
+setFormLeccion((prev) => ({
         ...prev,
         [moduloId]: { titulo: "", descripcion: "" },
       }));
@@ -1463,7 +1748,7 @@ export default function CursoDetalleAdmin() {
   };
 
   const eliminarLeccionCurso = async (leccionId) => {
-    if (!window.confirm("¿Seguro que deseas eliminar esta lección?")) return;
+if (!window.confirm("¿Seguro que deseas eliminar esta lección?")) return;
     try {
       await deleteLeccion(leccionId);
       await cargarModulosCurso();
@@ -1483,18 +1768,19 @@ export default function CursoDetalleAdmin() {
 
   const cancelarEdicionLeccion = () => {
     setEditandoLeccionId(null);
-    setFormEditarLeccion({ titulo: "", descripcion: "" });
+setFormEditarLeccion({ titulo: "", descripcion: "" });
   };
 
   const guardarEdicionLeccion = async (leccionId) => {
     try {
-      if (!formEditarLeccion.titulo.trim())
+if (!formEditarLeccion.titulo.trim()) {
         return showMessage("error", "Ingresa el título de la lección.");
+      }
       await actualizarLeccion(leccionId, {
         titulo: formEditarLeccion.titulo,
         descripcion: formEditarLeccion.descripcion,
       });
-      cancelarEdicionLeccion();
+cancelarEdicionLeccion();
       await cargarModulosCurso();
       showMessage("success", "Lección actualizada correctamente ✅");
     } catch (error) {
@@ -1544,19 +1830,28 @@ export default function CursoDetalleAdmin() {
   };
 
   // ==============================
-  // FUNCIONES: MATERIALES & VIDEOS (S3)
+// FUNCIONES: MATERIALES & VIDEOS (S3)
   // ==============================
   const toggleMaterialesLeccion = (leccionId) =>
     setMostrarMateriales((prev) => ({
       ...prev,
       [leccionId]: !prev[leccionId],
     }));
+} catch (error) {
+      showMessage(
+        "error",
+        error?.message || "No se pudo reordenar las lecciones",
+      );
+      await cargarModulosCurso();
+    } // <- Cierre del catch
+  };  // <- Cierre de la función
 
   const toggleFormMaterial = (leccionId) => {
     setMostrarFormMaterial((prev) => ({
       ...prev,
       [leccionId]: !prev[leccionId],
     }));
+
     setFormMaterial((prev) => ({
       ...prev,
       [leccionId]: prev[leccionId] || {
@@ -1572,22 +1867,30 @@ export default function CursoDetalleAdmin() {
 
   const handleChangeMaterial = (leccionId, e) => {
     const { name, value } = e.target;
+
     setFormMaterial((prev) => ({
       ...prev,
-      [leccionId]: { ...(prev[leccionId] || {}), [name]: value },
+      [leccionId]: {
+        ...(prev[leccionId] || {}),
+        [name]: value,
+      },
     }));
   };
 
   const handleFileMaterial = (leccionId, e) => {
     const file = e.target.files?.[0] || null;
-    if (file && file.size > 20 * 1024 * 1024)
+if (file && file.size > 20 * 1024 * 1024) {
       return showMessage(
         "error",
         "El archivo supera el límite permitido de 20 MB.",
       );
+    }
     setFormMaterial((prev) => ({
       ...prev,
-      [leccionId]: { ...(prev[leccionId] || {}), file },
+      [leccionId]: {
+        ...(prev[leccionId] || {}),
+        file,
+      },
     }));
   };
 
@@ -1723,20 +2026,27 @@ export default function CursoDetalleAdmin() {
 
   const guardarMaterialCurso = async (e, leccionId) => {
     e.preventDefault();
+
     try {
       const data = formMaterial[leccionId] || {};
-      if (!data.titulo?.trim())
+if (!data.titulo?.trim()) {
         return showMessage("error", "Ingresa el título del material.");
-      if (!data.tipo)
+      }
+      if (!data.tipo) {
         return showMessage("error", "Selecciona el tipo de material.");
-      if (data.tipo === "texto" && !data.contenido_texto?.trim())
+      }
+      if (data.tipo === "texto" && !data.contenido_texto?.trim()) {
         return showMessage("error", "Ingresa el contenido del material.");
-      if (data.tipo === "url_video" && !data.video_url?.trim())
+      }
+      if (data.tipo === "url_video" && !data.video_url?.trim()) {
         return showMessage("error", "Ingresa la URL del video.");
-      if (data.tipo === "enlace" && !data.enlace_url?.trim())
+      }
+      if (data.tipo === "enlace" && !data.enlace_url?.trim()) {
         return showMessage("error", "Ingresa el enlace.");
-      if ((data.tipo === "archivo" || data.tipo === "video") && !data.file)
+      }
+      if ((data.tipo === "archivo" || data.tipo === "video") && !data.file) {
         return showMessage("error", "Selecciona un archivo.");
+      }
 
       if (data.tipo === "video") {
         subirVideoEnSegundoPlano(leccionId, data);
@@ -1755,12 +2065,61 @@ export default function CursoDetalleAdmin() {
         return;
       }
 
+      if (!data.titulo?.trim()) {
+        return alert("Ingresa el título del material.");
+      }
+
+      if (!data.tipo) {
+        return alert("Selecciona el tipo de material.");
+      }
+
+      if (data.tipo === "texto" && !data.contenido_texto?.trim()) {
+        return alert("Ingresa el contenido del material.");
+      }
+
+      if (data.tipo === "url_video" && !data.video_url?.trim()) {
+        return alert("Ingresa la URL del video.");
+      }
+
+      if (data.tipo === "enlace" && !data.enlace_url?.trim()) {
+        return alert("Ingresa el enlace.");
+      }
+
+      if ((data.tipo === "archivo" || data.tipo === "video") && !data.file) {
+        return alert("Selecciona un archivo.");
+      }
+
+      // CASO VIDEO: se lanza en segundo plano y se libera la UI
+      if (data.tipo === "video") {
+        subirVideoEnSegundoPlano(leccionId, data);
+
+        setFormMaterial((prev) => ({
+          ...prev,
+          [leccionId]: {
+            titulo: "",
+            tipo: "texto",
+            contenido_texto: "",
+            video_url: "",
+            enlace_url: "",
+            file: null,
+          },
+        }));
+
+        setMostrarFormMaterial((prev) => ({
+          ...prev,
+          [leccionId]: false,
+        }));
+
+        return;
+      }
+
+      // Resto de materiales: flujo normal
       setGuardandoMaterial(true);
+
       setSubidaMaterialEstado((prev) => ({
         ...prev,
-        [leccionId]: "Subiendo archivo...",
+[leccionId]: "Subiendo archivo...",
       }));
-      setSubidaMaterialProgress((prev) => ({ ...prev, [leccionId]: 0 }));
 
       await addMaterialLeccion(leccionId, {
         titulo: data.titulo,
@@ -1774,7 +2133,7 @@ export default function CursoDetalleAdmin() {
             ...prev,
             [leccionId]: percent,
           }));
-          if (percent >= 100)
+if (percent >= 100)
             setSubidaMaterialEstado((prev) => ({
               ...prev,
               [leccionId]: "Procesando archivo...",
@@ -1793,22 +2152,34 @@ export default function CursoDetalleAdmin() {
           file: null,
         },
       }));
-      setMostrarFormMaterial((prev) => ({ ...prev, [leccionId]: false }));
+
+      setMostrarFormMaterial((prev) => ({
+        ...prev,
+        [leccionId]: false,
+      }));
+
       await cargarModulosCurso();
-      showMessage("success", "Material agregado correctamente ✅");
+showMessage("success", "Material agregado correctamente ✅");
     } catch (error) {
       showMessage("error", error?.message || "No se pudo agregar el material");
     } finally {
       setGuardandoMaterial(false);
+
       setTimeout(() => {
-        setSubidaMaterialProgress((prev) => ({ ...prev, [leccionId]: 0 }));
-        setSubidaMaterialEstado((prev) => ({ ...prev, [leccionId]: "" }));
+        setSubidaMaterialProgress((prev) => ({
+          ...prev,
+          [leccionId]: 0,
+        }));
+        setSubidaMaterialEstado((prev) => ({
+          ...prev,
+          [leccionId]: "",
+        }));
       }, 1200);
     }
   };
 
   const abrirArchivoMaterial = async (material) => {
-    try {
+try {
       if (material.object_key) {
         const url = await getMaterialLeccionDownloadUrl(material.object_key);
         window.open(url, "_blank", "noopener,noreferrer");
@@ -1859,23 +2230,27 @@ export default function CursoDetalleAdmin() {
 
   const guardarEdicionMaterial = async (materialId) => {
     try {
-      if (!formEditarMaterial.titulo.trim())
+      if (!formEditarMaterial.titulo.trim()) {
         return showMessage("error", "Ingresa el título del material.");
+      }
       if (
         formEditarMaterial.tipo === "texto" &&
         !formEditarMaterial.contenido_texto.trim()
-      )
+      ) {
         return showMessage("error", "Ingresa el contenido del material.");
+      }
       if (
         formEditarMaterial.tipo === "url_video" &&
         !formEditarMaterial.video_url.trim()
-      )
+      ) {
         return showMessage("error", "Ingresa la URL del video.");
+      }
       if (
         formEditarMaterial.tipo === "enlace" &&
         !formEditarMaterial.enlace_url.trim()
-      )
+      ) {
         return showMessage("error", "Ingresa el enlace.");
+      }
 
       await actualizarMaterialLeccion(materialId, {
         titulo: formEditarMaterial.titulo,
@@ -1944,10 +2319,20 @@ export default function CursoDetalleAdmin() {
       ),
     );
     try {
-      await moverMaterialOrden(nuevaLista);
-      await cargarModulosCurso();
+      if (material.object_key) {
+        const url = await getMaterialLeccionDownloadUrl(material.object_key);
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      if (material.archivo_url) {
+        window.open(material.archivo_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      throw new Error("El material no tiene una ruta válida.");
     } catch (error) {
-      showMessage(
+showMessage(
         "error",
         error?.message || "No se pudo reordenar los materiales",
       );
@@ -2282,9 +2667,10 @@ export default function CursoDetalleAdmin() {
     } finally {
       setGuardandoExamen(false);
     }
-  };
+  }, 8000);
+};
 
-  const cargarExamenParaEdicion = async (examen, leccionId) => {
+const cargarExamenParaEdicion = async (examen, leccionId) => {
     try {
       setGuardandoExamen(true);
       const detalle = await getExamenDetalle(examen.id);
@@ -2318,8 +2704,9 @@ export default function CursoDetalleAdmin() {
 
   const abrirConfigExamen = async (examen) => {
     try {
-      if (!curso?.idgrupo)
+      if (!curso?.idgrupo) {
         return showMessage("error", "Este curso no tiene grupo asociado.");
+      }
       setCargandoConfigExamen(true);
       setExamenConfigActual(examen);
       setConfigExamenOpen(true);
@@ -2343,9 +2730,8 @@ export default function CursoDetalleAdmin() {
     } finally {
       setCargandoConfigExamen(false);
     }
-  };
 
-  const cerrarConfigExamen = () => {
+const cerrarConfigExamen = () => {
     setConfigExamenOpen(false);
     setExamenConfigActual(null);
     setEvaluacionesExamenDisponibles([]);
@@ -2354,13 +2740,15 @@ export default function CursoDetalleAdmin() {
 
   const guardarConfiguracionExamen = async () => {
     try {
-      if (!examenConfigActual?.id)
+      if (!examenConfigActual?.id) {
         return showMessage("error", "No se encontró el examen a configurar.");
-      if (!evaluacionSeleccionadaExamen)
+      }
+      if (!evaluacionSeleccionadaExamen) {
         return showMessage(
           "error",
           "Selecciona una evaluación de tipo examen.",
         );
+      }
       setGuardandoConfigExamen(true);
       await asignarEvaluacionAExamen({
         examenId: examenConfigActual.id,
@@ -2421,12 +2809,15 @@ export default function CursoDetalleAdmin() {
   const guardarSesionVivoCurso = async (e) => {
     e.preventDefault();
     try {
-      if (!formSesionVivo.titulo.trim())
+      if (!formSesionVivo.titulo.trim()) {
         return showMessage("error", "Ingresa el título de la sesión en vivo.");
-      if (!formSesionVivo.fecha)
+      }
+      if (!formSesionVivo.fecha) {
         return showMessage("error", "Selecciona la fecha y hora de la sesión.");
-      if (!formSesionVivo.duracion || Number(formSesionVivo.duracion) <= 0)
+      }
+      if (!formSesionVivo.duracion || Number(formSesionVivo.duracion) <= 0) {
         return showMessage("error", "La duración debe ser mayor a 0.");
+      }
 
       setGuardandoSesionVivo(true);
       await crearSesionVivo({
@@ -2467,26 +2858,31 @@ export default function CursoDetalleAdmin() {
   const alumnosFiltradosAsistencia = alumnos.filter((a) => {
     const key = a.idalumno || a.id;
     const asistencia = asistenciaMap[key] || {};
-    const texto =
-      `${a.nombre || ""} ${a.apellido || ""} ${a.numdocumento || ""}`
-        .toLowerCase()
-        .trim();
+
+    const texto = `${a.nombre || ""} ${a.apellido || ""} ${a.numdocumento || ""}`
+      .toLowerCase()
+      .trim();
+
     const coincideBusqueda = texto.includes(
-      busquedaAsistencia.toLowerCase().trim(),
+      busquedaAsistencia.toLowerCase().trim()
     );
+
     let coincideEstado = true;
-    if (filtroAsistencia === "presente")
+
+    if (filtroAsistencia === "presente") {
       coincideEstado = asistencia.estado === "presente";
-    else if (filtroAsistencia === "tardanza")
+    } else if (filtroAsistencia === "tardanza") {
       coincideEstado = asistencia.estado === "tardanza";
-    else if (filtroAsistencia === "falta")
+    } else if (filtroAsistencia === "falta") {
       coincideEstado = asistencia.estado === "falta";
-    else if (filtroAsistencia === "sin_registro")
+    } else if (filtroAsistencia === "sin_registro") {
       coincideEstado = !asistencia.estado;
+    }
+
     return coincideBusqueda && coincideEstado;
   });
 
-  const ausentes = alumnos.filter(
+const ausentes = alumnos.filter(
     (a) => asistenciaMap[a.idalumno || a.id]?.estado === "falta",
   );
   const tardanzas = alumnos.filter(
@@ -2501,42 +2897,55 @@ export default function CursoDetalleAdmin() {
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
-    return new Date(`${fecha}T00:00:00`).toLocaleDateString("es-PE");
+    const d = new Date(`${fecha}T00:00:00`);
+    return d.toLocaleDateString("es-PE");
   };
 
   const obtenerEstadoVencimiento = (fechaLimite) => {
     if (!fechaLimite) return null;
+
     const hoyDate = new Date();
     hoyDate.setHours(0, 0, 0, 0);
+
     const limite = new Date(`${fechaLimite}T00:00:00`);
     const diff = Math.ceil((limite - hoyDate) / (1000 * 60 * 60 * 24));
-    if (diff < 0)
+
+    if (diff < 0) {
       return { label: "Vencida", className: "bg-red-100 text-red-700" };
-    if (diff <= 2)
-      return {
-        label: "Vence pronto",
-        className: "bg-orange-100 text-orange-700",
-      };
+    }
+
+    if (diff <= 2) {
+      return { label: "Vence pronto", className: "bg-orange-100 text-orange-700" };
+    }
+
     return { label: "Activa", className: "bg-sky-100 text-sky-700" };
   };
 
   const obtenerIndicadorEvaluacionTarea = (tarea) => {
-    if (!tarea.calificable) return null;
-    const nombreEvaluacion =
-      tarea.evaluacion_nombre ||
-      tarea.nombre_evaluacion ||
-      tarea.evaluacion?.nombre ||
-      "";
-    if (nombreEvaluacion)
-      return {
-        texto: `Evaluación asignada: ${nombreEvaluacion}`,
-        clase: "border-emerald-200 bg-emerald-50 text-emerald-700",
-      };
+  if (!tarea.calificable) {
+    return null;
+  }
+
+  const nombreEvaluacion =
+    tarea.evaluacion_nombre ||
+    tarea.nombre_evaluacion ||
+    tarea.evaluacion?.nombre ||
+    "";
+
+  if (nombreEvaluacion) {
     return {
-      texto: "Sin evaluación asignada",
-      clase: "border-amber-200 bg-amber-50 text-amber-700",
+      texto: `Evaluación asignada: ${nombreEvaluacion}`,
+      clase:
+        "border-emerald-200 bg-emerald-50 text-emerald-700",
     };
+  }
+
+  return {
+    texto: "Sin evaluación asignada",
+    clase:
+      "border-amber-200 bg-amber-50 text-amber-700",
   };
+};
 
   // ==============================
   // RENDERIZADO
@@ -2559,7 +2968,6 @@ export default function CursoDetalleAdmin() {
 
   return (
     <div className="space-y-6 bg-slate-50/80 min-h-screen p-1">
-      {/* HEADER BANNER */}
       <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-900 text-white p-6 md:p-8 shadow-[0_20px_60px_-20px_rgba(15,23,42,0.65)]">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-16 -right-10 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
@@ -2570,18 +2978,18 @@ export default function CursoDetalleAdmin() {
           <div className="max-w-3xl">
             <button
               type="button"
-              onClick={() => navigate("/admin/cursos")}
+              onClick={() => navigate("/docente/cursos")}
               className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-slate-100 backdrop-blur hover:bg-white/15 transition"
             >
-              ← Volver a Cursos
+              ← Volver a Mis Cursos
             </button>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center rounded-full border border-blue-300/30 bg-blue-400/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-blue-100">
-                Panel de Administración
+                Panel del docente
               </span>
               <span className="inline-flex items-center rounded-full border border-emerald-300/30 bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-100">
-                Configuración Académica
+                Curso activo
               </span>
             </div>
 
@@ -2590,49 +2998,28 @@ export default function CursoDetalleAdmin() {
             </p>
 
             <h2 className="mt-2 text-3xl md:text-5xl font-black tracking-tight leading-tight">
-              {curso.nombre || curso.nombrecurso || "Curso sin nombre"}
+              {curso.nombre || "Curso sin nombre"}
             </h2>
 
             <p className="mt-3 text-sm md:text-base text-slate-200 max-w-2xl">
-              Administra módulos, tareas, asistencia y materiales desde una
-              vista más clara, moderna y profesional.
+              Administra módulos, tareas, asistencia y materiales desde una vista más
+              clara, moderna y profesional.
             </p>
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
               <div className="rounded-2xl border border-white/10 bg-white/10 backdrop-blur px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-slate-300">
-                  Grupos Aperturados
-                </p>
-                <p className="mt-1 font-semibold text-white">
-                  {curso.grupos?.length > 0
-                    ? `${curso.grupos.length} grupo(s)`
-                    : "Sin grupos"}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/10 backdrop-blur px-4 py-3 overflow-hidden">
-                <p className="text-xs uppercase tracking-wide text-slate-300">
-                  Horarios
-                </p>
-                <p
-                  className="mt-1 font-semibold text-white truncate"
-                  title={curso.grupos?.map((g) => g.horario).join(" | ")}
-                >
-                  {curso.grupos?.length === 1
-                    ? curso.grupos[0].horario
-                    : curso.grupos?.length > 1
-                      ? "Múltiples horarios"
-                      : "Sin horario"}
-                </p>
+                <p className="text-xs uppercase tracking-wide text-slate-300">Grupo</p>
+                <p className="mt-1 font-semibold text-white">{curso.grupo || "Sin grupo"}</p>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/10 backdrop-blur px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-slate-300">
-                  Alumnos
-                </p>
-                <p className="mt-1 font-semibold text-white">
-                  {alumnos.length}
-                </p>
+                <p className="text-xs uppercase tracking-wide text-slate-300">Horario</p>
+                <p className="mt-1 font-semibold text-white">{curso.horario || "Sin horario"}</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/10 backdrop-blur px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-slate-300">Alumnos</p>
+                <p className="mt-1 font-semibold text-white">{alumnos.length}</p>
               </div>
             </div>
           </div>
@@ -2665,54 +3052,36 @@ export default function CursoDetalleAdmin() {
         </div>
       </div>
 
-      {/* TARJETAS ESTADÍSTICAS */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_-18px_rgba(15,23,42,0.25)] transition hover:-translate-y-1 hover:shadow-[0_20px_45px_-18px_rgba(15,23,42,0.35)]">
           <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-blue-500 to-cyan-400" />
           <p className="text-sm font-medium text-slate-500">Alumnos</p>
-          <h3 className="mt-3 text-4xl font-black tracking-tight text-slate-900">
-            {alumnos.length}
-          </h3>
-          <p className="mt-2 text-sm text-slate-400">
-            Total registrados en este curso
-          </p>
+          <h3 className="mt-3 text-4xl font-black tracking-tight text-slate-900">{alumnos.length}</h3>
+          <p className="mt-2 text-sm text-slate-400">Total registrados en este curso</p>
         </div>
 
         <div className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_-18px_rgba(15,23,42,0.25)] transition hover:-translate-y-1 hover:shadow-[0_20px_45px_-18px_rgba(15,23,42,0.35)]">
           <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-violet-500 to-fuchsia-400" />
           <p className="text-sm font-medium text-slate-500">Módulos</p>
-          <h3 className="mt-3 text-4xl font-black tracking-tight text-slate-900">
-            {modulos.length}
-          </h3>
-          <p className="mt-2 text-sm text-slate-400">
-            Estructura académica del curso
-          </p>
+          <h3 className="mt-3 text-4xl font-black tracking-tight text-slate-900">{modulos.length}</h3>
+          <p className="mt-2 text-sm text-slate-400">Estructura académica del curso</p>
         </div>
 
         <div className="group relative overflow-hidden rounded-[24px] border border-red-100 bg-gradient-to-br from-white to-red-50 p-5 shadow-[0_12px_35px_-18px_rgba(239,68,68,0.18)] transition hover:-translate-y-1">
           <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-red-500 to-rose-400" />
           <p className="text-sm font-medium text-red-500">Ausentes</p>
-          <h3 className="mt-3 text-4xl font-black tracking-tight text-red-600">
-            {ausentes.length}
-          </h3>
-          <p className="mt-2 text-sm text-red-400">
-            Alumnos con falta registrada
-          </p>
+          <h3 className="mt-3 text-4xl font-black tracking-tight text-red-600">{ausentes.length}</h3>
+          <p className="mt-2 text-sm text-red-400">Alumnos con falta registrada</p>
         </div>
 
         <div className="group relative overflow-hidden rounded-[24px] border border-amber-100 bg-gradient-to-br from-white to-amber-50 p-5 shadow-[0_12px_35px_-18px_rgba(245,158,11,0.2)] transition hover:-translate-y-1">
           <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-amber-500 to-yellow-400" />
           <p className="text-sm font-medium text-amber-600">Tardanzas</p>
-          <h3 className="mt-3 text-4xl font-black tracking-tight text-amber-600">
-            {tardanzas.length}
-          </h3>
-          <p className="mt-2 text-sm text-amber-400">
-            Seguimiento de puntualidad
-          </p>
+          <h3 className="mt-3 text-4xl font-black tracking-tight text-amber-600">{tardanzas.length}</h3>
+          <p className="mt-2 text-sm text-amber-400">Seguimiento de puntualidad</p>
         </div>
       </div>
 
-      {/* PESTAÑAS STICKY */}
       <div className="sticky top-3 z-20 rounded-[24px] border border-slate-200/80 bg-white/85 p-3 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.25)] backdrop-blur">
         <div className="flex flex-wrap gap-2">
           {[
@@ -2722,6 +3091,7 @@ export default function CursoDetalleAdmin() {
             { key: "modulos", label: "Módulos" },
           ].map((tab) => {
             const active = tabActiva === tab.key;
+
             return (
               <button
                 key={tab.key}
@@ -2740,7 +3110,6 @@ export default function CursoDetalleAdmin() {
         </div>
       </div>
 
-      {/* RESUMEN */}
       {tabActiva === "resumen" && (
         <div className="space-y-6">
           <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
@@ -2749,7 +3118,7 @@ export default function CursoDetalleAdmin() {
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-gray-500 mb-1">Curso</p>
                 <p className="font-semibold text-gray-900">
-                  {curso.nombre || curso.nombrecurso || "Sin nombre"}
+                  {curso.nombre || "Sin nombre"}
                 </p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
@@ -2764,6 +3133,148 @@ export default function CursoDetalleAdmin() {
                   {curso.horario || "Sin horario"}
                 </p>
               </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold">Sesiones en vivo</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Programa clases en vivo con Google Meet para este curso.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMostrarFormSesionVivo((prev) => !prev)}
+                className="rounded-2xl bg-violet-600 px-4 py-2 text-white font-semibold hover:bg-violet-700 transition"
+              >
+                {mostrarFormSesionVivo ? "Cancelar" : "+ Crear sesión en vivo"}
+              </button>
+            </div>
+
+            {mostrarFormSesionVivo && (
+              <form
+                onSubmit={guardarSesionVivoCurso}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6 mt-6"
+              >
+                <div>
+                  <label className="block font-semibold mb-2">Título</label>
+                  <input
+                    type="text"
+                    name="titulo"
+                    value={formSesionVivo.titulo}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Ej. Clase en vivo - Introducción"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-2">Duración (minutos)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    name="duracion"
+                    value={formSesionVivo.duracion}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">Descripción</label>
+                  <textarea
+                    name="descripcion"
+                    value={formSesionVivo.descripcion}
+                    onChange={handleChangeSesionVivo}
+                    rows={3}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Descripción breve de la sesión"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-2">Fecha y hora</label>
+                  <input
+                    type="datetime-local"
+                    name="fecha"
+                    value={formSesionVivo.fecha}
+                    onChange={handleChangeSesionVivo}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={guardandoSesionVivo}
+                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                  >
+                    {guardandoSesionVivo ? "Creando sesión..." : "Guardar sesión"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="mt-6">
+              {cargandoSesionesVivo ? (
+                <p className="text-sm text-gray-500">Cargando sesiones en vivo...</p>
+              ) : sesionesVivo.length === 0 ? (
+                <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
+                  <p className="text-gray-700 font-medium">
+                    Aún no hay sesiones en vivo programadas.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Crea una sesión para que tus alumnos puedan unirse a la clase.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sesionesVivo.map((sesion) => (
+                    <div
+                      key={sesion.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <p className="text-lg font-bold text-slate-800">{sesion.titulo}</p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {sesion.descripcion || "Sin descripción"}
+                          </p>
+
+                          <div className="mt-3 space-y-1 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold">Fecha:</span>{" "}
+                              {formatearFechaSesion(sesion.fecha)}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Duración:</span>{" "}
+                              {sesion.duracion} min
+                            </p>
+                            <p>
+                              <span className="font-semibold">Estado:</span>{" "}
+                              {sesion.estado || "programada"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <a
+                            href={sesion.link_reunion}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition"
+                          >
+                            Unirse a la sesión
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -2919,9 +3430,7 @@ export default function CursoDetalleAdmin() {
             <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
               <h3 className="text-lg font-bold mb-4">Presentes</h3>
               {presentes.length === 0 ? (
-                <p className="text-gray-500">
-                  No hay alumnos marcados como presentes.
-                </p>
+                <p className="text-gray-500">No hay alumnos marcados como presentes.</p>
               ) : (
                 <div className="space-y-3">
                   {presentes.map((a) => (
@@ -3002,7 +3511,6 @@ export default function CursoDetalleAdmin() {
         </div>
       )}
 
-      {/* ASISTENCIA */}
       {tabActiva === "asistencia" && (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -3014,9 +3522,7 @@ export default function CursoDetalleAdmin() {
             </div>
             <div className="flex flex-col sm:flex-row sm:items-end gap-3">
               <div>
-                <label className="block font-semibold mb-2">
-                  Consultar fecha
-                </label>
+                <label className="block font-semibold mb-2">Consultar fecha</label>
                 <input
                   type="date"
                   value={fechaAsistencia}
@@ -3036,7 +3542,7 @@ export default function CursoDetalleAdmin() {
                 onClick={irAHoy}
                 className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
               >
-                Hoy
+                Hoy 
               </button>
               <button
                 type="button"
@@ -3045,22 +3551,20 @@ export default function CursoDetalleAdmin() {
               >
                 Exportar PDF
               </button>
-              <button
-                type="button"
-                onClick={exportarExcel}
-                className="bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700"
-              >
-                Exportar Excel
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={exportarExcel}
+              className="bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700"
+            >
+              Exportar Excel
+            </button>
           </div>
+        </div>
 
           <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl px-4 py-3 text-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block font-semibold mb-2">
-                  Buscar alumno
-                </label>
+                <label className="block font-semibold mb-2">Buscar alumno</label>
                 <input
                   type="text"
                   value={busquedaAsistencia}
@@ -3070,9 +3574,7 @@ export default function CursoDetalleAdmin() {
                 />
               </div>
               <div>
-                <label className="block font-semibold mb-2">
-                  Filtrar estado
-                </label>
+                <label className="block font-semibold mb-2">Filtrar estado</label>
                 <select
                   value={filtroAsistencia}
                   onChange={(e) => setFiltroAsistencia(e.target.value)}
@@ -3086,19 +3588,16 @@ export default function CursoDetalleAdmin() {
                 </select>
               </div>
             </div>
-            <div className="mt-3">
-              Mostrando asistencia correspondiente a la fecha:{" "}
-              <span className="font-semibold">{fechaAsistencia}</span>
-            </div>
+            Mostrando asistencia correspondiente a la fecha:{" "}
+            <span className="font-semibold">{fechaAsistencia}</span>
           </div>
 
           {alumnosFiltradosAsistencia.length === 0 ? (
-            <p className="text-gray-500">
-              No se encontraron alumnos con ese filtro.
-            </p>
+            <p className="text-gray-500">No se encontraron alumnos con ese filtro.</p>
           ) : (
             <div className="overflow-auto rounded-2xl border border-gray-200">
               <table className="w-full text-left min-w-[1100px]">
+
                 <thead>
                   <tr className="border-b bg-gray-50">
                     <th className="py-3 px-2">Foto</th>
@@ -3126,9 +3625,7 @@ export default function CursoDetalleAdmin() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <span className="text-xs text-gray-400">
-                                Sin foto
-                              </span>
+                              <span className="text-xs text-gray-400">Sin foto</span>
                             )}
                           </div>
                         </td>
@@ -3180,9 +3677,7 @@ export default function CursoDetalleAdmin() {
                             >
                               <option value="">Seleccione</option>
                               <option value="justificada">Justificada</option>
-                              <option value="injustificada">
-                                Injustificada
-                              </option>
+                              <option value="injustificada">Injustificada</option>
                             </select>
                           )}
                         </td>
@@ -3215,7 +3710,6 @@ export default function CursoDetalleAdmin() {
         </div>
       )}
 
-      {/* TABS CONTENT: TAREAS */}
       {tabActiva === "tareas" && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
@@ -3223,8 +3717,7 @@ export default function CursoDetalleAdmin() {
               <div>
                 <h3 className="text-xl font-bold">Tareas del curso</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Crea tareas directamente para este curso y administra su
-                  seguimiento.
+                  Crea tareas directamente para este curso y administra su seguimiento.
                 </p>
               </div>
               <button
@@ -3239,30 +3732,22 @@ export default function CursoDetalleAdmin() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="rounded-2xl border bg-slate-50 p-4">
                 <p className="text-sm text-gray-500">Total de tareas</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">
-                  {tareas.length}
-                </p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{tareas.length}</p>
               </div>
               <div className="rounded-2xl border bg-amber-50 p-4">
                 <p className="text-sm text-amber-700">Pendientes</p>
-                <p className="text-2xl font-bold text-amber-700 mt-1">
-                  {tareasPendientes}
-                </p>
+                <p className="text-2xl font-bold text-amber-700 mt-1">{tareasPendientes}</p>
               </div>
               <div className="rounded-2xl border bg-emerald-50 p-4">
                 <p className="text-sm text-emerald-700">Revisadas</p>
-                <p className="text-2xl font-bold text-emerald-700 mt-1">
-                  {tareasRevisadas}
-                </p>
+                <p className="text-2xl font-bold text-emerald-700 mt-1">{tareasRevisadas}</p>
               </div>
             </div>
 
             {moduloDestinoTarea && (
               <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
                 Creando tarea para el módulo:{" "}
-                <span className="font-semibold">
-                  {moduloDestinoTarea.titulo}
-                </span>
+                <span className="font-semibold">{moduloDestinoTarea.titulo}</span>
               </div>
             )}
 
@@ -3283,7 +3768,7 @@ export default function CursoDetalleAdmin() {
                     required
                   />
                 </div>
-                <div className="md:col-span-2">
+<div className="md:col-span-2">
                   <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
@@ -3317,9 +3802,7 @@ export default function CursoDetalleAdmin() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Fecha de inicio
-                  </label>
+                  <label className="block font-semibold mb-2">Fecha de inicio</label>
                   <input
                     type="date"
                     name="fechaInicio"
@@ -3330,9 +3813,7 @@ export default function CursoDetalleAdmin() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Fecha límite
-                  </label>
+                  <label className="block font-semibold mb-2">Fecha límite</label>
                   <input
                     type="date"
                     name="fechaLimite"
@@ -3343,9 +3824,7 @@ export default function CursoDetalleAdmin() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Tipo de entrega
-                  </label>
+                  <label className="block font-semibold mb-2">Tipo de entrega</label>
                   <select
                     name="tipoEntrega"
                     value={formTarea.tipoEntrega}
@@ -3360,9 +3839,7 @@ export default function CursoDetalleAdmin() {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Material de apoyo
-                  </label>
+                  <label className="block font-semibold mb-2">Material de apoyo</label>
                   <select
                     name="tipoApoyo"
                     value={formTarea.tipoApoyo}
@@ -3377,9 +3854,7 @@ export default function CursoDetalleAdmin() {
                 </div>
                 {formTarea.tipoApoyo === "texto" && (
                   <div className="md:col-span-2">
-                    <label className="block font-semibold mb-2">
-                      Texto de apoyo
-                    </label>
+                    <label className="block font-semibold mb-2">Texto de apoyo</label>
                     <textarea
                       name="textoApoyo"
                       value={formTarea.textoApoyo}
@@ -3391,9 +3866,7 @@ export default function CursoDetalleAdmin() {
                 )}
                 {formTarea.tipoApoyo === "archivo" && (
                   <div className="md:col-span-2">
-                    <label className="block font-semibold mb-2">
-                      Archivo de apoyo
-                    </label>
+                    <label className="block font-semibold mb-2">Archivo de apoyo</label>
                     <input
                       type="file"
                       name="archivoApoyo"
@@ -3404,9 +3877,7 @@ export default function CursoDetalleAdmin() {
                 )}
                 {formTarea.tipoApoyo === "video" && (
                   <div className="md:col-span-2">
-                    <label className="block font-semibold mb-2">
-                      Video de apoyo
-                    </label>
+                    <label className="block font-semibold mb-2">Video de apoyo</label>
                     <input
                       type="file"
                       name="videoApoyo"
@@ -3444,12 +3915,9 @@ export default function CursoDetalleAdmin() {
               <p className="text-gray-500">Cargando tareas...</p>
             ) : tareas.length === 0 ? (
               <div className="border border-dashed border-gray-300 rounded-2xl p-8 text-center">
-                <p className="text-gray-700 font-medium">
-                  No hay tareas registradas
-                </p>
+                <p className="text-gray-700 font-medium">No hay tareas registradas</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Crea la primera tarea de este curso desde el botón “Nueva
-                  tarea”.
+                  Crea la primera tarea de este curso desde el botón “Nueva tarea”.
                 </p>
               </div>
             ) : (
@@ -3465,13 +3933,10 @@ export default function CursoDetalleAdmin() {
                   <div className="space-y-4">
                     {tareasOrdenadas.map((tarea) => {
                       const abierta = !!tareasAbiertas[tarea.id];
-                      const estadoFecha = obtenerEstadoVencimiento(
-                        tarea.fecha_limite,
-                      );
-                      const indicadorEvaluacion =
-                        obtenerIndicadorEvaluacionTarea(tarea);
+                      const estadoFecha = obtenerEstadoVencimiento(tarea.fecha_limite);
+                      const indicadorEvaluacion = obtenerIndicadorEvaluacionTarea(tarea);
 
-                      return (
+return (
                         <SortableTareaItem key={tarea.id} tarea={tarea}>
                           <div
                             className={`overflow-hidden rounded-2xl border shadow-sm transition ${tarea.revisada ? "border-emerald-200 bg-emerald-50/60" : "border-gray-200 bg-white"}`}
@@ -3556,17 +4021,132 @@ export default function CursoDetalleAdmin() {
                               </div>
                             </div>
 
-                            {abierta && (
-                              <div className="border-t bg-white px-4 py-4 md:px-5 md:py-5 space-y-4">
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-700 mb-2">
-                                    Descripción
-                                  </p>
-                                  <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700">
-                                    {tarea.descripcion || "Sin descripción"}
-                                  </div>
+                            <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-500">
+                              <span>
+                                <strong>Inicio:</strong> {formatearFecha(tarea.fecha_inicio)}
+                              </span>
+                              <span>
+                                <strong>Límite:</strong> {formatearFecha(tarea.fecha_limite)}
+                              </span>
+                            </div>
+
+                            {indicadorEvaluacion && (
+                              <div className="mt-3">
+                                <span
+                                  className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${indicadorEvaluacion.clase}`}
+                                >
+                                  {indicadorEvaluacion.texto}
+                                </span>
+                              </div>
+                            )}
+
+                          </div>
+
+
+                          <div className="flex items-center gap-3">
+                            {tarea.calificable && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirConfigTarea(tarea);
+                                }}
+                                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 transition"
+                                title="Configurar nota de la tarea"
+                              >
+                                <Settings className="w-4 h-4" />
+                              </button>
+                            )}
+
+                            <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1">
+                              {tarea.tipo_entrega || "Sin tipo"}
+                            </span>
+
+                            <span className="text-lg text-gray-500">
+                              {abierta ? "▲" : "▼"}
+                            </span>
+                          </div>
+                        </div>
+
+                      {abierta && (
+                        <div className="border-t bg-white px-4 py-4 md:px-5 md:py-5 space-y-4">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-2">
+                              Descripción
+                            </p>
+                            <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700">
+                              {tarea.descripcion || "Sin descripción"}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="rounded-xl border bg-gray-50 p-3">
+                              <p className="text-gray-500">Tipo de entrega</p>
+                              <p className="font-medium text-gray-800">
+                                {tarea.tipo_entrega || "-"}
+                              </p>
+                            </div>
+
+                            <div className="rounded-xl border bg-gray-50 p-3">
+                              <p className="text-gray-500">Tipo de apoyo</p>
+                              <p className="font-medium text-gray-800 capitalize">
+                                {tarea.tipo_apoyo || "ninguno"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {(tarea.texto_apoyo ||
+                            tarea.archivo_apoyo_url ||
+                            tarea.video_apoyo_url) && (
+                            <div>
+                              <p className="text-sm font-semibold text-gray-700 mb-2">
+                                Material de apoyo
+                              </p>
+
+                              {tarea.texto_apoyo && (
+                                <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700 mb-3 whitespace-pre-line">
+                                  {tarea.texto_apoyo}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              )}
+
+                              <div className="flex flex-wrap gap-2">
+                                {tarea.archivo_apoyo_url && (
+                                  <a
+                                    href={tarea.archivo_apoyo_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                  >
+                                    Ver archivo de apoyo
+                                  </a>
+                                )}
+
+                                {tarea.video_apoyo_url && (
+                                  <a
+                                    href={tarea.video_apoyo_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                  >
+                                    Ver video de apoyo
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {tarea.calificable && (
+                            <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4">
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-violet-800">
+                                    Configuración de nota de la tarea
+                                  </p>
+                                  <p className="text-xs text-violet-700 mt-1">
+                                    Vincula esta tarea con una evaluación del tipo tarea.
+                                  </p>
+                                </div>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                   <div className="rounded-xl border bg-gray-50 p-3">
                                     <p className="text-gray-500">
                                       Tipo de entrega
@@ -3815,19 +4395,25 @@ export default function CursoDetalleAdmin() {
                                                   <td className="px-3 py-3">
                                                     <button
                                                       type="button"
-                                                      disabled={
-                                                        !!guardandoNotaEntrega[
-                                                          fila.idmatricula
-                                                        ]
-                                                      }
-                                                      onClick={() =>
-                                                        guardarNotaEntrega(fila)
-                                                      }
+                                                      onClick={() => {
+                                                        setEntregaSeleccionada({
+                                                          alumno: `${fila.nombre} ${fila.apellido}`,
+                                                          contenido: fila.comentario,
+                                                          tipo: "texto",
+                                                        });
+                                                        setModalEntregaOpen(true);
+                                                      }}
+                                                      className="inline-flex items-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
+                                                    >
+                                                      Ver texto
+                                                    </button>
+<button
+                                                      type="button"
+                                                      disabled={!!guardandoNotaEntrega[fila.idmatricula]}
+                                                      onClick={() => guardarNotaEntrega(fila)}
                                                       className="rounded-xl bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 disabled:opacity-60"
                                                     >
-                                                      {guardandoNotaEntrega[
-                                                        fila.idmatricula
-                                                      ]
+                                                      {guardandoNotaEntrega[fila.idmatricula]
                                                         ? "Guardando..."
                                                         : "Guardar"}
                                                     </button>
@@ -3864,21 +4450,51 @@ export default function CursoDetalleAdmin() {
                                     Eliminar
                                   </button>
                                 </div>
+                              )
+                            ) : (
+                              <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+                                Abre esta tarea para cargar entregas y calificaciones.
                               </div>
                             )}
                           </div>
-                        </SortableTareaItem>
-                      );
-                    })}
-                  </div>
-                </SortableContext>
-              </DndContext>
+
+                          <div className="flex flex-wrap justify-end gap-2 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => cambiarEstadoRevision(tarea)}
+                              className={`px-4 py-2 rounded-xl text-sm font-medium ${
+                                tarea.revisada
+                                  ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                  : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                              }`}
+                            >
+                              {tarea.revisada
+                                ? "Marcar como pendiente"
+                                : "Marcar como revisada"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => eliminarTareaCurso(tarea.id)}
+                              className="px-4 py-2 rounded-xl text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </SortableTareaItem>
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
             )}
           </div>
         </div>
       )}
 
-      {/* TABS CONTENT: MÓDULOS */}
       {tabActiva === "modulos" && (
         <div className="space-y-6">
           <div className="rounded-[28px] border border-slate-200/80 bg-white/95 p-6 md:p-7 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.28)]">
@@ -3897,8 +4513,8 @@ export default function CursoDetalleAdmin() {
                     Módulos del curso
                   </h3>
                   <p className="text-sm md:text-base text-slate-500 mt-2">
-                    Organiza el curso por módulos, submódulos, lecciones y
-                    materiales en una vista más clara, moderna y profesional.
+                    Organiza el curso por módulos, submódulos, lecciones y materiales en una
+                    vista más clara, moderna y profesional.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -3926,9 +4542,7 @@ export default function CursoDetalleAdmin() {
                 className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 md:p-6 mb-6"
               >
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Título del módulo
-                  </label>
+                  <label className="block font-semibold mb-2">Título del módulo</label>
                   <input
                     type="text"
                     name="titulo"
@@ -3939,9 +4553,7 @@ export default function CursoDetalleAdmin() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Descripción
-                  </label>
+                  <label className="block font-semibold mb-2">Descripción</label>
                   <input
                     type="text"
                     name="descripcion"
@@ -3970,12 +4582,10 @@ export default function CursoDetalleAdmin() {
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-white text-2xl shadow-lg">
                   📚
                 </div>
-                <p className="text-lg font-bold text-slate-800">
-                  No hay módulos registrados
-                </p>
+                <p className="text-lg font-bold text-slate-800">No hay módulos registrados</p>
                 <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
-                  Crea el primer módulo para comenzar a estructurar el curso con
-                  submódulos, lecciones y materiales.
+                  Crea el primer módulo para comenzar a estructurar el curso con submódulos,
+                  lecciones y materiales.
                 </p>
               </div>
             ) : (
@@ -3990,2197 +4600,3275 @@ export default function CursoDetalleAdmin() {
                 >
                   <div className="space-y-5">
                     {modulosOrdenados.map((modulo, index) => {
-                      const abierto = !!mostrarLecciones[modulo.id];
-                      const tareasDelModulo = tareas.filter(
-                        (t) => Number(t.idmodulo) === Number(modulo.id),
-                      );
+                  const abierto = !!mostrarLecciones[modulo.id];
+                  const tareasDelModulo = tareas.filter(
+                    (t) => Number(t.idmodulo) === Number(modulo.id)
+                  );
 
-                      return (
-                        <SortableModuloItem key={modulo.id} modulo={modulo}>
-                          <div className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.22)] transition hover:shadow-[0_24px_50px_-24px_rgba(15,23,42,0.30)]">
-                            <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-blue-600 via-violet-500 to-cyan-400" />
-                            <div className="px-5 md:px-6 py-5 bg-gradient-to-r from-slate-50 via-white to-blue-50/70 border-b border-slate-200">
-                              <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
-                                <div className="flex-1">
-                                  <div className="flex flex-wrap items-center gap-3">
-                                    <span className="inline-flex items-center rounded-full bg-blue-600 text-white text-xs font-bold px-3 py-1.5 shadow-sm">
-                                      Módulo {index + 1}
-                                    </span>
-                                    <h4 className="text-xl md:text-2xl font-black tracking-tight text-slate-900">
-                                      {modulo.titulo}
-                                    </h4>
-                                  </div>
-                                  {modulo.descripcion && (
-                                    <p className="text-sm md:text-base text-slate-500 mt-3 max-w-3xl">
-                                      {modulo.descripcion}
-                                    </p>
-                                  )}
-                                  <div className="mt-4 flex flex-wrap gap-2">
-                                    <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs font-semibold">
-                                      {modulo.submodulos?.length || 0} submódulo
-                                      {(modulo.submodulos?.length || 0) === 1
-                                        ? ""
-                                        : "s"}
-                                    </span>
-                                    <span className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
-                                      {tareasDelModulo.length} tarea
-                                      {tareasDelModulo.length === 1 ? "" : "s"}
-                                    </span>
-                                  </div>
+return (
+            <SortableModuloItem key={modulo.id} modulo={modulo}>
+              <div className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.22)] transition hover:shadow-[0_24px_50px_-24px_rgba(15,23,42,0.30)]">
+                <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-blue-600 via-violet-500 to-cyan-400" />
+                <div className="px-5 md:px-6 py-5 bg-gradient-to-r from-slate-50 via-white to-blue-50/70 border-b border-slate-200">
+                  <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="inline-flex items-center rounded-full bg-blue-600 text-white text-xs font-bold px-3 py-1.5 shadow-sm">
+                          Módulo {index + 1}
+                        </span>
+                        <h4 className="text-xl md:text-2xl font-black tracking-tight text-slate-900">
+                          {modulo.titulo}
+                        </h4>
+                      </div>
+                      {modulo.descripcion && (
+                        <p className="text-sm md:text-base text-slate-500 mt-3 max-w-3xl">
+                          {modulo.descripcion}
+                        </p>
+                      )}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs font-semibold">
+                          {modulo.submodulos?.length || 0} submódulo
+                          {(modulo.submodulos?.length || 0) === 1
+                            ? ""
+                            : "s"}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
+                          {tareasDelModulo.length} tarea
+                          {tareasDelModulo.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
 
-                                  {tareasDelModulo.length > 0 && (
-                                    <div className="mt-5">
-                                      <p className="text-sm font-semibold text-slate-600 mb-3">
-                                        Tareas vinculadas al módulo
-                                      </p>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {tareasDelModulo.map((tarea) => (
-                                          <div
-                                            key={tarea.id}
-                                            className="rounded-2xl border border-violet-200 bg-gradient-to-br from-white to-violet-50 p-4"
-                                          >
-                                            <div className="flex items-start justify-between gap-3">
-                                              <div>
-                                                <div className="font-semibold text-slate-800">
-                                                  {tarea.titulo}
-                                                </div>
-                                                <div className="text-slate-500 text-xs mt-1">
-                                                  Límite:{" "}
-                                                  {formatearFecha(
-                                                    tarea.fecha_limite,
-                                                  )}
-                                                </div>
-                                              </div>
-                                              <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-[11px] font-semibold">
-                                                {tarea.tipo_entrega || "Tarea"}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
+                      {tareasDelModulo.length > 0 && (
+                        <div className="mt-5">
+                          <p className="text-sm font-semibold text-slate-600 mb-3">
+                            Tareas vinculadas al módulo
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {tareasDelModulo.map((tarea) => (
+                              <div
+                                key={tarea.id}
+                                className="rounded-2xl border border-violet-200 bg-gradient-to-br from-white to-violet-50 p-4"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div className="font-semibold text-slate-800">
+                                      {tarea.titulo}
                                     </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      toggleFormSubModulo(modulo.id)
-                                    }
-                                    className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
-                                  >
-                                    + Submódulo
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      abrirFormTareaDesdeModulo(modulo)
-                                    }
-                                    className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition shadow-sm"
-                                  >
-                                    + Tarea
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      toggleLeccionesModulo(modulo.id)
-                                    }
-                                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
-                                  >
-                                    {abierto ? "Ocultar" : "Ver contenido"}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => iniciarEdicionModulo(modulo)}
-                                    className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
-                                  >
-                                    Editar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      eliminarModuloCurso(modulo.id)
-                                    }
-                                    className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
-                                  >
-                                    Eliminar
-                                  </button>
+                                    <div className="text-slate-500 text-xs mt-1">
+                                      Límite:{" "}
+                                      {formatearFecha(
+                                        tarea.fecha_limite,
+                                      )}
+                                    </div>
+                                  </div>
+                                  <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-[11px] font-semibold">
+                                    {tarea.tipo_entrega || "Tarea"}
+                                  </span>
                                 </div>
                               </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          toggleFormSubModulo(modulo.id)
+                        }
+                        className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+                      >
+                        + Submódulo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          abrirFormTareaDesdeModulo(modulo)
+                        }
+                        className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition shadow-sm"
+                      >
+                        + Tarea
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          toggleLeccionesModulo(modulo.id)
+                        }
+                        className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                      >
+                        {abierto ? "Ocultar" : "Ver contenido"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => iniciarEdicionModulo(modulo)}
+                        className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          eliminarModuloCurso(modulo.id)
+                        }
+                        className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
 
-                              {mostrarFormSubModulo[modulo.id] && (
-                                <form
-                                  onSubmit={(e) =>
-                                    guardarSubModuloCurso(e, modulo.id)
-                                  }
-                                  className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
-                                >
-                                  <div>
-                                    <label className="block font-semibold mb-2">
-                                      Título del submódulo
-                                    </label>
-                                    <input
-                                      type="text"
-                                      name="titulo"
-                                      value={
-                                        formSubModulo[modulo.id]?.titulo || ""
-                                      }
-                                      onChange={(e) =>
-                                        handleChangeSubModulo(modulo.id, e)
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                      placeholder="Ej. Submódulo 1.1"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block font-semibold mb-2">
-                                      Descripción
-                                    </label>
-                                    <input
-                                      type="text"
-                                      name="descripcion"
-                                      value={
-                                        formSubModulo[modulo.id]?.descripcion ||
-                                        ""
-                                      }
-                                      onChange={(e) =>
-                                        handleChangeSubModulo(modulo.id, e)
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                      placeholder="Descripción breve"
-                                    />
-                                  </div>
-                                  <div className="md:col-span-2 flex justify-end">
-                                    <button
-                                      type="submit"
-                                      disabled={guardandoSubModulo}
-                                      className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
-                                    >
-                                      {guardandoSubModulo
-                                        ? "Guardando..."
-                                        : "Guardar submódulo"}
-                                    </button>
-                                  </div>
-                                </form>
-                              )}
+                  {mostrarFormSubModulo[modulo.id] && (
+                    <form
+                      onSubmit={(e) =>
+                        guardarSubModuloCurso(e, modulo.id)
+                      }
+                      className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                    >
+                      <div>
+                        <label className="block font-semibold mb-2">
+                          Título del submódulo
+                        </label>
+                        <input
+                          type="text"
+                          name="titulo"
+                          value={
+                            formSubModulo[modulo.id]?.titulo || ""
+                          }
+                          onChange={(e) =>
+                            handleChangeSubModulo(modulo.id, e)
+                          }
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                          placeholder="Ej. Submódulo 1.1"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold mb-2">
+                          Descripción
+                        </label>
+                        <input
+                          type="text"
+                          name="descripcion"
+                          value={
+                            formSubModulo[modulo.id]?.descripcion ||
+                            ""
+                          }
+                          onChange={(e) =>
+                            handleChangeSubModulo(modulo.id, e)
+                          }
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                          placeholder="Descripción breve"
+                        />
+                      </div>
+                      <div className="md:col-span-2 flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={guardandoSubModulo}
+                          className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                        >
+                          {guardandoSubModulo
+                            ? "Guardando..."
+                            : "Guardar submódulo"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
 
-                              {editandoModuloId === modulo.id && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5">
-                                  <div>
-                                    <label className="block font-semibold mb-2">
-                                      Editar título
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={formEditarModulo.titulo}
-                                      onChange={(e) =>
-                                        setFormEditarModulo((prev) => ({
-                                          ...prev,
-                                          titulo: e.target.value,
-                                        }))
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block font-semibold mb-2">
-                                      Editar descripción
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={formEditarModulo.descripcion}
-                                      onChange={(e) =>
-                                        setFormEditarModulo((prev) => ({
-                                          ...prev,
-                                          descripcion: e.target.value,
-                                        }))
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                    />
-                                  </div>
-                                  <div className="md:col-span-2 flex justify-end gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={cancelarEdicionModulo}
-                                      className="px-4 py-2 rounded-xl border hover:bg-gray-50"
-                                    >
-                                      Cancelar
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        guardarEdicionModulo(modulo.id)
-                                      }
-                                      className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700"
-                                    >
-                                      Guardar cambios
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
+                  {editandoModuloId === modulo.id && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5">
+                      <div>
+                        <label className="block font-semibold mb-2">
+                          Editar título
+                        </label>
+                        <input
+                          type="text"
+                          value={formEditarModulo.titulo}
+                          onChange={(e) =>
+                            setFormEditarModulo((prev) => ({
+                              ...prev,
+                              titulo: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold mb-2">
+                          Editar descripción
+                        </label>
+                        <input
+                          type="text"
+                          value={formEditarModulo.descripcion}
+                          onChange={(e) =>
+                            setFormEditarModulo((prev) => ({
+                              ...prev,
+                              descripcion: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                        />
+                      </div>
+                      <div className="md:col-span-2 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={cancelarEdicionModulo}
+                          className="px-4 py-2 rounded-xl border hover:bg-gray-50"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            guardarEdicionModulo(modulo.id)
+                          }
+                          className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700"
+                        >
+                          Guardar cambios
+                        </button>
+                      </div>
+                    </div>
+                  )}
                             </div>
 
-                            {abierto && (
-                              <div className="p-5 space-y-4">
-                                {modulo.submodulos?.length === 0 ? (
-                                  <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
-                                    <p className="text-gray-700 font-medium">
-                                      Este módulo no tiene submódulos
-                                    </p>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                      Agrega el primer submódulo para empezar a
-                                      organizar sesiones y materiales.
-                                    </p>
-                                  </div>
-                                ) : (
-                                  <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={(event) =>
-                                      handleDragEndSubmodulos(event, modulo)
-                                    }
-                                  >
-                                    <SortableContext
-                                      items={(modulo.submodulos || []).map(
-                                        (s) => `submodulo-${s.id}`,
-                                      )}
-                                      strategy={verticalListSortingStrategy}
-                                    >
-                                      {(modulo.submodulos || []).map(
-                                        (submodulo, idxSub) => (
-                                          <SortableSubModuloItem
-                                            key={submodulo.id}
-                                            submodulo={submodulo}
-                                          >
-                                            <div className="relative ml-0 md:ml-6 rounded-[24px] border border-slate-200 bg-slate-50/80 overflow-hidden">
-                                              <div className="px-4 md:px-5 py-4 bg-white border-b border-slate-200">
-                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
-                                                  <div>
-                                                    <div className="flex items-center gap-3 flex-wrap">
-                                                      <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5">
-                                                        Submódulo {index + 1}.
-                                                        {idxSub + 1}
-                                                      </span>
-                                                      <h5 className="text-lg font-bold text-slate-800">
-                                                        {submodulo.titulo}
-                                                      </h5>
-                                                    </div>
-                                                    {submodulo.descripcion && (
-                                                      <p className="text-sm text-slate-500 mt-2">
-                                                        {submodulo.descripcion}
-                                                      </p>
-                                                    )}
-                                                  </div>
-                                                  <div className="flex flex-wrap gap-2">
-                                                    <button
-                                                      type="button"
-                                                      onClick={() =>
-                                                        toggleFormLeccion(
-                                                          submodulo.id,
-                                                        )
-                                                      }
-                                                      className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
-                                                    >
-                                                      + Lección
-                                                    </button>
-                                                    <button
-                                                      type="button"
-                                                      onClick={() =>
-                                                        iniciarEdicionModulo(
-                                                          submodulo,
-                                                        )
-                                                      }
-                                                      className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
-                                                    >
-                                                      Editar
-                                                    </button>
-                                                    <button
-                                                      type="button"
-                                                      onClick={() =>
-                                                        eliminarModuloCurso(
-                                                          submodulo.id,
-                                                        )
-                                                      }
-                                                      className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
-                                                    >
-                                                      Eliminar
-                                                    </button>
-                                                  </div>
-                                                </div>
+                            {modulo.descripcion && (
+                              <p className="text-sm md:text-base text-slate-500 mt-3 max-w-3xl">
+                                {modulo.descripcion}
+                              </p>
+                            )}
 
-                                                {mostrarFormLeccion[
-                                                  submodulo.id
-                                                ] && (
-                                                  <form
-                                                    onSubmit={(e) =>
-                                                      guardarLeccionCurso(
-                                                        e,
-                                                        submodulo.id,
-                                                      )
-                                                    }
-                                                    className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
-                                                  >
-                                                    <div>
-                                                      <label className="block font-semibold mb-2">
-                                                        Título de la lección
-                                                      </label>
-                                                      <input
-                                                        type="text"
-                                                        name="titulo"
-                                                        value={
-                                                          formLeccion[
-                                                            submodulo.id
-                                                          ]?.titulo || ""
-                                                        }
-                                                        onChange={(e) =>
-                                                          handleChangeLeccion(
-                                                            submodulo.id,
-                                                            e,
-                                                          )
-                                                        }
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                        placeholder="Ej. Lección 1 - Introducción"
-                                                      />
-                                                    </div>
-                                                    <div>
-                                                      <label className="block font-semibold mb-2">
-                                                        Descripción
-                                                      </label>
-                                                      <input
-                                                        type="text"
-                                                        name="descripcion"
-                                                        value={
-                                                          formLeccion[
-                                                            submodulo.id
-                                                          ]?.descripcion || ""
-                                                        }
-                                                        onChange={(e) =>
-                                                          handleChangeLeccion(
-                                                            submodulo.id,
-                                                            e,
-                                                          )
-                                                        }
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                        placeholder="Descripción breve"
-                                                      />
-                                                    </div>
-                                                    <div className="md:col-span-2 flex justify-end">
-                                                      <button
-                                                        type="submit"
-                                                        disabled={
-                                                          guardandoLeccion
-                                                        }
-                                                        className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
-                                                      >
-                                                        {guardandoLeccion
-                                                          ? "Guardando..."
-                                                          : "Guardar lección"}
-                                                      </button>
-                                                    </div>
-                                                  </form>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs font-semibold">
+                                {modulo.submodulos?.length || 0} submódulo{(modulo.submodulos?.length || 0) === 1 ? "" : "s"}
+                              </span>
+
+                              <span className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
+                                {tareasDelModulo.length} tarea{tareasDelModulo.length === 1 ? "" : "s"}
+                              </span>
+                            </div>
+
+                            {tareasDelModulo.length > 0 && (
+                              <div className="mt-5">
+                                <p className="text-sm font-semibold text-slate-600 mb-3">
+                                  Tareas vinculadas al módulo
+                                </p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {tareasDelModulo.map((tarea) => (
+                                    <div
+                                      key={tarea.id}
+                                      className="rounded-2xl border border-violet-200 bg-gradient-to-br from-white to-violet-50 p-4"
+                                    >
+{(modulo.submodulos || []).map(
+                                    (submodulo, idxSub) => (
+                                      <SortableSubModuloItem
+                                        key={submodulo.id}
+                                        submodulo={submodulo}
+                                      >
+                                        <div className="relative ml-0 md:ml-6 rounded-[24px] border border-slate-200 bg-slate-50/80 overflow-hidden">
+                                          <div className="px-4 md:px-5 py-4 bg-white border-b border-slate-200">
+                                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
+                                              <div>
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                  <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5">
+                                                    Submódulo {index + 1}.
+                                                    {idxSub + 1}
+                                                  </span>
+                                                  <h5 className="text-lg font-bold text-slate-800">
+                                                    {submodulo.titulo}
+                                                  </h5>
+                                                </div>
+                                                {submodulo.descripcion && (
+                                                  <p className="text-sm text-slate-500 mt-2">
+                                                    {submodulo.descripcion}
+                                                  </p>
                                                 )}
                                               </div>
+                                              <div className="flex flex-wrap gap-2">
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    toggleFormLeccion(
+                                                      submodulo.id,
+                                                    )
+                                                  }
+                                                  className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+                                                >
+                                                  + Lección
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    iniciarEdicionModulo(
+                                                      submodulo,
+                                                    )
+                                                  }
+                                                  className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                                                >
+                                                  Editar
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    eliminarModuloCurso(
+                                                      submodulo.id,
+                                                    )
+                                                  }
+                                                  className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                                                >
+                                                  Eliminar
+                                                </button>
+                                              </div>
+                                            </div>
 
-                                              <div className="p-4 space-y-4">
-                                                {submodulo.lecciones?.length ===
-                                                0 ? (
-                                                  <p className="text-sm text-gray-500">
-                                                    Este submódulo no tiene
-                                                    lecciones.
-                                                  </p>
-                                                ) : (
-                                                  <DndContext
-                                                    sensors={sensors}
-                                                    collisionDetection={
-                                                      closestCenter
+                                            {mostrarFormLeccion[
+                                              submodulo.id
+                                            ] && (
+                                              <form
+                                                onSubmit={(e) =>
+                                                  guardarLeccionCurso(
+                                                    e,
+                                                    submodulo.id,
+                                                  )
+                                                }
+                                                className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                                              >
+                                                <div>
+                                                  <label className="block font-semibold mb-2">
+                                                    Título de la lección
+                                                  </label>
+                                                  <input
+                                                    type="text"
+                                                    name="titulo"
+                                                    value={
+                                                      formLeccion[
+                                                        submodulo.id
+                                                      ]?.titulo || ""
                                                     }
-                                                    onDragEnd={(event) =>
-                                                      handleDragEndLecciones(
-                                                        event,
-                                                        modulo.id,
-                                                        submodulo,
+                                                    onChange={(e) =>
+                                                      handleChangeLeccion(
+                                                        submodulo.id,
+                                                        e,
                                                       )
                                                     }
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                    placeholder="Ej. Lección 1 - Introducción"
+                                                  />
+                                                </div>
+                                                <div>
+                                                  <label className="block font-semibold mb-2">
+                                                    Descripción
+                                                  </label>
+                                                  <input
+                                                    type="text"
+                                                    name="descripcion"
+                                                    value={
+                                                      formLeccion[
+                                                        submodulo.id
+                                                      ]?.descripcion || ""
+                                                    }
+                                                    onChange={(e) =>
+                                                      handleChangeLeccion(
+                                                        submodulo.id,
+                                                        e,
+                                                      )
+                                                    }
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                    placeholder="Descripción breve"
+                                                  />
+                                                </div>
+                                                <div className="md:col-span-2 flex justify-end">
+                                                  <button
+                                                    type="submit"
+                                                    disabled={
+                                                      guardandoLeccion
+                                                    }
+                                                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
                                                   >
-                                                    <SortableContext
-                                                      items={(
-                                                        submodulo.lecciones ||
-                                                        []
-                                                      ).map(
-                                                        (l) =>
-                                                          `leccion-${l.id}`,
-                                                      )}
-                                                      strategy={
-                                                        verticalListSortingStrategy
-                                                      }
-                                                    >
-                                                      {(
-                                                        submodulo.lecciones ||
-                                                        []
-                                                      ).map(
-                                                        (
-                                                          leccion,
-                                                          idxLeccion,
-                                                        ) => {
-                                                          const abiertaMateriales =
-                                                            !!mostrarMateriales[
-                                                              leccion.id
-                                                            ];
-                                                          const formMat =
-                                                            formMaterial[
-                                                              leccion.id
-                                                            ] || {
-                                                              titulo: "",
-                                                              tipo: "texto",
-                                                              contenido_texto:
-                                                                "",
-                                                              video_url: "",
-                                                              enlace_url: "",
-                                                              file: null,
-                                                            };
+                                                    {guardandoLeccion
+                                                      ? "Guardando..."
+                                                      : "Guardar lección"}
+                                                  </button>
+                                                </div>
+                                              </form>
+                                            )}
+                                          </div>
 
-                                                          return (
-                                                            <SortableLeccionItem
-                                                              key={leccion.id}
-                                                              leccion={leccion}
-                                                            >
-                                                              <div className="relative ml-0 md:ml-8 rounded-[20px] border border-white bg-white overflow-hidden shadow-sm">
-                                                                <div className="px-4 py-4 bg-white">
-                                                                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
-                                                                    <div>
-                                                                      <div className="flex items-center gap-3 flex-wrap">
-                                                                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5">
-                                                                          Lección{" "}
-                                                                          {index +
-                                                                            1}
-                                                                          .
-                                                                          {idxSub +
-                                                                            1}
-                                                                          .
-                                                                          {idxLeccion +
-                                                                            1}
-                                                                        </span>
-                                                                        <h5 className="text-lg font-bold text-slate-800">
-                                                                          {
-                                                                            leccion.titulo
-                                                                          }
-                                                                        </h5>
-                                                                      </div>
-                                                                      {leccion.descripcion && (
-                                                                        <p className="text-sm text-slate-500 mt-2">
-                                                                          {
-                                                                            leccion.descripcion
-                                                                          }
-                                                                        </p>
-                                                                      )}
-                                                                    </div>
-                                                                    <div className="flex flex-wrap gap-2">
-                                                                      <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                          toggleFormMaterial(
-                                                                            leccion.id,
-                                                                          )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
-                                                                      >
-                                                                        +
-                                                                        Material
-                                                                      </button>
-                                                                      <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                          toggleFormExamen(
-                                                                            leccion.id,
-                                                                          )
-                                                                        }
-                                                                        disabled={
-                                                                          !!examenEditandoId &&
+                                          <div className="p-4 space-y-4">
+                                            {submodulo.lecciones?.length ===
+                                            0 ? (
+                                              <p className="text-sm text-gray-500">
+                                                Este submódulo no tiene
+                                                lecciones.
+                                              </p>
+                                            ) : (
+                                              <DndContext
+                                                sensors={sensors}
+                                                collisionDetection={
+                                                  closestCenter
+                                                }
+                                                onDragEnd={(event) =>
+                                                  handleDragEndLecciones(
+                                                    event,
+                                                    modulo.id,
+                                                    submodulo,
+                                                  )
+                                                }
+                                              >
+                                                <SortableContext
+                                                  items={(
+                                                    submodulo.lecciones ||
+                                                    []
+                                                  ).map(
+                                                    (l) =>
+                                                      `leccion-${l.id}`,
+                                                  )}
+                                                  strategy={
+                                                    verticalListSortingStrategy
+                                                  }
+                                                >
+                                                  {(
+                                                    submodulo.lecciones ||
+                                                    []
+                                                  ).map(
+                                                    (
+                                                      leccion,
+                                                      idxLeccion,
+                                                    ) => {
+                                                      const abiertaMateriales =
+                                                        !!mostrarMateriales[
+                                                          leccion.id
+                                                        ];
+                                                      const formMat =
+                                                        formMaterial[
+                                                          leccion.id
+                                                        ] || {
+                                                          titulo: "",
+                                                          tipo: "texto",
+                                                          contenido_texto:
+                                                            "",
+                                                          video_url: "",
+                                                          enlace_url: "",
+                                                          file: null,
+                                                        };
+
+                                                      return (
+                                                        <SortableLeccionItem
+                                                          key={leccion.id}
+                                                          leccion={leccion}
+                                                        >
+                                                          <div className="relative ml-0 md:ml-8 rounded-[20px] border border-white bg-white overflow-hidden shadow-sm">
+                                                            <div className="px-4 py-4 bg-white">
+                                                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
+                                                                <div>
+                                                                  <div className="flex items-center gap-3 flex-wrap">
+                                                                    <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5">
+                                                                      Lección{" "}
+                                                                      {index +
+                                                                        1}
+                                                                      .
+                                                                      {idxSub +
+                                                                        1}
+                                                                      .
+                                                                      {idxLeccion +
+                                                                        1}
+                                                                    </span>
+                                                                    <h5 className="text-lg font-bold text-slate-800">
+                                                                      {
+                                                                        leccion.titulo
+                                                                      }
+                                                                    </h5>
+                                                                  </div>
+                                                                  {leccion.descripcion && (
+                                                                    <p className="text-sm text-slate-500 mt-2">
+                                                                      {
+                                                                        leccion.descripcion
+                                                                      }
+                                                                    </p>
+                                                                  )}
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                  <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                      toggleFormMaterial(
+                                                                        leccion.id,
+                                                                      )
+                                                                    }
+                                                                    className="px-3 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+                                                                  >
+                                                                    +
+                                                                    Material
+                                                                  </button>
+                                                                  <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                      toggleFormExamen(
+                                                                        leccion.id,
+                                                                      )
+                                                                    }
+                                                                    disabled={
+                                                                      !!examenEditandoId &&
+                                                                      Number(
+                                                                        leccionExamenEditandoId,
+                                                                      ) !==
+                                                                      Number(
+                                                                        leccion.id,
+                                                                      )
+                                                                    }
+                                                                    className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm disabled:opacity-50"
+                                                                  >
+                                                                    {mostrarFormExamen[
+                                                                      leccion
+                                                                        .id
+                                                                    ]
+                                                                      ? "Cerrar examen"
+                                                                      : "+ Examen"}
+                                                                  </button>
+                                                                  <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                      toggleMaterialesLeccion(
+                                                                        leccion.id,
+                                                                      )
+                                                                    }
+                                                                    className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                  >
+                                                                    {abiertaMateriales
+                                                                      ? "Ocultar materiales"
+                                                                      : "Ver materiales"}
+                                                                  </button>
+                                                                  <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                      iniciarEdicionLeccion(
+                                                                        leccion,
+                                                                      )
+                                                                    }
+                                                                    className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                  >
+                                                                    Editar
+                                                                  </button>
+                                                                  <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                      eliminarLeccionCurso(
+                                                                        leccion.id,
+                                                                      )
+                                                                    }
+                                                                    className="px-3 py-2 rounded-xl bg-red-100 text-red-700 hover:bg-red-200 text-sm"
+                                                                  >
+                                                                    Eliminar
+                                                                  </button>
+                                                                </div>
+                                                              </div>
+
+                                                              {leccion
+                                                                .examenes
+                                                                ?.length >
+                                                                0 && (
+                                                                <div className="mt-4 space-y-3">
+                                                                  <p className="text-sm font-semibold text-slate-700">
+                                                                    Exámenes
+                                                                    de la
+                                                                    lección
+                                                                  </p>
+                                                                  {leccion.examenes
+                                                                    .filter(
+                                                                      (
+                                                                        examen,
+                                                                      ) => {
+                                                                        if (
+                                                                          examenEditandoId &&
                                                                           Number(
                                                                             leccionExamenEditandoId,
-                                                                          ) !==
+                                                                          ) ===
+                                                                          Number(
+                                                                            leccion.id,
+                                                                          )
+                                                                        ) {
+                                                                          return (
                                                                             Number(
+                                                                              examen.id,
+                                                                            ) ===
+                                                                            Number(
+                                                                              examenEditandoId,
+                                                                            )
+                                                                          );
+                                                                        }
+                                                                        return true;
+                                                                      },
+                                                                    )
+                                                                    .map(
+                                                                      (
+                                                                        examen,
+                                                                        idxExamen,
+                                                                      ) => (
+                                                                        <div
+                                                                          key={
+                                                                            examen.id
+                                                                          }
+                                                                          className={`rounded-2xl border p-4 ${Number(examen.id) === Number(examenEditandoId) ? "border-amber-300 bg-amber-50" : "border-violet-200 bg-violet-50"}`}
+                                                                        >
+                                                                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                                            <div>
+                                                                              <div className="flex flex-wrap items-center gap-2">
+                                                                                <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
+                                                                                  Examen{" "}
+                                                                                  {idxExamen +
+                                                                                    1}
+                                                                                </span>
+                                                                                <h6 className="font-bold text-slate-800">
+                                                                                  {
+                                                                                    examen.titulo
+                                                                                  }
+                                                                                </h6>
+                                                                                {Number(
+                                                                                  examen.id,
+                                                                                ) ===
+                                                                                  Number(
+                                                                                    examenEditandoId,
+                                                                                  ) && (
+                                                                                  <span className="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
+                                                                                    Editando
+                                                                                    ahora
+                                                                                  </span>
+                                                                                )}
+                                                                              </div>
+                                                                              {examen.descripcion && (
+                                                                                <p className="text-sm text-slate-500 mt-2">
+                                                                                  {
+                                                                                    examen.descripcion
+                                                                                  }
+                                                                                </p>
+                                                                              )}
+                                                                              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                                                                <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                  {examen.total_preguntas ||
+                                                                                    0}{" "}
+                                                                                  preguntas
+                                                                                </span>
+                                                                                <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                  {examen.duracion_minutos ||
+                                                                                    30}{" "}
+                                                                                  min
+                                                                                </span>
+                                                                                <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                  {examen.intentos_permitidos ||
+                                                                                    1}{" "}
+                                                                                  intento(s)
+                                                                                </span>
+                                                                                <span
+                                                                                  className={`inline-flex rounded-full border px-3 py-1 ${examen.evaluacion_nombre ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}
+                                                                                >
+                                                                                  {examen.evaluacion_nombre
+                                                                                    ? `Evaluación asignada: ${examen.evaluacion_nombre}`
+                                                                                    : "Sin evaluación asignada"}
+                                                                                </span>
+                                                                              </div>
+                                                                            </div>
+                                                                            <div className="flex flex-wrap gap-2">
+                                                                              <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                  abrirConfigExamen(
+                                                                                    examen,
+                                                                                  )
+                                                                                }
+                                                                                className="rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+                                                                              >
+                                                                                Configurar
+                                                                                nota
+                                                                              </button>
+                                                                              <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                  cargarExamenParaEdicion(
+                                                                                    examen,
+                                                                                    leccion.id,
+                                                                                  )
+                                                                                }
+                                                                                disabled={
+                                                                                  guardandoExamen
+                                                                                }
+                                                                                className="rounded-2xl bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-200 disabled:opacity-60"
+                                                                              >
+                                                                                {Number(
+                                                                                  examen.id,
+                                                                                ) ===
+                                                                                  Number(
+                                                                                    examenEditandoId,
+                                                                                  )
+                                                                                  ? "Editando..."
+                                                                                  : "Editar examen"}
+                                                                              </button>
+                                                                              <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                  eliminarExamenLeccion(
+                                                                                    examen.id,
+                                                                                  )
+                                                                                }
+                                                                                className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
+                                                                              >
+                                                                                Eliminar
+                                                                              </button>
+                                                                            </div>
+                                                                          </div>
+                                                                        </div>
+                                                                      ),
+                                                                    )}
+                                                                </div>
+                                                              )}
+
+                                                              {mostrarFormExamen[
+                                                                leccion.id
+                                                              ] && (
+                                                                <form
+                                                                  onSubmit={(
+                                                                    e,
+                                                                  ) =>
+                                                                    guardarExamenLeccion(
+                                                                      e,
+                                                                      leccion.id,
+                                                                    )
+                                                                  }
+                                                                  className="mt-5 border-t pt-5 space-y-5"
+                                                                >
+                                                                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                                                      <div>
+                                                                        <p className="text-sm font-semibold text-amber-800">
+                                                                          {examenEditandoId
+                                                                            ? `Editando examen: ${formExamen[leccion.id]?.titulo || "Sin título"}`
+                                                                            : "Creando nuevo examen"}
+                                                                        </p>
+                                                                        <p className="text-xs text-amber-700 mt-1">
+                                                                          {examenEditandoId
+                                                                            ? "Mientras editas este examen, los demás exámenes de la lección se ocultan para evitar confusión."
+                                                                            : "Define la configuración general y luego agrega las preguntas."}
+                                                                        </p>
+                                                                      </div>
+                                                                      <div className="flex flex-wrap gap-2">
+                                                                        <button
+                                                                          type="button"
+                                                                          onClick={() =>
+                                                                            cancelarEdicionExamen(
                                                                               leccion.id,
                                                                             )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm disabled:opacity-50"
-                                                                      >
-                                                                        {mostrarFormExamen[
-                                                                          leccion
-                                                                            .id
-                                                                        ]
-                                                                          ? "Cerrar examen"
-                                                                          : "+ Examen"}
-                                                                      </button>
-                                                                      <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                          toggleMaterialesLeccion(
-                                                                            leccion.id,
-                                                                          )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
-                                                                      >
-                                                                        {abiertaMateriales
-                                                                          ? "Ocultar materiales"
-                                                                          : "Ver materiales"}
-                                                                      </button>
-                                                                      <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                          iniciarEdicionLeccion(
-                                                                            leccion,
-                                                                          )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
-                                                                      >
-                                                                        Editar
-                                                                      </button>
-                                                                      <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                          eliminarLeccionCurso(
-                                                                            leccion.id,
-                                                                          )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl bg-red-100 text-red-700 hover:bg-red-200 text-sm"
-                                                                      >
-                                                                        Eliminar
-                                                                      </button>
+                                                                          }
+                                                                          className="rounded-2xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100"
+                                                                        >
+                                                                          Cancelar
+                                                                        </button>
+                                                                      </div>
                                                                     </div>
                                                                   </div>
 
-                                                                  {leccion
-                                                                    .examenes
-                                                                    ?.length >
-                                                                    0 && (
-                                                                    <div className="mt-4 space-y-3">
-                                                                      <p className="text-sm font-semibold text-slate-700">
-                                                                        Exámenes
-                                                                        de la
-                                                                        lección
-                                                                      </p>
-                                                                      {leccion.examenes
-                                                                        .filter(
-                                                                          (
-                                                                            examen,
-                                                                          ) => {
-                                                                            if (
-                                                                              examenEditandoId &&
-                                                                              Number(
-                                                                                leccionExamenEditandoId,
-                                                                              ) ===
-                                                                                Number(
-                                                                                  leccion.id,
-                                                                                )
-                                                                            ) {
-                                                                              return (
-                                                                                Number(
-                                                                                  examen.id,
-                                                                                ) ===
-                                                                                Number(
-                                                                                  examenEditandoId,
-                                                                                )
-                                                                              );
-                                                                            }
-                                                                            return true;
-                                                                          },
-                                                                        )
-                                                                        .map(
-                                                                          (
-                                                                            examen,
-                                                                            idxExamen,
-                                                                          ) => (
-                                                                            <div
-                                                                              key={
-                                                                                examen.id
-                                                                              }
-                                                                              className={`rounded-2xl border p-4 ${Number(examen.id) === Number(examenEditandoId) ? "border-amber-300 bg-amber-50" : "border-violet-200 bg-violet-50"}`}
-                                                                            >
-                                                                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                                                                                <div>
-                                                                                  <div className="flex flex-wrap items-center gap-2">
-                                                                                    <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
-                                                                                      Examen{" "}
-                                                                                      {idxExamen +
-                                                                                        1}
-                                                                                    </span>
-                                                                                    <h6 className="font-bold text-slate-800">
-                                                                                      {
-                                                                                        examen.titulo
-                                                                                      }
-                                                                                    </h6>
-                                                                                    {Number(
-                                                                                      examen.id,
-                                                                                    ) ===
-                                                                                      Number(
-                                                                                        examenEditandoId,
-                                                                                      ) && (
-                                                                                      <span className="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
-                                                                                        Editando
-                                                                                        ahora
-                                                                                      </span>
-                                                                                    )}
-                                                                                  </div>
-                                                                                  {examen.descripcion && (
-                                                                                    <p className="text-sm text-slate-500 mt-2">
-                                                                                      {
-                                                                                        examen.descripcion
-                                                                                      }
-                                                                                    </p>
-                                                                                  )}
-                                                                                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                                                      {examen.total_preguntas ||
-                                                                                        0}{" "}
-                                                                                      preguntas
-                                                                                    </span>
-                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                                                      {examen.duracion_minutos ||
-                                                                                        30}{" "}
-                                                                                      min
-                                                                                    </span>
-                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
-                                                                                      {examen.intentos_permitidos ||
-                                                                                        1}{" "}
-                                                                                      intento(s)
-                                                                                    </span>
-                                                                                    <span
-                                                                                      className={`inline-flex rounded-full border px-3 py-1 ${examen.evaluacion_nombre ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}
-                                                                                    >
-                                                                                      {examen.evaluacion_nombre
-                                                                                        ? `Evaluación asignada: ${examen.evaluacion_nombre}`
-                                                                                        : "Sin evaluación asignada"}
-                                                                                    </span>
-                                                                                  </div>
-                                                                                </div>
-                                                                                <div className="flex flex-wrap gap-2">
-                                                                                  <button
-                                                                                    type="button"
-                                                                                    onClick={() =>
-                                                                                      abrirConfigExamen(
-                                                                                        examen,
-                                                                                      )
-                                                                                    }
-                                                                                    className="rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
-                                                                                  >
-                                                                                    Configurar
-                                                                                    nota
-                                                                                  </button>
-                                                                                  <button
-                                                                                    type="button"
-                                                                                    onClick={() =>
-                                                                                      cargarExamenParaEdicion(
-                                                                                        examen,
-                                                                                        leccion.id,
-                                                                                      )
-                                                                                    }
-                                                                                    disabled={
-                                                                                      guardandoExamen
-                                                                                    }
-                                                                                    className="rounded-2xl bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-700 hover:bg-yellow-200 disabled:opacity-60"
-                                                                                  >
-                                                                                    {Number(
-                                                                                      examen.id,
-                                                                                    ) ===
-                                                                                    Number(
-                                                                                      examenEditandoId,
-                                                                                    )
-                                                                                      ? "Editando..."
-                                                                                      : "Editar examen"}
-                                                                                  </button>
-                                                                                  <button
-                                                                                    type="button"
-                                                                                    onClick={() =>
-                                                                                      eliminarExamenLeccion(
-                                                                                        examen.id,
-                                                                                      )
-                                                                                    }
-                                                                                    className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
-                                                                                  >
-                                                                                    Eliminar
-                                                                                  </button>
-                                                                                </div>
-                                                                              </div>
-                                                                            </div>
-                                                                          ),
-                                                                        )}
-                                                                    </div>
-                                                                  )}
-
-                                                                  {mostrarFormExamen[
-                                                                    leccion.id
-                                                                  ] && (
-                                                                    <form
-                                                                      onSubmit={(
-                                                                        e,
-                                                                      ) =>
-                                                                        guardarExamenLeccion(
-                                                                          e,
-                                                                          leccion.id,
-                                                                        )
-                                                                      }
-                                                                      className="mt-5 border-t pt-5 space-y-5"
-                                                                    >
-                                                                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
-                                                                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                                                          <div>
-                                                                            <p className="text-sm font-semibold text-amber-800">
-                                                                              {examenEditandoId
-                                                                                ? `Editando examen: ${formExamen[leccion.id]?.titulo || "Sin título"}`
-                                                                                : "Creando nuevo examen"}
-                                                                            </p>
-                                                                            <p className="text-xs text-amber-700 mt-1">
-                                                                              {examenEditandoId
-                                                                                ? "Mientras editas este examen, los demás exámenes de la lección se ocultan para evitar confusión."
-                                                                                : "Define la configuración general y luego agrega las preguntas."}
-                                                                            </p>
-                                                                          </div>
-                                                                          <div className="flex flex-wrap gap-2">
-                                                                            <button
-                                                                              type="button"
-                                                                              onClick={() =>
-                                                                                cancelarEdicionExamen(
-                                                                                  leccion.id,
-                                                                                )
-                                                                              }
-                                                                              className="rounded-2xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100"
-                                                                            >
-                                                                              Cancelar
-                                                                            </button>
-                                                                          </div>
-                                                                        </div>
-                                                                      </div>
-
-                                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                        <div>
-                                                                          <label className="block font-semibold mb-2">
-                                                                            Título
-                                                                            del
-                                                                            examen
-                                                                          </label>
-                                                                          <input
-                                                                            type="text"
-                                                                            value={
-                                                                              formExamen[
-                                                                                leccion
-                                                                                  .id
-                                                                              ]
-                                                                                ?.titulo ||
-                                                                              ""
-                                                                            }
-                                                                            onChange={(
-                                                                              e,
-                                                                            ) =>
-                                                                              handleChangeExamen(
-                                                                                leccion.id,
-                                                                                "titulo",
-                                                                                e
-                                                                                  .target
-                                                                                  .value,
-                                                                              )
-                                                                            }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                            placeholder="Ej. Examen parcial"
-                                                                          />
-                                                                        </div>
-                                                                        <div>
-                                                                          <label className="block font-semibold mb-2">
-                                                                            Descripción
-                                                                          </label>
-                                                                          <input
-                                                                            type="text"
-                                                                            value={
-                                                                              formExamen[
-                                                                                leccion
-                                                                                  .id
-                                                                              ]
-                                                                                ?.descripcion ||
-                                                                              ""
-                                                                            }
-                                                                            onChange={(
-                                                                              e,
-                                                                            ) =>
-                                                                              handleChangeExamen(
-                                                                                leccion.id,
-                                                                                "descripcion",
-                                                                                e
-                                                                                  .target
-                                                                                  .value,
-                                                                              )
-                                                                            }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                            placeholder="Descripción breve"
-                                                                          />
-                                                                        </div>
-                                                                        <div>
-                                                                          <label className="block font-semibold mb-2">
-                                                                            Duración
-                                                                            (minutos)
-                                                                          </label>
-                                                                          <input
-                                                                            type="number"
-                                                                            min="1"
-                                                                            value={
-                                                                              formExamen[
-                                                                                leccion
-                                                                                  .id
-                                                                              ]
-                                                                                ?.duracion_minutos ||
-                                                                              30
-                                                                            }
-                                                                            onChange={(
-                                                                              e,
-                                                                            ) =>
-                                                                              handleChangeExamen(
-                                                                                leccion.id,
-                                                                                "duracion_minutos",
-                                                                                e
-                                                                                  .target
-                                                                                  .value,
-                                                                              )
-                                                                            }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                          />
-                                                                        </div>
-                                                                        <div>
-                                                                          <label className="block font-semibold mb-2">
-                                                                            Intentos
-                                                                            permitidos
-                                                                          </label>
-                                                                          <input
-                                                                            type="number"
-                                                                            min="1"
-                                                                            value={
-                                                                              formExamen[
-                                                                                leccion
-                                                                                  .id
-                                                                              ]
-                                                                                ?.intentos_permitidos ||
-                                                                              1
-                                                                            }
-                                                                            onChange={(
-                                                                              e,
-                                                                            ) =>
-                                                                              handleChangeExamen(
-                                                                                leccion.id,
-                                                                                "intentos_permitidos",
-                                                                                e
-                                                                                  .target
-                                                                                  .value,
-                                                                              )
-                                                                            }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                          />
-                                                                        </div>
-                                                                      </div>
-
-                                                                      <div className="space-y-4">
-                                                                        {(
+                                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div>
+                                                                      <label className="block font-semibold mb-2">
+                                                                        Título
+                                                                        del
+                                                                        examen
+                                                                      </label>
+                                                                      <input
+                                                                        type="text"
+                                                                        value={
                                                                           formExamen[
                                                                             leccion
                                                                               .id
                                                                           ]
-                                                                            ?.preguntas ||
-                                                                          []
-                                                                        ).map(
-                                                                          (
-                                                                            pregunta,
-                                                                            preguntaIndex,
-                                                                          ) => (
-                                                                            <div
-                                                                              key={
-                                                                                preguntaIndex
+                                                                            ?.titulo ||
+                                                                          ""
+                                                                        }
+                                                                        onChange={(
+                                                                          e,
+                                                                        ) =>
+                                                                          handleChangeExamen(
+                                                                            leccion.id,
+                                                                            "titulo",
+                                                                            e
+                                                                              .target
+                                                                              .value,
+                                                                          )
+                                                                        }
+                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                        placeholder="Ej. Examen parcial"
+                                                                      />
+                                                                    </div>
+                                                                    <div>
+                                                                      <label className="block font-semibold mb-2">
+                                                                        Descripción
+                                                                      </label>
+                                                                      <input
+                                                                        type="text"
+                                                                        value={
+                                                                          formExamen[
+                                                                            leccion
+                                                                              .id
+                                                                          ]
+                                                                            ?.descripcion ||
+                                                                          ""
+                                                                        }
+                                                                        onChange={(
+                                                                          e,
+                                                                        ) =>
+                                                                          handleChangeExamen(
+                                                                            leccion.id,
+                                                                            "descripcion",
+                                                                            e
+                                                                              .target
+                                                                              .value,
+                                                                          )
+                                                                        }
+                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                        placeholder="Descripción breve"
+                                                                      />
+                                                                    </div>
+                                                                    <div>
+                                                                      <label className="block font-semibold mb-2">
+                                                                        Duración
+                                                                        (minutos)
+                                                                      </label>
+                                                                      <input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        value={
+                                                                          formExamen[
+                                                                            leccion
+                                                                              .id
+                                                                          ]
+                                                                            ?.duracion_minutos ||
+                                                                          30
+                                                                        }
+                                                                        onChange={(
+                                                                          e,
+                                                                        ) =>
+                                                                          handleChangeExamen(
+                                                                            leccion.id,
+                                                                            "duracion_minutos",
+                                                                            e
+                                                                              .target
+                                                                              .value,
+                                                                          )
+                                                                        }
+                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                      />
+                                                                    </div>
+                                                                    <div>
+                                                                      <label className="block font-semibold mb-2">
+                                                                        Intentos
+                                                                        permitidos
+                                                                      </label>
+                                                                      <input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        value={
+                                                                          formExamen[
+                                                                            leccion
+                                                                              .id
+                                                                          ]
+                                                                            ?.intentos_permitidos ||
+                                                                          1
+                                                                        }
+                                                                        onChange={(
+                                                                          e,
+                                                                        ) =>
+                                                                          handleChangeExamen(
+                                                                            leccion.id,
+                                                                            "intentos_permitidos",
+                                                                            e
+                                                                              .target
+                                                                              .value,
+                                                                          )
+                                                                        }
+                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                      />
+                                                                    </div>
+                                                                  </div>
+
+                                                                  <div className="space-y-4">
+                                                                    {(
+                                                                      formExamen[
+                                                                        leccion
+                                                                          .id
+                                                                      ]
+                                                                        ?.preguntas ||
+                                                                      []
+                                                                    ).map(
+                                                                      (
+                                                                        pregunta,
+                                                                        preguntaIndex,
+                                                                      ) => (
+                                                                        <div
+                                                                          key={
+                                                                            preguntaIndex
+                                                                          }
+                                                                          className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4"
+                                                                        >
+                                                                          <div className="flex items-center justify-between gap-3">
+                                                                            <h6 className="font-bold text-slate-800">
+                                                                              Pregunta{" "}
+                                                                              {preguntaIndex +
+                                                                                1}
+                                                                            </h6>
+                                                                            <button
+                                                                              type="button"
+                                                                              onClick={() =>
+                                                                                eliminarPreguntaExamen(
+                                                                                  leccion.id,
+                                                                                  preguntaIndex,
+                                                                                )
                                                                               }
-                                                                              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4"
+                                                                              className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200"
                                                                             >
-                                                                              <div className="flex items-center justify-between gap-3">
-                                                                                <h6 className="font-bold text-slate-800">
-                                                                                  Pregunta{" "}
-                                                                                  {preguntaIndex +
-                                                                                    1}
-                                                                                </h6>
-                                                                                <button
-                                                                                  type="button"
-                                                                                  onClick={() =>
-                                                                                    eliminarPreguntaExamen(
+                                                                              Eliminar
+                                                                            </button>
+                                                                          </div>
+                                                                          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                                                                            <div className="md:col-span-3">
+                                                                              <label className="block font-semibold mb-2">
+                                                                                Enunciado
+                                                                              </label>
+                                                                              <input
+                                                                                type="text"
+                                                                                value={
+                                                                                  pregunta.enunciado ||
+                                                                                  ""
+                                                                                }
+                                                                                onChange={(
+                                                                                  e,
+                                                                                ) =>
+                                                                                  handleChangePreguntaExamen(
+                                                                                    leccion.id,
+                                                                                    preguntaIndex,
+                                                                                    "enunciado",
+                                                                                    e
+                                                                                      .target
+                                                                                      .value,
+                                                                                  )
+                                                                                }
+                                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                placeholder="Escribe la pregunta"
+                                                                              />
+                                                                            </div>
+                                                                            <div>
+                                                                              <label className="block font-semibold mb-2">
+                                                                                Puntaje
+                                                                              </label>
+                                                                              <input
+                                                                                type="number"
+                                                                                min="1"
+                                                                                step="0.01"
+                                                                                value={
+                                                                                  pregunta.puntaje ||
+                                                                                  1
+                                                                                }
+                                                                                onChange={(
+                                                                                  e,
+                                                                                ) =>
+                                                                                  handleChangePreguntaExamen(
+                                                                                    leccion.id,
+                                                                                    preguntaIndex,
+                                                                                    "puntaje",
+                                                                                    e
+                                                                                      .target
+                                                                                      .value,
+                                                                                  )
+                                                                                }
+                                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                              />
+                                                                            </div>
+                                                                            <div className="md:col-span-2">
+                                                                              <label className="block font-semibold mb-2">
+                                                                                Tipo
+                                                                                de
+                                                                                pregunta
+                                                                              </label>
+                                                                              <select
+                                                                                value={
+                                                                                  pregunta.tipo_pregunta ||
+                                                                                  "unica"
+                                                                                }
+                                                                                onChange={(
+                                                                                  e,
+                                                                                ) =>
+                                                                                  handleChangePreguntaExamen(
+                                                                                    leccion.id,
+                                                                                    preguntaIndex,
+                                                                                    "tipo_pregunta",
+                                                                                    e
+                                                                                      .target
+                                                                                      .value,
+                                                                                  )
+                                                                                }
+                                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                              >
+                                                                                <option value="unica">
+                                                                                  Marcar
+                                                                                  una
+                                                                                  sola
+                                                                                  opción
+                                                                                </option>
+                                                                                <option value="multiple">
+                                                                                  Marcar
+                                                                                  varias
+                                                                                  opciones
+                                                                                </option>
+                                                                                <option value="texto_corto">
+                                                                                  Texto
+                                                                                  corto
+                                                                                </option>
+                                                                                <option value="texto_largo">
+                                                                                  Texto
+                                                                                  largo
+                                                                                </option>
+                                                                                <option value="numerica">
+                                                                                  Respuesta
+                                                                                  numérica
+                                                                                </option>
+                                                                                <option value="archivo">
+                                                                                  Subir
+                                                                                  archivo
+                                                                                </option>
+                                                                              </select>
+                                                                            </div>
+                                                                          </div>
+
+                                                                          {TIPOS_PREGUNTA_TEXTO.includes(
+                                                                            pregunta.tipo_pregunta,
+                                                                          ) && (
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                              <div>
+                                                                                <label className="block font-semibold mb-2">
+                                                                                  Respuesta
+                                                                                  de
+                                                                                  referencia
+                                                                                </label>
+                                                                                <textarea
+                                                                                  value={
+                                                                                    pregunta.respuesta_texto ||
+                                                                                    ""
+                                                                                  }
+                                                                                  maxLength={
+                                                                                    pregunta.tipo_pregunta ===
+                                                                                    "texto_corto"
+                                                                                      ? 50
+                                                                                      : 200
+                                                                                  }
+                                                                                  onChange={(
+                                                                                    e,
+                                                                                  ) =>
+                                                                                    handleChangePreguntaExamen(
                                                                                       leccion.id,
                                                                                       preguntaIndex,
+                                                                                      "respuesta_texto",
+                                                                                      e
+                                                                                        .target
+                                                                                        .value,
                                                                                     )
                                                                                   }
-                                                                                  className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200"
-                                                                                >
-                                                                                  Eliminar
-                                                                                </button>
+                                                                                  className="w-full min-h-[120px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                  placeholder="Escribe la respuesta esperada"
+                                                                                />
+                                                                                <p className="mt-1 text-xs text-slate-500">
+                                                                                  Máximo{" "}
+                                                                                  {pregunta.tipo_pregunta ===
+                                                                                  "texto_corto"
+                                                                                    ? 50
+                                                                                    : 200}{" "}
+                                                                                  caracteres
+                                                                                </p>
                                                                               </div>
-                                                                              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                                                                                <div className="md:col-span-3">
-                                                                                  <label className="block font-semibold mb-2">
-                                                                                    Enunciado
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="text"
-                                                                                    value={
-                                                                                      pregunta.enunciado ||
-                                                                                      ""
-                                                                                    }
-                                                                                    onChange={(
-                                                                                      e,
-                                                                                    ) =>
-                                                                                      handleChangePreguntaExamen(
-                                                                                        leccion.id,
-                                                                                        preguntaIndex,
-                                                                                        "enunciado",
-                                                                                        e
-                                                                                          .target
-                                                                                          .value,
-                                                                                      )
-                                                                                    }
-                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                    placeholder="Escribe la pregunta"
-                                                                                  />
-                                                                                </div>
-                                                                                <div>
-                                                                                  <label className="block font-semibold mb-2">
-                                                                                    Puntaje
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="number"
-                                                                                    min="1"
-                                                                                    step="0.01"
-                                                                                    value={
-                                                                                      pregunta.puntaje ||
-                                                                                      1
-                                                                                    }
-                                                                                    onChange={(
-                                                                                      e,
-                                                                                    ) =>
-                                                                                      handleChangePreguntaExamen(
-                                                                                        leccion.id,
-                                                                                        preguntaIndex,
-                                                                                        "puntaje",
-                                                                                        e
-                                                                                          .target
-                                                                                          .value,
-                                                                                      )
-                                                                                    }
-                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                  />
-                                                                                </div>
-                                                                                <div className="md:col-span-2">
-                                                                                  <label className="block font-semibold mb-2">
-                                                                                    Tipo
-                                                                                    de
-                                                                                    pregunta
-                                                                                  </label>
-                                                                                  <select
-                                                                                    value={
-                                                                                      pregunta.tipo_pregunta ||
-                                                                                      "unica"
-                                                                                    }
-                                                                                    onChange={(
-                                                                                      e,
-                                                                                    ) =>
-                                                                                      handleChangePreguntaExamen(
-                                                                                        leccion.id,
-                                                                                        preguntaIndex,
-                                                                                        "tipo_pregunta",
-                                                                                        e
-                                                                                          .target
-                                                                                          .value,
-                                                                                      )
-                                                                                    }
-                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                  >
-                                                                                    <option value="unica">
-                                                                                      Marcar
-                                                                                      una
-                                                                                      sola
-                                                                                      opción
-                                                                                    </option>
-                                                                                    <option value="multiple">
-                                                                                      Marcar
-                                                                                      varias
-                                                                                      opciones
-                                                                                    </option>
-                                                                                    <option value="texto_corto">
-                                                                                      Texto
-                                                                                      corto
-                                                                                    </option>
-                                                                                    <option value="texto_largo">
-                                                                                      Texto
-                                                                                      largo
-                                                                                    </option>
-                                                                                    <option value="numerica">
-                                                                                      Respuesta
-                                                                                      numérica
-                                                                                    </option>
-                                                                                    <option value="archivo">
-                                                                                      Subir
-                                                                                      archivo
-                                                                                    </option>
-                                                                                  </select>
-                                                                                </div>
+                                                                              <div>
+                                                                                <label className="block font-semibold mb-2">
+                                                                                  Placeholder
+                                                                                  para
+                                                                                  el
+                                                                                  alumno
+                                                                                </label>
+                                                                                <input
+                                                                                  type="text"
+                                                                                  value={
+                                                                                    pregunta.texto_placeholder ||
+                                                                                    ""
+                                                                                  }
+                                                                                  onChange={(
+                                                                                    e,
+                                                                                  ) =>
+                                                                                    handleChangePreguntaExamen(
+                                                                                      leccion.id,
+                                                                                      preguntaIndex,
+                                                                                      "texto_placeholder",
+                                                                                      e
+                                                                                        .target
+                                                                                        .value,
+                                                                                    )
+                                                                                  }
+                                                                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                  placeholder="Ej. Escribe tu respuesta aquí"
+                                                                                />
                                                                               </div>
+                                                                            </div>
+                                                                          )}
 
-                                                                              {TIPOS_PREGUNTA_TEXTO.includes(
-                                                                                pregunta.tipo_pregunta,
-                                                                              ) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                          {pregunta.tipo_pregunta ===
+                                                                            "numerica" && (
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                              <div>
+                                                                                <label className="block font-semibold mb-2">
+                                                                                  Respuesta
+                                                                                  numérica
+                                                                                  correcta
+                                                                                </label>
+                                                                                <input
+                                                                                  type="text"
+                                                                                  value={
+                                                                                    pregunta.respuesta_texto ||
+                                                                                    ""
+                                                                                  }
+                                                                                  onChange={(
+                                                                                    e,
+                                                                                  ) =>
+                                                                                    handleChangePreguntaExamen(
+                                                                                      leccion.id,
+                                                                                      preguntaIndex,
+                                                                                      "respuesta_texto",
+                                                                                      e.target.value.replace(
+                                                                                        /[^\d.-]/g,
+                                                                                        "",
+                                                                                      ),
+                                                                                    )
+                                                                                  }
+                                                                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                  placeholder="Ej. 25 o 25.5"
+                                                                                />
+                                                                              </div>
+                                                                              <div className="flex items-end">
+                                                                                <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
+                                                                                  <input
+                                                                                    type="checkbox"
+                                                                                    checked={
+                                                                                      !!pregunta.permitir_decimales
+                                                                                    }
+                                                                                    onChange={(
+                                                                                      e,
+                                                                                    ) =>
+                                                                                      handleChangePreguntaExamen(
+                                                                                        leccion.id,
+                                                                                        preguntaIndex,
+                                                                                        "permitir_decimales",
+                                                                                        e
+                                                                                          .target
+                                                                                          .checked,
+                                                                                      )
+                                                                                    }
+                                                                                    className="h-4 w-4"
+                                                                                  />
                                                                                   <div>
-                                                                                    <label className="block font-semibold mb-2">
-                                                                                      Respuesta
-                                                                                      de
-                                                                                      referencia
-                                                                                    </label>
-                                                                                    <textarea
-                                                                                      value={
-                                                                                        pregunta.respuesta_texto ||
-                                                                                        ""
-                                                                                      }
-                                                                                      maxLength={
-                                                                                        pregunta.tipo_pregunta ===
-                                                                                        "texto_corto"
-                                                                                          ? 50
-                                                                                          : 200
-                                                                                      }
-                                                                                      onChange={(
-                                                                                        e,
-                                                                                      ) =>
-                                                                                        handleChangePreguntaExamen(
-                                                                                          leccion.id,
-                                                                                          preguntaIndex,
-                                                                                          "respuesta_texto",
-                                                                                          e
-                                                                                            .target
-                                                                                            .value,
-                                                                                        )
-                                                                                      }
-                                                                                      className="w-full min-h-[120px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                      placeholder="Escribe la respuesta esperada"
-                                                                                    />
-                                                                                    <p className="mt-1 text-xs text-slate-500">
-                                                                                      Máximo{" "}
-                                                                                      {pregunta.tipo_pregunta ===
-                                                                                      "texto_corto"
-                                                                                        ? 50
-                                                                                        : 200}{" "}
-                                                                                      caracteres
+                                                                                    <p className="font-semibold text-gray-800">
+                                                                                      Permitir
+                                                                                      decimales
+                                                                                    </p>
+                                                                                    <p className="text-sm text-gray-500">
+                                                                                      Si
+                                                                                      lo
+                                                                                      desactivas,
+                                                                                      solo
+                                                                                      se
+                                                                                      aceptarán
+                                                                                      enteros.
                                                                                     </p>
                                                                                   </div>
-                                                                                  <div>
-                                                                                    <label className="block font-semibold mb-2">
-                                                                                      Placeholder
-                                                                                      para
-                                                                                      el
-                                                                                      alumno
-                                                                                    </label>
-                                                                                    <input
-                                                                                      type="text"
-                                                                                      value={
-                                                                                        pregunta.texto_placeholder ||
-                                                                                        ""
-                                                                                      }
-                                                                                      onChange={(
-                                                                                        e,
-                                                                                      ) =>
-                                                                                        handleChangePreguntaExamen(
-                                                                                          leccion.id,
-                                                                                          preguntaIndex,
-                                                                                          "texto_placeholder",
-                                                                                          e
-                                                                                            .target
-                                                                                            .value,
-                                                                                        )
-                                                                                      }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                      placeholder="Ej. Escribe tu respuesta aquí"
-                                                                                    />
-                                                                                  </div>
-                                                                                </div>
-                                                                              )}
+                                                                                </label>
+                                                                              </div>
+                                                                            </div>
+                                                                          )}
 
-                                                                              {pregunta.tipo_pregunta ===
-                                                                                "numerica" && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                  <div>
-                                                                                    <label className="block font-semibold mb-2">
-                                                                                      Respuesta
-                                                                                      numérica
-                                                                                      correcta
-                                                                                    </label>
-                                                                                    <input
-                                                                                      type="text"
-                                                                                      value={
-                                                                                        pregunta.respuesta_texto ||
-                                                                                        ""
+                                                                          {pregunta.tipo_pregunta ===
+                                                                            "archivo" && (
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                              <div>
+                                                                                <label className="block font-semibold mb-2">
+                                                                                  Tamaño
+                                                                                  máximo
+                                                                                  (MB)
+                                                                                </label>
+                                                                                <input
+                                                                                  type="number"
+                                                                                  min="1"
+                                                                                  value={
+                                                                                    pregunta.tamano_max_mb ||
+                                                                                    10
+                                                                                  }
+                                                                                  onChange={(
+                                                                                    e,
+                                                                                  ) =>
+                                                                                    handleChangePreguntaExamen(
+                                                                                      leccion.id,
+                                                                                      preguntaIndex,
+                                                                                      "tamano_max_mb",
+                                                                                      e
+                                                                                        .target
+                                                                                        .value,
+                                                                                    )
+                                                                                  }
+                                                                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                />
+                                                                              </div>
+                                                                              <div>
+                                                                                <label className="block font-semibold mb-2">
+                                                                                  Extensiones
+                                                                                  permitidas
+                                                                                </label>
+                                                                                <input
+                                                                                  type="text"
+                                                                                  value={
+                                                                                    pregunta.extensiones_permitidas ||
+                                                                                    ""
+                                                                                  }
+                                                                                  onChange={(
+                                                                                    e,
+                                                                                  ) =>
+                                                                                    handleChangePreguntaExamen(
+                                                                                      leccion.id,
+                                                                                      preguntaIndex,
+                                                                                      "extensiones_permitidas",
+                                                                                      e
+                                                                                        .target
+                                                                                        .value,
+                                                                                    )
+                                                                                  }
+                                                                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                  placeholder="pdf,jpg,png,doc,docx"
+                                                                                />
+                                                                                <p className="mt-1 text-xs text-slate-500">
+                                                                                  Separadas
+                                                                                  por
+                                                                                  coma,
+                                                                                  sin
+                                                                                  punto.
+                                                                                </p>
+                                                                              </div>
+                                                                              <div className="md:col-span-2">
+                                                                                <label className="block font-semibold mb-2">
+                                                                                  Texto
+                                                                                  de
+                                                                                  ayuda
+                                                                                </label>
+                                                                                <input
+                                                                                  type="text"
+                                                                                  value={
+                                                                                    pregunta.texto_placeholder ||
+                                                                                    ""
+                                                                                  }
+                                                                                  onChange={(
+                                                                                    e,
+                                                                                  ) =>
+                                                                                    handleChangePreguntaExamen(
+                                                                                      leccion.id,
+                                                                                      preguntaIndex,
+                                                                                      "texto_placeholder",
+                                                                                      e
+                                                                                        .target
+                                                                                        .value,
+                                                                                    )
+                                                                                  }
+                                                                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                  placeholder="Ej. Sube tu informe en PDF"
+                                                                                />
+                                                                              </div>
+                                                                            </div>
+                                                                          )}
+
+                                                                          {TIPOS_PREGUNTA_CON_OPCIONES.includes(
+                                                                            pregunta.tipo_pregunta,
+                                                                          ) && (
+                                                                            <>
+                                                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                {(
+                                                                                  pregunta.opciones ||
+                                                                                  []
+                                                                                ).map(
+                                                                                  (
+                                                                                    opcion,
+                                                                                    opcionIndex,
+                                                                                  ) => (
+                                                                                    <div
+                                                                                      key={
+                                                                                        opcionIndex
                                                                                       }
-                                                                                      onChange={(
-                                                                                        e,
-                                                                                      ) =>
-                                                                                        handleChangePreguntaExamen(
-                                                                                          leccion.id,
-                                                                                          preguntaIndex,
-                                                                                          "respuesta_texto",
-                                                                                          e.target.value.replace(
-                                                                                            /[^\d.-]/g,
-                                                                                            "",
-                                                                                          ),
-                                                                                        )
-                                                                                      }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                      placeholder="Ej. 25 o 25.5"
-                                                                                    />
-                                                                                  </div>
-                                                                                  <div className="flex items-end">
-                                                                                    <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
+                                                                                      className={`rounded-2xl border p-4 ${opcion.es_correcta ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white"}`}
+                                                                                    >
+                                                                                      <label className="block font-semibold mb-2">
+                                                                                        Opción{" "}
+                                                                                        {opcionIndex +
+                                                                                          1}
+                                                                                      </label>
                                                                                       <input
-                                                                                        type="checkbox"
-                                                                                        checked={
-                                                                                          !!pregunta.permitir_decimales
+                                                                                        type="text"
+                                                                                        value={
+                                                                                          opcion.texto ||
+                                                                                          ""
                                                                                         }
                                                                                         onChange={(
                                                                                           e,
                                                                                         ) =>
-                                                                                          handleChangePreguntaExamen(
+                                                                                          handleChangeOpcionExamen(
                                                                                             leccion.id,
                                                                                             preguntaIndex,
-                                                                                            "permitir_decimales",
+                                                                                            opcionIndex,
+                                                                                            "texto",
                                                                                             e
                                                                                               .target
-                                                                                              .checked,
+                                                                                              .value,
                                                                                           )
                                                                                         }
-                                                                                        className="h-4 w-4"
+                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
+                                                                                        placeholder={`Texto de la opción ${opcionIndex + 1}`}
                                                                                       />
-                                                                                      <div>
-                                                                                        <p className="font-semibold text-gray-800">
-                                                                                          Permitir
-                                                                                          decimales
-                                                                                        </p>
-                                                                                        <p className="text-sm text-gray-500">
-                                                                                          Si
-                                                                                          lo
-                                                                                          desactivas,
-                                                                                          solo
-                                                                                          se
-                                                                                          aceptarán
-                                                                                          enteros.
-                                                                                        </p>
-                                                                                      </div>
-                                                                                    </label>
-                                                                                  </div>
-                                                                                </div>
-                                                                              )}
-
-                                                                              {pregunta.tipo_pregunta ===
-                                                                                "archivo" && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                  <div>
-                                                                                    <label className="block font-semibold mb-2">
-                                                                                      Tamaño
-                                                                                      máximo
-                                                                                      (MB)
-                                                                                    </label>
-                                                                                    <input
-                                                                                      type="number"
-                                                                                      min="1"
-                                                                                      value={
-                                                                                        pregunta.tamano_max_mb ||
-                                                                                        10
-                                                                                      }
-                                                                                      onChange={(
-                                                                                        e,
-                                                                                      ) =>
-                                                                                        handleChangePreguntaExamen(
-                                                                                          leccion.id,
-                                                                                          preguntaIndex,
-                                                                                          "tamano_max_mb",
-                                                                                          e
-                                                                                            .target
-                                                                                            .value,
-                                                                                        )
-                                                                                      }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                    />
-                                                                                  </div>
-                                                                                  <div>
-                                                                                    <label className="block font-semibold mb-2">
-                                                                                      Extensiones
-                                                                                      permitidas
-                                                                                    </label>
-                                                                                    <input
-                                                                                      type="text"
-                                                                                      value={
-                                                                                        pregunta.extensiones_permitidas ||
-                                                                                        ""
-                                                                                      }
-                                                                                      onChange={(
-                                                                                        e,
-                                                                                      ) =>
-                                                                                        handleChangePreguntaExamen(
-                                                                                          leccion.id,
-                                                                                          preguntaIndex,
-                                                                                          "extensiones_permitidas",
-                                                                                          e
-                                                                                            .target
-                                                                                            .value,
-                                                                                        )
-                                                                                      }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                      placeholder="pdf,jpg,png,doc,docx"
-                                                                                    />
-                                                                                    <p className="mt-1 text-xs text-slate-500">
-                                                                                      Separadas
-                                                                                      por
-                                                                                      coma,
-                                                                                      sin
-                                                                                      punto.
-                                                                                    </p>
-                                                                                  </div>
-                                                                                  <div className="md:col-span-2">
-                                                                                    <label className="block font-semibold mb-2">
-                                                                                      Texto
-                                                                                      de
-                                                                                      ayuda
-                                                                                    </label>
-                                                                                    <input
-                                                                                      type="text"
-                                                                                      value={
-                                                                                        pregunta.texto_placeholder ||
-                                                                                        ""
-                                                                                      }
-                                                                                      onChange={(
-                                                                                        e,
-                                                                                      ) =>
-                                                                                        handleChangePreguntaExamen(
-                                                                                          leccion.id,
-                                                                                          preguntaIndex,
-                                                                                          "texto_placeholder",
-                                                                                          e
-                                                                                            .target
-                                                                                            .value,
-                                                                                        )
-                                                                                      }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                      placeholder="Ej. Sube tu informe en PDF"
-                                                                                    />
-                                                                                  </div>
-                                                                                </div>
-                                                                              )}
-
-                                                                              {TIPOS_PREGUNTA_CON_OPCIONES.includes(
-                                                                                pregunta.tipo_pregunta,
-                                                                              ) && (
-                                                                                <>
-                                                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                    {(
-                                                                                      pregunta.opciones ||
-                                                                                      []
-                                                                                    ).map(
-                                                                                      (
-                                                                                        opcion,
-                                                                                        opcionIndex,
-                                                                                      ) => (
-                                                                                        <div
-                                                                                          key={
-                                                                                            opcionIndex
-                                                                                          }
-                                                                                          className={`rounded-2xl border p-4 ${opcion.es_correcta ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white"}`}
-                                                                                        >
-                                                                                          <label className="block font-semibold mb-2">
-                                                                                            Opción{" "}
-                                                                                            {opcionIndex +
-                                                                                              1}
-                                                                                          </label>
-                                                                                          <input
-                                                                                            type="text"
-                                                                                            value={
-                                                                                              opcion.texto ||
-                                                                                              ""
-                                                                                            }
-                                                                                            onChange={(
-                                                                                              e,
-                                                                                            ) =>
-                                                                                              handleChangeOpcionExamen(
-                                                                                                leccion.id,
-                                                                                                preguntaIndex,
-                                                                                                opcionIndex,
-                                                                                                "texto",
-                                                                                                e
-                                                                                                  .target
-                                                                                                  .value,
-                                                                                              )
-                                                                                            }
-                                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
-                                                                                            placeholder={`Texto de la opción ${opcionIndex + 1}`}
-                                                                                          />
-                                                                                          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-                                                                                            <input
-                                                                                              type={
-                                                                                                pregunta.tipo_pregunta ===
-                                                                                                "multiple"
-                                                                                                  ? "checkbox"
-                                                                                                  : "radio"
-                                                                                              }
-                                                                                              name={`correcta-${leccion.id}-${preguntaIndex}`}
-                                                                                              checked={
-                                                                                                !!opcion.es_correcta
-                                                                                              }
-                                                                                              onChange={(
-                                                                                                e,
-                                                                                              ) =>
-                                                                                                handleChangeOpcionExamen(
-                                                                                                  leccion.id,
-                                                                                                  preguntaIndex,
-                                                                                                  opcionIndex,
-                                                                                                  "es_correcta",
-                                                                                                  e
-                                                                                                    .target
-                                                                                                    .checked,
-                                                                                                )
-                                                                                              }
-                                                                                              className="h-4 w-4"
-                                                                                            />
-                                                                                            {pregunta.tipo_pregunta ===
+                                                                                      <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                                                                                        <input
+                                                                                          type={
+                                                                                            pregunta.tipo_pregunta ===
                                                                                             "multiple"
-                                                                                              ? "Marcar como correcta"
-                                                                                              : "Respuesta correcta"}
-                                                                                          </label>
-                                                                                          <button
-                                                                                            type="button"
-                                                                                            onClick={() =>
-                                                                                              quitarOpcion(
-                                                                                                leccion.id,
-                                                                                                preguntaIndex,
-                                                                                                opcionIndex,
-                                                                                              )
-                                                                                            }
-                                                                                            className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200 mt-3 ml-2"
-                                                                                          >
-                                                                                            Eliminar
-                                                                                            opción
-                                                                                          </button>
-                                                                                        </div>
-                                                                                      ),
-                                                                                    )}
-                                                                                  </div>
-                                                                                  <button
-                                                                                    type="button"
-                                                                                    onClick={() =>
-                                                                                      agregarOpcion(
-                                                                                        leccion.id,
-                                                                                        preguntaIndex,
-                                                                                      )
-                                                                                    }
-                                                                                    className="rounded-xl bg-blue-100 text-blue-700 px-4 py-2 text-sm hover:bg-blue-200"
-                                                                                  >
-                                                                                    Añadir
-                                                                                    opción
-                                                                                  </button>
-                                                                                </>
-                                                                              )}
-                                                                            </div>
-                                                                          ),
-                                                                        )}
-                                                                      </div>
+                                                                                              ? "checkbox"
+                                                                                              : "radio"
+                                                                                          }
+                                                                                          name={`correcta-${leccion.id}-${preguntaIndex}`}
+                                                                                          checked={
+                                                                                            !!opcion.es_correcta
+                                                                                          }
+                                                                                          onChange={(
+                                                                                            e,
+                                                                                          ) =>
+                                                                                            handleChangeOpcionExamen(
+                                                                                              leccion.id,
+                                                                                              preguntaIndex,
+                                                                                              opcionIndex,
+                                                                                              "es_correcta",
+                                                                                              e
+                                                                                                .target
+                                                                                                .checked,
+                                                                                            )
+                                                                                          }
+                                                                                          className="h-4 w-4"
+                                                                                        />
+                                                                                        {pregunta.tipo_pregunta ===
+                                                                                        "multiple"
+                                                                                          ? "Marcar como correcta"
+                                                                                          : "Respuesta correcta"}
+                                                                                      </label>
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        onClick={() =>
+                                                                                          quitarOpcion(
+                                                                                            leccion.id,
+                                                                                            preguntaIndex,
+                                                                                            opcionIndex,
+                                                                                          )
+                                                                                        }
+                                                                                        className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200 mt-3 ml-2"
+                                                                                      >
+                                                                                        Eliminar
+                                                                                        opción
+                                                                                      </button>
+                                                                                    </div>
+                                                                                  ),
+                                                                                )}
+                                                                              </div>
+                                                                              <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                  agregarOpcion(
+                                                                                    leccion.id,
+                                                                                    preguntaIndex,
+                                                                                  )
+                                                                                }
+                                                                                className="rounded-xl bg-blue-100 text-blue-700 px-4 py-2 text-sm hover:bg-blue-200"
+                                                                              >
+                                                                                Añadir
+                                                                                opción
+                                                                              </button>
+                                                                            </>
+                                                                          )}
+                                                                        </div>
+                                                                      ),
+                                                                    )}
+                                                                  </div>
 
-                                                                      <div className="flex flex-wrap justify-between gap-3">
-                                                                        <button
-                                                                          type="button"
-                                                                          onClick={() =>
-                                                                            agregarPreguntaExamen(
-                                                                              leccion.id,
-                                                                            )
-                                                                          }
-                                                                          className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
-                                                                        >
-                                                                          +
-                                                                          Agregar
-                                                                          pregunta
-                                                                        </button>
-                                                                        <button
-                                                                          type="submit"
-                                                                          disabled={
-                                                                            guardandoExamen
-                                                                          }
-                                                                          className="rounded-2xl bg-violet-600 px-5 py-3 text-white font-semibold hover:bg-violet-700 disabled:opacity-60"
-                                                                        >
-                                                                          {guardandoExamen
-                                                                            ? "Guardando..."
-                                                                            : examenEditandoId
-                                                                              ? "Guardar cambios"
-                                                                              : "Guardar examen"}
-                                                                        </button>
-                                                                      </div>
-                                                                    </form>
-                                                                  )}
-
-                                                                  {mostrarFormMaterial[
-                                                                    leccion.id
-                                                                  ] && (
-                                                                    <form
-                                                                      onSubmit={(
-                                                                        e,
-                                                                      ) =>
-                                                                        guardarMaterialCurso(
-                                                                          e,
+                                                                  <div className="flex flex-wrap justify-between gap-3">
+                                                                    <button
+                                                                      type="button"
+                                                                      onClick={() =>
+                                                                        agregarPreguntaExamen(
                                                                           leccion.id,
                                                                         )
                                                                       }
-                                                                      className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                                                                      className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
                                                                     >
-                                                                      <div>
-                                                                        <label className="block font-semibold mb-2">
-                                                                          Título
-                                                                          del
-                                                                          material
-                                                                        </label>
-                                                                        <input
-                                                                          type="text"
-                                                                          value={
-                                                                            formMat.titulo
-                                                                          }
-                                                                          name="titulo"
-                                                                          onChange={(
+                                                                      +
+                                                                      Agregar
+                                                                      pregunta
+                                                                    </button>
+                                                                    <button
+                                                                      type="submit"
+                                                                      disabled={
+                                                                        guardandoExamen
+                                                                      }
+                                                                      className="rounded-2xl bg-violet-600 px-5 py-3 text-white font-semibold hover:bg-violet-700 disabled:opacity-60"
+                                                                    >
+                                                                      {guardandoExamen
+                                                                        ? "Guardando..."
+                                                                        : examenEditandoId
+                                                                          ? "Guardar cambios"
+                                                                          : "Guardar examen"}
+                                                                    </button>
+                                                                  </div>
+                                                                </form>
+                                                              )}
+
+                                                              {mostrarFormMaterial[
+                                                                leccion.id
+                                                              ] && (
+                                                                <form
+                                                                  onSubmit={(
+                                                                    e,
+                                                                  ) =>
+                                                                    guardarMaterialCurso(
+                                                                      e,
+                                                                      leccion.id,
+                                                                    )
+                                                                  }
+                                                                  className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                                                                >
+                                                                  <div>
+                                                                    <label className="block font-semibold mb-2">
+                                                                      Título
+                                                                      del
+                                                                      material
+                                                                    </label>
+                                                                    <input
+                                                                      type="text"
+                                                                      value={
+                                                                        formMat.titulo
+                                                                      }
+                                                                      name="titulo"
+                                                                      onChange={(
+                                                                        e,
+                                                                      ) =>
+                                                                        handleChangeMaterial(
+                                                                          leccion.id,
+                                                                          e,
+                                                                        )
+                                                                      }
+                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                      placeholder="Ej. PDF de introducción"
+                                                                    />
+                                                                  </div>
+                                                                  <div>
+                                                                    <label className="block font-semibold mb-2">
+                                                                      Tipo
+                                                                    </label>
+                                                                    <select
+                                                                      value={
+                                                                        formMat.tipo
+                                                                      }
+                                                                      name="tipo"
+                                                                      onChange={(
+                                                                        e,
+                                                                      ) =>
+                                                                        handleChangeMaterial(
+                                                                          leccion.id,
+                                                                          e,
+                                                                        )
+                                                                      }
+                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                    >
+                                                                      <option value="texto">
+                                                                        Texto
+                                                                      </option>
+                                                                      <option value="archivo">
+                                                                        Archivo
+                                                                      </option>
+                                                                      <option value="video">
+                                                                        Video
+                                                                      </option>
+                                                                      <option value="url_video">
+                                                                        URL
+                                                                        de
+                                                                        video
+                                                                      </option>
+                                                                      <option value="enlace">
+                                                                        Enlace
+                                                                      </option>
+                                                                    </select>
+                                                                  </div>
+
+                                                                  {formMat.tipo ===
+                                                                    "texto" && (
+                                                                    <div className="md:col-span-2">
+                                                                      <label className="block font-semibold mb-2">
+                                                                        Contenido
+                                                                      </label>
+                                                                      <textarea
+                                                                        name="contenido_texto"
+                                                                        value={
+                                                                          formMat.contenido_texto
+                                                                        }
+                                                                        onChange={(
+                                                                          e,
+                                                                        ) =>
+                                                                          handleChangeMaterial(
+                                                                            leccion.id,
                                                                             e,
-                                                                          ) =>
-                                                                            handleChangeMaterial(
-                                                                              leccion.id,
-                                                                              e,
-                                                                            )
-                                                                          }
-                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                          placeholder="Ej. PDF de introducción"
-                                                                        />
-                                                                      </div>
-                                                                      <div>
-                                                                        <label className="block font-semibold mb-2">
-                                                                          Tipo
-                                                                        </label>
-                                                                        <select
-                                                                          value={
-                                                                            formMat.tipo
-                                                                          }
-                                                                          name="tipo"
-                                                                          onChange={(
-                                                                            e,
-                                                                          ) =>
-                                                                            handleChangeMaterial(
-                                                                              leccion.id,
-                                                                              e,
-                                                                            )
-                                                                          }
-                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                        >
-                                                                          <option value="texto">
-                                                                            Texto
-                                                                          </option>
-                                                                          <option value="archivo">
-                                                                            Archivo
-                                                                          </option>
-                                                                          <option value="video">
-                                                                            Video
-                                                                          </option>
-                                                                          <option value="url_video">
-                                                                            URL
-                                                                            de
-                                                                            video
-                                                                          </option>
-                                                                          <option value="enlace">
-                                                                            Enlace
-                                                                          </option>
-                                                                        </select>
-                                                                      </div>
-
-                                                                      {formMat.tipo ===
-                                                                        "texto" && (
-                                                                        <div className="md:col-span-2">
-                                                                          <label className="block font-semibold mb-2">
-                                                                            Contenido
-                                                                          </label>
-                                                                          <textarea
-                                                                            name="contenido_texto"
-                                                                            value={
-                                                                              formMat.contenido_texto
-                                                                            }
-                                                                            onChange={(
-                                                                              e,
-                                                                            ) =>
-                                                                              handleChangeMaterial(
-                                                                                leccion.id,
-                                                                                e,
-                                                                              )
-                                                                            }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
-                                                                            placeholder="Escribe el contenido de la lección"
-                                                                          />
-                                                                        </div>
-                                                                      )}
-
-                                                                      {formMat.tipo ===
-                                                                        "url_video" && (
-                                                                        <div className="md:col-span-2">
-                                                                          <label className="block font-semibold mb-2">
-                                                                            URL
-                                                                            del
-                                                                            video
-                                                                          </label>
-                                                                          <input
-                                                                            type="text"
-                                                                            name="video_url"
-                                                                            value={
-                                                                              formMat.video_url
-                                                                            }
-                                                                            onChange={(
-                                                                              e,
-                                                                            ) =>
-                                                                              handleChangeMaterial(
-                                                                                leccion.id,
-                                                                                e,
-                                                                              )
-                                                                            }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                            placeholder="https://vimeo.com/123456789"
-                                                                          />
-                                                                        </div>
-                                                                      )}
-
-                                                                      {formMat.tipo ===
-                                                                        "enlace" && (
-                                                                        <div className="md:col-span-2">
-                                                                          <label className="block font-semibold mb-2">
-                                                                            Enlace
-                                                                          </label>
-                                                                          <input
-                                                                            type="text"
-                                                                            name="enlace_url"
-                                                                            value={
-                                                                              formMat.enlace_url
-                                                                            }
-                                                                            onChange={(
-                                                                              e,
-                                                                            ) =>
-                                                                              handleChangeMaterial(
-                                                                                leccion.id,
-                                                                                e,
-                                                                              )
-                                                                            }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                            placeholder="https://..."
-                                                                          />
-                                                                        </div>
-                                                                      )}
-
-                                                                      {(formMat.tipo ===
-                                                                        "archivo" ||
-                                                                        formMat.tipo ===
-                                                                          "video") && (
-                                                                        <div className="md:col-span-2">
-                                                                          <label className="block font-semibold mb-2">
-                                                                            Archivo
-                                                                          </label>
-                                                                          <input
-                                                                            type="file"
-                                                                            onChange={(
-                                                                              e,
-                                                                            ) =>
-                                                                              handleFileMaterial(
-                                                                                leccion.id,
-                                                                                e,
-                                                                              )
-                                                                            }
-                                                                            accept={
-                                                                              formMat.tipo ===
-                                                                              "video"
-                                                                                ? "video/*"
-                                                                                : ".pdf,.ppt,.pptx,.doc,.docx,.zip,.rar"
-                                                                            }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                          />
-                                                                          {formMat.file && (
-                                                                            <p className="text-sm text-gray-500 mt-2">
-                                                                              Archivo
-                                                                              seleccionado:{" "}
-                                                                              {
-                                                                                formMat
-                                                                                  .file
-                                                                                  .name
-                                                                              }
-                                                                            </p>
-                                                                          )}
-                                                                        </div>
-                                                                      )}
-
-                                                                      {subidaMaterialEstado[
-                                                                        leccion
-                                                                          .id
-                                                                      ] && (
-                                                                        <div className="md:col-span-2 space-y-2">
-                                                                          <div className="flex items-center justify-between text-sm">
-                                                                            <span className="text-gray-700 font-medium">
-                                                                              {
-                                                                                subidaMaterialEstado[
-                                                                                  leccion
-                                                                                    .id
-                                                                                ]
-                                                                              }
-                                                                            </span>
-                                                                            {(subidaMaterialProgress[
-                                                                              leccion
-                                                                                .id
-                                                                            ] ||
-                                                                              0) <
-                                                                              100 && (
-                                                                              <span className="text-gray-600">
-                                                                                {Math.round(
-                                                                                  subidaMaterialProgress[
-                                                                                    leccion
-                                                                                      .id
-                                                                                  ] ||
-                                                                                    0,
-                                                                                )}
-
-                                                                                %
-                                                                              </span>
-                                                                            )}
-                                                                          </div>
-                                                                          {(subidaMaterialProgress[
-                                                                            leccion
-                                                                              .id
-                                                                          ] ||
-                                                                            0) <
-                                                                          100 ? (
-                                                                            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                                                                              <div
-                                                                                className="h-full bg-blue-600 transition-all duration-200"
-                                                                                style={{
-                                                                                  width: `${subidaMaterialProgress[leccion.id] || 0}%`,
-                                                                                }}
-                                                                              />
-                                                                            </div>
-                                                                          ) : (
-                                                                            <div className="flex items-center gap-2 text-amber-600 text-sm">
-                                                                              <span className="animate-spin w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full"></span>{" "}
-                                                                              Procesando
-                                                                              en
-                                                                              Vimeo...
-                                                                            </div>
-                                                                          )}
-                                                                        </div>
-                                                                      )}
-
-                                                                      <div className="md:col-span-2 flex justify-end">
-                                                                        <button
-                                                                          type="submit"
-                                                                          disabled={
-                                                                            guardandoMaterial
-                                                                          }
-                                                                          className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
-                                                                        >
-                                                                          {guardandoMaterial
-                                                                            ? formMat.tipo ===
-                                                                              "video"
-                                                                              ? "Subiendo video..."
-                                                                              : "Guardando..."
-                                                                            : "Guardar material"}
-                                                                        </button>
-                                                                      </div>
-                                                                    </form>
-                                                                  )}
-
-                                                                  {editandoLeccionId ===
-                                                                    leccion.id && (
-                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5">
-                                                                      <div>
-                                                                        <label className="block font-semibold mb-2">
-                                                                          Editar
-                                                                          título
-                                                                        </label>
-                                                                        <input
-                                                                          type="text"
-                                                                          value={
-                                                                            formEditarLeccion.titulo
-                                                                          }
-                                                                          onChange={(
-                                                                            e,
-                                                                          ) =>
-                                                                            setFormEditarLeccion(
-                                                                              (
-                                                                                prev,
-                                                                              ) => ({
-                                                                                ...prev,
-                                                                                titulo:
-                                                                                  e
-                                                                                    .target
-                                                                                    .value,
-                                                                              }),
-                                                                            )
-                                                                          }
-                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                        />
-                                                                      </div>
-                                                                      <div>
-                                                                        <label className="block font-semibold mb-2">
-                                                                          Editar
-                                                                          descripción
-                                                                        </label>
-                                                                        <input
-                                                                          type="text"
-                                                                          value={
-                                                                            formEditarLeccion.descripcion
-                                                                          }
-                                                                          onChange={(
-                                                                            e,
-                                                                          ) =>
-                                                                            setFormEditarLeccion(
-                                                                              (
-                                                                                prev,
-                                                                              ) => ({
-                                                                                ...prev,
-                                                                                descripcion:
-                                                                                  e
-                                                                                    .target
-                                                                                    .value,
-                                                                              }),
-                                                                            )
-                                                                          }
-                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                        />
-                                                                      </div>
-                                                                      <div className="md:col-span-2 flex justify-end gap-2">
-                                                                        <button
-                                                                          type="button"
-                                                                          onClick={
-                                                                            cancelarEdicionLeccion
-                                                                          }
-                                                                          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
-                                                                        >
-                                                                          Cancelar
-                                                                        </button>
-                                                                        <button
-                                                                          type="button"
-                                                                          onClick={() =>
-                                                                            guardarEdicionLeccion(
-                                                                              leccion.id,
-                                                                            )
-                                                                          }
-                                                                          className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition"
-                                                                        >
-                                                                          Guardar
-                                                                          cambios
-                                                                        </button>
-                                                                      </div>
+                                                                          )
+                                                                        }
+                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
+                                                                        placeholder="Escribe el contenido de la lección"
+                                                                      />
                                                                     </div>
                                                                   )}
-                                                                </div>
 
-                                                                {abiertaMateriales && (
-                                                                  <div className="border-t bg-gray-50 p-4">
-                                                                    {leccion
-                                                                      .materiales
-                                                                      ?.length ===
-                                                                    0 ? (
-                                                                      <p className="text-sm text-gray-500">
-                                                                        No hay
-                                                                        materiales
-                                                                        en esta
-                                                                        lección.
-                                                                      </p>
-                                                                    ) : (
-                                                                      <div className="space-y-3">
-                                                                        <DndContext
-                                                                          sensors={
-                                                                            sensors
+                                                                  {formMat.tipo ===
+                                                                    "url_video" && (
+                                                                    <div className="md:col-span-2">
+                                                                      <label className="block font-semibold mb-2">
+                                                                        URL
+                                                                        del
+                                                                        video
+                                                                      </label>
+                                                                      <input
+                                                                        type="text"
+                                                                        name="video_url"
+                                                                        value={
+                                                                          formMat.video_url
+                                                                        }
+                                                                        onChange={(
+                                                                          e,
+                                                                        ) =>
+                                                                          handleChangeMaterial(
+                                                                            leccion.id,
+                                                                            e,
+                                                                          )
+                                                                        }
+                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                        placeholder="https://vimeo.com/123456789"
+                                                                      />
+                                                                    </div>
+                                                                  )}
+
+                                                                  {formMat.tipo ===
+                                                                    "enlace" && (
+                                                                    <div className="md:col-span-2">
+                                                                      <label className="block font-semibold mb-2">
+                                                                        Enlace
+                                                                      </label>
+                                                                      <input
+                                                                        type="text"
+                                                                        name="enlace_url"
+                                                                        value={
+                                                                          formMat.enlace_url
+                                                                        }
+                                                                        onChange={(
+                                                                          e,
+                                                                        ) =>
+                                                                          handleChangeMaterial(
+                                                                            leccion.id,
+                                                                            e,
+                                                                          )
+                                                                        }
+                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                        placeholder="https://..."
+                                                                      />
+                                                                    </div>
+                                                                  )}
+
+                                                                  {(formMat.tipo ===
+                                                                    "archivo" ||
+                                                                    formMat.tipo ===
+                                                                      "video") && (
+                                                                    <div className="md:col-span-2">
+                                                                      <label className="block font-semibold mb-2">
+                                                                        Archivo
+                                                                      </label>
+                                                                      <input
+                                                                        type="file"
+                                                                        onChange={(
+                                                                          e,
+                                                                        ) =>
+                                                                          handleFileMaterial(
+                                                                            leccion.id,
+                                                                            e,
+                                                                          )
+                                                                        }
+                                                                        accept={
+                                                                          formMat.tipo ===
+                                                                          "video"
+                                                                            ? "video/*"
+                                                                            : ".pdf,.ppt,.pptx,.doc,.docx,.zip,.rar"
+                                                                        }
+                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                      />
+                                                                      {formMat.file && (
+                                                                        <p className="text-sm text-gray-500 mt-2">
+                                                                          Archivo
+                                                                          seleccionado:{" "}
+                                                                          {
+                                                                            formMat
+                                                                              .file
+                                                                              .name
                                                                           }
-                                                                          collisionDetection={
-                                                                            closestCenter
+                                                                        </p>
+                                                                      )}
+                                                                    </div>
+                                                                  )}
+
+                                                                  {subidaMaterialEstado[
+                                                                    leccion
+                                                                      .id
+                                                                  ] && (
+                                                                    <div className="md:col-span-2 space-y-2">
+                                                                      <div className="flex items-center justify-between text-sm">
+                                                                        <span className="text-gray-700 font-medium">
+                                                                          {
+                                                                            subidaMaterialEstado[
+                                                                              leccion
+                                                                                .id
+                                                                            ]
                                                                           }
-                                                                          onDragEnd={(
-                                                                            event,
-                                                                          ) =>
-                                                                            handleDragEndMateriales(
-                                                                              event,
-                                                                              modulo.id,
-                                                                              submodulo.id,
-                                                                              leccion,
-                                                                            )
-                                                                          }
-                                                                        >
-                                                                          <SortableContext
-                                                                            items={(
-                                                                              leccion.materiales ||
-                                                                              []
-                                                                            ).map(
-                                                                              (
-                                                                                m,
-                                                                              ) =>
-                                                                                `material-${m.id}`,
+                                                                        </span>
+                                                                        {(subidaMaterialProgress[
+                                                                          leccion
+                                                                            .id
+                                                                        ] ||
+                                                                          0) <
+                                                                          100 && (
+                                                                          <span className="text-gray-600">
+                                                                            {Math.round(
+                                                                              subidaMaterialProgress[
+                                                                                leccion
+                                                                                  .id
+                                                                              ] ||
+                                                                                0,
                                                                             )}
-                                                                            strategy={
-                                                                              verticalListSortingStrategy
-                                                                            }
-                                                                          >
-                                                                            {(
-                                                                              leccion.materiales ||
-                                                                              []
-                                                                            ).map(
-                                                                              (
-                                                                                material,
-                                                                                idxMaterial,
-                                                                              ) => (
-                                                                                <SortableMaterialItem
-                                                                                  key={
-                                                                                    material.id
-                                                                                  }
-                                                                                  material={
-                                                                                    material
-                                                                                  }
-                                                                                >
-                                                                                  <div className="relative ml-0 md:ml-10 rounded-[18px] border border-slate-200 bg-white p-4 shadow-sm">
-                                                                                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
-                                                                                      <div>
-                                                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                                                          <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1.5">
-                                                                                            Material{" "}
-                                                                                            {idxMaterial +
-                                                                                              1}
+                                                                            %
+                                                                          </span>
+                                                                        )}
+                                                                      </div>
+                                                                      {(subidaMaterialProgress[
+                                                                        leccion
+                                                                          .id
+                                                                      ] ||
+                                                                        0) <
+                                                                      100 ? (
+                                                                        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                                                                          <div
+                                                                            className="h-full bg-blue-600 transition-all duration-200"
+                                                                            style={{
+                                                                              width: `${subidaMaterialProgress[leccion.id] || 0}%`,
+                                                                            }}
+                                                                          />
+                                                                        </div>
+                                                                      ) : (
+                                                                        <div className="flex items-center gap-2 text-amber-600 text-sm">
+                                                                          <span className="animate-spin w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full"></span>{" "}
+                                                                          Procesando
+                                                                          en
+                                                                          Vimeo...
+                                                                        </div>
+                                                                      )}
+                                                                    </div>
+                                                                  )}
+
+                                                                  <div className="md:col-span-2 flex justify-end">
+                                                                    <button
+                                                                      type="submit"
+                                                                      disabled={
+                                                                        guardandoMaterial
+                                                                      }
+                                                                      className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                                                                    >
+                                                                      {guardandoMaterial
+                                                                        ? formMat.tipo ===
+                                                                          "video"
+                                                                          ? "Subiendo video..."
+                                                                          : "Guardando..."
+                                                                        : "Guardar material"}
+                                                                    </button>
+                                                                  </div>
+                                                                </form>
+                                                              )}
+
+                                                              {editandoLeccionId ===
+                                                                leccion.id && (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5">
+                                                                  <div>
+                                                                    <label className="block font-semibold mb-2">
+                                                                      Editar
+                                                                      título
+                                                                    </label>
+                                                                    <input
+                                                                      type="text"
+                                                                      value={
+                                                                        formEditarLeccion.titulo
+                                                                      }
+                                                                      onChange={(
+                                                                        e,
+                                                                      ) =>
+                                                                        setFormEditarLeccion(
+                                                                          (
+                                                                            prev,
+                                                                          ) => ({
+                                                                            ...prev,
+                                                                            titulo:
+                                                                              e
+                                                                                .target
+                                                                                .value,
+                                                                          }),
+                                                                        )
+                                                                      }
+                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                    />
+                                                                  </div>
+                                                                  <div>
+                                                                    <label className="block font-semibold mb-2">
+                                                                      Editar
+                                                                      descripción
+                                                                    </label>
+                                                                    <input
+                                                                      type="text"
+                                                                      value={
+                                                                        formEditarLeccion.descripcion
+                                                                      }
+                                                                      onChange={(
+                                                                        e,
+                                                                      ) =>
+                                                                        setFormEditarLeccion(
+                                                                          (
+                                                                            prev,
+                                                                          ) => ({
+                                                                            ...prev,
+                                                                            descripcion:
+                                                                              e
+                                                                                .target
+                                                                                .value,
+                                                                          }),
+                                                                        )
+                                                                      }
+                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                    />
+                                                                  </div>
+                                                                  <div className="md:col-span-2 flex justify-end gap-2">
+                                                                    <button
+                                                                      type="button"
+                                                                      onClick={
+                                                                        cancelarEdicionLeccion
+                                                                      }
+                                                                      className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                                                    >
+                                                                      Cancelar
+                                                                    </button>
+                                                                    <button
+                                                                      type="button"
+                                                                      onClick={() =>
+                                                                        guardarEdicionLeccion(
+                                                                          leccion.id,
+                                                                        )
+                                                                      }
+                                                                      className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition"
+                                                                    >
+                                                                      Guardar
+                                                                      cambios
+                                                                    </button>
+                                                                  </div>
+                                                                </div>
+                                                              )}
+                                                            </div>
+
+                                                            {abiertaMateriales && (
+                                                              <div className="border-t bg-gray-50 p-4">
+                                                                {leccion
+                                                                  .materiales
+                                                                  ?.length ===
+                                                                0 ? (
+                                                                  <p className="text-sm text-gray-500">
+                                                                    No hay
+                                                                    materiales
+                                                                    en esta
+                                                                    lección.
+                                                                  </p>
+                                                                ) : (
+                                                                  <div className="space-y-3">
+                                                                    <DndContext
+                                                                      sensors={
+                                                                        sensors
+                                                                      }
+                                                                      collisionDetection={
+                                                                        closestCenter
+                                                                      }
+                                                                      onDragEnd={(
+                                                                        event,
+                                                                      ) =>
+                                                                        handleDragEndMateriales(
+                                                                          event,
+                                                                          modulo.id,
+                                                                          submodulo.id,
+                                                                          leccion,
+                                                                        )
+                                                                      }
+                                                                    >
+                                                                      <SortableContext
+                                                                        items={(
+                                                                          leccion.materiales ||
+                                                                          []
+                                                                        ).map(
+                                                                          (
+                                                                            m,
+                                                                          ) =>
+                                                                            `material-${m.id}`,
+                                                                        )}
+                                                                        strategy={
+                                                                          verticalListSortingStrategy
+                                                                        }
+                                                                      >
+                                                                        {(
+                                                                          leccion.materiales ||
+                                                                          []
+                                                                        ).map(
+                                                                          (
+                                                                            material,
+                                                                            idxMaterial,
+                                                                          ) => (
+                                                                            <SortableMaterialItem
+                                                                              key={
+                                                                                material.id
+                                                                              }
+                                                                              material={
+                                                                                material
+                                                                              }
+                                                                            >
+                                                                              <div className="relative ml-0 md:ml-10 rounded-[18px] border border-slate-200 bg-white p-4 shadow-sm">
+                                                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
+                                                                                  <div>
+                                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                                      <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1.5">
+                                                                                        Material{" "}
+                                                                                        {idxMaterial +
+                                                                                          1}
+                                                                                      </span>
+                                                                                      <span className="inline-flex items-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 uppercase">
+                                                                                        {
+                                                                                          material.tipo
+                                                                                        }
+                                                                                      </span>
+                                                                                    </div>
+                                                                                    <h6 className="font-bold text-slate-800 mt-2 text-base">
+                                                                                      {
+                                                                                        material.titulo
+                                                                                      }
+                                                                                    </h6>
+                                                                                    {material.tipo ===
+                                                                                      "video" &&
+                                                                                      material.estado_video && (
+                                                                                      <div className="mt-2">
+                                                                                        {material.estado_video ===
+                                                                                          "available" ||
+                                                                                        material.estado_video ===
+                                                                                          "listo" ? (
+                                                                                          <span className="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">
+                                                                                            Video
+                                                                                            disponible
                                                                                           </span>
-                                                                                          <span className="inline-flex items-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 uppercase">
-                                                                                            {
-                                                                                              material.tipo
-                                                                                            }
+                                                                                        ) : (
+                                                                                          <span className="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
+                                                                                            Procesando
+                                                                                            video...
                                                                                           </span>
-                                                                                        </div>
-                                                                                        <h6 className="font-bold text-slate-800 mt-2 text-base">
-                                                                                          {
-                                                                                            material.titulo
-                                                                                          }
-                                                                                        </h6>
-                                                                                        {material.tipo ===
-                                                                                          "video" &&
-                                                                                          material.estado_video && (
-                                                                                            <div className="mt-2">
-                                                                                              {material.estado_video ===
-                                                                                                "available" ||
-                                                                                              material.estado_video ===
-                                                                                                "listo" ? (
-                                                                                                <span className="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">
-                                                                                                  Video
-                                                                                                  disponible
-                                                                                                </span>
-                                                                                              ) : (
-                                                                                                <span className="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
-                                                                                                  Procesando
-                                                                                                  video...
-                                                                                                </span>
-                                                                                              )}
-                                                                                            </div>
-                                                                                          )}
-                                                                                        {material.contenido_texto && (
-                                                                                          <p className="text-sm text-gray-500 mt-2 whitespace-pre-line">
-                                                                                            {
-                                                                                              material.contenido_texto
-                                                                                            }
-                                                                                          </p>
                                                                                         )}
-                                                                                        <div className="flex flex-wrap gap-2 mt-3">
-                                                                                          {(material.object_key ||
-                                                                                            material.archivo_url) && (
-                                                                                            <button
-                                                                                              type="button"
-                                                                                              onClick={() =>
-                                                                                                abrirArchivoMaterial(
-                                                                                                  material,
-                                                                                                )
-                                                                                              }
-                                                                                              className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
-                                                                                            >
-                                                                                              Ver
-                                                                                              archivo
-                                                                                            </button>
-                                                                                          )}
-                                                                                          {material.video_url && (
-                                                                                            <div className="mt-3 w-full">
-                                                                                              <VideoEmbed
-                                                                                                url={
-                                                                                                  material.video_url
-                                                                                                }
-                                                                                              />
-                                                                                            </div>
-                                                                                          )}
-                                                                                          {material.enlace_url && (
-                                                                                            <a
-                                                                                              href={
-                                                                                                material.enlace_url
-                                                                                              }
-                                                                                              target="_blank"
-                                                                                              rel="noreferrer"
-                                                                                              className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
-                                                                                            >
-                                                                                              Abrir
-                                                                                              enlace
-                                                                                            </a>
-                                                                                          )}
-                                                                                        </div>
                                                                                       </div>
-                                                                                      <div className="flex flex-wrap gap-2">
+                                                                                    )}
+                                                                                    {material.contenido_texto && (
+                                                                                      <p className="text-sm text-gray-500 mt-2 whitespace-pre-line">
+                                                                                        {
+                                                                                          material.contenido_texto
+                                                                                        }
+                                                                                      </p>
+                                                                                    )}
+                                                                                    <div className="flex flex-wrap gap-2 mt-3">
+                                                                                      {(material.object_key ||
+                                                                                        material.archivo_url) && (
                                                                                         <button
                                                                                           type="button"
                                                                                           onClick={() =>
-                                                                                            iniciarEdicionMaterial(
+                                                                                            abrirArchivoMaterial(
                                                                                               material,
                                                                                             )
                                                                                           }
-                                                                                          className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                                                                                          className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
                                                                                         >
-                                                                                          Editar
+                                                                                          Ver
+                                                                                          archivo
                                                                                         </button>
-                                                                                        <button
-                                                                                          type="button"
-                                                                                          onClick={() =>
-                                                                                            eliminarMaterialCurso(
-                                                                                              material.id,
-                                                                                            )
-                                                                                          }
-                                                                                          className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
-                                                                                        >
-                                                                                          Eliminar
-                                                                                        </button>
-                                                                                      </div>
-                                                                                    </div>
-
-                                                                                    {editandoMaterialId ===
-                                                                                      material.id && (
-                                                                                      <div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                        <div>
-                                                                                          <label className="block font-semibold mb-2">
-                                                                                            Editar
-                                                                                            título
-                                                                                          </label>
-                                                                                          <input
-                                                                                            type="text"
-                                                                                            value={
-                                                                                              formEditarMaterial.titulo
+                                                                                      )}
+                                                                                      {material.video_url && (
+                                                                                        <div className="mt-3 w-full">
+                                                                                          <VideoEmbed
+                                                                                            url={
+                                                                                              material.video_url
                                                                                             }
-                                                                                            onChange={(
-                                                                                              e,
-                                                                                            ) =>
-                                                                                              setFormEditarMaterial(
-                                                                                                (
-                                                                                                  prev,
-                                                                                                ) => ({
-                                                                                                  ...prev,
-                                                                                                  titulo:
-                                                                                                    e
-                                                                                                      .target
-                                                                                                      .value,
-                                                                                                }),
-                                                                                              )
-                                                                                            }
-                                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                                           />
                                                                                         </div>
-                                                                                        <div>
-                                                                                          <label className="block font-semibold mb-2">
-                                                                                            Tipo
-                                                                                          </label>
-                                                                                          <select
-                                                                                            value={
-                                                                                              formEditarMaterial.tipo
-                                                                                            }
-                                                                                            onChange={(
-                                                                                              e,
-                                                                                            ) =>
-                                                                                              setFormEditarMaterial(
-                                                                                                (
-                                                                                                  prev,
-                                                                                                ) => ({
-                                                                                                  ...prev,
-                                                                                                  tipo: e
+                                                                                      )}
+                                                                                      {material.enlace_url && (
+                                                                                        <a
+                                                                                          href={
+                                                                                            material.enlace_url
+                                                                                          }
+                                                                                          target="_blank"
+                                                                                          rel="noreferrer"
+                                                                                          className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                                        >
+                                                                                          Abrir
+                                                                                          enlace
+                                                                                        </a>
+                                                                                      )}
+                                                                                    </div>
+                                                                                  </div>
+                                                                                  <div className="flex flex-wrap gap-2">
+                                                                                    <button
+                                                                                      type="button"
+                                                                                      onClick={() =>
+                                                                                        iniciarEdicionMaterial(
+                                                                                          material,
+                                                                                        )
+                                                                                      }
+                                                                                      className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                                                                                    >
+                                                                                      Editar
+                                                                                    </button>
+                                                                                    <button
+                                                                                      type="button"
+                                                                                      onClick={() =>
+                                                                                        eliminarMaterialCurso(
+                                                                                          material.id,
+                                                                                        )
+                                                                                      }
+                                                                                      className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                                                                                    >
+                                                                                      Eliminar
+                                                                                    </button>
+                                                                                  </div>
+                                                                                </div>
+
+                                                                                {editandoMaterialId ===
+                                                                                  material.id && (
+                                                                                  <div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                    <div>
+                                                                                      <label className="block font-semibold mb-2">
+                                                                                        Editar
+                                                                                        título
+                                                                                      </label>
+                                                                                      <input
+                                                                                        type="text"
+                                                                                        value={
+                                                                                          formEditarMaterial.titulo
+                                                                                        }
+                                                                                        onChange={(
+                                                                                          e,
+                                                                                        ) =>
+                                                                                          setFormEditarMaterial(
+                                                                                            (
+                                                                                              prev,
+                                                                                            ) => ({
+                                                                                              ...prev,
+                                                                                              titulo:
+                                                                                                e
+                                                                                                  .target
+                                                                                                  .value,
+                                                                                            }),
+                                                                                          )
+                                                                                        }
+                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                                      />
+                                                                                    </div>
+                                                                                    <div>
+                                                                                      <label className="block font-semibold mb-2">
+                                                                                        Tipo
+                                                                                      </label>
+                                                                                      <select
+                                                                                        value={
+                                                                                          formEditarMaterial.tipo
+                                                                                        }
+                                                                                        onChange={(
+                                                                                          e,
+                                                                                        ) =>
+                                                                                          setFormEditarMaterial(
+                                                                                            (
+                                                                                              prev,
+                                                                                            ) => ({
+                                                                                              ...prev,
+                                                                                              tipo: e
+                                                                                                .target
+                                                                                                .value,
+                                                                                            }),
+                                                                                          )
+                                                                                        }
+                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                                      >
+                                                                                        <option value="texto">
+                                                                                          Texto
+                                                                                        </option>
+                                                                                        <option value="url_video">
+                                                                                          URL
+                                                                                          de
+                                                                                          video
+                                                                                        </option>
+                                                                                        <option value="enlace">
+                                                                                          Enlace
+                                                                                        </option>
+                                                                                      </select>
+                                                                                    </div>
+                                                                                    {formEditarMaterial.tipo ===
+                                                                                      "texto" && (
+                                                                                      <div className="md:col-span-2">
+                                                                                        <label className="block font-semibold mb-2">
+                                                                                          Contenido
+                                                                                        </label>
+                                                                                        <textarea
+                                                                                          value={
+                                                                                            formEditarMaterial.contenido_texto
+                                                                                          }
+                                                                                          onChange={(
+                                                                                            e,
+                                                                                          ) =>
+                                                                                            setFormEditarMaterial(
+                                                                                              (
+                                                                                                prev,
+                                                                                              ) => ({
+                                                                                                ...prev,
+                                                                                                contenido_texto:
+                                                                                                  e
                                                                                                     .target
                                                                                                     .value,
-                                                                                                }),
-                                                                                              )
-                                                                                            }
-                                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                                          >
-                                                                                            <option value="texto">
-                                                                                              Texto
-                                                                                            </option>
-                                                                                            <option value="url_video">
-                                                                                              URL
-                                                                                              de
-                                                                                              video
-                                                                                            </option>
-                                                                                            <option value="enlace">
-                                                                                              Enlace
-                                                                                            </option>
-                                                                                          </select>
-                                                                                        </div>
-                                                                                        {formEditarMaterial.tipo ===
-                                                                                          "texto" && (
-                                                                                          <div className="md:col-span-2">
-                                                                                            <label className="block font-semibold mb-2">
-                                                                                              Contenido
-                                                                                            </label>
-                                                                                            <textarea
-                                                                                              value={
-                                                                                                formEditarMaterial.contenido_texto
-                                                                                              }
-                                                                                              onChange={(
-                                                                                                e,
-                                                                                              ) =>
-                                                                                                setFormEditarMaterial(
-                                                                                                  (
-                                                                                                    prev,
-                                                                                                  ) => ({
-                                                                                                    ...prev,
-                                                                                                    contenido_texto:
-                                                                                                      e
-                                                                                                        .target
-                                                                                                        .value,
-                                                                                                  }),
-                                                                                                )
-                                                                                              }
-                                                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
-                                                                                            />
-                                                                                          </div>
-                                                                                        )}
-                                                                                        {formEditarMaterial.tipo ===
-                                                                                          "url_video" && (
-                                                                                          <div className="md:col-span-2">
-                                                                                            <label className="block font-semibold mb-2">
-                                                                                              URL
-                                                                                              del
-                                                                                              video
-                                                                                            </label>
-                                                                                            <input
-                                                                                              type="text"
-                                                                                              value={
-                                                                                                formEditarMaterial.video_url
-                                                                                              }
-                                                                                              onChange={(
-                                                                                                e,
-                                                                                              ) =>
-                                                                                                setFormEditarMaterial(
-                                                                                                  (
-                                                                                                    prev,
-                                                                                                  ) => ({
-                                                                                                    ...prev,
-                                                                                                    video_url:
-                                                                                                      e
-                                                                                                        .target
-                                                                                                        .value,
-                                                                                                  }),
-                                                                                                )
-                                                                                              }
-                                                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                                            />
-                                                                                          </div>
-                                                                                        )}
-                                                                                        {formEditarMaterial.tipo ===
-                                                                                          "enlace" && (
-                                                                                          <div className="md:col-span-2">
-                                                                                            <label className="block font-semibold mb-2">
-                                                                                              Enlace
-                                                                                            </label>
-                                                                                            <input
-                                                                                              type="text"
-                                                                                              value={
-                                                                                                formEditarMaterial.enlace_url
-                                                                                              }
-                                                                                              onChange={(
-                                                                                                e,
-                                                                                              ) =>
-                                                                                                setFormEditarMaterial(
-                                                                                                  (
-                                                                                                    prev,
-                                                                                                  ) => ({
-                                                                                                    ...prev,
-                                                                                                    enlace_url:
-                                                                                                      e
-                                                                                                        .target
-                                                                                                        .value,
-                                                                                                  }),
-                                                                                                )
-                                                                                              }
-                                                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                                            />
-                                                                                          </div>
-                                                                                        )}
-                                                                                        <div className="md:col-span-2 flex justify-end gap-2">
-                                                                                          <button
-                                                                                            type="button"
-                                                                                            onClick={
-                                                                                              cancelarEdicionMaterial
-                                                                                            }
-                                                                                            className="px-4 py-2 rounded-xl border hover:bg-gray-50"
-                                                                                          >
-                                                                                            Cancelar
-                                                                                          </button>
-                                                                                          <button
-                                                                                            type="button"
-                                                                                            onClick={() =>
-                                                                                              guardarEdicionMaterial(
-                                                                                                material.id,
-                                                                                              )
-                                                                                            }
-                                                                                            className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700"
-                                                                                          >
-                                                                                            Guardar
-                                                                                            cambios
-                                                                                          </button>
-                                                                                        </div>
+                                                                                              }),
+                                                                                            )
+                                                                                          }
+                                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
+                                                                                        />
                                                                                       </div>
                                                                                     )}
+                                                                                    {formEditarMaterial.tipo ===
+                                                                                      "url_video" && (
+                                                                                      <div className="md:col-span-2">
+                                                                                        <label className="block font-semibold mb-2">
+                                                                                          URL
+                                                                                          del
+                                                                                          video
+                                                                                        </label>
+                                                                                        <input
+                                                                                          type="text"
+                                                                                          value={
+                                                                                            formEditarMaterial.video_url
+                                                                                          }
+                                                                                          onChange={(
+                                                                                            e,
+                                                                                          ) =>
+                                                                                            setFormEditarMaterial(
+                                                                                              (
+                                                                                                prev,
+                                                                                              ) => ({
+                                                                                                ...prev,
+                                                                                                video_url:
+                                                                                                  e
+                                                                                                    .target
+                                                                                                    .value,
+                                                                                              }),
+                                                                                            )
+                                                                                          }
+                                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                                        />
+                                                                                      </div>
+                                                                                    )}
+                                                                                    {formEditarMaterial.tipo ===
+                                                                                      "enlace" && (
+                                                                                      <div className="md:col-span-2">
+                                                                                        <label className="block font-semibold mb-2">
+                                                                                          Enlace
+                                                                                        </label>
+                                                                                        <input
+                                                                                          type="text"
+                                                                                          value={
+                                                                                            formEditarMaterial.enlace_url
+                                                                                          }
+                                                                                          onChange={(
+                                                                                            e,
+                                                                                          ) =>
+                                                                                            setFormEditarMaterial(
+                                                                                              (
+                                                                                                prev,
+                                                                                              ) => ({
+                                                                                                ...prev,
+                                                                                                enlace_url:
+                                                                                                  e
+                                                                                                    .target
+                                                                                                    .value,
+                                                                                              }),
+                                                                                          )
+                                                                                        }
+                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                                      />
+                                                                                    </div>
+                                                                                    )}
+                                                                                    <div className="md:col-span-2 flex justify-end gap-2">
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        onClick={
+                                                                                          cancelarEdicionMaterial
+                                                                                        }
+                                                                                        className="px-4 py-2 rounded-xl border hover:bg-gray-50"
+                                                                                      >
+                                                                                        Cancelar
+                                                                                      </button>
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        onClick={() =>
+                                                                                          guardarEdicionMaterial(
+                                                                                            material.id,
+                                                                                          )
+                                                                                        }
+                                                                                        className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700"
+                                                                                      >
+                                                                                        Guardar
+                                                                                        cambios
+                                                                                      </button>
+                                                                                    </div>
                                                                                   </div>
-                                                                                </SortableMaterialItem>
-                                                                              ),
-                                                                            )}
-                                                                          </SortableContext>
-                                                                        </DndContext>
-                                                                      </div>
-                                                                    )}
+                                                                                )}
+                                                                              </div>
+                                                                            </SortableMaterialItem>
+                                                                          ),
+                                                                        )}
+                                                                      </SortableContext>
+                                                                    </DndContext>
                                                                   </div>
                                                                 )}
                                                               </div>
-                                                            </SortableLeccionItem>
-                                                          );
-                                                        },
-                                                      )}
-                                                    </SortableContext>
-                                                  </DndContext>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </SortableSubModuloItem>
-                                        ),
-                                      )}
-                                    </SortableContext>
-                                  </DndContext>
-                                )}
+                                                            )}
+                                                          </div>
+                                                        </SortableLeccionItem>
+                                                      );
+                                                    },
+                                                  )}
+                                                </SortableContext>
+                                              </DndContext>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </SortableSubModuloItem>
+                                    ),
+                                  )}
+                                </SortableContext>
+                              </DndContext>
+                            )}
                               </div>
                             )}
                           </div>
-                        </SortableModuloItem>
-                      );
-                    })}
-                  </div>
-                </SortableContext>
-              </DndContext>
+
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleFormSubModulo(modulo.id)}
+                              className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+                            >
+                              + Submódulo
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => abrirFormTareaDesdeModulo(modulo)}
+                              className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition shadow-sm"
+                            >
+                              + Tarea
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => toggleLeccionesModulo(modulo.id)}
+                              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                            >
+                              {abierto ? "Ocultar" : "Ver contenido"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => iniciarEdicionModulo(modulo)}
+                              className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                            >
+                              Editar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => eliminarModuloCurso(modulo.id)}
+                              className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+
+                        {mostrarFormSubModulo[modulo.id] && (
+                          <form
+                            onSubmit={(e) => guardarSubModuloCurso(e, modulo.id)}
+                            className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                          >
+                            <div>
+                              <label className="block font-semibold mb-2">
+                                Título del submódulo
+                              </label>
+                              <input
+                                type="text"
+                                name="titulo"
+                                value={formSubModulo[modulo.id]?.titulo || ""}
+                                onChange={(e) => handleChangeSubModulo(modulo.id, e)}
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                placeholder="Ej. Submódulo 1.1"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block font-semibold mb-2">
+                                Descripción
+                              </label>
+                              <input
+                                type="text"
+                                name="descripcion"
+                                value={formSubModulo[modulo.id]?.descripcion || ""}
+                                onChange={(e) => handleChangeSubModulo(modulo.id, e)}
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                placeholder="Descripción breve"
+                              />
+                            </div>
+
+                            <div className="md:col-span-2 flex justify-end">
+                              <button
+                                type="submit"
+                                disabled={guardandoSubModulo}
+                                className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                              >
+                                {guardandoSubModulo ? "Guardando..." : "Guardar submódulo"}
+                              </button>
+                            </div>
+                          </form>
+                        )}
+
+                        {editandoModuloId === modulo.id && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5">
+                            <div>
+                              <label className="block font-semibold mb-2">Editar título</label>
+                              <input
+                                type="text"
+                                value={formEditarModulo.titulo}
+                                onChange={(e) =>
+                                  setFormEditarModulo((prev) => ({
+                                    ...prev,
+                                    titulo: e.target.value,
+                                  }))
+                                }
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block font-semibold mb-2">
+                                Editar descripción
+                              </label>
+                              <input
+                                type="text"
+                                value={formEditarModulo.descripcion}
+                                onChange={(e) =>
+                                  setFormEditarModulo((prev) => ({
+                                    ...prev,
+                                    descripcion: e.target.value,
+                                  }))
+                                }
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                              />
+                            </div>
+
+                            <div className="md:col-span-2 flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={cancelarEdicionModulo}
+                                className="px-4 py-2 rounded-xl border hover:bg-gray-50"
+                              >
+                                Cancelar
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => guardarEdicionModulo(modulo.id)}
+                                className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700"
+                              >
+                                Guardar cambios
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {abierto && (
+                        <div className="p-5 space-y-4">
+                          {modulo.submodulos?.length === 0 ? (
+                            <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
+                              <p className="text-gray-700 font-medium">
+                                Este módulo no tiene submódulos
+                              </p>
+                              <p className="text-sm text-gray-500 mt-2">
+                                Agrega el primer submódulo para empezar a organizar sesiones y materiales.
+                              </p>
+                            </div>
+                          ) : (
+                            <DndContext
+                              sensors={sensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={(event) => handleDragEndSubmodulos(event, modulo)}
+                            >
+                              <SortableContext
+                                items={(modulo.submodulos || []).map((s) => `submodulo-${s.id}`)}
+                                strategy={verticalListSortingStrategy}
+                              >
+                                {(modulo.submodulos || []).map((submodulo, idxSub) => (
+                              <SortableSubModuloItem key={submodulo.id} submodulo={submodulo}>
+                                <div
+                                  className="relative ml-0 md:ml-6 rounded-[24px] border border-slate-200 bg-slate-50/80 overflow-hidden"
+                                >
+                                <div className="px-4 md:px-5 py-4 bg-white border-b border-slate-200">
+                                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
+                                    <div>
+                                      <div className="flex items-center gap-3 flex-wrap">
+                                        <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5">
+                                          Submódulo {index + 1}.{idxSub + 1}
+                                        </span>
+
+                                        <h5 className="text-lg font-bold text-slate-800">
+                                          {submodulo.titulo}
+                                        </h5>
+                                      </div>
+
+                                      {submodulo.descripcion && (
+                                        <p className="text-sm text-slate-500 mt-2">
+                                          {submodulo.descripcion}
+                                        </p>
+                                      )}
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleFormLeccion(submodulo.id)}
+                                        className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+                                      >
+                                        + Lección
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => iniciarEdicionModulo(submodulo)}
+                                        className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                                      >
+                                        Editar
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => eliminarModuloCurso(submodulo.id)}
+                                        className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                                      >
+                                        Eliminar
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {mostrarFormLeccion[submodulo.id] && (
+                                    <form
+                                      onSubmit={(e) => guardarLeccionCurso(e, submodulo.id)}
+                                      className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                                    >
+                                      <div>
+                                        <label className="block font-semibold mb-2">
+                                          Título de la lección
+                                        </label>
+                                        <input
+                                          type="text"
+                                          name="titulo"
+                                          value={formLeccion[submodulo.id]?.titulo || ""}
+                                          onChange={(e) => handleChangeLeccion(submodulo.id, e)}
+                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                          placeholder="Ej. Lección 1 - Introducción"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block font-semibold mb-2">
+                                          Descripción
+                                        </label>
+                                        <input
+                                          type="text"
+                                          name="descripcion"
+                                          value={formLeccion[submodulo.id]?.descripcion || ""}
+                                          onChange={(e) => handleChangeLeccion(submodulo.id, e)}
+                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                          placeholder="Descripción breve"
+                                        />
+                                      </div>
+
+                                      <div className="md:col-span-2 flex justify-end">
+                                        <button
+                                          type="submit"
+                                          disabled={guardandoLeccion}
+                                          className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                                        >
+                                          {guardandoLeccion ? "Guardando..." : "Guardar lección"}
+                                        </button>
+                                      </div>
+                                    </form>
+                                  )}
+                                </div>
+
+                                <div className="p-4 space-y-4">
+                                  {submodulo.lecciones?.length === 0 ? (
+                                    <p className="text-sm text-gray-500">
+                                      Este submódulo no tiene lecciones.
+                                    </p>
+                                  ) : (
+                                    <DndContext
+                                      sensors={sensors}
+                                      collisionDetection={closestCenter}
+                                      onDragEnd={(event) =>
+                                        handleDragEndLecciones(event, modulo.id, submodulo)
+                                      }
+                                    >
+                                      <SortableContext
+                                        items={(submodulo.lecciones || []).map((l) => `leccion-${l.id}`)}
+                                        strategy={verticalListSortingStrategy}
+                                      >
+                                        {(submodulo.lecciones || []).map((leccion, idxLeccion) => {
+                                      const abiertaMateriales = !!mostrarMateriales[leccion.id];
+                                      const formMat = formMaterial[leccion.id] || {
+                                        titulo: "",
+                                        tipo: "texto",
+                                        contenido_texto: "",
+                                        video_url: "",
+                                        enlace_url: "",
+                                        file: null,
+                                      };
+
+                                      return (
+                                        <SortableLeccionItem key={leccion.id} leccion={leccion}>
+                                          <div
+                                            className="relative ml-0 md:ml-8 rounded-[20px] border border-white bg-white overflow-hidden shadow-sm"
+                                          >
+                                          <div className="px-4 py-4 bg-white">
+                                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
+                                              <div>
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                  <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5">
+                                                    Lección {index + 1}.{idxSub + 1}.{idxLeccion + 1}
+                                                  </span>
+
+                                                  <h5 className="text-lg font-bold text-slate-800">
+                                                    {leccion.titulo}
+                                                  </h5>
+                                                </div>
+
+                                                {leccion.descripcion && (
+                                                  <p className="text-sm text-slate-500 mt-2">
+                                                    {leccion.descripcion}
+                                                  </p>
+                                                )}
+                                              </div>
+
+                                              <div className="flex flex-wrap gap-2">
+                                              
+                                                <button
+                                                  type="button"
+                                                  onClick={() => toggleFormMaterial(leccion.id)}
+                                                  className="px-3 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+                                                >
+                                                  + Material
+                                                </button>
+
+                                                <button
+                                                  type="button"
+                                                  onClick={() => toggleFormExamen(leccion.id)}
+                                                  className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm"
+                                                >
+                                                  + Examen
+                                                </button>
+
+                                                <button
+                                                  type="button"
+                                                  onClick={() => toggleMaterialesLeccion(leccion.id)}
+                                                  className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                >
+                                                  {abiertaMateriales
+                                                    ? "Ocultar materiales"
+                                                    : "Ver materiales"}
+                                                </button>
+
+                                                <button
+                                                  type="button"
+                                                  onClick={() => iniciarEdicionLeccion(leccion)}
+                                                  className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                >
+                                                  Editar
+                                                </button>
+
+                                                <button
+                                                  type="button"
+                                                  onClick={() => eliminarLeccionCurso(leccion.id)}
+                                                  className="px-3 py-2 rounded-xl bg-red-100 text-red-700 hover:bg-red-200 text-sm"
+                                                >
+                                                  Eliminar
+                                                </button>
+                                              </div>
+                                            </div>
+
+                                            {leccion.examenes?.length > 0 && (
+                                              <div className="mt-4 space-y-3">
+                                                <p className="text-sm font-semibold text-slate-700">Exámenes de la lección</p>
+
+                                                {leccion.examenes.map((examen, idxExamen) => (
+                                                  <div
+                                                    key={examen.id}
+                                                    className="rounded-2xl border border-violet-200 bg-violet-50 p-4"
+                                                  >
+                                                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                      <div>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                          <span className="inline-flex rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-semibold">
+                                                            Examen {idxExamen + 1}
+                                                          </span>
+
+                                                          <h6 className="font-bold text-slate-800">{examen.titulo}</h6>
+                                                        </div>
+
+                                                        {examen.descripcion && (
+                                                          <p className="text-sm text-slate-500 mt-2">{examen.descripcion}</p>
+                                                        )}
+
+                                                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                            {examen.total_preguntas || 0} preguntas
+                                                          </span>
+                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                            {examen.duracion_minutos || 30} min
+                                                          </span>
+                                                          <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                            {examen.intentos_permitidos || 1} intento(s)
+                                                          </span>
+                                                          <span
+                                                            className={`inline-flex rounded-full border px-3 py-1 ${
+                                                              examen.evaluacion_nombre
+                                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                                : "border-amber-200 bg-amber-50 text-amber-700"
+                                                            }`}
+                                                          >
+                                                            {examen.evaluacion_nombre
+                                                              ? `Evaluación asignada: ${examen.evaluacion_nombre}`
+                                                              : "Sin evaluación asignada"}
+                                                          </span>
+                                                        </div>
+                                                      </div>
+
+                                                      <div className="flex flex-wrap gap-2">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => abrirConfigExamen(examen)}
+                                                          className="rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+                                                        >
+                                                          Configurar nota
+                                                        </button>
+
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => eliminarExamenLeccion(examen.id)}
+                                                          className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
+                                                        >
+                                                          Eliminar
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+
+                                            {mostrarFormExamen[leccion.id] && (
+                                              <form
+                                                onSubmit={(e) => guardarExamenLeccion(e, leccion.id)}
+                                                className="mt-5 border-t pt-5 space-y-5"
+                                              >
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                  <div>
+                                                    <label className="block font-semibold mb-2">Título del examen</label>
+                                                    <input
+                                                      type="text"
+                                                      value={formExamen[leccion.id]?.titulo || ""}
+                                                      onChange={(e) => handleChangeExamen(leccion.id, "titulo", e.target.value)}
+                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                      placeholder="Ej. Examen parcial"
+                                                    />
+                                                  </div>
+
+                                                  <div>
+                                                    <label className="block font-semibold mb-2">Descripción</label>
+                                                    <input
+                                                      type="text"
+                                                      value={formExamen[leccion.id]?.descripcion || ""}
+                                                      onChange={(e) => handleChangeExamen(leccion.id, "descripcion", e.target.value)}
+                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                      placeholder="Descripción breve"
+                                                    />
+                                                  </div>
+
+                                                  <div>
+                                                    <label className="block font-semibold mb-2">Duración (minutos)</label>
+                                                    <input
+                                                      type="number"
+                                                      min="1"
+                                                      value={formExamen[leccion.id]?.duracion_minutos || 30}
+                                                      onChange={(e) => handleChangeExamen(leccion.id, "duracion_minutos", e.target.value)}
+                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                    />
+                                                  </div>
+
+                                                  <div>
+                                                    <label className="block font-semibold mb-2">Intentos permitidos</label>
+                                                    <input
+                                                      type="number"
+                                                      min="1"
+                                                      value={formExamen[leccion.id]?.intentos_permitidos || 1}
+                                                      onChange={(e) => handleChangeExamen(leccion.id, "intentos_permitidos", e.target.value)}
+                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                    />
+                                                  </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                  {(formExamen[leccion.id]?.preguntas || []).map((pregunta, preguntaIndex) => (
+                                                    <div
+                                                      key={preguntaIndex}
+                                                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4"
+                                                    >
+                                                      <div className="flex items-center justify-between gap-3">
+                                                        <h6 className="font-bold text-slate-800">
+                                                          Pregunta {preguntaIndex + 1}
+                                                        </h6>
+
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => eliminarPreguntaExamen(leccion.id, preguntaIndex)}
+                                                          className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200"
+                                                        >
+                                                          Eliminar
+                                                        </button>
+                                                      </div>
+
+                                                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                        <div className="md:col-span-3">
+                                                          <label className="block font-semibold mb-2">Enunciado</label>
+                                                          <input
+                                                            type="text"
+                                                            value={pregunta.enunciado || ""}
+                                                            onChange={(e) =>
+                                                              handleChangePreguntaExamen(
+                                                                leccion.id,
+                                                                preguntaIndex,
+                                                                "enunciado",
+                                                                e.target.value
+                                                              )
+                                                            }
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                            placeholder="Escribe la pregunta"
+                                                          />
+                                                        </div>
+
+                                                        <div>
+                                                          <label className="block font-semibold mb-2">Puntaje</label>
+                                                          <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="0.01"
+                                                            value={pregunta.puntaje || 1}
+                                                            onChange={(e) =>
+                                                              handleChangePreguntaExamen(
+                                                                leccion.id,
+                                                                preguntaIndex,
+                                                                "puntaje",
+                                                                e.target.value
+                                                              )
+                                                            }
+                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                          />
+                                                        </div>
+                                                      </div>
+
+                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {(pregunta.opciones || []).map((opcion, opcionIndex) => (
+                                                          <div
+                                                            key={opcionIndex}
+                                                            className={`rounded-2xl border p-4 ${
+                                                              opcion.es_correcta
+                                                                ? "border-emerald-300 bg-emerald-50"
+                                                                : "border-slate-200 bg-white"
+                                                            }`}
+                                                          >
+                                                            <label className="block font-semibold mb-2">
+                                                              Opción {opcionIndex + 1}
+                                                            </label>
+
+                                                            <input
+                                                              type="text"
+                                                              value={opcion.texto || ""}
+                                                              onChange={(e) =>
+                                                                handleChangeOpcionExamen(
+                                                                  leccion.id,
+                                                                  preguntaIndex,
+                                                                  opcionIndex,
+                                                                  "texto",
+                                                                  e.target.value
+                                                                )
+                                                              }
+                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
+                                                              placeholder={`Texto de la opción ${opcionIndex + 1}`}
+                                                            />
+
+                                                            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                                                              <input
+                                                                type="radio"
+                                                                name={`correcta-${leccion.id}-${preguntaIndex}`}
+                                                                checked={!!opcion.es_correcta}
+                                                                onChange={() =>
+                                                                  handleChangeOpcionExamen(
+                                                                    leccion.id,
+                                                                    preguntaIndex,
+                                                                    opcionIndex,
+                                                                    "es_correcta",
+                                                                    true
+                                                                  )
+                                                                }
+                                                              />
+                                                              Marcar como correcta
+                                                            </label>
+                                                          </div>
+                                                        ))}
+                                                      </div>
+                                                    </div>
+                                                  ))}
+                                                </div>
+
+                                                <div className="flex flex-wrap justify-between gap-3">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => agregarPreguntaExamen(leccion.id)}
+                                                    className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                                                  >
+                                                    + Agregar pregunta
+                                                  </button>
+
+                                                  <button
+                                                    type="submit"
+                                                    disabled={guardandoExamen}
+                                                    className="rounded-2xl bg-violet-600 px-5 py-3 text-white font-semibold hover:bg-violet-700 disabled:opacity-60"
+                                                  >
+                                                    {guardandoExamen ? "Guardando..." : "Guardar examen"}
+                                                  </button>
+                                                </div>
+                                              </form>
+                                            )}
+
+                                            {mostrarFormMaterial[leccion.id] && (
+                                              <form
+                                                onSubmit={(e) => guardarMaterialCurso(e, leccion.id)}
+                                                className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                                              >
+                                                <div>
+                                                  <label className="block font-semibold mb-2">
+                                                    Título del material
+                                                  </label>
+                                                  <input
+                                                    type="text"
+                                                    value={formMat.titulo}
+                                                    name="titulo"
+                                                    onChange={(e) => handleChangeMaterial(leccion.id, e)}
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                    placeholder="Ej. PDF de introducción"
+                                                  />
+                                                </div>
+
+                                                <div>
+                                                  <label className="block font-semibold mb-2">
+                                                    Tipo
+                                                  </label>
+                                                  <select
+                                                    value={formMat.tipo}
+                                                    name="tipo"
+                                                    onChange={(e) => handleChangeMaterial(leccion.id, e)}
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                  >
+                                                    <option value="texto">Texto</option>
+                                                    <option value="archivo">Archivo</option>
+                                                    <option value="video">Video</option>
+                                                    <option value="url_video">URL de video</option>
+                                                    <option value="enlace">Enlace</option>
+                                                  </select>
+                                                </div>
+
+                                                {formMat.tipo === "texto" && (
+                                                  <div className="md:col-span-2">
+                                                    <label className="block font-semibold mb-2">
+                                                      Contenido
+                                                    </label>
+                                                    <textarea
+                                                      name="contenido_texto"
+                                                      value={formMat.contenido_texto}
+                                                      onChange={(e) => handleChangeMaterial(leccion.id, e)}
+                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
+                                                      placeholder="Escribe el contenido de la lección"
+                                                    />
+                                                  </div>
+                                                )}
+
+                                                {formMat.tipo === "url_video" && (
+                                                  <div className="md:col-span-2">
+                                                    <label className="block font-semibold mb-2">
+                                                      URL del video
+                                                    </label>
+                                                    <input
+                                                      type="text"
+                                                      name="video_url"
+                                                      value={formMat.video_url}
+                                                      onChange={(e) => handleChangeMaterial(leccion.id, e)}
+                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                      placeholder="https://vimeo.com/123456789"
+                                                    />
+                                                  </div>
+                                                )}
+
+                                                {formMat.tipo === "enlace" && (
+                                                  <div className="md:col-span-2">
+                                                    <label className="block font-semibold mb-2">
+                                                      Enlace
+                                                    </label>
+                                                    <input
+                                                      type="text"
+                                                      name="enlace_url"
+                                                      value={formMat.enlace_url}
+                                                      onChange={(e) => handleChangeMaterial(leccion.id, e)}
+                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                      placeholder="https://..."
+                                                    />
+                                                  </div>
+                                                )}
+
+                                                {(formMat.tipo === "archivo" ||
+                                                  formMat.tipo === "video") && (
+                                                  <div className="md:col-span-2">
+                                                    <label className="block font-semibold mb-2">
+                                                      Archivo
+                                                    </label>
+                                                    <input
+                                                      type="file"
+                                                      onChange={(e) => handleFileMaterial(leccion.id, e)}
+                                                      accept={
+                                                        formMat.tipo === "video"
+                                                          ? "video/*"
+                                                          : ".pdf,.ppt,.pptx,.doc,.docx,.zip,.rar"
+                                                      }
+                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                    />
+
+                                                    {formMat.file && (
+                                                      <p className="text-sm text-gray-500 mt-2">
+                                                        Archivo seleccionado: {formMat.file.name}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                )}
+
+                                                {subidaMaterialEstado[leccion.id] && (
+                                                  <div className="md:col-span-2 space-y-2">
+                                                    <div className="flex items-center justify-between text-sm">
+                                                      <span className="text-gray-700 font-medium">
+                                                        {subidaMaterialEstado[leccion.id]}
+                                                      </span>
+
+                                                      {(subidaMaterialProgress[leccion.id] || 0) < 100 && (
+                                                        <span className="text-gray-600">
+                                                          {Math.round(subidaMaterialProgress[leccion.id] || 0)}%
+                                                        </span>
+                                                      )}
+                                                    </div>
+
+                                                    {(subidaMaterialProgress[leccion.id] || 0) < 100 ? (
+                                                      <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div
+                                                          className="h-full bg-blue-600 transition-all duration-200"
+                                                          style={{ width: `${subidaMaterialProgress[leccion.id] || 0}%` }}
+                                                        />
+                                                      </div>
+                                                    ) : (
+                                                      <div className="flex items-center gap-2 text-amber-600 text-sm">
+                                                        <span className="animate-spin w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full"></span>
+                                                        Procesando en Vimeo...
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                )}
+
+                                                <div className="md:col-span-2 flex justify-end">
+                                                  <button
+                                                    type="submit"
+                                                    disabled={guardandoMaterial}
+                                                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
+                                                  >
+                                                    {guardandoMaterial
+                                                      ? (formMat.tipo === "video" ? "Subiendo video..." : "Guardando...")
+                                                      : "Guardar material"}
+                                                  </button>
+                                                </div>
+                                              </form>
+                                            )}
+
+                                            {editandoLeccionId === leccion.id && (
+                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5">
+                                                <div>
+                                                  <label className="block font-semibold mb-2">
+                                                    Editar título
+                                                  </label>
+                                                  <input
+                                                    type="text"
+                                                    value={formEditarLeccion.titulo}
+                                                    onChange={(e) =>
+                                                      setFormEditarLeccion((prev) => ({
+                                                        ...prev,
+                                                        titulo: e.target.value,
+                                                      }))
+                                                    }
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                  />
+                                                </div>
+
+                                                <div>
+                                                  <label className="block font-semibold mb-2">
+                                                    Editar descripción
+                                                  </label>
+                                                  <input
+                                                    type="text"
+                                                    value={formEditarLeccion.descripcion}
+                                                    onChange={(e) =>
+                                                      setFormEditarLeccion((prev) => ({
+                                                        ...prev,
+                                                        descripcion: e.target.value,
+                                                      }))
+                                                    }
+                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                  />
+                                                </div>
+
+                                                <div className="md:col-span-2 flex justify-end gap-2">
+                                                  <button
+                                                    type="button"
+                                                    onClick={cancelarEdicionLeccion}
+                                                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                                  >
+                                                    Cancelar
+                                                  </button>
+
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => guardarEdicionLeccion(leccion.id)}
+                                                    className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition"
+                                                  >
+                                                    Guardar cambios
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {abiertaMateriales && (
+                                            <div className="border-t bg-gray-50 p-4">
+                                              {leccion.materiales?.length === 0 ? (
+                                                <p className="text-sm text-gray-500">
+                                                  No hay materiales en esta lección.
+                                                </p>
+                                              ) : (
+                                                <div className="space-y-3">
+                                                  <DndContext
+                                                    sensors={sensors}
+                                                    collisionDetection={closestCenter}
+                                                    onDragEnd={(event) =>
+                                                      handleDragEndMateriales(event, modulo.id, submodulo.id, leccion)
+                                                    }
+                                                  >
+                                                    <SortableContext
+                                                      items={(leccion.materiales || []).map((m) => `material-${m.id}`)}
+                                                      strategy={verticalListSortingStrategy}
+                                                    >
+                                                      {(leccion.materiales || []).map((material, idxMaterial) => (
+                                                    <SortableMaterialItem key={material.id} material={material}>
+                                                      <div
+                                                        className="relative ml-0 md:ml-10 rounded-[18px] border border-slate-200 bg-slate-50 p-4"
+                                                      >
+                                                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
+                                                        <div>
+                                                          <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1.5">
+                                                              Material {idxMaterial + 1}
+                                                            </span>
+
+                                                            <span className="inline-flex items-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 uppercase">
+                                                              {material.tipo}
+                                                            </span>
+                                                          </div>
+
+                                                          <h6 className="font-bold text-slate-800 mt-2 text-base">
+                                                            {material.titulo}
+                                                          </h6>
+
+                                                          {material.tipo === "video" && material.estado_video && (
+                                                            <div className="mt-2">
+                                                              {material.estado_video === "available" || material.estado_video === "listo" ? (
+                                                                <span className="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">
+                                                                  Video disponible
+                                                                </span>
+                                                              ) : (
+                                                                <span className="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
+                                                                  Procesando video...
+                                                                </span>
+                                                              )}
+                                                            </div>
+                                                          )}
+
+                                                          {material.contenido_texto && (
+                                                            <p className="text-sm text-gray-500 mt-2 whitespace-pre-line">
+                                                              {material.contenido_texto}
+                                                            </p>
+                                                          )}
+
+                                                          <div className="flex flex-wrap gap-2 mt-3">
+                                                            {(material.object_key || material.archivo_url) && (
+                                                              <button
+                                                                type="button"
+                                                                onClick={() => abrirArchivoMaterial(material)}
+                                                                className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                              >
+                                                                Ver archivo
+                                                              </button>
+                                                            )}
+
+                                                            {material.video_url && (
+                                                              <div className="mt-3 w-full">
+                                                                <VideoEmbed url={material.video_url} />
+                                                              </div>
+                                                            )}
+
+                                                            {material.enlace_url && (
+                                                              <a
+                                                                href={material.enlace_url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                              >
+                                                                Abrir enlace
+                                                              </a>
+                                                            )}
+                                                          </div>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap gap-2">
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => iniciarEdicionMaterial(material)}
+                                                            className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                                                          >
+                                                            Editar
+                                                          </button>
+
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => eliminarMaterialCurso(material.id)}
+                                                            className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                                                          >
+                                                            Eliminar
+                                                          </button>
+                                                        </div>
+                                                      </div>
+
+                                                      {editandoMaterialId === material.id && (
+                                                        <div className="mt-4 border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                          <div>
+                                                            <label className="block font-semibold mb-2">
+                                                              Editar título
+                                                            </label>
+                                                            <input
+                                                              type="text"
+                                                              value={formEditarMaterial.titulo}
+                                                              onChange={(e) =>
+                                                                setFormEditarMaterial((prev) => ({
+                                                                  ...prev,
+                                                                  titulo: e.target.value,
+                                                                }))
+                                                              }
+                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                            />
+                                                          </div>
+
+                                                          <div>
+                                                            <label className="block font-semibold mb-2">
+                                                              Tipo
+                                                            </label>
+                                                            <select
+                                                              value={formEditarMaterial.tipo}
+                                                              onChange={(e) =>
+                                                                setFormEditarMaterial((prev) => ({
+                                                                  ...prev,
+                                                                  tipo: e.target.value,
+                                                                }))
+                                                              }
+                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                            >
+                                                              <option value="texto">Texto</option>
+                                                              <option value="url_video">URL de video</option>
+                                                              <option value="enlace">Enlace</option>
+                                                            </select>
+                                                          </div>
+
+                                                          {formEditarMaterial.tipo === "texto" && (
+                                                            <div className="md:col-span-2">
+                                                              <label className="block font-semibold mb-2">
+                                                                Contenido
+                                                              </label>
+                                                              <textarea
+                                                                value={formEditarMaterial.contenido_texto}
+                                                                onChange={(e) =>
+                                                                  setFormEditarMaterial((prev) => ({
+                                                                    ...prev,
+                                                                    contenido_texto: e.target.value,
+                                                                  }))
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
+                                                              />
+                                                            </div>
+                                                          )}
+
+                                                          {formEditarMaterial.tipo === "url_video" && (
+                                                            <div className="md:col-span-2">
+                                                              <label className="block font-semibold mb-2">
+                                                                URL del video
+                                                              </label>
+                                                              <input
+                                                                 type="text"
+                                                                value={formEditarMaterial.video_url}
+                                                                onChange={(e) =>
+                                                                  setFormEditarMaterial((prev) => ({
+                                                                    ...prev,
+                                                                    video_url: e.target.value,
+                                                                  }))
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                              />
+                                                            </div>
+                                                          )}
+
+                                                          {formEditarMaterial.tipo === "enlace" && (
+                                                            <div className="md:col-span-2">
+                                                              <label className="block font-semibold mb-2">
+                                                                Enlace
+                                                              </label>
+                                                              <input
+                                                                type="text"
+                                                                value={formEditarMaterial.enlace_url}
+                                                                onChange={(e) =>
+                                                                  setFormEditarMaterial((prev) => ({
+                                                                    ...prev,
+                                                                    enlace_url: e.target.value,
+                                                                  }))
+                                                                }
+                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                              />
+                                                            </div>
+                                                          )}
+
+                                                          <div className="md:col-span-2 flex justify-end gap-2">
+                                                            <button
+                                                              type="button"
+                                                              onClick={cancelarEdicionMaterial}
+                                                              className="px-4 py-2 rounded-xl border hover:bg-gray-50"
+                                                            >
+                                                              Cancelar
+                                                            </button>
+
+                                                            <button
+                                                              type="button"
+                                                              onClick={() =>
+                                                                guardarEdicionMaterial(material.id)
+                                                              }
+                                                              className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700"
+                                                            >
+                                                              Guardar cambios
+                                                            </button>
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </SortableMaterialItem>
+                                                  ))}
+                                                </SortableContext>
+                                              </DndContext>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </SortableLeccionItem>
+                                      );
+                                    })}
+                                  </SortableContext>
+                                </DndContext>
+                                  )}
+                                </div>
+                              </div>
+                            </SortableSubModuloItem>
+                                ))}
+                              </SortableContext>
+                          </DndContext>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </SortableModuloItem>
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
             )}
           </div>
         </div>
       )}
 
-      {/* NOTIFICACIONES DE VIDEO GLOBALES */}
+{/* NOTIFICACIONES DE VIDEO GLOBALES */}
       {notificacionesVideo.length > 0 && (
         <div className="fixed top-4 right-4 z-[80] space-y-3 w-[340px]">
           {notificacionesVideo.map((item) => (
             <div
               key={item.id}
-              className={`rounded-2xl border shadow-lg p-4 bg-white ${item.estado === "success" ? "border-emerald-200" : item.estado === "error" ? "border-red-200" : item.estado === "warning" ? "border-amber-200" : "border-slate-200"}`}
+className={`rounded-2xl border shadow-lg p-4 bg-white ${item.estado === "success" ? "border-emerald-200" : item.estado === "error" ? "border-red-200" : item.estado === "warning" ? "border-amber-200" : "border-slate-200"}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -6197,7 +7885,7 @@ export default function CursoDetalleAdmin() {
                   ✕
                 </button>
               </div>
-              {(item.estado === "uploading" ||
+{(item.estado === "uploading" ||
                 item.estado === "processing") && (
                 <div className="mt-3">
                   <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
@@ -6225,17 +7913,17 @@ export default function CursoDetalleAdmin() {
             className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
             onClick={cerrarConfigTarea}
           />
+
           <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
             <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-xl font-bold">
-                    Configurar nota de tarea
-                  </h3>
+                  <h3 className="text-xl font-bold">Configurar nota de tarea</h3>
                   <p className="text-sm text-slate-200 mt-1">
                     {tareaConfigActual?.titulo || "Tarea seleccionada"}
                   </p>
                 </div>
+
                 <button
                   onClick={cerrarConfigTarea}
                   className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10 transition"
@@ -6244,11 +7932,10 @@ export default function CursoDetalleAdmin() {
                 </button>
               </div>
             </div>
+
             <div className="p-6 space-y-5">
               {cargandoConfigTarea ? (
-                <p className="text-slate-500">
-                  Cargando evaluaciones disponibles...
-                </p>
+                <p className="text-slate-500">Cargando evaluaciones disponibles...</p>
               ) : (
                 <>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -6257,15 +7944,15 @@ export default function CursoDetalleAdmin() {
                       {tareaConfigActual?.titulo || "-"}
                     </p>
                   </div>
+
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Seleccionar evaluación de tipo tarea
                     </label>
+
                     <select
                       value={evaluacionSeleccionadaTarea}
-                      onChange={(e) =>
-                        setEvaluacionSeleccionadaTarea(e.target.value)
-                      }
+                      onChange={(e) => setEvaluacionSeleccionadaTarea(e.target.value)}
                       className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
                     >
                       <option value="">-- Selecciona una evaluación --</option>
@@ -6279,17 +7966,17 @@ export default function CursoDetalleAdmin() {
                       ))}
                     </select>
                   </div>
+
                   {evaluacionesTareaDisponibles.length === 0 && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                      No hay evaluaciones de tipo tarea disponibles para este
-                      grupo. Primero configúralas en Registro de Notas.
+                      No hay evaluaciones de tipo tarea disponibles para este grupo. Primero configúralas en Registro de Notas.
                     </div>
                   )}
+
                   <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                    Solo se muestran evaluaciones activas del tipo tarea. Al
-                    guardar, esta tarea quedará vinculada a la evaluación
-                    seleccionada.
+                    Solo se muestran evaluaciones activas del tipo tarea. Al guardar, esta tarea quedará vinculada a la evaluación seleccionada.
                   </div>
+
                   <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                     <button
                       onClick={cerrarConfigTarea}
@@ -6297,17 +7984,17 @@ export default function CursoDetalleAdmin() {
                     >
                       Cancelar
                     </button>
+
                     <button
                       onClick={guardarConfiguracionTarea}
-                      disabled={
-                        guardandoConfigTarea ||
-                        evaluacionesTareaDisponibles.length === 0
-                      }
-                      className={`rounded-xl px-5 py-3 text-sm font-semibold text-white transition ${guardandoConfigTarea || evaluacionesTareaDisponibles.length === 0 ? "bg-slate-400 cursor-not-allowed" : "bg-violet-600 hover:bg-violet-700"}`}
+                      disabled={guardandoConfigTarea || evaluacionesTareaDisponibles.length === 0}
+                      className={`rounded-xl px-5 py-3 text-sm font-semibold text-white transition ${
+                        guardandoConfigTarea || evaluacionesTareaDisponibles.length === 0
+                          ? "bg-slate-400 cursor-not-allowed"
+                          : "bg-violet-600 hover:bg-violet-700"
+                      }`}
                     >
-                      {guardandoConfigTarea
-                        ? "Guardando..."
-                        : "Guardar asignación"}
+                      {guardandoConfigTarea ? "Guardando..." : "Guardar asignación"}
                     </button>
                   </div>
                 </>
@@ -6317,13 +8004,13 @@ export default function CursoDetalleAdmin() {
         </div>
       )}
 
-      {/* MODAL VER ENTREGA */}
       {modalEntregaOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/45"
             onClick={() => setModalEntregaOpen(false)}
           />
+
           <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
             <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
@@ -6333,6 +8020,7 @@ export default function CursoDetalleAdmin() {
                     {entregaSeleccionada?.alumno || ""}
                   </p>
                 </div>
+
                 <button
                   onClick={() => setModalEntregaOpen(false)}
                   className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10 transition"
@@ -6341,6 +8029,7 @@ export default function CursoDetalleAdmin() {
                 </button>
               </div>
             </div>
+
             <div className="p-6">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 whitespace-pre-line text-sm text-slate-700 max-h-[420px] overflow-auto">
                 {entregaSeleccionada?.contenido || "Sin contenido"}
@@ -6349,7 +8038,7 @@ export default function CursoDetalleAdmin() {
           </div>
         </div>
       )}
-
+      
       {/* MODAL CONFIG EXAMEN */}
       {configExamenOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -6361,7 +8050,7 @@ export default function CursoDetalleAdmin() {
             <div className="bg-gradient-to-r from-violet-900 via-violet-800 to-fuchsia-700 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-xl font-bold">
+<h3 className="text-xl font-bold">
                     Configurar nota de examen
                   </h3>
                   <p className="text-sm text-violet-100 mt-1">
@@ -6376,7 +8065,7 @@ export default function CursoDetalleAdmin() {
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-5">
+<div className="p-6 space-y-5">
               {cargandoConfigExamen ? (
                 <p className="text-slate-500">
                   Cargando evaluaciones disponibles...
@@ -6393,7 +8082,7 @@ export default function CursoDetalleAdmin() {
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Seleccionar evaluación de tipo examen
                     </label>
-                    <select
+<select
                       value={evaluacionSeleccionadaExamen}
                       onChange={(e) =>
                         setEvaluacionSeleccionadaExamen(e.target.value)
@@ -6403,7 +8092,7 @@ export default function CursoDetalleAdmin() {
                       <option value="">-- Selecciona una evaluación --</option>
                       {evaluacionesExamenDisponibles.map((ev) => (
                         <option key={ev.id} value={ev.id}>
-                          {ev.nombre} ({Number(ev.porcentaje || 0)}%){" "}
+{ev.nombre} ({Number(ev.porcentaje || 0)}%){" "}
                           {Number(ev.idexamen) ===
                           Number(examenConfigActual?.id)
                             ? " · actualmente vinculada"
@@ -6412,7 +8101,7 @@ export default function CursoDetalleAdmin() {
                       ))}
                     </select>
                   </div>
-                  {evaluacionesExamenDisponibles.length === 0 && (
+{evaluacionesExamenDisponibles.length === 0 && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                       No hay evaluaciones de tipo examen disponibles para este
                       grupo. Primero configúralas en Registro de Notas.
@@ -6429,7 +8118,7 @@ export default function CursoDetalleAdmin() {
                     >
                       Cancelar
                     </button>
-                    <button
+<button
                       onClick={guardarConfiguracionExamen}
                       disabled={
                         guardandoConfigExamen ||
@@ -6451,3 +8140,4 @@ export default function CursoDetalleAdmin() {
     </div>
   );
 }
+export default CursoDetalleDocente;

@@ -33,7 +33,10 @@ export class S3Controller {
       throw new BadRequestException('Falta docenteId.');
     }
 
-    const safeName = String(file.originalname || 'archivo.pdf').replace(/\s+/g, '_');
+    const safeName = String(file.originalname || 'archivo.pdf').replace(
+      /\s+/g,
+      '_',
+    );
     const safeTipo = String(tipo || 'cv').replace(/\s+/g, '_');
 
     const key = `docentes/documentos/docente-${docenteId}-${safeTipo}-${Date.now()}-${safeName}`;
@@ -83,7 +86,10 @@ export class S3Controller {
       throw new BadRequestException('Falta leccionId.');
     }
 
-    const safeName = String(file.originalname || 'archivo').replace(/\s+/g, '_');
+    const safeName = String(file.originalname || 'archivo').replace(
+      /\s+/g,
+      '_',
+    );
     const key = `cursos/lecciones/leccion-${leccionId}-${Date.now()}-${safeName}`;
 
     await this.s3Service.uploadBuffer({
@@ -120,7 +126,10 @@ export class S3Controller {
       throw new BadRequestException('Falta tipoApoyo.');
     }
 
-    const safeName = String(file.originalname || 'archivo').replace(/\s+/g, '_');
+    const safeName = String(file.originalname || 'archivo').replace(
+      /\s+/g,
+      '_',
+    );
     const safeTipo = String(tipoApoyo || 'archivo').replace(/\s+/g, '_');
 
     const key = `tareas-apoyo/curso-${cursoId}/${safeTipo}-${Date.now()}-${safeName}`;
@@ -153,10 +162,15 @@ export class S3Controller {
 
     // Validar que sea una imagen
     if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException('Solo se permiten archivos de imagen (JPG, PNG, etc).');
+      throw new BadRequestException(
+        'Solo se permiten archivos de imagen (JPG, PNG, etc).',
+      );
     }
 
-    const safeName = String(file.originalname || 'foto.jpg').replace(/\s+/g, '_');
+    const safeName = String(file.originalname || 'foto.jpg').replace(
+      /\s+/g,
+      '_',
+    );
     const key = `administradores/fotos/admin-${Date.now()}-${safeName}`;
 
     await this.s3Service.uploadBuffer({
@@ -167,7 +181,7 @@ export class S3Controller {
 
     const bucket = this.s3Service.getBucketName();
     const region = process.env.AWS_REGION || 'us-east-1';
-    
+
     // Construimos la URL pública de AWS S3 para devolvérsela al frontend
     const url = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 
@@ -182,7 +196,10 @@ export class S3Controller {
     }
 
     // Validar que sea PDF o documento de Word
-    if (file.mimetype !== 'application/pdf' && !file.mimetype.includes('word')) {
+    if (
+      file.mimetype !== 'application/pdf' &&
+      !file.mimetype.includes('word')
+    ) {
       throw new BadRequestException('Solo se permiten archivos PDF o Word.');
     }
 
@@ -197,7 +214,7 @@ export class S3Controller {
 
     const bucket = this.s3Service.getBucketName();
     const region = process.env.AWS_REGION || 'us-east-1';
-    
+
     // Construimos la URL pública de AWS S3
     const url = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 

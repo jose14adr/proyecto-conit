@@ -2,9 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { randomBytes } from 'crypto';
+import * as bcrypt from 'bcrypt';
+
 import { Alumno } from './entities/alumno.entity';
 import { Usuario } from 'src/usuario/entities/usuario.entity';
-import * as bcrypt from 'bcrypt';
 import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
@@ -12,11 +13,26 @@ export class AlumnoService {
   constructor(
     @InjectRepository(Alumno)
     private readonly alumnoRepository: Repository<Alumno>,
+
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+
     private readonly dataSource: DataSource,
     private readonly mailService: MailService,
   ) {}
+
+  async getPerfil(userId: number) {
+    const alumno = await this.alumnoRepository.findOne({
+      where: { idusuario: userId },
+      relations: ['usuario'],
+    });
+
+    if (!alumno) {
+      throw new NotFoundException('Alumno no encontrado');
+    }
+
+    return alumno;
+  }
 
   async findAll() {
     return await this.alumnoRepository.find({
@@ -31,6 +47,7 @@ export class AlumnoService {
     if (!alumno) {
       throw new NotFoundException('Alumno no encontrado');
     }
+
     return alumno;
   }
 
@@ -60,23 +77,19 @@ export class AlumnoService {
         );
       }
 
-      // Crear el perfil del alumno
-      const alumnoParams: any = {
+      // Crear el perfil del alumno de forma directa
+      const alumno = manager.create(Alumno, {
         ...datosAlumno,
         nombre_editado: true,
-      };
+        ...(usuarioCreado && { idusuario: usuarioCreado.id }),
+      });
 
-      if (usuarioCreado) {
-        alumnoParams.idusuario = usuarioCreado.id;
-      }
-
-      const alumno = manager.create(Alumno, alumnoParams);
       const alumnoGuardado = await manager.save(alumno);
 
       return { alumnoGuardado, usuarioCreado };
     });
 
-    // 2. Enviar el correo de verificación (Fuera de la transacción por si el correo falla)
+    // 📧 Envío de correo fuera de la transacción por si el correo falla
     if (resultado.usuarioCreado?.tokenVerificacion) {
       try {
         await this.mailService.sendEmailVerificacion(
@@ -121,10 +134,12 @@ export class AlumnoService {
             tokenVerificacionExpira: expiracion,
           }),
         );
+
         datosActualizar.idusuario = nuevoUsuario.id;
       }
 
       await manager.update(Alumno, id, datosActualizar);
+
       const alumnoActualizado = await manager.findOne(Alumno, {
         where: { id },
       });
@@ -132,6 +147,7 @@ export class AlumnoService {
       return { alumnoActualizado, nuevoUsuario };
     });
 
+    // 📧 Envío de correo
     if (resultado.nuevoUsuario?.tokenVerificacion) {
       try {
         await this.mailService.sendEmailVerificacion(
@@ -155,6 +171,7 @@ export class AlumnoService {
 
     // Inhabilitamos también su usuario para revocar acceso
     const alumno = await this.findOne(id);
+
     if (alumno.idusuario) {
       await this.usuarioRepository.update(alumno.idusuario, { estado: false });
     }
@@ -167,6 +184,7 @@ export class AlumnoService {
 
     // Habilitar credenciales
     const alumno = await this.findOne(id);
+
     if (alumno.idusuario) {
       await this.usuarioRepository.update(alumno.idusuario, { estado: true });
     }

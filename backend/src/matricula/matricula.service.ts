@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { Matricula } from './entities/matricula.entity';
 import { Alumno } from '../alumno/entities/alumno.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
@@ -22,6 +23,7 @@ export class MatriculaService {
   ) {}
 
   async crear(alumnoId: number, grupoId: number, nombreCurso: string) {
+    // 🔍 Validar duplicado
     const existe = await this.matriculaRepo.findOne({
       where: {
         alumno: { id: alumnoId },
@@ -33,12 +35,14 @@ export class MatriculaService {
       throw new BadRequestException('Ya estás matriculado en este grupo');
     }
 
+    // 🔢 Generar serie
     const prefijo = nombreCurso.slice(0, 3).toUpperCase();
     const correlativo = Math.floor(Math.random() * 999999)
       .toString()
       .padStart(6, '0');
     const serieGenerada = prefijo + correlativo;
 
+    // 💾 Guardar matrícula
     const matricula = await this.matriculaRepo.save({
       alumno: { id: alumnoId },
       grupo: { id: grupoId },
@@ -52,7 +56,7 @@ export class MatriculaService {
       idcontrolacademico: 1,
     });
 
-    // Enviar correo de bienvenida (Agregado en main)
+    // 📧 Enviar correo de bienvenida
     try {
       const alumno = await this.alumnoRepo.findOne({
         where: { id: alumnoId },
@@ -93,7 +97,7 @@ export class MatriculaService {
     });
   }
 
-  // Función para listar alumnos por curso (Agregada en tu rama HEAD)
+  // Función para listar alumnos por curso
   async obtenerAlumnosPorCurso(idcurso: number) {
     const matriculas = await this.matriculaRepo.find({
       where: {
@@ -112,6 +116,7 @@ export class MatriculaService {
         grupo_asignado: m.grupo ? m.grupo.nombregrupo : 'Sin grupo',
       }));
   }
+
   async actualizarPermisosCertificado(
     idMatricula: number,
     puedeVer: boolean,
@@ -120,6 +125,7 @@ export class MatriculaService {
     const matricula = await this.matriculaRepo.findOne({
       where: { id: idMatricula },
     });
+
     if (!matricula) throw new BadRequestException('Matrícula no encontrada');
 
     matricula.puede_ver_certificado = puedeVer;

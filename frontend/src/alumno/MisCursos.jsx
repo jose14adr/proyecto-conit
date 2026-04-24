@@ -70,8 +70,8 @@ export default function MisCursos() {
 
       if (idalumno) {
         const endpoints = [
-          `/matricula/alumno/${idalumno}`,
-          `/matricula/${idalumno}`,
+          `/curso/alumno/${idalumno}`,
+          `/curso/${idalumno}`,
           `/alumno/${idalumno}/matriculas`,
         ];
 
@@ -376,25 +376,33 @@ function normalizarCursosDesdeMatriculas(matriculas) {
 
   for (const matricula of matriculas) {
     const grupo = matricula?.grupo || null;
-    const curso =
-      matricula?.curso ||
-      grupo?.curso ||
-      grupo?.idcurso ||
-      null;
 
-    if (!curso || typeof curso !== "object") continue;
+    // ✅ AQUÍ ESTÁ EL FIX REAL
+    const curso = grupo?.curso || null;
+
+    if (!curso) continue;
 
     cursosNormalizados.push({
       id: curso.id,
-      nombrecurso: curso.nombrecurso || curso.nombre || "Curso sin nombre",
-      descripcion: curso.descripcion || "Sin descripción disponible",
+      nombrecurso:
+        curso.nombrecurso ||
+        curso.nombre ||
+        "Curso sin nombre",
+
+      descripcion:
+        curso.descripcion || "Sin descripción disponible",
+
       imagen: curso.imagen || FALLBACK_IMAGE,
+
       progreso: curso.progreso || 0,
-      docenteNombre:
-        extraerDocenteDesdeGrupo(grupo) || extraerDocenteDesdeCurso(curso),
+
+      docenteNombre: extraerDocenteDesdeGrupo(grupo),
+
       cantidadSesiones: extraerCantidadSesiones(curso),
+
       estadoCurso: matricula?.estado || "activo",
-      grupoId: grupo?.id || matricula?.idgrupo || null,
+
+      grupoId: grupo?.id || null,
     });
   }
 
@@ -418,9 +426,13 @@ function extraerDocenteDesdeGrupo(grupo) {
   if (!grupo) return "";
 
   const docente = grupo?.docente;
-  if (!docente) return "";
 
-  return [docente.nombre, docente.apellido].filter(Boolean).join(" ").trim();
+  if (!docente) return "Docente por asignar";
+
+  return [docente.nombre, docente.apellido]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 }
 
 function extraerDocenteDesdeCurso(curso) {

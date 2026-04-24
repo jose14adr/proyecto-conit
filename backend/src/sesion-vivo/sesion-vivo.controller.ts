@@ -5,13 +5,14 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  BadRequestException,
 } from '@nestjs/common';
 import { SesionVivoService } from './sesion-vivo.service';
 import { SesionVivo } from './entities/sesion-vivo.entity';
 
 @Controller('sesion-vivo')
 export class SesionVivoController {
-  constructor(private service: SesionVivoService) {}
+  constructor(private readonly service: SesionVivoService) {}
 
   @Get()
   async obtener(): Promise<SesionVivo[]> {
@@ -27,12 +28,21 @@ export class SesionVivoController {
 
   @Post()
   async crear(@Body() body: any): Promise<SesionVivo> {
+    // 🔥 Validación básica para evitar errores silenciosos
+    if (!body) {
+      throw new BadRequestException('Body vacío');
+    }
+
+    if (!body.idcurso || !body.titulo || !body.fecha) {
+      throw new BadRequestException('Faltan campos obligatorios');
+    }
+
     return this.service.crearSesion({
       idcurso: Number(body.idcurso),
-      titulo: body.titulo,
-      descripcion: body.descripcion,
+      titulo: String(body.titulo),
+      descripcion: body.descripcion ? String(body.descripcion) : null,
       fecha: body.fecha,
-      duracion: Number(body.duracion),
+      duracion: Number(body.duracion || 0),
     });
   }
 }

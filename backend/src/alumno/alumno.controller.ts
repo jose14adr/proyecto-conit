@@ -9,6 +9,7 @@ import {
   Body,
   ParseIntPipe,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AlumnoService } from './alumno.service';
 import { Alumno } from './entities/alumno.entity';
@@ -23,10 +24,14 @@ export class AlumnoController {
   @Post()
   create(@Body() createAlumnoDto: CreateAlumnoDto) {
     return this.alumnoService.create(createAlumnoDto);
+    }
+  @Get('perfil')
+  getPerfil(@Req() req) {
+    return this.alumnoService.getPerfil(req.user.id);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.alumnoService.findOne(+id);
   }
 
@@ -49,4 +54,5 @@ export class AlumnoController {
   habilitar(@Param('id', ParseIntPipe) id: number) {
     return this.alumnoService.habilitar(id);
   }
+
 }

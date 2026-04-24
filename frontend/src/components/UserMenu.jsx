@@ -1,25 +1,51 @@
 import { Bell } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getPerfilAlumno } from "../services/alumnoService";
 
 export default function UserMenu() {
   const [openMenu, setOpenMenu] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
-  // Inicializamos el estado leyendo directamente de localStorage.
-  // Esto elimina la necesidad del useEffect y el error de rendimiento de React.
+  // Inicializamos el estado leyendo directamente de localStorage (Tu optimización HEAD)
   const [notificaciones, setNotificaciones] = useState(() => {
     const data = JSON.parse(localStorage.getItem("notificaciones")) || [];
     return data.length;
   });
 
+  const [alumno, setAlumno] = useState({
+    nombreCompleto: "Cargando...",
+    correo: "",
+  });
+
+  // 👤 Cargar perfil alumno (De la Nube)
   useEffect(() => {
-    function handleClickOutside(event) {
+    const cargarPerfil = async () => {
+      try {
+        const perfil = await getPerfilAlumno();
+        if (!perfil) return;
+
+        setAlumno({
+          nombreCompleto:
+            `${perfil.nombre ?? ""} ${perfil.apellido ?? ""}`.trim(),
+          correo: perfil.correo ?? "",
+        });
+      } catch (error) {
+        console.error("Error cargando perfil alumno:", error);
+      }
+    };
+
+    cargarPerfil();
+  }, []);
+
+  // ❌ cerrar menú fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setOpenMenu(false);
       }
-    }
+    };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -27,18 +53,20 @@ export default function UserMenu() {
     };
   }, []);
 
+  // 🚪 logout
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.clear();
     navigate("/login");
   };
 
   return (
     <div className="relative" ref={menuRef}>
       <div className="flex items-center gap-4">
+        {/* 🔔 Notificaciones */}
         <div className="relative">
           <Bell size={22} className="text-gray-600" />
 
-          {/* Notificaciones ya es un número, por lo que quitamos el .length */}
           {notificaciones > 0 && (
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
               {notificaciones}
@@ -46,48 +74,73 @@ export default function UserMenu() {
           )}
         </div>
 
+        {/* 👤 Usuario */}
         <button
-          onClick={() => setOpenMenu(!openMenu)}
-          className="text-sm text-gray-700 hover:text-gray-900 transition font-medium"
+          onClick={() => setOpenMenu((prev) => !prev)}
+          className="flex items-center gap-2 hover:bg-gray-100 px-3 py-2 rounded-xl transition"
         >
-          Karem Daniela Paredes Sandoval
+          {/* Avatar (De la nube) */}
+          <div className="h-8 w-8 min-w-[32px] rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-white flex items-center justify-center text-sm font-bold">
+            {(alumno?.nombreCompleto || "A").charAt(0)}
+          </div>
+
+          {/* Nombre */}
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+            {alumno?.nombreCompleto || "Alumno"}
+          </span>
         </button>
       </div>
 
-      {/* Reemplazamos framer-motion por Tailwind puro para la animación */}
+      {/* 📂 Dropdown con animaciones de Tailwind puro (Tu optimización HEAD) */}
       <div
-        className={`absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 transition-all duration-200 origin-top-right z-50
+        className={`absolute right-0 mt-3 w-60 z-[999] transition-all duration-200 origin-top-right
           ${openMenu ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}
         `}
       >
-        <button
-          onClick={() => {
-            navigate("/alumno/mi-perfil");
-            setOpenMenu(false);
-          }}
-          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition"
-        >
-          Mi perfil
-        </button>
+        {/* 🔺 Flechita (De la nube) */}
+        <div className="absolute -top-2 right-4 w-4 h-4 bg-white rotate-45 border-l border-t z-0"></div>
 
-        <button
-          onClick={() => {
-            navigate("/alumno/mis-pagos");
-            setOpenMenu(false);
-          }}
-          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition"
-        >
-          Mis pagos
-        </button>
+        <div className="relative bg-white rounded-xl shadow-2xl border overflow-hidden backdrop-blur z-10">
+          {/* Header */}
+          <div className="px-4 py-3 border-b bg-gray-50">
+            <p className="font-semibold text-gray-800 text-sm">
+              {alumno?.nombreCompleto}
+            </p>
+            <p className="text-xs text-gray-500 truncate">{alumno?.correo}</p>
+          </div>
 
-        <div className="border-t my-2 border-gray-100"></div>
+          {/* Opciones */}
+          <div className="p-1">
+            <button
+              onClick={() => {
+                navigate("/alumno/mi-perfil");
+                setOpenMenu(false);
+              }}
+              className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-gray-100 transition"
+            >
+              Mi perfil
+            </button>
 
-        <button
-          onClick={handleLogout}
-          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
-        >
-          Cerrar sesión
-        </button>
+            <button
+              onClick={() => {
+                navigate("/alumno/mis-pagos");
+                setOpenMenu(false);
+              }}
+              className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-gray-100 transition"
+            >
+              Mis pagos
+            </button>
+
+            <div className="my-1 border-t"></div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full text-left px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 transition"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
