@@ -186,17 +186,8 @@ export default function MiPerfil() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const usuarioRaw = localStorage.getItem("usuario");
-      if (usuarioRaw) {
-        try {
-          const usuario = JSON.parse(usuarioRaw);
-          if (usuario?.id) {
-            formData.append("usuario_id", String(usuario.id));
-          }
-        } catch (err) {
-          console.warn("No se pudo leer usuario desde localStorage");
-        }
-      }
+      // ❌ ELIMINAMOS usuario_id (ya no se usa)
+      // formData.append("usuario_id", ...)
 
       const res = await api.post("/multimedia/upload", formData, {
         headers: {
@@ -205,28 +196,26 @@ export default function MiPerfil() {
       });
 
       const body = res.data || {};
+
       const nuevaUrl =
+        body.url || // 👈 este es el que devuelve tu backend
         body.publicUrl ||
-        body.url ||
         body.foto_url ||
-        body.fileUrl ||
-        body?.data?.publicUrl ||
-        body?.data?.url ||
         "";
 
       if (!nuevaUrl) {
-        alert(
-          "La imagen se subió, pero el servidor no devolvió una URL utilizable."
-        );
+        alert("El servidor no devolvió una URL válida");
         return;
       }
 
       setFoto(nuevaUrl);
+
       setDatos((prev) => ({
         ...prev,
         foto_url: nuevaUrl,
       }));
 
+      // 🔥 opcional (ya backend lo hace, pero lo dejamos seguro)
       if (alumnoId) {
         await api.put(`/alumno/${alumnoId}`, {
           foto_url: nuevaUrl,

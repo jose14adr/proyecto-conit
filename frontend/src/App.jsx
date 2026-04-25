@@ -31,7 +31,8 @@ import MiPerfil from "./alumno/MiPerfil";
 import MisPagos from "./alumno/MisPagos";
 import Matricula from "./alumno/Matricula";
 import Soporte from "./alumno//Soporte";
-
+import HistorialAcademico from "./alumno/HistorialAcademico";
+import Asistencia from "./alumno/AsistenciaAlumno";
 import CursoDetalleAdmin from "./admin/CursoDetalleAdmin";
 
 // ADMIN
@@ -56,6 +57,7 @@ import CursoDetalleDocente from "./docente/CursoDetalleDocente";
 import RegistroNotas from "./docente/RegistroNotas";
 import ListaAprobados from "./docente/ListaAprobados";
 import TareasDocente from "./docente/TareasDocente";
+import AsistenciaAlumno from "./alumno/AsistenciaAlumno";
 
 function PublicWebLayout({ children }) {
   return (
@@ -157,6 +159,8 @@ export default function App() {
               <Route path="mis-pagos" element={<MisPagos />} />
               <Route path="matricula" element={<Matricula />} />
               <Route path="recursos" element={<Biblioteca />} />
+              <Route path="historial" element={<HistorialAcademico />} />
+              <Route path="asistencia" element={<AsistenciaAlumno />} />
             </Route>
           </Route>
 

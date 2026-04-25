@@ -2,6 +2,8 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMan
 import { Examen } from '../../examen/entities/examen.entity';
 import { Usuario } from '../../usuario/entities/usuario.entity';
 import { Matricula } from '../../matricula/entities/matricula.entity';
+import { ExamenRespuesta } from '../../examen_respuesta/entities/examen_respuesta.entity';
+
 
 @Entity({ name: 'examen_intento' })
 export class ExamenIntento {
@@ -26,8 +28,8 @@ export class ExamenIntento {
   @Column({ type: 'numeric', nullable: true })
   nota: number;
 
-  @Column({ type: 'jsonb', nullable: true })
-  respuestas: any;
+  @OneToMany(() => ExamenRespuesta, (r) => r.intento)
+  respuestas: ExamenRespuesta[];
 
   @Column({ type: 'boolean', default: false })
   finalizado: boolean;
@@ -37,4 +39,5 @@ export class ExamenIntento {
 
   @Column({ type: 'timestamptz', nullable: true })
   fecha_fin: Date;
+
 }

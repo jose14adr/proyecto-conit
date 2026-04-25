@@ -24,7 +24,7 @@ export default function UserMenu() {
   }, [])
 
   // 👤 Cargar perfil alumno
-  useEffect(() => {
+  /*useEffect(() => {
     const cargarPerfil = async () => {
       try {
         const perfil = await getPerfilAlumno()
@@ -40,8 +40,35 @@ export default function UserMenu() {
     }
 
     cargarPerfil()
-  }, [])
+  }, [])*/
 
+  useEffect(() => {
+    const cargarPerfil = async () => {
+      try {
+        const perfil = await getPerfilAlumno();
+
+        console.log("PERFIL 👉", perfil);
+
+        if (perfil) {
+          setAlumno({
+            nombreCompleto:
+              perfil.nombreCompleto ||
+              `${perfil.nombre ?? perfil.nombres ?? ""} ${perfil.apellido ?? perfil.apellidos ?? ""}`.trim(),
+
+            correo:
+              perfil.correo ||
+              perfil.email ||
+              ""
+          });
+        }
+
+      } catch (error) {
+        console.error("Error al cargar perfil del alumno:", error);
+      }
+    };
+
+    cargarPerfil();
+  }, []);
   // ❌ cerrar menú fuera
   useEffect(() => {
     const handleClickOutside = (event) => {

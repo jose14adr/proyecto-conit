@@ -44,6 +44,12 @@ import { S3Service } from './s3/s3.service';
 import { S3Module } from './s3/s3.module';
 import { CertificadoModule } from './certificado/certificado.module';
 import { AlumnoMaterialProgresoModule } from './alumno-material-progreso/alumno-material-progreso.module';
+import { ExamenRespuestaModule } from './examen_respuesta/examen_respuesta.module';
+import { HistorialAcademicoModule } from './historial_academico/historial_academico.module';
+import { AsistenciaController } from './asistencia/asistencia.controller';
+import { AsistenciaService } from './asistencia/asistencia.service';
+import { AsistenciaModule } from './asistencia/asistencia.module';
+import { AsistenciaConfiguracionController } from './asistencia-configuracion/asistencia-configuracion.controller';
 
 @Module({
   imports: [
@@ -114,9 +120,12 @@ import { AlumnoMaterialProgresoModule } from './alumno-material-progreso/alumno-
     S3Module,
     CertificadoModule,
     AlumnoMaterialProgresoModule,
+    ExamenRespuestaModule,
+    HistorialAcademicoModule,
+    AsistenciaModule,
   ],
 
-  controllers: [AppController],
+  controllers: [AppController, AsistenciaConfiguracionController],
   providers: [AppService, GoogleMeetService, MailService, S3Service, VimeoService, VimeoController],
 })
 export class AppModule {}

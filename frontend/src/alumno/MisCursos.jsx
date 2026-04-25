@@ -63,6 +63,39 @@ export default function MisCursos() {
   }, [cursos]);
 
   async function cargarMisCursos() {
+  try {
+    setLoading(true);
+
+    const idalumno = localStorage.getItem("idalumno");
+
+    console.log("ID USUARIO FRONT:", idalumno);
+
+    if (!idalumno) {
+      console.warn("No hay idalumno en localStorage");
+      setCursos([]);
+      return;
+    }
+
+    const res = await api.get(`/curso/alumno/${idalumno}`);
+
+    console.log("RESPUESTA BACK:", res.data);
+
+    const lista = Array.isArray(res.data) ? res.data : [];
+
+    const cursosDesdeMatricula = normalizarCursosDesdeMatriculas(lista);
+
+    console.log("CURSOS NORMALIZADOS:", cursosDesdeMatricula);
+
+    setCursos(cursosDesdeMatricula);
+  } catch (error) {
+    console.error("Error al obtener cursos:", error);
+    setCursos([]);
+  } finally {
+    setLoading(false);
+  }
+}
+
+  /*async function cargarMisCursos() {
     try {
       setLoading(true);
 
@@ -114,7 +147,7 @@ export default function MisCursos() {
     } finally {
       setLoading(false);
     }
-  }
+  }*/
 
   function abrirCurso(curso) {
     navigate(`/alumno/mis-cursos/${curso.id}`);

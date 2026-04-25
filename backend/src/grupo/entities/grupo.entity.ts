@@ -5,6 +5,8 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Docente } from '../../docente/entities/docente.entity';
 import { Curso } from '../../curso/entities/curso.entity';
@@ -61,4 +63,5 @@ export class Grupo {
     default: false,
   })
   correoCierreDocenteEnviado: boolean;
+
 }

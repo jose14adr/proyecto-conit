@@ -227,26 +227,31 @@ export class PagoService {
   // ==============================
   // PAGO CON TARJETA
   // ==============================
-  async pagarConTarjeta(data: any) {
+  /*async pagarConTarjeta(data: any) {
     mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
 
     try {
+
+      // 🚨 VALIDACIÓN FUERTE BACKEND
+      if (!data.token) throw new Error("Falta token");
+      if (!data.payment_method_id) throw new Error("Falta payment_method_id");
+      if (!data.transaction_amount) throw new Error("Falta monto");
+
       const payment = await mercadopago.payment.create({
         transaction_amount: Number(data.transaction_amount),
         token: data.token,
-        description: "Pago de curso",
-        installments: Number(data.installments),
+        description: data.description || "Pago curso",
+        installments: Number(data.installments) || 1,
         payment_method_id: data.payment_method_id,
-        issuer_id: data.issuer_id,
+        issuer_id: data.issuer_id || undefined,
 
         payer: {
-          email: data.payer.email,
+          email: data.payer?.email || "kdaniela.paredes.11@gmail.com",
         },
       });
 
       console.log("✅ MP RESPONSE:", payment.body);
 
-      // 🔥 adaptar a tu sistema
       const dataAdaptada = {
         preciofinal: data.transaction_amount,
         precioinicial: data.transaction_amount,
@@ -254,7 +259,7 @@ export class PagoService {
         igv: 0,
         tipopago: "mercadopago",
         matricula_id: data.matricula_id,
-        email: data.payer.email,
+        email: data.payer?.email || "kdaniela.paredes.11@gmail.com",
       };
 
       await this._guardarPago(dataAdaptada, payment);
@@ -266,14 +271,118 @@ export class PagoService {
       };
 
     } catch (error) {
-      console.error("💥 ERROR MP:", error.response?.data || error);
-      throw new Error("Error al procesar pago con tarjeta");
+
+      console.error("💥 ERROR REAL MP:", error.response?.data || error);
+
+      throw new Error(
+        error.response?.data?.message ||
+        JSON.stringify(error.response?.data) ||
+        error.message
+      );
+    }
+  }*/
+
+  async pagarConTarjeta(body: any) {
+
+    const {
+      token,
+      payment_method_id,
+      issuer_id,
+      installments,
+      transaction_amount,
+      description,
+      payer,
+      matricula_id
+    } = body
+
+    console.log("📩 BODY:", body)
+
+    if (!token) {
+      throw new Error("Falta token")
+    }
+
+    if (!payer?.email) throw new Error("Falta email")
+
+    const mercadopago = require("mercadopago")
+
+    mercadopago.configure({
+      access_token: process.env.MP_ACCESS_TOKEN // 🔥 PRODUCCIÓN
+    })
+
+    const paymentData: any = {
+      transaction_amount,
+      token,
+      description,
+      installments: Number(installments) || 1,
+      payment_method_id,
+      payer
+    }
+
+    // ✅ SOLO agregar issuer_id si existe
+    if (issuer_id) {
+      paymentData.issuer_id = issuer_id.toString()
+    }
+
+    const payment = await mercadopago.payment.create(paymentData)
+
+    const data = payment.body
+
+    console.log("💳 RESPUESTA MP:", data)
+    console.log("🔥 LIVE MODE:", data.live_mode)
+
+    const pago = await this.pagoRepository.save({
+
+      matricula: { id: matricula_id },
+
+      tipopago: "tarjeta",
+
+      mp_payment_id: data.id,
+      collector_id: data.collector_id,
+
+      estado: data.status,
+      status_detail: data.status_detail,
+
+      precioinicial: data.transaction_details?.total_paid_amount || transaction_amount,
+      preciofinal: data.transaction_amount,
+      igv: 0,
+
+      descripcion: description,
+
+      idtipocomprobante: 1,
+      idpagodoc: 1,
+
+      fechapago: new Date()
+    })
+
+    return {
+      status: data.status,
+      status_detail: data.status_detail,
+      pago
     }
   }
-
   // 🔹 Método privado para guardar pago + PDF + correo
   private async _guardarPago(data: any, payment: any) {
-    let estado = payment.body.status === 'approved' ? 'pagado' : 'rechazado';
+
+    if (!payment || !payment.body) {
+      throw new Error('Respuesta inválida de Mercado Pago');
+    }
+
+    let estado = 'pendiente';
+
+    if (payment.body.status === 'approved') {
+      estado = 'pagado';
+    } else if (payment.body.status === 'rejected') {
+      estado = 'rechazado';
+    }
+
+    // 🔒 evitar duplicados
+    const { data: existe } = await supabase
+      .from('pago')
+      .select('*')
+      .eq('idpagodoc', payment.body.id)
+      .single();
+
+    if (existe) return;
 
     const { error: errorPago } = await supabase.from('pago').insert([
       {
@@ -294,39 +403,197 @@ export class PagoService {
     if (errorPago) throw new Error(errorPago.message);
 
     if (estado === 'pagado') {
-      await supabase
+
+      const { error: errorMatricula } = await supabase
         .from('matricula')
         .update({ estado: 'pagado' })
         .eq('id', data.matricula_id);
 
-      const pdfPath = await this.generarPDF(data, payment);
-      await this.enviarCorreo(data.email, data, pdfPath);
+      if (errorMatricula) throw new Error(errorMatricula.message);
+
+      try {
+        const pdfPath = await this.generarPDF(data, payment);
+        await this.enviarCorreo(data.email, data, pdfPath);
+      } catch (err) {
+        console.error("Error en PDF/correo:", err);
+      }
     }
   }
+
+  async pagarConYape(body: any) {
+
+    const {
+      matricula_id,
+      codigo_aprobacion,
+      celular,
+      precioinicial,
+      preciodescuento = 0,
+      descripcion
+    } = body
+
+    if (!celular || !codigo_aprobacion) {
+      throw new Error("Datos incompletos")
+    }
+
+    const subtotal = precioinicial - preciodescuento
+    const igv = subtotal * 0.18
+    const precioFinal = subtotal + igv
+
+    const pago = await this.pagoRepository.save({
+      matricula_id,
+      tipopago: "yape",
+
+      celular,
+      codigo_aprobacion,
+
+      precioinicial,
+      preciodescuento,
+      precioFinal,
+      igv,
+
+      descripcion,
+
+      estado: "pagado",
+      status_detail: "accredited",
+
+      idpagodoc: Math.floor(Math.random() * 10000),
+      idtipocomprobante: 1,
+
+      fechapago: new Date()
+    })
+
+    return {
+      status: "approved",
+      pago
+    }
+  }
+  
+  async buscarPorMatricula(matricula_id: number) {
+  return await this.pagoRepository.findOne({
+    where: {
+      matricula: { id: matricula_id },
+    },
+  })
+}
 
   // ==============================
   // WEBHOOK
   // ==============================
   async procesarWebhook(body: any) {
-    console.log('📩 WEBHOOK:', body);
-
     if (body.type === 'payment') {
       const paymentId = body.data.id;
+
       const payment = await mercadopago.payment.findById(paymentId);
+
+      const metodo = payment.body.payment_method_id;
+
+      // 👇 AQUÍ detectas Yape
+      if (metodo === "yape") {
+        console.log("📱 Pago con Yape");
+      }
+
       const estadoMP = payment.body.status;
       let estado = 'pendiente';
+
       if (estadoMP === 'approved') estado = 'pagado';
       if (estadoMP === 'rejected') estado = 'rechazado';
 
       await supabase
         .from('pago')
-        .update({ estado, status_detail: payment.body.status_detail })
+        .update({
+          estado,
+          status_detail: payment.body.status_detail,
+          tipopago: metodo // 👈 GUARDAS YAPE AQUÍ
+        })
         .eq('idpagodoc', paymentId);
-
-      console.log('✅ WEBHOOK actualizado:', estado);
     }
 
     return { received: true };
+  }
+
+
+  async crearPreferencia(data: any) {
+    mercadopago.configure({
+      access_token: process.env.MP_ACCESS_TOKEN,
+    });
+
+    const preference = {
+      items: [
+        {
+          title: data.nombre,
+          quantity: 1,
+          unit_price: Number(data.preciofinal),
+          currency_id: "PEN",
+        },
+      ],
+
+      payer: {
+        email: data.email,
+      },
+
+      metadata: {
+        matricula_id: data.matricula_id,
+      },
+
+      // 🔥 IMPORTANTE
+      payment_methods: {
+        installments: 1,
+      },
+
+      notification_url: "https://buddy-blunt-crumpled.ngrok-free.dev/pago/webhook",
+    };
+
+    const res = await mercadopago.preferences.create(preference);
+
+    return { preferenceId: res.body.id };
+  }
+
+  async pagarYapeMP(body: any) {
+
+    const mercadopago = require("mercadopago")
+
+    mercadopago.configure({
+      access_token: process.env.MP_ACCESS_TOKEN
+    })
+
+    const payment = await mercadopago.payment.create({
+      transaction_amount: Number(body.transaction_amount),
+      token: body.token,
+      description: body.description,
+      installments: 1,
+      payment_method_id: "yape", // 🔥 CLAVE
+      payer: {
+        email: body.payer.email
+      }
+    })
+
+    const data = payment.body
+
+    console.log("🧾 YAPE RESPONSE:", data)
+
+    const estado =
+      data.status === "approved"
+        ? "pagado"
+        : data.status === "rejected"
+        ? "rechazado"
+        : "pendiente"
+
+    await this.pagoRepository.save({
+      matricula: { id: body.matricula_id },
+      tipopago: "yape",
+
+      mp_payment_id: data.id,
+      estado: estado,
+      status_detail: data.status_detail,
+
+      preciofinal: data.transaction_amount,
+      fechapago: new Date()
+    })
+
+    return {
+      status: data.status,
+      detail: data.status_detail
+    }
   }
 
   // ==============================
@@ -336,7 +603,7 @@ export class PagoService {
     const filePath = `boleta-${payment.id}.pdf`;
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     doc.pipe(fs.createWriteStream(filePath));
-    doc.fontSize(18).text('BOLETA ELECTRÓNICA', { align: 'center' });
+    doc.fontSize(18).text('COMPROBANTE DE PAGO', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12);
     doc.text(`Código: ${payment.id}`);
@@ -368,16 +635,12 @@ export class PagoService {
   // PAGO CON IZIPAY
   // ==============================
   async pagarConIzipay(data: any) {
-    if (!process.env.IZIPAY_USER || !process.env.IZIPAY_PASSWORD) {
-      throw new Error('❌ Credenciales Izipay no configuradas');
-    }
-
     const res = await axios.post(
       'https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment',
       {
         amount: data.preciofinal * 100,
         currency: 'PEN',
-        orderId: data.matricula_id.toString(), // 🔥 IMPORTANTE
+        orderId: data.matricula_id.toString(),
         customer: {
           email: data.email,
         },
@@ -395,7 +658,6 @@ export class PagoService {
     );
 
     return {
-      status: 'pending',
       formToken: res.data.answer?.formToken,
     };
   }
@@ -501,13 +763,13 @@ export class PagoService {
     return { ok: true };
   }
 
-  async buscarPorMatricula(matricula_id: number) {
+  /*async buscarPorMatricula(matricula_id: number) {
     return await this.pagoRepository.findOne({
       where: {
         matricula: { id: matricula_id },
       },
     });
-  }
+  }*/
 
   async marcarPagado(matricula_id: number, data: any) {
     const pago = await this.pagoRepository.findOne({

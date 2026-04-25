@@ -34,4 +34,10 @@ export class Administrador {
 
   @Column({ type: 'boolean', default: true })
   estado: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  foto_url: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  cv_url: string;
 }

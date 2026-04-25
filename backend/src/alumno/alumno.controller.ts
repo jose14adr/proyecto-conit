@@ -21,16 +21,23 @@ import { CreateAlumnoDto } from './dto/create-alumno.dto'; // Importa tu DTO (aj
 export class AlumnoController {
   constructor(private readonly alumnoService: AlumnoService) {}
 
+    @Get('perfil')
+      getPerfilAlumno(@Req() req: any) {
+        const idUsuario = req.user?.sub || req.user?.id || req.user?.userId;
+        return this.alumnoService.buscarPorIdUsuario(idUsuario);
+      }
+
+
   @Post()
   create(@Body() createAlumnoDto: CreateAlumnoDto) {
     return this.alumnoService.create(createAlumnoDto);
     }
-  @Get('perfil')
+  /*@Get('perfil')
   getPerfil(@Req() req) {
     return this.alumnoService.getPerfil(req.user.id);
-  }
+  }*/
 
-  @Get(':id')
+   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.alumnoService.findOne(+id);
   }

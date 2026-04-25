@@ -147,4 +147,14 @@ export class GrupoService {
       },
     });
   }
+
+  async obtenerPorAlumno(idalumno: number) {
+    return this.grupoRepo.query(`
+      SELECT DISTINCT g.*, c.nombrecurso
+      FROM grupo g
+      INNER JOIN curso c ON c.id = g.idcurso
+      INNER JOIN matricula m ON m.idgrupo = g.id
+      WHERE m.idalumno = $1
+    `, [idalumno]);
+  }
 }

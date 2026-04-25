@@ -7,11 +7,12 @@ import { ExamenPregunta } from 'src/examen_pregunta/entities/examen_pregunta.ent
 import { ExamenOpcion } from 'src/examen_opcion/entities/examen_opcion.entity';
 import { ExamenIntento } from '../examen_intento/entities/examen_intento.entity';
 import { Matricula } from '../matricula/entities/matricula.entity';
+import { ExamenRespuesta } from 'src/examen_respuesta/entities/examen_respuesta.entity';
 
 
 @Module({
   imports: [TypeOrmModule.forFeature([
-    Examen, ExamenPregunta, ExamenOpcion,ExamenIntento,Matricula,
+    Examen, ExamenPregunta, ExamenOpcion,ExamenIntento,Matricula,ExamenRespuesta
   ])],
   controllers: [ExamenController],
   providers: [ExamenService],

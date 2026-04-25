@@ -42,6 +42,7 @@ export class CursoController {
       Number(idalumno),
     );
   }
+  
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
