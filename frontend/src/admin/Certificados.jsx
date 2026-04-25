@@ -51,7 +51,7 @@ import {
   guardarConfigCertificadoCurso,
 } from "../services/curso-certificado-config.service";
 
-const CAMPOS = [
+const CAMPOS_BASE = [
   { key: "alumno", label: "Nombre del alumno" },
   { key: "curso", label: "Curso" },
   { key: "descripcion", label: "Descripción" },
@@ -61,14 +61,23 @@ const CAMPOS = [
   { key: "dni", label: "DNI" },
 ];
 
+const CAMPOS_REVERSO_EXTRA = [
+  { key: "nota_final", label: "Nota final" },
+  { key: "detalle_notas", label: "Detalle de notas" },
+  { key: "temario", label: "Temario" },
+];
+
 const MUESTRAS = {
-  alumno: "NOMBRE DESEADO",
+  alumno: "KAREM DANIELA PAREDES SANDOVAL",
   curso: "POR HABER APROBADO SATISFACTORIAMENTE EL CURSO",
   descripcion: "Diseño y desarrollo web con enfoque práctico",
   fecha: "08/04/2026",
   horas: "120 HORAS ACADÉMICAS",
   codigo: "CERT-2026-0001",
   dni: "73251708",
+  nota_final: "Nota final: 17",
+  detalle_notas: "Práctica 1 - 16\nExamen final - 18\nPromedio final - 17",
+  temario: "• Introducción\n• Conceptos principales\n• Casos prácticos",
 };
 
 const PREVIEW_WIDTH = 920;
@@ -240,7 +249,10 @@ export default function Certificados() {
   const [fondoRemotoUrl, setFondoRemotoUrl] = useState(null);
   const [fondoLocalUrl, setFondoLocalUrl] = useState(null);
   const [backgroundImage, setBackgroundImage] = useState(null);
-  const [elementos, setElementos] = useState(crearElementosBase);
+  const [dobleCara, setDobleCara] = useState(false);
+  const [caraActiva, setCaraActiva] = useState("anverso");
+  const [elementosAnverso, setElementosAnverso] = useState(crearElementosBase);
+  const [elementosReverso, setElementosReverso] = useState([]);
   const [seleccionadoId, setSeleccionadoId] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -255,9 +267,11 @@ export default function Certificados() {
   const [mostrarConfigCurso, setMostrarConfigCurso] = useState(true);
   const [mostrarGestionPlantilla, setMostrarGestionPlantilla] = useState(false);
 
-  const [mostrarListadoCertificados, setMostrarListadoCertificados] = useState(true);
+  const [mostrarListadoCertificados, setMostrarListadoCertificados] =
+    useState(true);
   const [certificadosAdmin, setCertificadosAdmin] = useState([]);
-  const [cargandoCertificadosAdmin, setCargandoCertificadosAdmin] = useState(false);
+  const [cargandoCertificadosAdmin, setCargandoCertificadosAdmin] =
+    useState(false);
   const [anulandoCertificadoId, setAnulandoCertificadoId] = useState(null);
 
   const [permitirEmisionManual, setPermitirEmisionManual] = useState(false);
@@ -297,6 +311,10 @@ export default function Certificados() {
     requiereAprobacion: true,
     notaMinima: "",
     asistenciaMinima: "",
+    progresoMinimo: "100",
+    requiereExamenAprobado: true,
+    requiereProgresoCompleto: true,
+    soloCursosCompletosEnEmision: true,
   });
   const [guardandoConfigCurso, setGuardandoConfigCurso] = useState(false);
 
@@ -307,10 +325,35 @@ export default function Certificados() {
     [canvasWidth]
   );
 
-  const seleccionado = useMemo(
-    () => elementos.find((el) => el.id === seleccionadoId) || null,
-    [elementos, seleccionadoId]
+  const elementosActuales = useMemo(
+    () => (caraActiva === "reverso" ? elementosReverso : elementosAnverso),
+    [caraActiva, elementosAnverso, elementosReverso]
   );
+
+  const seleccionado = useMemo(
+    () => elementosActuales.find((el) => el.id === seleccionadoId) || null,
+    [elementosActuales, seleccionadoId]
+  );
+
+  const camposDisponibles = useMemo(
+    () =>
+      caraActiva === "reverso"
+        ? [...CAMPOS_BASE, ...CAMPOS_REVERSO_EXTRA]
+        : CAMPOS_BASE,
+    [caraActiva]
+  );
+
+  const setElementosActuales = (updater) => {
+    if (caraActiva === "reverso") {
+      setElementosReverso((prev) =>
+        typeof updater === "function" ? updater(prev) : updater
+      );
+    } else {
+      setElementosAnverso((prev) =>
+        typeof updater === "function" ? updater(prev) : updater
+      );
+    }
+  };
 
   const aplicarPlantillaEnEditor = (data) => {
     if (!data) {
@@ -322,7 +365,10 @@ export default function Certificados() {
       setFondoRemotoUrl(null);
       setFondoLocalUrl(null);
       setBackgroundImage(null);
-      setElementos(crearElementosBase());
+      setDobleCara(false);
+      setCaraActiva("anverso");
+      setElementosAnverso(crearElementosBase());
+      setElementosReverso([]);
       setSeleccionadoId(null);
       setEsPlantillaActiva(plantillas.length === 0);
       return;
@@ -335,10 +381,15 @@ export default function Certificados() {
     setFondoKey(data.fondoKey || null);
     setFondoRemotoUrl(data.fondoTemporalUrl || null);
     setFondoLocalUrl(null);
-    setElementos(
+    setDobleCara(!!data.dobleCara);
+    setCaraActiva("anverso");
+    setElementosAnverso(
       Array.isArray(data.configJson) && data.configJson.length
         ? data.configJson
         : crearElementosBase()
+    );
+    setElementosReverso(
+      Array.isArray(data.configJsonReverso) ? data.configJsonReverso : []
     );
     setSeleccionadoId(null);
     setEsPlantillaActiva(!!data.activa);
@@ -353,7 +404,10 @@ export default function Certificados() {
     setFondoRemotoUrl(null);
     setFondoLocalUrl(null);
     setBackgroundImage(null);
-    setElementos(crearElementosBase());
+    setDobleCara(false);
+    setCaraActiva("anverso");
+    setElementosAnverso(crearElementosBase());
+    setElementosReverso([]);
     setSeleccionadoId(null);
     setEsPlantillaActiva(plantillas.length === 0);
   };
@@ -385,6 +439,19 @@ export default function Certificados() {
     }
 
     prepararNuevaPlantilla();
+  };
+
+  const cargarCertificadosAdmin = async (filters = filtrosCertificados) => {
+    try {
+      setCargandoCertificadosAdmin(true);
+      const data = await obtenerCertificadosAdmin(filters);
+      setCertificadosAdmin(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo cargar el listado de certificados");
+    } finally {
+      setCargandoCertificadosAdmin(false);
+    }
   };
 
   useEffect(() => {
@@ -425,7 +492,7 @@ export default function Certificados() {
   }, [fondoPreviewSrc]);
 
   useEffect(() => {
-    const imagenes = elementos.filter((el) => el.type === "image");
+    const imagenes = elementosActuales.filter((el) => el.type === "image");
 
     if (!imagenes.length) {
       setImagenesCargadas({});
@@ -470,10 +537,10 @@ export default function Certificados() {
     return () => {
       cancelled = true;
     };
-  }, [elementos]);
+  }, [elementosActuales]);
 
   const actualizarElemento = (id, cambios) => {
-    setElementos((prev) =>
+    setElementosActuales((prev) =>
       prev.map((el) => (el.id === id ? { ...el, ...cambios } : el))
     );
   };
@@ -484,7 +551,7 @@ export default function Certificados() {
   };
 
   const agregarCampo = (fieldKey) => {
-    const campo = CAMPOS.find((item) => item.key === fieldKey);
+    const campo = camposDisponibles.find((item) => item.key === fieldKey);
 
     const nuevo = {
       id: crypto.randomUUID(),
@@ -502,27 +569,27 @@ export default function Certificados() {
       fontFamily: "Arial",
     };
 
-    setElementos((prev) => [...prev, nuevo]);
+    setElementosActuales((prev) => [...prev, nuevo]);
     setSeleccionadoId(nuevo.id);
     toast.success(`Campo agregado: ${campo?.label || fieldKey}`);
   };
 
   const agregarTextoLibre = () => {
     const nuevo = crearTextoLibre();
-    setElementos((prev) => [...prev, nuevo]);
+    setElementosActuales((prev) => [...prev, nuevo]);
     setSeleccionadoId(nuevo.id);
   };
 
   const agregarQrPlaceholder = () => {
-    const yaExiste = elementos.some((el) => el.type === "qr");
+    const yaExiste = elementosActuales.some((el) => el.type === "qr");
 
     if (yaExiste) {
-      toast.error("Solo puede haber un QR en la plantilla");
+      toast.error("Solo puede haber un QR en esta cara de la plantilla");
       return;
     }
 
     const nuevo = crearQrPlaceholder();
-    setElementos((prev) => [...prev, nuevo]);
+    setElementosActuales((prev) => [...prev, nuevo]);
     setSeleccionadoId(nuevo.id);
     toast.success("Placeholder QR agregado");
   };
@@ -537,20 +604,20 @@ export default function Certificados() {
       y: seleccionado.y + 24,
     };
 
-    setElementos((prev) => [...prev, copia]);
+    setElementosActuales((prev) => [...prev, copia]);
     setSeleccionadoId(copia.id);
   };
 
   const eliminarSeleccionado = () => {
     if (!seleccionadoId) return;
-    setElementos((prev) => prev.filter((el) => el.id !== seleccionadoId));
+    setElementosActuales((prev) => prev.filter((el) => el.id !== seleccionadoId));
     setSeleccionadoId(null);
   };
 
   const traerAlFrente = () => {
     if (!seleccionadoId) return;
 
-    setElementos((prev) => {
+    setElementosActuales((prev) => {
       const item = prev.find((el) => el.id === seleccionadoId);
       if (!item) return prev;
       return [...prev.filter((el) => el.id !== seleccionadoId), item];
@@ -560,7 +627,7 @@ export default function Certificados() {
   const enviarAtras = () => {
     if (!seleccionadoId) return;
 
-    setElementos((prev) => {
+    setElementosActuales((prev) => {
       const item = prev.find((el) => el.id === seleccionadoId);
       if (!item) return prev;
       return [item, ...prev.filter((el) => el.id !== seleccionadoId)];
@@ -606,7 +673,7 @@ export default function Certificados() {
 
       nuevaImagen.localPreviewUrl = resultado.localPreviewUrl;
 
-      setElementos((prev) => [...prev, nuevaImagen]);
+      setElementosActuales((prev) => [...prev, nuevaImagen]);
       setSeleccionadoId(nuevaImagen.id);
 
       toast.success("Imagen agregada correctamente", {
@@ -633,7 +700,9 @@ export default function Certificados() {
         fondoKey,
         canvasWidth,
         canvasHeight,
-        configJson: elementos,
+        dobleCara,
+        configJson: elementosAnverso,
+        configJsonReverso: dobleCara ? elementosReverso : [],
       };
 
       const saved = await guardarPlantillaCertificado(payload);
@@ -693,8 +762,7 @@ export default function Certificados() {
         : "",
       emailAlumno:
         alumno?.email || alumno?.correo || alumno?.emailAlumno || "",
-      dniAlumno:
-        alumno?.numdocumento || alumno?.dni || "",
+      dniAlumno: alumno?.numdocumento || alumno?.dni || "",
       curso: "",
       descripcion: "Por haber aprobado satisfactoriamente el curso",
       horas: "",
@@ -754,8 +822,6 @@ export default function Certificados() {
         return;
       }
 
-      setEmitiendo(true);
-
       const cursoSeleccionado = cursosAlumno.find(
         (c) => String(c.idgrupo) === String(emision.idgrupo)
       );
@@ -780,6 +846,8 @@ export default function Certificados() {
         }
       }
 
+      setEmitiendo(true);
+
       const cert = await emitirCertificadoDesdePlantilla({
         idalumno: emision.idalumno ? Number(emision.idalumno) : undefined,
         idcurso: emision.idcurso ? Number(emision.idcurso) : undefined,
@@ -796,6 +864,7 @@ export default function Certificados() {
 
       toast.success("Certificado generado correctamente");
       window.open(getCertificadoArchivoUrl(cert.id), "_blank");
+      await cargarCertificadosAdmin();
     } catch (error) {
       console.error(error);
       toast.error("No se pudo generar el certificado");
@@ -814,6 +883,10 @@ export default function Certificados() {
         requiereAprobacion: true,
         notaMinima: "",
         asistenciaMinima: "",
+        progresoMinimo: "100",
+        requiereExamenAprobado: true,
+        requiereProgresoCompleto: true,
+        soloCursosCompletosEnEmision: true,
       });
       return;
     }
@@ -844,23 +917,19 @@ export default function Certificados() {
           config?.asistenciaMinima !== undefined
             ? String(config.asistenciaMinima)
             : "",
+        progresoMinimo:
+          config?.progresoMinimo !== null &&
+          config?.progresoMinimo !== undefined
+            ? String(config.progresoMinimo)
+            : "100",
+        requiereExamenAprobado: config?.requiereExamenAprobado ?? true,
+        requiereProgresoCompleto: config?.requiereProgresoCompleto ?? true,
+        soloCursosCompletosEnEmision:
+          config?.soloCursosCompletosEnEmision ?? true,
       });
     } catch (error) {
       console.error(error);
       toast.error("No se pudo cargar la configuración del curso");
-    }
-  };
-
-  const cargarCertificadosAdmin = async (filters = filtrosCertificados) => {
-    try {
-      setCargandoCertificadosAdmin(true);
-      const data = await obtenerCertificadosAdmin(filters);
-      setCertificadosAdmin(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error(error);
-      toast.error("No se pudo cargar el listado de certificados");
-    } finally {
-      setCargandoCertificadosAdmin(false);
     }
   };
 
@@ -870,7 +939,9 @@ export default function Certificados() {
 
   const handleAnularCertificado = async (certificado) => {
     const motivo = window.prompt(
-      `Motivo de anulación para el certificado ${certificado.codigoCertificado || certificado.id}:`,
+      `Motivo de anulación para el certificado ${
+        certificado.codigoCertificado || certificado.id
+      }:`,
       ""
     );
 
@@ -917,6 +988,14 @@ export default function Certificados() {
           configCurso.asistenciaMinima !== ""
             ? Number(configCurso.asistenciaMinima)
             : null,
+        progresoMinimo:
+          configCurso.progresoMinimo !== ""
+            ? Number(configCurso.progresoMinimo)
+            : null,
+        requiereExamenAprobado: configCurso.requiereExamenAprobado,
+        requiereProgresoCompleto: configCurso.requiereProgresoCompleto,
+        soloCursosCompletosEnEmision:
+          configCurso.soloCursosCompletosEnEmision,
       });
 
       toast.success("Configuración del curso guardada");
@@ -1078,24 +1157,28 @@ export default function Certificados() {
                     );
                   })()}
 
-                {emision.idalumno && !cargandoCursosAlumno && cursosAlumno.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-2">
-                    Este alumno no tiene cursos matriculados.
-                  </p>
-                )}
+                {emision.idalumno &&
+                  !cargandoCursosAlumno &&
+                  cursosAlumno.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      Este alumno no tiene cursos matriculados.
+                    </p>
+                  )}
 
                 {emision.idalumno &&
                   !cargandoCursosAlumno &&
                   cursosAlumno.length > 0 &&
                   !permitirEmisionManual && (
                     <p className="text-xs text-gray-500 mt-2">
-                      Solo se pueden seleccionar cursos que ya estén completos. Los incompletos aparecen bloqueados.
+                      Solo se pueden seleccionar cursos que ya estén completos.
+                      Los incompletos aparecen bloqueados.
                     </p>
                   )}
 
                 {permitirEmisionManual && (
                   <p className="text-xs text-amber-600 mt-2">
-                    Modo manual activo: también podrás emitir certificados de cursos incompletos.
+                    Modo manual activo: también podrás emitir certificados de
+                    cursos incompletos.
                   </p>
                 )}
               </div>
@@ -1350,6 +1433,24 @@ export default function Certificados() {
                 />
               </div>
 
+              <div>
+                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                  Progreso mínimo
+                </label>
+                <input
+                  type="number"
+                  value={configCurso.progresoMinimo}
+                  onChange={(e) =>
+                    setConfigCurso((prev) => ({
+                      ...prev,
+                      progresoMinimo: e.target.value,
+                    }))
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  placeholder="Ej. 100"
+                />
+              </div>
+
               <div className="flex flex-col justify-end gap-3">
                 <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
                   <input
@@ -1376,7 +1477,49 @@ export default function Certificados() {
                       }))
                     }
                   />
-                  Requiere aprobación
+                  Requiere aprobación general
+                </label>
+
+                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={!!configCurso.requiereExamenAprobado}
+                    onChange={(e) =>
+                      setConfigCurso((prev) => ({
+                        ...prev,
+                        requiereExamenAprobado: e.target.checked,
+                      }))
+                    }
+                  />
+                  Requiere examen aprobado
+                </label>
+
+                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={!!configCurso.requiereProgresoCompleto}
+                    onChange={(e) =>
+                      setConfigCurso((prev) => ({
+                        ...prev,
+                        requiereProgresoCompleto: e.target.checked,
+                      }))
+                    }
+                  />
+                  Requiere progreso completo
+                </label>
+
+                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={!!configCurso.soloCursosCompletosEnEmision}
+                    onChange={(e) =>
+                      setConfigCurso((prev) => ({
+                        ...prev,
+                        soloCursosCompletosEnEmision: e.target.checked,
+                      }))
+                    }
+                  />
+                  En emisión manual mostrar solo cursos completos
                 </label>
               </div>
             </div>
@@ -1537,33 +1680,55 @@ export default function Certificados() {
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Código</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Alumno</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">DNI</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Curso</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Estado</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Fecha</th>
-                    <th className="px-4 py-3 text-center font-semibold text-gray-700">Acciones</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                      Código
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                      Alumno
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                      DNI
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                      Curso
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                      Estado
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                      Fecha
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {cargandoCertificadosAdmin ? (
                     <tr>
-                      <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                      <td
+                        colSpan="7"
+                        className="px-4 py-8 text-center text-gray-500"
+                      >
                         Cargando certificados...
                       </td>
                     </tr>
                   ) : certificadosAdmin.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                      <td
+                        colSpan="7"
+                        className="px-4 py-8 text-center text-gray-500"
+                      >
                         No se encontraron certificados.
                       </td>
                     </tr>
                   ) : (
                     certificadosAdmin.map((cert) => (
                       <tr key={cert.id} className="border-t border-gray-100">
-                        <td className="px-4 py-3">{cert.codigoCertificado || "-"}</td>
+                        <td className="px-4 py-3">
+                          {cert.codigoCertificado || "-"}
+                        </td>
                         <td className="px-4 py-3">{cert.nombreAlumno || "-"}</td>
                         <td className="px-4 py-3">{cert.dniAlumno || "-"}</td>
                         <td className="px-4 py-3">{cert.curso || "-"}</td>
@@ -1584,14 +1749,19 @@ export default function Certificados() {
                         </td>
                         <td className="px-4 py-3">
                           {cert.fechaEmision
-                            ? new Date(cert.fechaEmision).toLocaleDateString("es-PE")
+                            ? new Date(cert.fechaEmision).toLocaleDateString(
+                                "es-PE"
+                              )
                             : "-"}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() =>
-                                window.open(getCertificadoArchivoUrl(cert.id), "_blank")
+                                window.open(
+                                  getCertificadoArchivoUrl(cert.id),
+                                  "_blank"
+                                )
                               }
                               className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50"
                             >
@@ -1693,16 +1863,23 @@ export default function Certificados() {
                               {plantilla.nombre}
                             </h4>
                             <p className="text-xs text-gray-500 mt-1">
-                              {plantilla.canvasWidth} ×{" "}
-                              {plantilla.canvasHeight}
+                              {plantilla.canvasWidth} × {plantilla.canvasHeight}
                             </p>
                           </div>
 
-                          {plantilla.activa && (
-                            <span className="text-xs font-semibold px-2 py-1 rounded-md bg-green-100 text-green-700">
-                              Activa
-                            </span>
-                          )}
+                          <div className="flex flex-col items-end gap-1">
+                            {plantilla.activa && (
+                              <span className="text-xs font-semibold px-2 py-1 rounded-md bg-green-100 text-green-700">
+                                Activa
+                              </span>
+                            )}
+
+                            {plantilla.dobleCara && (
+                              <span className="text-xs font-semibold px-2 py-1 rounded-md bg-sky-100 text-sky-700">
+                                Doble cara
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="mt-4 flex flex-wrap gap-2">
@@ -1749,6 +1926,66 @@ export default function Certificados() {
                 <Save size={18} />
                 {guardando ? "Guardando..." : "Guardar plantilla"}
               </button>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow p-5 border border-gray-100">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={!!dobleCara}
+                    onChange={(e) => {
+                      const activo = e.target.checked;
+                      setDobleCara(activo);
+                      if (!activo) {
+                        setCaraActiva("anverso");
+                      }
+                    }}
+                  />
+                  Activar certificado de doble cara
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCaraActiva("anverso");
+                      setSeleccionadoId(null);
+                    }}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      caraActiva === "anverso"
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    Anverso
+                  </button>
+
+                  {dobleCara && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCaraActiva("reverso");
+                        setSeleccionadoId(null);
+                      }}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        caraActiva === "reverso"
+                          ? "bg-indigo-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      Reverso
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {dobleCara && (
+                <p className="text-xs text-gray-500 mt-3">
+                  En el reverso se habilitan además los campos: Nota final,
+                  Detalle de notas y Temario.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_320px] gap-6">
@@ -1836,6 +2073,7 @@ export default function Certificados() {
                       className="hidden"
                     />
                   </label>
+
                   <button
                     onClick={agregarQrPlaceholder}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sky-600 text-white hover:bg-sky-700 transition-colors"
@@ -1848,7 +2086,7 @@ export default function Certificados() {
                       Campos dinámicos
                     </div>
 
-                    {CAMPOS.map((campo) => (
+                    {camposDisponibles.map((campo) => (
                       <button
                         key={campo.key}
                         onClick={() => agregarCampo(campo.key)}
@@ -1916,7 +2154,7 @@ export default function Certificados() {
                           />
                         )}
 
-                        {elementos.map((el) => {
+                        {elementosActuales.map((el) => {
                           const selected = el.id === seleccionadoId;
 
                           if (el.type === "qr") {
@@ -2121,29 +2359,30 @@ export default function Certificados() {
                       </button>
                     </div>
 
-                    {seleccionado.type !== "image" && seleccionado.type !== "qr" && (
-                      <div>
-                        <label className="text-sm font-semibold text-gray-700 block mb-2">
-                          Tipo de contenido
-                        </label>
-                        <select
-                          value={seleccionado.dynamicField || ""}
-                          onChange={(e) =>
-                            actualizarSeleccionado({
-                              dynamicField: e.target.value || null,
-                            })
-                          }
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        >
-                          <option value="">Texto libre</option>
-                          {CAMPOS.map((campo) => (
-                            <option key={campo.key} value={campo.key}>
-                              {campo.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                    {seleccionado.type !== "image" &&
+                      seleccionado.type !== "qr" && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 block mb-2">
+                            Tipo de contenido
+                          </label>
+                          <select
+                            value={seleccionado.dynamicField || ""}
+                            onChange={(e) =>
+                              actualizarSeleccionado({
+                                dynamicField: e.target.value || null,
+                              })
+                            }
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          >
+                            <option value="">Texto libre</option>
+                            {camposDisponibles.map((campo) => (
+                              <option key={campo.key} value={campo.key}>
+                                {campo.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                     {seleccionado.type !== "image" &&
                       seleccionado.type !== "qr" &&
@@ -2212,7 +2451,8 @@ export default function Certificados() {
                         />
                       </div>
 
-                      {seleccionado.type === "image" || seleccionado.type === "qr" ? (
+                      {seleccionado.type === "image" ||
+                      seleccionado.type === "qr" ? (
                         <div>
                           <label className="text-sm font-semibold text-gray-700 block mb-2">
                             Alto
@@ -2247,87 +2487,88 @@ export default function Certificados() {
                       )}
                     </div>
 
-                    {seleccionado.type !== "image" && seleccionado.type !== "qr" && (
-                      <>
-                        <div>
-                          <label className="text-sm font-semibold text-gray-700 block mb-2">
-                            Color
-                          </label>
-                          <input
-                            type="color"
-                            value={seleccionado.color || "#111827"}
-                            onChange={(e) =>
-                              actualizarSeleccionado({
-                                color: e.target.value,
-                              })
-                            }
-                            className="w-full h-11 border border-gray-300 rounded-lg px-2"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
+                    {seleccionado.type !== "image" &&
+                      seleccionado.type !== "qr" && (
+                        <>
                           <div>
                             <label className="text-sm font-semibold text-gray-700 block mb-2">
-                              Alineación
+                              Color
                             </label>
-                            <select
-                              value={seleccionado.align || "left"}
+                            <input
+                              type="color"
+                              value={seleccionado.color || "#111827"}
                               onChange={(e) =>
                                 actualizarSeleccionado({
-                                  align: e.target.value,
+                                  color: e.target.value,
                                 })
                               }
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                            >
-                              <option value="left">Izquierda</option>
-                              <option value="center">Centro</option>
-                              <option value="right">Derecha</option>
-                            </select>
+                              className="w-full h-11 border border-gray-300 rounded-lg px-2"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-sm font-semibold text-gray-700 block mb-2">
+                                Alineación
+                              </label>
+                              <select
+                                value={seleccionado.align || "left"}
+                                onChange={(e) =>
+                                  actualizarSeleccionado({
+                                    align: e.target.value,
+                                  })
+                                }
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                              >
+                                <option value="left">Izquierda</option>
+                                <option value="center">Centro</option>
+                                <option value="right">Derecha</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="text-sm font-semibold text-gray-700 block mb-2">
+                                Estilo
+                              </label>
+                              <select
+                                value={seleccionado.fontStyle || "normal"}
+                                onChange={(e) =>
+                                  actualizarSeleccionado({
+                                    fontStyle: e.target.value,
+                                  })
+                                }
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                              >
+                                <option value="normal">Normal</option>
+                                <option value="bold">Negrita</option>
+                                <option value="italic">Cursiva</option>
+                              </select>
+                            </div>
                           </div>
 
                           <div>
                             <label className="text-sm font-semibold text-gray-700 block mb-2">
-                              Estilo
+                              Fuente
                             </label>
                             <select
-                              value={seleccionado.fontStyle || "normal"}
+                              value={seleccionado.fontFamily || "Arial"}
                               onChange={(e) =>
                                 actualizarSeleccionado({
-                                  fontStyle: e.target.value,
+                                  fontFamily: e.target.value,
                                 })
                               }
                               className="w-full border border-gray-300 rounded-lg px-3 py-2"
                             >
-                              <option value="normal">Normal</option>
-                              <option value="bold">Negrita</option>
-                              <option value="italic">Cursiva</option>
+                              <option value="Arial">Arial</option>
+                              <option value="Georgia">Georgia</option>
+                              <option value="Times New Roman">
+                                Times New Roman
+                              </option>
+                              <option value="Verdana">Verdana</option>
                             </select>
                           </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-semibold text-gray-700 block mb-2">
-                            Fuente
-                          </label>
-                          <select
-                            value={seleccionado.fontFamily || "Arial"}
-                            onChange={(e) =>
-                              actualizarSeleccionado({
-                                fontFamily: e.target.value,
-                              })
-                            }
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          >
-                            <option value="Arial">Arial</option>
-                            <option value="Georgia">Georgia</option>
-                            <option value="Times New Roman">
-                              Times New Roman
-                            </option>
-                            <option value="Verdana">Verdana</option>
-                          </select>
-                        </div>
-                      </>
-                    )}
+                        </>
+                      )}
 
                     <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
                       <input

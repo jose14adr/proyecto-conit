@@ -866,7 +866,7 @@ export const getAsistenciaCursoPorFecha = async (grupoId, fecha) => {
   let query = supabase
     .from("asistencia")
     .select("*")
-    .eq("idcurso", Number(grupoId)); // compatibilidad actual
+    .eq("idgrupo", Number(grupoId));
 
   if (fecha) {
     query = query.eq("fecha", fecha);
@@ -882,7 +882,7 @@ export const guardarAsistenciaCurso = async (grupoId, asistencias) => {
     const { data: existente, error: errBuscar } = await supabase
       .from("asistencia")
       .select("id")
-      .eq("idcurso", Number(grupoId)) // compatibilidad actual
+      .eq("idgrupo", Number(grupoId))
       .eq("idalumno", Number(item.idalumno))
       .eq("fecha", item.fecha)
       .maybeSingle();
@@ -890,7 +890,7 @@ export const guardarAsistenciaCurso = async (grupoId, asistencias) => {
     if (errBuscar) throw new Error(errBuscar.message);
 
     const payload = {
-      idcurso: Number(grupoId), // compatibilidad actual
+      idgrupo: Number(grupoId),
       idalumno: Number(item.idalumno),
       fecha: item.fecha,
       estado: item.estado,
@@ -906,13 +906,110 @@ export const guardarAsistenciaCurso = async (grupoId, asistencias) => {
 
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabase.from("asistencia").insert(payload);
+      const { error } = await supabase
+        .from("asistencia")
+        .insert(payload);
 
       if (error) throw new Error(error.message);
     }
   }
 
   return true;
+};
+
+// ======================================================
+// CONFIGURACIÓN DE ASISTENCIA POR GRUPO
+// ======================================================
+
+export const getConfigAsistenciaGrupo = async (grupoId, fecha) => {
+  const idGrupo = Number(grupoId);
+
+  if (!idGrupo) {
+    throw new Error("Grupo inválido para obtener configuración de asistencia.");
+  }
+
+  if (!fecha) {
+    throw new Error("La fecha es obligatoria para obtener la configuración.");
+  }
+
+  const { data, error } = await supabase
+    .from("asistencia_configuracion")
+    .select("*")
+    .eq("idgrupo", idGrupo)
+    .eq("fecha", fecha)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  return data || null;
+};
+
+export const guardarConfigAsistenciaGrupo = async (grupoId, payload) => {
+  const idGrupo = Number(grupoId);
+
+  if (!idGrupo) {
+    throw new Error("Grupo inválido para guardar configuración de asistencia.");
+  }
+
+  const fecha = payload?.fecha;
+  const horaInicio = payload?.hora_inicio;
+  const horaFin = payload?.hora_fin;
+
+  if (!fecha) {
+    throw new Error("Selecciona una fecha para configurar la asistencia.");
+  }
+
+  if (!horaInicio || !horaFin) {
+    throw new Error("Debes indicar la hora de inicio y fin.");
+  }
+
+  if (horaFin <= horaInicio) {
+    throw new Error("La hora fin debe ser mayor que la hora inicio.");
+  }
+
+  const body = {
+    idgrupo: idGrupo,
+    fecha,
+    hora_inicio: horaInicio,
+    hora_fin: horaFin,
+    activo: payload?.activo ?? true,
+    creado_por_tipo: payload?.creado_por_tipo || null,
+    creado_por_id: payload?.creado_por_id
+      ? Number(payload.creado_por_id)
+      : null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data: existente, error: errBuscar } = await supabase
+    .from("asistencia_configuracion")
+    .select("id")
+    .eq("idgrupo", idGrupo)
+    .eq("fecha", fecha)
+    .maybeSingle();
+
+  if (errBuscar) throw new Error(errBuscar.message);
+
+  if (existente) {
+    const { data, error } = await supabase
+      .from("asistencia_configuracion")
+      .update(body)
+      .eq("id", existente.id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from("asistencia_configuracion")
+    .insert(body)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return data;
 };
 
 // ======================================================
@@ -1460,7 +1557,7 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     const { data, error } = await supabase
       .from("asistencia")
       .select("idalumno, fecha, estado")
-      .eq("idcurso", grupoId)
+      .eq("idgrupo", grupoId)
       .in("idalumno", alumnoIds);
 
     if (error) throw new Error(error.message);
@@ -1793,7 +1890,7 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
   const { data: asistencias, error: errAsistencias } = await supabase
     .from("asistencia")
     .select("fecha")
-    .eq("idcurso", grupoId);
+    .eq("idgrupo", grupoId);
 
   if (errAsistencias) throw new Error(errAsistencias.message);
 
@@ -3139,6 +3236,11 @@ const TIPOS_PREGUNTA_TEXTO = ["texto_corto", "texto_largo"];
 
 const normalizarConfiguracionPregunta = (pregunta = {}) => {
   const tipoPregunta = pregunta.tipo_pregunta || "unica";
+  const modoRespuestaNumerica =
+    tipoPregunta === "numerica" &&
+    pregunta.modo_respuesta_numerica === "formula"
+      ? "formula"
+      : "numero";
 
   return {
     tipo_pregunta: tipoPregunta,
@@ -3157,9 +3259,14 @@ const normalizarConfiguracionPregunta = (pregunta = {}) => {
         ? Number(pregunta.max_caracteres || 200)
         : null,
     permitir_decimales:
-      tipoPregunta === "numerica" ? Boolean(pregunta.permitir_decimales) : true,
+      tipoPregunta === "numerica"
+        ? Boolean(pregunta.permitir_decimales)
+        : true,
+    modo_respuesta_numerica: modoRespuestaNumerica,
     tamano_max_mb:
-      tipoPregunta === "archivo" ? Number(pregunta.tamano_max_mb || 10) : 10,
+      tipoPregunta === "archivo"
+        ? Number(pregunta.tamano_max_mb || 10)
+        : 10,
     extensiones_permitidas:
       tipoPregunta === "archivo"
         ? (pregunta.extensiones_permitidas || "").trim() || null
@@ -3212,6 +3319,7 @@ export const crearExamen = async ({
         texto_placeholder: config.texto_placeholder,
         max_caracteres: config.max_caracteres,
         permitir_decimales: config.permitir_decimales,
+        modo_respuesta_numerica: config.modo_respuesta_numerica,
         tamano_max_mb: config.tamano_max_mb,
         extensiones_permitidas: config.extensiones_permitidas,
       })
@@ -3257,7 +3365,8 @@ export const getExamenDetalle = async (examenId) => {
 
   const { data: preguntasDB, error: errPreg } = await supabase
     .from("examen_pregunta")
-    .select(`
+    .select(
+      `
       id,
       idexamen,
       enunciado,
@@ -3269,9 +3378,11 @@ export const getExamenDetalle = async (examenId) => {
       texto_placeholder,
       max_caracteres,
       permitir_decimales,
+      modo_respuesta_numerica,
       tamano_max_mb,
       extensiones_permitidas
-    `)
+      `
+    )
     .eq("idexamen", idExamen)
     .eq("estado", true)
     .order("orden", { ascending: true });
@@ -3317,6 +3428,8 @@ export const getExamenDetalle = async (examenId) => {
           pregunta.permitir_decimales !== undefined
             ? !!pregunta.permitir_decimales
             : true,
+        modo_respuesta_numerica:
+          pregunta.modo_respuesta_numerica === "formula" ? "formula" : "numero",
         tamano_max_mb:
           pregunta.tamano_max_mb !== null && pregunta.tamano_max_mb !== undefined
             ? Number(pregunta.tamano_max_mb)
@@ -3520,6 +3633,7 @@ export const actualizarExamen = async (examenId, datosExamen) => {
         texto_placeholder: config.texto_placeholder,
         max_caracteres: config.max_caracteres,
         permitir_decimales: config.permitir_decimales,
+        modo_respuesta_numerica: config.modo_respuesta_numerica,
         tamano_max_mb: config.tamano_max_mb,
         extensiones_permitidas: config.extensiones_permitidas,
       })
@@ -3551,23 +3665,152 @@ export const actualizarExamen = async (examenId, datosExamen) => {
   return await getExamenDetalle(idExamen);
 };
 
+// ======================================================
+// BANCO DE PREGUNTAS
+// ======================================================
+
+export const PLANTILLA_BANCO_PREGUNTAS_URL =
+  "/plantillas/plantilla_banco_preguntas_dropdown_excel.xlsx";
+
+export const importarExcelBancoPreguntas = async ({
+  file,
+  idcurso = null,
+} = {}) => {
+  if (!file) {
+    throw new Error("Debes seleccionar un archivo Excel.");
+  }
+
+  const nombreArchivo = String(file.name || "").toLowerCase();
+
+  if (!nombreArchivo.endsWith(".xlsx") && !nombreArchivo.endsWith(".xls")) {
+    throw new Error("El archivo debe ser Excel: .xlsx o .xls");
+  }
+
+  const docente = await getDocenteActual();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("iddocente", String(docente.id));
+
+  if (idcurso) {
+    formData.append("idcurso", String(idcurso));
+  }
+
+  const res = await fetch(`${apiUrl}/banco-preguntas/importar-excel`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const errores = Array.isArray(data?.errores)
+      ? `\n${data.errores.join("\n")}`
+      : "";
+
+    throw new Error(
+      `${data?.message || "No se pudo importar el Excel al banco."}${errores}`
+    );
+  }
+
+  return data;
+};
+
+export const getBancoPreguntasDocente = async ({ idcurso = null } = {}) => {
+  const docente = await getDocenteActual();
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const url = idcurso
+    ? `${apiUrl}/banco-preguntas/docente/${docente.id}/curso/${idcurso}`
+    : `${apiUrl}/banco-preguntas/docente/${docente.id}`;
+
+  const res = await fetch(url);
+  const data = await res.json().catch(() => []);
+
+  if (!res.ok) {
+    throw new Error(data?.message || "No se pudo cargar el banco de preguntas.");
+  }
+
+  return Array.isArray(data) ? data : [];
+};
+
+export const agregarPreguntasBancoAExamen = async ({
+  examenId,
+  preguntasIds,
+}) => {
+  const idExamen = Number(examenId);
+
+  if (!idExamen) {
+    throw new Error("El examen no es válido.");
+  }
+
+  if (!Array.isArray(preguntasIds) || preguntasIds.length === 0) {
+    throw new Error("Debes seleccionar al menos una pregunta del banco.");
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(
+    `${apiUrl}/banco-preguntas/examen/${idExamen}/agregar-desde-banco`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        preguntasIds: preguntasIds.map(Number),
+      }),
+    }
+  );
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(
+      data?.message || "No se pudieron agregar las preguntas al examen."
+    );
+  }
+
+  return data;
+};
+
 // ==============================
 // SESIONES EN VIVO
 // ==============================
 
 export const getSesionesVivoByGrupo = async (grupoId) => {
-  const { data, error } = await supabase
-    .from("sesion_vivo")
-    .select("*")
-    .eq("idgrupo", Number(grupoId))
-    .order("fecha", { ascending: true });
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-  if (error) throw new Error(error.message);
+  const res = await fetch(`${apiUrl}/sesion-vivo/grupo/${grupoId}`);
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data?.message || "No se pudieron cargar las sesiones en vivo."
+    );
+  }
+
   return data || [];
 };
 
-// Alias temporal
+// Alias temporal para compatibilidad
 export const getSesionesVivoByCurso = getSesionesVivoByGrupo;
+
+export const getMeetingProviderByGrupo = async (grupoId) => {
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/sesion-vivo/grupo/${grupoId}/provider`);
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data?.message || "No se pudo obtener el proveedor de reuniones."
+    );
+  }
+
+  return data;
+};
 
 export const crearSesionVivo = async (payload) => {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -3578,12 +3821,11 @@ export const crearSesionVivo = async (payload) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      idcurso: payload.idcurso ? Number(payload.idcurso) : null,
       idgrupo: Number(payload.idgrupo),
-      titulo: payload.titulo,
-      descripcion: payload.descripcion,
-      fecha: payload.fecha,
-      duracion: Number(payload.duracion),
+      titulo: String(payload.titulo || ""),
+      descripcion: payload.descripcion ? String(payload.descripcion) : "",
+      fecha: String(payload.fecha || ""),
+      duracion: Number(payload.duracion || 0),
     }),
   });
 
@@ -3594,4 +3836,580 @@ export const crearSesionVivo = async (payload) => {
   }
 
   return data;
+};
+
+// ======================================================
+// FORO POR GRUPO
+// ======================================================
+
+const getUsuarioSesionActualForo = () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("No hay token en sesión. Inicia sesión nuevamente.");
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+
+    return {
+      idusuario: payload?.sub ? Number(payload.sub) : null,
+      correo: payload?.correo || "",
+      rol: payload?.rol || "USUARIO",
+    };
+  } catch {
+    throw new Error("No se pudo leer el token de sesión.");
+  }
+};
+
+const getAutorForoActual = async () => {
+  const usuario = getUsuarioSesionActualForo();
+
+  let autorNombre = usuario.correo || "Usuario";
+  let autorRol = usuario.rol || "USUARIO";
+
+  if (String(usuario.rol || "").toUpperCase().includes("DOCENTE")) {
+    const { data: docente } = await supabase
+      .from("docente")
+      .select("nombre, apellido, correo")
+      .eq("usuarioId", Number(usuario.idusuario))
+      .maybeSingle();
+
+    if (docente) {
+      autorNombre =
+        `${docente.nombre || ""} ${docente.apellido || ""}`.trim() ||
+        docente.correo ||
+        autorNombre;
+    }
+
+    autorRol = "DOCENTE";
+  }
+
+  if (String(usuario.rol || "").toUpperCase().includes("ADMIN")) {
+    autorNombre = usuario.correo ? `Administrador (${usuario.correo})` : "Administrador";
+    autorRol = "ADMIN";
+  }
+
+  return {
+    idusuario: usuario.idusuario,
+    autor_nombre: autorNombre,
+    autor_rol: autorRol,
+  };
+};
+
+export const getForoPublicacionesByGrupo = async (grupoId) => {
+  const idGrupo = Number(grupoId);
+
+  if (!idGrupo) {
+    throw new Error("Grupo inválido para cargar el foro.");
+  }
+
+  const { data: publicaciones, error } = await supabase
+    .from("foro_publicacion")
+    .select("*")
+    .eq("idgrupo", idGrupo)
+    .eq("estado", "ACTIVO")
+    .order("fijado", { ascending: false })
+    .order("updated_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const lista = publicaciones || [];
+  if (lista.length === 0) return [];
+
+  const ids = lista.map((p) => Number(p.id)).filter(Boolean);
+
+  const { data: respuestas, error: errorRespuestas } = await supabase
+    .from("foro_respuesta")
+    .select("id, idpublicacion, created_at")
+    .in("idpublicacion", ids)
+    .eq("estado", "ACTIVO");
+
+  if (errorRespuestas) throw new Error(errorRespuestas.message);
+
+  const contador = new Map();
+  const ultimaRespuesta = new Map();
+
+  (respuestas || []).forEach((r) => {
+    const key = Number(r.idpublicacion);
+
+    contador.set(key, (contador.get(key) || 0) + 1);
+
+    const actual = ultimaRespuesta.get(key);
+    if (!actual || new Date(r.created_at) > new Date(actual)) {
+      ultimaRespuesta.set(key, r.created_at);
+    }
+  });
+
+  return lista.map((p) => ({
+    ...p,
+    total_respuestas: contador.get(Number(p.id)) || 0,
+    ultima_respuesta_at: ultimaRespuesta.get(Number(p.id)) || null,
+  }));
+};
+
+export const crearForoPublicacion = async ({ grupoId, titulo, contenido }) => {
+  const idGrupo = Number(grupoId);
+
+  if (!idGrupo) {
+    throw new Error("Grupo inválido para crear la publicación.");
+  }
+
+  if (!titulo?.trim()) {
+    throw new Error("El título de la publicación es obligatorio.");
+  }
+
+  if (!contenido?.trim()) {
+    throw new Error("El contenido de la publicación es obligatorio.");
+  }
+
+  const autor = await getAutorForoActual();
+
+  const { data, error } = await supabase
+    .from("foro_publicacion")
+    .insert({
+      idgrupo: idGrupo,
+      idusuario: autor.idusuario,
+      autor_nombre: autor.autor_nombre,
+      autor_rol: autor.autor_rol,
+      titulo: titulo.trim(),
+      contenido: contenido.trim(),
+      estado: "ACTIVO",
+      fijado: false,
+      cerrado: false,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const actualizarForoPublicacion = async (publicacionId, payload) => {
+  const body = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (payload.titulo !== undefined) {
+    body.titulo = payload.titulo?.trim() || "";
+  }
+
+  if (payload.contenido !== undefined) {
+    body.contenido = payload.contenido?.trim() || "";
+  }
+
+  const { data, error } = await supabase
+    .from("foro_publicacion")
+    .update(body)
+    .eq("id", Number(publicacionId))
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const eliminarForoPublicacion = async (publicacionId) => {
+  const { error } = await supabase
+    .from("foro_publicacion")
+    .update({
+      estado: "ELIMINADO",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", Number(publicacionId));
+
+  if (error) throw new Error(error.message);
+  return true;
+};
+
+export const toggleFijarForoPublicacion = async (publicacionId, fijado) => {
+  const { data, error } = await supabase
+    .from("foro_publicacion")
+    .update({
+      fijado: Boolean(fijado),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", Number(publicacionId))
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const toggleCerrarForoPublicacion = async (publicacionId, cerrado) => {
+  const { data, error } = await supabase
+    .from("foro_publicacion")
+    .update({
+      cerrado: Boolean(cerrado),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", Number(publicacionId))
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const getForoRespuestasByPublicacion = async (publicacionId) => {
+  const { data, error } = await supabase
+    .from("foro_respuesta")
+    .select("*")
+    .eq("idpublicacion", Number(publicacionId))
+    .eq("estado", "ACTIVO")
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const crearForoRespuesta = async ({ publicacionId, contenido }) => {
+  if (!contenido?.trim()) {
+    throw new Error("La respuesta no puede estar vacía.");
+  }
+
+  const { data: publicacion, error: errPublicacion } = await supabase
+    .from("foro_publicacion")
+    .select("id, cerrado")
+    .eq("id", Number(publicacionId))
+    .maybeSingle();
+
+  if (errPublicacion) throw new Error(errPublicacion.message);
+  if (!publicacion) throw new Error("No se encontró la publicación.");
+  if (publicacion.cerrado) {
+    throw new Error("Esta publicación está cerrada y ya no acepta respuestas.");
+  }
+
+  const autor = await getAutorForoActual();
+
+  const { data, error } = await supabase
+    .from("foro_respuesta")
+    .insert({
+      idpublicacion: Number(publicacionId),
+      idusuario: autor.idusuario,
+      autor_nombre: autor.autor_nombre,
+      autor_rol: autor.autor_rol,
+      contenido: contenido.trim(),
+      estado: "ACTIVO",
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  await supabase
+    .from("foro_publicacion")
+    .update({
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", Number(publicacionId));
+
+  return data;
+};
+
+export const eliminarForoRespuesta = async (respuestaId) => {
+  const { error } = await supabase
+    .from("foro_respuesta")
+    .update({
+      estado: "ELIMINADO",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", Number(respuestaId));
+
+  if (error) throw new Error(error.message);
+  return true;
+};
+
+// ======================================================
+// ADJUNTOS DEL FORO
+// ======================================================
+
+export const subirAdjuntoForo = async ({ file, grupoId }) => {
+  if (!file) {
+    throw new Error("No se seleccionó ningún archivo.");
+  }
+
+  if (!grupoId) {
+    throw new Error("Grupo inválido para subir adjunto.");
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("grupoId", String(grupoId));
+
+  const res = await fetch(`${apiUrl}/s3/upload-foro-adjunto`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data?.message || "No se pudo subir el adjunto del foro.");
+  }
+
+  return data;
+};
+
+export const crearForoAdjunto = async ({
+  idpublicacion = null,
+  idrespuesta = null,
+  tipo,
+  nombre_archivo = null,
+  mime_type = null,
+  tamano_bytes = null,
+  bucket = null,
+  object_key = null,
+  url_externa = null,
+  video_url = null,
+  embed_url = null,
+  vimeo_video_id = null,
+  vimeo_uri = null,
+  estado_video = null,
+}) => {
+  if (!idpublicacion && !idrespuesta) {
+    throw new Error("El adjunto debe pertenecer a una publicación o respuesta.");
+  }
+
+  if (!tipo) {
+    throw new Error("El tipo de adjunto es obligatorio.");
+  }
+
+  const { data, error } = await supabase
+    .from("foro_adjunto")
+    .insert({
+      idpublicacion: idpublicacion ? Number(idpublicacion) : null,
+      idrespuesta: idrespuesta ? Number(idrespuesta) : null,
+      tipo,
+      nombre_archivo,
+      mime_type,
+      tamano_bytes: tamano_bytes ? Number(tamano_bytes) : null,
+      storage_provider: object_key ? "s3" : tipo === "video_vimeo" ? "vimeo" : null,
+      bucket,
+      object_key,
+      url_externa,
+      video_url,
+      embed_url,
+      vimeo_video_id,
+      vimeo_uri,
+      estado_video,
+      estado: "ACTIVO",
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const subirVideoForoVimeo = async ({ file, titulo = "Video del foro" }) => {
+  if (!file) {
+    throw new Error("No se seleccionó ningún video.");
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const formData = new FormData();
+  formData.append("video", file);
+  formData.append("title", titulo || file.name);
+
+  const result = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", `${apiUrl}/videos/upload`);
+
+    xhr.onload = () => {
+      try {
+        const response = JSON.parse(xhr.responseText || "{}");
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(response);
+        } else {
+          reject(
+            new Error(response?.message || "No se pudo subir el video a Vimeo.")
+          );
+        }
+      } catch {
+        reject(new Error("Respuesta inválida del servidor de Vimeo."));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error("Error de red al subir el video a Vimeo."));
+    };
+
+    xhr.send(formData);
+  });
+
+  return result;
+};
+
+export const subirYGuardarAdjuntoForo = async ({
+  file,
+  grupoId,
+  idpublicacion = null,
+  idrespuesta = null,
+}) => {
+  if (!file) {
+    throw new Error("No se seleccionó ningún archivo.");
+  }
+
+  const esVideo = String(file.type || "").startsWith("video/");
+
+  if (esVideo) {
+    const subida = await subirVideoForoVimeo({
+      file,
+      titulo: file.name || "Video del foro",
+    });
+
+    return await crearForoAdjunto({
+      idpublicacion,
+      idrespuesta,
+      tipo: "video_vimeo",
+      nombre_archivo: file.name,
+      mime_type: file.type || "video/mp4",
+      tamano_bytes: file.size || null,
+      storage_provider: "vimeo",
+      video_url: subida.videoUrl || null,
+      embed_url: subida.embedUrl || null,
+      url_externa: subida.videoUrl || subida.embedUrl || null,
+      vimeo_video_id: subida.vimeoVideoId || null,
+      vimeo_uri: subida.vimeoUri || null,
+      estado_video: subida.status || "procesando",
+    });
+  }
+
+  const subida = await subirAdjuntoForo({
+    file,
+    grupoId,
+  });
+
+  return await crearForoAdjunto({
+    idpublicacion,
+    idrespuesta,
+    tipo: subida.tipo || "archivo",
+    nombre_archivo: subida.originalName || file.name,
+    mime_type: subida.mimeType || file.type || null,
+    tamano_bytes: subida.size || file.size || null,
+    bucket: subida.bucket || null,
+    object_key: subida.key || null,
+  });
+};
+
+export const crearForoAdjuntoEnlaceVideo = async ({
+  idpublicacion = null,
+  idrespuesta = null,
+  url,
+}) => {
+  if (!url?.trim()) {
+    throw new Error("Debes ingresar un enlace de video.");
+  }
+
+  return await crearForoAdjunto({
+    idpublicacion,
+    idrespuesta,
+    tipo: "enlace_video",
+    nombre_archivo: "Enlace de video",
+    mime_type: null,
+    tamano_bytes: null,
+    bucket: null,
+    object_key: null,
+    url_externa: url.trim(),
+  });
+};
+
+export const getForoAdjuntosByPublicacion = async (publicacionId) => {
+  const { data, error } = await supabase
+    .from("foro_adjunto")
+    .select("*")
+    .eq("idpublicacion", Number(publicacionId))
+    .eq("estado", "ACTIVO")
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const getForoAdjuntosByRespuesta = async (respuestaId) => {
+  const { data, error } = await supabase
+    .from("foro_adjunto")
+    .select("*")
+    .eq("idrespuesta", Number(respuestaId))
+    .eq("estado", "ACTIVO")
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const getForoAdjuntosByPublicaciones = async (publicacionIds = []) => {
+  const ids = publicacionIds.map(Number).filter(Boolean);
+
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("foro_adjunto")
+    .select("*")
+    .in("idpublicacion", ids)
+    .eq("estado", "ACTIVO")
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const getForoAdjuntosByRespuestas = async (respuestaIds = []) => {
+  const ids = respuestaIds.map(Number).filter(Boolean);
+
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("foro_adjunto")
+    .select("*")
+    .in("idrespuesta", ids)
+    .eq("estado", "ACTIVO")
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const getForoAdjuntoDownloadUrl = async (objectKey) => {
+  if (!objectKey) {
+    throw new Error("No se encontró el archivo del adjunto.");
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const res = await fetch(`${apiUrl}/s3/presign-download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ key: objectKey }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.ok) {
+    throw new Error(data?.message || "No se pudo obtener la URL del adjunto.");
+  }
+
+  return data.downloadUrl;
+};
+
+export const eliminarForoAdjunto = async (adjuntoId) => {
+  const { error } = await supabase
+    .from("foro_adjunto")
+    .update({
+      estado: "ELIMINADO",
+    })
+    .eq("id", Number(adjuntoId));
+
+  if (error) throw new Error(error.message);
+  return true;
 };

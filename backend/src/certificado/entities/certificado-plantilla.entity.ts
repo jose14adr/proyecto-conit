@@ -44,4 +44,14 @@ export class CertificadoPlantilla {
     type: 'timestamp with time zone',
   })
   updatedAt: Date;
+
+  @Column({ name: 'doble_cara', type: 'boolean', default: false })
+  dobleCara: boolean;
+
+  @Column({
+    name: 'config_json_reverso',
+    type: 'jsonb',
+    default: () => "'[]'::jsonb",
+  })
+  configJsonReverso: any[];
 }

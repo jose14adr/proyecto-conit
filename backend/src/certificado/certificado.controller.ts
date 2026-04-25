@@ -245,6 +245,8 @@ export class CertificadoController {
       canvasWidth?: number;
       canvasHeight?: number;
       configJson?: any[];
+      dobleCara?: boolean;
+      configJsonReverso?: any[];
     },
   ) {
     return this.certificadoService.createPlantilla(body);
@@ -261,6 +263,8 @@ export class CertificadoController {
       canvasWidth?: number;
       canvasHeight?: number;
       configJson?: any[];
+      dobleCara?: boolean;
+      configJsonReverso?: any[];
     },
   ) {
     return this.certificadoService.updatePlantilla(id, body);

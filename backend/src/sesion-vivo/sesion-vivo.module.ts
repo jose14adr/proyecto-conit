@@ -9,10 +9,11 @@ import { Curso } from '../curso/entities/curso.entity';
 import { MeetingProviderFactory } from '../meeting/meeting-provider.factory';
 import { ZoomMeetingService } from '../zoom-meeting/zoom-meeting.service';
 import { TeamsMeetingService } from '../teams-meeting/teams-meeting.service';
+import { Grupo } from '../grupo/entities/grupo.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SesionVivo, Curso]),
+    TypeOrmModule.forFeature([SesionVivo, Curso, Grupo]),
     GoogleMeetModule,
     EmpresaModule,
   ],

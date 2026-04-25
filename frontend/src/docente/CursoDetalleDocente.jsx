@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import "mathlive";
+import "mathlive/static.css";
 import { Settings } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
@@ -9,6 +11,8 @@ import {
   getAlumnosByGrupo,
   guardarAsistenciaCurso,
   getAsistenciaCursoPorFecha,
+  getConfigAsistenciaGrupo,
+  guardarConfigAsistenciaGrupo,
   crearTarea,
   getTareasByGrupo,
   marcarTareaRevisada,
@@ -46,9 +50,16 @@ import {
   deleteExamen,
   actualizarExamen,
   getSesionesVivoByGrupo,
+  getMeetingProviderByGrupo,
   crearSesionVivo,
   getProgresoAlumnosByGrupo,
+  importarExcelBancoPreguntas,
+  PLANTILLA_BANCO_PREGUNTAS_URL,
+  getBancoPreguntasDocente,
+  agregarPreguntasBancoAExamen,
 } from "../services/docenteService";
+
+import ForoGrupoPanel from "../components/ForoGrupoPanel";
 
 import { verificarEmisionCertificado } from "../services/certificado-verificacion.service";
 import { emitirCertificadoDesdePlantilla } from "../services/certificado-final.service";
@@ -309,6 +320,449 @@ function VideoEmbed({ url }) {
   );
 }
 
+function parseMathSegments(content = "") {
+  if (!content) return [];
+
+  const regex = /\\\((.+?)\\\)|\\\[(.+?)\\\]/gs;
+  const segments = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({
+        type: "text",
+        value: content.slice(lastIndex, match.index),
+      });
+    }
+
+    segments.push({
+      type: "math",
+      value: match[1] || match[2] || "",
+      display: Boolean(match[2]),
+    });
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < content.length) {
+    segments.push({
+      type: "text",
+      value: content.slice(lastIndex),
+    });
+  }
+
+  return segments;
+}
+
+function MathContentPreview({ content, className = "" }) {
+  const segments = useMemo(() => parseMathSegments(content || ""), [content]);
+
+  if (!content?.trim()) return null;
+
+  return (
+    <div
+      className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap ${className}`}
+    >
+      {segments.map((segment, index) => {
+        if (segment.type === "text") {
+          return <span key={index}>{segment.value}</span>;
+        }
+
+        return segment.display ? (
+          <div key={index} className="my-2 overflow-x-auto">
+            <math-div>{segment.value}</math-div>
+          </div>
+        ) : (
+          <math-span key={index}>{segment.value}</math-span>
+        );
+      })}
+    </div>
+  );
+}
+
+function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
+  const mfRef = useRef(null);
+  const [latex, setLatex] = useState(initialLatex || "");
+  const [displayMode, setDisplayMode] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLatex(initialLatex || "");
+  }, [open, initialLatex]);
+
+  useEffect(() => {
+    if (!open || !mfRef.current) return;
+
+    const mf = mfRef.current;
+    mf.value = initialLatex || "";
+    mf.mathVirtualKeyboardPolicy = "manual";
+    mf.inlineShortcuts = {
+      ...(mf.inlineShortcuts || {}),
+      pi: "\\pi",
+      infty: "\\infty",
+      sqrt: "\\sqrt{#?}",
+      int: "\\int",
+      sum: "\\sum",
+      theta: "\\theta",
+    };
+
+    const handleInput = (evt) => {
+      setLatex(evt.target.value || "");
+    };
+
+    const handleFocusIn = () => {
+      if (window.mathVirtualKeyboard) {
+        window.mathVirtualKeyboard.layouts = [
+          "numeric",
+          "symbols",
+          "greek",
+          "alphabetic",
+        ];
+        window.mathVirtualKeyboard.show?.();
+      }
+    };
+
+    const handleFocusOut = () => {
+      window.mathVirtualKeyboard?.hide?.();
+    };
+
+    mf.addEventListener("input", handleInput);
+    mf.addEventListener("focusin", handleFocusIn);
+    mf.addEventListener("focusout", handleFocusOut);
+
+    return () => {
+      mf.removeEventListener("input", handleInput);
+      mf.removeEventListener("focusin", handleFocusIn);
+      mf.removeEventListener("focusout", handleFocusOut);
+      window.mathVirtualKeyboard?.hide?.();
+    };
+  }, [open, initialLatex]);
+
+  const insertarPlantilla = (snippet) => {
+    const mf = mfRef.current;
+    if (!mf) return;
+
+    if (typeof mf.executeCommand === "function") {
+      mf.executeCommand(["insert", snippet]);
+    } else {
+      mf.value = `${mf.value || ""}${snippet}`;
+    }
+
+    setLatex(mf.value || "");
+    mf.focus();
+  };
+
+  const handleInsert = () => {
+    const wrapped = displayMode ? `\\[${latex}\\]` : `\\(${latex}\\)`;
+    onInsert?.(wrapped);
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/45" onClick={onClose} />
+
+      <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-900 to-violet-800 px-6 py-5 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold">Insertar fórmula</h3>
+              <p className="text-sm text-slate-200 mt-1">
+                Puedes usar texto normal en el enunciado y añadir fórmulas cuando lo necesites.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10 transition"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => insertarPlantilla("\\frac{#?}{#?}")}
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              Fracción
+            </button>
+            <button
+              type="button"
+              onClick={() => insertarPlantilla("x^{#?}")}
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              Potencia
+            </button>
+            <button
+              type="button"
+              onClick={() => insertarPlantilla("\\sqrt{#?}")}
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              Raíz
+            </button>
+            <button
+              type="button"
+              onClick={() => insertarPlantilla("\\int_{#?}^{#?}")}
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              Integral
+            </button>
+            <button
+              type="button"
+              onClick={() => insertarPlantilla("\\sum_{#?}^{#?}")}
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              Sumatoria
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                insertarPlantilla("\\begin{bmatrix}#? & #?\\\\ #? & #?\\end{bmatrix}")
+              }
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              Matriz 2x2
+            </button>
+            <button
+              type="button"
+              onClick={() => insertarPlantilla("\\pi")}
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              π
+            </button>
+            <button
+              type="button"
+              onClick={() => insertarPlantilla("\\theta")}
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+            >
+              θ
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.mathVirtualKeyboard) {
+                  window.mathVirtualKeyboard.visible =
+                    !window.mathVirtualKeyboard.visible;
+                }
+              }}
+              className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white hover:bg-violet-700"
+            >
+              Teclado matemático
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <math-field
+              ref={mfRef}
+              className="block w-full min-h-[96px]"
+              style={{ width: "100%", minHeight: "96px" }}
+            >
+              {latex}
+            </math-field>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={displayMode}
+                onChange={(e) => setDisplayMode(e.target.checked)}
+              />
+              Insertar como bloque
+            </label>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-700 mb-2">
+              Vista previa
+            </p>
+            <MathContentPreview
+              content={displayMode ? `\\[${latex}\\]` : `\\(${latex}\\)`}
+            />
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+            Puedes usar texto normal en el enunciado y añadir fórmulas cuando lo necesites.
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={handleInsert}
+              className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700"
+            >
+              Insertar fórmula
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormulaNumericaPreview({ latex }) {
+  const previewRef = useRef(null);
+
+  useEffect(() => {
+    if (!previewRef.current) return;
+    previewRef.current.value = latex || "";
+    previewRef.current.setAttribute("read-only", "");
+    previewRef.current.mathVirtualKeyboardPolicy = "manual";
+  }, [latex]);
+
+  if (!latex?.trim()) return null;
+
+  return (
+    <math-field
+      ref={previewRef}
+      className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+    />
+  );
+}
+
+function FormulaNumericaModal({
+  open,
+  initialValue = "",
+  onClose,
+  onInsert,
+}) {
+  const mfRef = useRef(null);
+  const [latex, setLatex] = useState(initialValue || "");
+
+  useEffect(() => {
+    if (!open) return;
+    setLatex(initialValue || "");
+  }, [open, initialValue]);
+
+  useEffect(() => {
+    if (!open || !mfRef.current) return;
+
+    const mf = mfRef.current;
+    mf.value = initialValue || "";
+    mf.mathVirtualKeyboardPolicy = "manual";
+
+    const handleInput = (ev) => {
+      setLatex(ev.target.value || "");
+    };
+
+    mf.addEventListener("input", handleInput);
+
+    return () => {
+      mf.removeEventListener("input", handleInput);
+      window.mathVirtualKeyboard?.hide?.();
+    };
+  }, [open, initialValue]);
+
+  const insertarPlantilla = (snippet) => {
+    const mf = mfRef.current;
+    if (!mf) return;
+
+    if (typeof mf.executeCommand === "function") {
+      mf.executeCommand(["insert", snippet]);
+    } else {
+      mf.value = `${mf.value || ""}${snippet}`;
+    }
+
+    setLatex(mf.value || "");
+    mf.focus();
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/45" onClick={onClose} />
+
+      <div className="relative z-10 w-full max-w-3xl rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-900 to-violet-800 px-6 py-5 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold">Insertar fórmula</h3>
+              <p className="text-sm text-slate-200 mt-1">
+                Construye la fórmula y luego insértala en la respuesta de referencia
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10 transition"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => insertarPlantilla("\\frac{#0}{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Fracción</button>
+            <button type="button" onClick={() => insertarPlantilla("x^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Potencia</button>
+            <button type="button" onClick={() => insertarPlantilla("\\sqrt{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Raíz</button>
+            <button type="button" onClick={() => insertarPlantilla("\\int_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Integral</button>
+            <button type="button" onClick={() => insertarPlantilla("\\sum_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Sumatoria</button>
+            <button type="button" onClick={() => insertarPlantilla("\\begin{bmatrix}#0 & #0\\\\ #0 & #0\\end{bmatrix}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Matriz 2x2</button>
+            <button type="button" onClick={() => insertarPlantilla("\\pi")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">π</button>
+            <button type="button" onClick={() => insertarPlantilla("\\theta")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">θ</button>
+            <button
+              type="button"
+              onClick={() => window.mathVirtualKeyboard?.toggle?.()}
+              className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white hover:bg-violet-700"
+            >
+              Teclado matemático
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <math-field
+              ref={mfRef}
+              className="block w-full min-h-[90px]"
+              style={{ width: "100%", minHeight: "90px" }}
+            />
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-700 mb-2">Vista previa</p>
+            <FormulaNumericaPreview latex={latex} />
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onInsert(latex)}
+              className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700"
+            >
+              Insertar fórmula
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CursoDetalleDocente() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -354,6 +808,14 @@ function CursoDetalleDocente() {
   // ==============================
   const [fechaAsistencia, setFechaAsistencia] = useState(hoy);
   const [asistenciaMap, setAsistenciaMap] = useState({});
+  const [configAsistencia, setConfigAsistencia] = useState({
+    hora_inicio: "",
+    hora_fin: "",
+    activo: false,
+  });
+
+  const [cargandoConfigAsistencia, setCargandoConfigAsistencia] = useState(false);
+  const [guardandoConfigAsistencia, setGuardandoConfigAsistencia] = useState(false);
 
   //Filtrado asistencia
   const [busquedaAsistencia, setBusquedaAsistencia] = useState("");
@@ -434,6 +896,22 @@ function CursoDetalleDocente() {
   const [guardandoConfigExamen, setGuardandoConfigExamen] = useState(false);
   const [examenEditandoId, setExamenEditandoId] = useState(null);
   const [leccionExamenEditandoId, setLeccionExamenEditandoId] = useState(null);
+  const [formulaNumericaOpen, setFormulaNumericaOpen] = useState(false);
+  const [formulaNumericaTarget, setFormulaNumericaTarget] = useState(null);
+  const [formulaNumericaInicial, setFormulaNumericaInicial] = useState("");
+  const [formulaEnunciadoOpen, setFormulaEnunciadoOpen] = useState(false);
+  const [formulaEnunciadoTarget, setFormulaEnunciadoTarget] = useState(null);
+  const [formulaEnunciadoInicial, setFormulaEnunciadoInicial] = useState("");
+  const [importandoBanco, setImportandoBanco] = useState(false);
+  const [bancoOpen, setBancoOpen] = useState(false);
+  const [bancoExamenActual, setBancoExamenActual] = useState(null);
+  const [bancoModo, setBancoModo] = useState("examen_existente");
+  const [bancoLeccionActual, setBancoLeccionActual] = useState(null);
+  const [bancoPreguntas, setBancoPreguntas] = useState([]);
+  const [bancoSeleccionadas, setBancoSeleccionadas] = useState([]);
+  const [cargandoBanco, setCargandoBanco] = useState(false);
+  const [agregandoBanco, setAgregandoBanco] = useState(false);
+  const [busquedaBanco, setBusquedaBanco] = useState("");
   
   //Sensores de arrastrado
   const sensors = useSensors(
@@ -492,6 +970,10 @@ function CursoDetalleDocente() {
   // SESIONES EN VIVO
   // ==============================
   const [sesionesVivo, setSesionesVivo] = useState([]);
+  const [meetingProviderInfo, setMeetingProviderInfo] = useState({
+    provider: "google",
+    label: "Google Meet",
+  });
   const [cargandoSesionesVivo, setCargandoSesionesVivo] = useState(false);
   const [mostrarFormSesionVivo, setMostrarFormSesionVivo] = useState(false);
   const [guardandoSesionVivo, setGuardandoSesionVivo] = useState(false);
@@ -510,12 +992,28 @@ function CursoDetalleDocente() {
 const cargarSesionesVivoCurso = async () => {
   try {
     setCargandoSesionesVivo(true);
+
     if (!grupoIdActual) {
       setSesionesVivo([]);
+      setMeetingProviderInfo({
+        provider: "google",
+        label: "Google Meet",
+      });
       return;
     }
-    const data = await getSesionesVivoByGrupo(grupoIdActual);
-    setSesionesVivo(data || []);
+
+    const [sesiones, providerInfo] = await Promise.all([
+      getSesionesVivoByGrupo(grupoIdActual),
+      getMeetingProviderByGrupo(grupoIdActual),
+    ]);
+
+    setSesionesVivo(sesiones || []);
+    setMeetingProviderInfo(
+      providerInfo || {
+        provider: "google",
+        label: "Google Meet",
+      }
+    );
   } catch (error) {
     console.error(error);
     alert(error?.message || "No se pudieron cargar las sesiones en vivo.");
@@ -566,7 +1064,6 @@ const guardarSesionVivoCurso = async (e) => {
 
     await crearSesionVivo({
       idgrupo: grupoIdActual,
-      idcurso: cursoIdActual,
       titulo: formSesionVivo.titulo,
       descripcion: formSesionVivo.descripcion,
       fecha: formSesionVivo.fecha,
@@ -810,10 +1307,12 @@ const formatearFechaSesion = (fecha) => {
       try {
         setLoading(true);
 
-        const [cursoData, alumnosData, asistenciaData] = await Promise.all([
+        const [cursoData, alumnosData, asistenciaData, configAsistenciaData] =
+        await Promise.all([
           getCursoById(id),
           getAlumnosByGrupo(id),
           getAsistenciaCursoPorFecha(id, hoy),
+          getConfigAsistenciaGrupo(id, hoy),
         ]);
 
         setCurso(cursoData);
@@ -828,6 +1327,15 @@ const formatearFechaSesion = (fecha) => {
           };
         });
         setAsistenciaMap(map);
+        setConfigAsistencia({
+          hora_inicio: configAsistenciaData?.hora_inicio
+            ? String(configAsistenciaData.hora_inicio).slice(0, 5)
+            : "",
+          hora_fin: configAsistenciaData?.hora_fin
+            ? String(configAsistenciaData.hora_fin).slice(0, 5)
+            : "",
+          activo: configAsistenciaData?.activo ?? false,
+        });
       } catch (error) {
         console.error(error);
         alert(error?.message || "Error cargando detalle del curso");
@@ -987,6 +1495,66 @@ useEffect(() => {
     }
   };
 
+  const cargarConfigAsistenciaPorFecha = async (fecha) => {
+    try {
+      if (!fecha) return;
+
+      setCargandoConfigAsistencia(true);
+
+      const data = await getConfigAsistenciaGrupo(id, fecha);
+
+      setConfigAsistencia({
+        hora_inicio: data?.hora_inicio ? String(data.hora_inicio).slice(0, 5) : "",
+        hora_fin: data?.hora_fin ? String(data.hora_fin).slice(0, 5) : "",
+        activo: data?.activo ?? false,
+      });
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo cargar la configuración de asistencia.");
+    } finally {
+      setCargandoConfigAsistencia(false);
+    }
+  };
+
+  const guardarConfiguracionAsistencia = async () => {
+    try {
+      if (!fechaAsistencia) {
+        return alert("Selecciona una fecha para configurar la asistencia.");
+      }
+
+      if (!configAsistencia.hora_inicio || !configAsistencia.hora_fin) {
+        return alert("Debes indicar la hora de inicio y la hora de fin.");
+      }
+
+      if (configAsistencia.hora_fin <= configAsistencia.hora_inicio) {
+        return alert("La hora fin debe ser mayor que la hora inicio.");
+      }
+
+      setGuardandoConfigAsistencia(true);
+
+      const data = await guardarConfigAsistenciaGrupo(id, {
+        fecha: fechaAsistencia,
+        hora_inicio: configAsistencia.hora_inicio,
+        hora_fin: configAsistencia.hora_fin,
+        activo: Boolean(configAsistencia.activo),
+        creado_por_tipo: "docente",
+      });
+
+      setConfigAsistencia({
+        hora_inicio: data?.hora_inicio ? String(data.hora_inicio).slice(0, 5) : "",
+        hora_fin: data?.hora_fin ? String(data.hora_fin).slice(0, 5) : "",
+        activo: data?.activo ?? false,
+      });
+
+      alert("Configuración de asistencia guardada correctamente ✅");
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo guardar la configuración de asistencia.");
+    } finally {
+      setGuardandoConfigAsistencia(false);
+    }
+  };
+
   const cargarAsistenciaPorFecha = async (fecha) => {
     try {
       const data = await getAsistenciaCursoPorFecha(id, fecha);
@@ -1001,6 +1569,8 @@ useEffect(() => {
       });
 
       setAsistenciaMap(map);
+      await cargarConfigAsistenciaPorFecha(fecha);
+
     } catch (error) {
       console.error(error);
       alert(error?.message || "Error cargando asistencia");
@@ -2450,6 +3020,7 @@ const obtenerDefaultsPorTipoPregunta = (tipo) => {
       return {
         max_caracteres: null,
         permitir_decimales: true,
+        modo_respuesta_numerica: "numero",
         tamano_max_mb: 10,
         extensiones_permitidas: "",
         texto_placeholder: "Ingresa un número",
@@ -2466,6 +3037,7 @@ const obtenerDefaultsPorTipoPregunta = (tipo) => {
       return {
         max_caracteres: null,
         permitir_decimales: true,
+        modo_respuesta_numerica: "numero",
         tamano_max_mb: 10,
         extensiones_permitidas: "",
         texto_placeholder: "",
@@ -2481,8 +3053,11 @@ const crearPreguntaVacia = (tipo = "unica") => ({
   texto_placeholder: obtenerDefaultsPorTipoPregunta(tipo).texto_placeholder,
   max_caracteres: obtenerDefaultsPorTipoPregunta(tipo).max_caracteres,
   permitir_decimales: obtenerDefaultsPorTipoPregunta(tipo).permitir_decimales,
+  modo_respuesta_numerica:
+    obtenerDefaultsPorTipoPregunta(tipo).modo_respuesta_numerica,
   tamano_max_mb: obtenerDefaultsPorTipoPregunta(tipo).tamano_max_mb,
-  extensiones_permitidas: obtenerDefaultsPorTipoPregunta(tipo).extensiones_permitidas,
+  extensiones_permitidas:
+    obtenerDefaultsPorTipoPregunta(tipo).extensiones_permitidas,
   opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
     ? [
         { texto: "", es_correcta: false },
@@ -2525,6 +3100,8 @@ const normalizarPreguntaExamen = (pregunta = {}) => {
       pregunta.permitir_decimales !== undefined && pregunta.permitir_decimales !== null
         ? !!pregunta.permitir_decimales
         : defaults.permitir_decimales,
+    modo_respuesta_numerica:
+      pregunta.modo_respuesta_numerica === "formula" ? "formula" : "numero",
     tamano_max_mb:
       pregunta.tamano_max_mb !== undefined && pregunta.tamano_max_mb !== null
         ? Number(pregunta.tamano_max_mb)
@@ -2615,11 +3192,11 @@ const handleChangePreguntaExamen = (leccionId, preguntaIndex, field, value) => {
         texto_placeholder: defaults.texto_placeholder,
         max_caracteres: defaults.max_caracteres,
         permitir_decimales: defaults.permitir_decimales,
+        modo_respuesta_numerica: defaults.modo_respuesta_numerica,
         tamano_max_mb: defaults.tamano_max_mb,
         extensiones_permitidas: defaults.extensiones_permitidas,
         respuesta_texto:
-          tipoNuevo === "numerica" ||
-          TIPOS_PREGUNTA_TEXTO.includes(tipoNuevo)
+          tipoNuevo === "numerica" || TIPOS_PREGUNTA_TEXTO.includes(tipoNuevo)
             ? preguntaActual.respuesta_texto || ""
             : "",
         opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipoNuevo)
@@ -2643,6 +3220,79 @@ const handleChangePreguntaExamen = (leccionId, preguntaIndex, field, value) => {
       },
     };
   });
+};
+
+const abrirFormulaNumerica = (leccionId, preguntaIndex, valorActual = "") => {
+  setFormulaNumericaTarget({ leccionId, preguntaIndex });
+  setFormulaNumericaInicial(valorActual || "");
+  setFormulaNumericaOpen(true);
+};
+
+const cerrarFormulaNumerica = () => {
+  setFormulaNumericaOpen(false);
+  setFormulaNumericaTarget(null);
+  setFormulaNumericaInicial("");
+};
+
+const insertarFormulaNumerica = (latex) => {
+  if (!formulaNumericaTarget) return;
+
+  const { leccionId, preguntaIndex } = formulaNumericaTarget;
+
+  handleChangePreguntaExamen(
+    leccionId,
+    preguntaIndex,
+    "respuesta_texto",
+    latex
+  );
+
+  handleChangePreguntaExamen(
+    leccionId,
+    preguntaIndex,
+    "modo_respuesta_numerica",
+    "formula"
+  );
+
+  cerrarFormulaNumerica();
+};
+
+const abrirFormulaEnunciado = (leccionId, preguntaIndex) => {
+  setFormulaEnunciadoTarget({ leccionId, preguntaIndex });
+  setFormulaEnunciadoInicial("");
+  setFormulaEnunciadoOpen(true);
+};
+
+const cerrarFormulaEnunciado = () => {
+  setFormulaEnunciadoOpen(false);
+  setFormulaEnunciadoTarget(null);
+  setFormulaEnunciadoInicial("");
+};
+
+const insertarFormulaEnunciado = (wrappedLatex) => {
+  if (!formulaEnunciadoTarget) return;
+
+  const { leccionId, preguntaIndex } = formulaEnunciadoTarget;
+
+  setFormExamen((prev) => {
+    const actual = prev[leccionId] || crearExamenVacio();
+    const preguntas = [...(actual.preguntas || [])];
+    const pregunta = {
+      ...(preguntas[preguntaIndex] || crearPreguntaVacia()),
+    };
+
+    pregunta.enunciado = `${pregunta.enunciado || ""} ${wrappedLatex}`.trim();
+    preguntas[preguntaIndex] = pregunta;
+
+    return {
+      ...prev,
+      [leccionId]: {
+        ...actual,
+        preguntas,
+      },
+    };
+  });
+
+  cerrarFormulaEnunciado();
 };
 
 const handleChangeOpcionExamen = (
@@ -2806,12 +3456,20 @@ const validarPreguntaExamen = (pregunta) => {
   }
 
   if (tipo === "numerica") {
+    const modo = pregunta.modo_respuesta_numerica || "numero";
+
     if (
       pregunta.respuesta_texto === null ||
       pregunta.respuesta_texto === undefined ||
       String(pregunta.respuesta_texto).trim() === ""
     ) {
-      return "Las preguntas numéricas deben tener una respuesta numérica de referencia.";
+      return modo === "formula"
+        ? "Las preguntas numéricas en modo fórmula deben tener una fórmula de referencia."
+        : "Las preguntas numéricas deben tener una respuesta numérica de referencia.";
+    }
+
+    if (modo === "formula") {
+      return null;
     }
 
     const valor = String(pregunta.respuesta_texto).trim();
@@ -2907,6 +3565,10 @@ const guardarExamenLeccion = async (e, leccionId) => {
           pregunta.tipo_pregunta === "numerica"
             ? !!pregunta.permitir_decimales
             : true,
+        modo_respuesta_numerica:
+          pregunta.tipo_pregunta === "numerica"
+            ? pregunta.modo_respuesta_numerica || "numero"
+            : "numero",    
         tamano_max_mb:
           pregunta.tipo_pregunta === "archivo"
             ? Number(pregunta.tamano_max_mb || 10)
@@ -2987,6 +3649,216 @@ const cargarExamenParaEdicion = async (examen, leccionId) => {
     setGuardandoExamen(false);
   }
 };
+
+const handleImportarExcelBanco = async (event) => {
+  const archivo = event.target.files?.[0];
+
+  if (!archivo) return;
+
+  try {
+    setImportandoBanco(true);
+
+    const resultado = await importarExcelBancoPreguntas({
+      file: archivo,
+      idcurso: curso?.id || null,
+    });
+
+    alert(
+      `Preguntas importadas correctamente al banco.\nTotal de preguntas: ${resultado.total_preguntas}\nTotal de opciones: ${resultado.total_opciones}`
+    );
+
+    event.target.value = "";
+  } catch (error) {
+    console.error("Error importando Excel al banco:", error);
+    alert(error.message || "No se pudo importar el Excel al banco.");
+  } finally {
+    setImportandoBanco(false);
+  }
+};
+
+const abrirBancoPreguntas = async (examen = null, opciones = {}) => {
+  try {
+    const modo = opciones.modo || (examen?.id ? "examen_existente" : "formulario");
+
+    setBancoOpen(true);
+    setBancoModo(modo);
+    setBancoExamenActual(examen);
+    setBancoLeccionActual(opciones.leccionId || null);
+    setBancoSeleccionadas([]);
+    setBusquedaBanco("");
+    setCargandoBanco(true);
+
+    let preguntas = await getBancoPreguntasDocente({
+      idcurso: curso?.id || null,
+    });
+
+    if ((!preguntas || preguntas.length === 0) && curso?.id) {
+      preguntas = await getBancoPreguntasDocente();
+    }
+
+    setBancoPreguntas(preguntas || []);
+  } catch (error) {
+    console.error("Error cargando banco de preguntas:", error);
+    alert(error.message || "No se pudo cargar el banco de preguntas.");
+    setBancoOpen(false);
+    setBancoModo("examen_existente");
+    setBancoExamenActual(null);
+    setBancoLeccionActual(null);
+  } finally {
+    setCargandoBanco(false);
+  }
+};
+
+const cerrarBancoPreguntas = () => {
+  setBancoOpen(false);
+  setBancoModo("examen_existente");
+  setBancoExamenActual(null);
+  setBancoLeccionActual(null);
+  setBancoPreguntas([]);
+  setBancoSeleccionadas([]);
+  setBusquedaBanco("");
+};
+
+const togglePreguntaBanco = (preguntaId) => {
+  const idPregunta = Number(preguntaId);
+
+  setBancoSeleccionadas((prev) => {
+    if (prev.includes(idPregunta)) {
+      return prev.filter((id) => id !== idPregunta);
+    }
+
+    return [...prev, idPregunta];
+  });
+};
+
+const convertirPreguntaBancoAFormulario = (preguntaBanco) => {
+  const tipo = preguntaBanco.tipo_pregunta || "unica";
+  const defaults = obtenerDefaultsPorTipoPregunta(tipo);
+
+  const opcionesBanco = Array.isArray(preguntaBanco.opciones)
+    ? preguntaBanco.opciones
+    : [];
+
+  return {
+    id: null,
+    enunciado: preguntaBanco.enunciado || "",
+    puntaje: Number(preguntaBanco.puntaje || 1),
+    tipo_pregunta: tipo,
+    respuesta_texto: preguntaBanco.respuesta_referencia || "",
+    texto_placeholder: defaults.texto_placeholder,
+    max_caracteres: defaults.max_caracteres,
+    permitir_decimales: defaults.permitir_decimales,
+    modo_respuesta_numerica: defaults.modo_respuesta_numerica,
+    tamano_max_mb: defaults.tamano_max_mb,
+    extensiones_permitidas: defaults.extensiones_permitidas,
+    opciones: TIPOS_PREGUNTA_CON_OPCIONES.includes(tipo)
+      ? opcionesBanco.length > 0
+        ? opcionesBanco
+            .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0))
+            .map((opcion) => ({
+              id: null,
+              texto: opcion.texto_opcion || opcion.texto || "",
+              es_correcta: !!opcion.es_correcta,
+            }))
+        : crearPreguntaVacia(tipo).opciones
+      : [],
+  };
+};
+
+const preguntaFormularioEstaVacia = (pregunta) => {
+  if (!pregunta) return true;
+
+  const tieneEnunciado = !!String(pregunta.enunciado || "").trim();
+  const tieneRespuesta = !!String(pregunta.respuesta_texto || "").trim();
+  const tieneOpciones = (pregunta.opciones || []).some((opcion) =>
+    String(opcion.texto || "").trim()
+  );
+
+  return !tieneEnunciado && !tieneRespuesta && !tieneOpciones;
+};
+
+const agregarPreguntasSeleccionadasBanco = async () => {
+  try {
+    if (bancoSeleccionadas.length === 0) {
+      alert("Selecciona al menos una pregunta del banco.");
+      return;
+    }
+
+    const preguntasElegidas = bancoPreguntas
+      .filter((pregunta) => bancoSeleccionadas.includes(Number(pregunta.id)))
+      .map(convertirPreguntaBancoAFormulario);
+
+    if (preguntasElegidas.length === 0) {
+      alert("No se encontraron preguntas seleccionadas.");
+      return;
+    }
+
+    if (bancoModo === "formulario") {
+      if (!bancoLeccionActual) {
+        alert("No se encontró la lección del formulario.");
+        return;
+      }
+
+      setFormExamen((prev) => {
+        const actual = prev[bancoLeccionActual] || crearExamenVacio();
+        const preguntasActuales = actual.preguntas || [];
+
+        const preguntasBase =
+          preguntasActuales.length === 1 &&
+          preguntaFormularioEstaVacia(preguntasActuales[0])
+            ? []
+            : preguntasActuales;
+
+        return {
+          ...prev,
+          [bancoLeccionActual]: {
+            ...actual,
+            preguntas: [...preguntasBase, ...preguntasElegidas],
+          },
+        };
+      });
+
+      alert(
+        `Preguntas agregadas al formulario.\nTotal agregado: ${preguntasElegidas.length}`
+      );
+
+      cerrarBancoPreguntas();
+      return;
+    }
+
+    if (!bancoExamenActual?.id) {
+      alert("No se encontró el examen.");
+      return;
+    }
+
+    setAgregandoBanco(true);
+
+    const resultado = await agregarPreguntasBancoAExamen({
+      examenId: bancoExamenActual.id,
+      preguntasIds: bancoSeleccionadas,
+    });
+
+    alert(
+      `Preguntas agregadas correctamente al examen.\nTotal de preguntas: ${resultado.total_preguntas}\nTotal de opciones: ${resultado.total_opciones}`
+    );
+
+    cerrarBancoPreguntas();
+    await cargarModulosCurso();
+  } catch (error) {
+    console.error("Error agregando preguntas desde banco:", error);
+    alert(error.message || "No se pudieron agregar las preguntas desde el banco.");
+  } finally {
+    setAgregandoBanco(false);
+  }
+};
+
+const bancoPreguntasFiltradas = bancoPreguntas.filter((pregunta) => {
+  const texto = `${pregunta.enunciado || ""} ${pregunta.tipo_pregunta || ""} ${
+    pregunta.categoria || ""
+  } ${pregunta.dificultad || ""}`.toLowerCase();
+
+  return texto.includes(busquedaBanco.toLowerCase());
+});
 
 
 const abrirConfigExamen = async (examen) => {
@@ -3383,6 +4255,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
             { key: "asistencia", label: "Asistencia" },
             { key: "tareas", label: "Tareas" },
             { key: "modulos", label: "Módulos" },
+            { key: "foro", label: "Foro" },
           ].map((tab) => {
             const active = tabActiva === tab.key;
 
@@ -3438,7 +4311,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
               <div>
                 <h3 className="text-xl font-bold">Sesiones en vivo</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  Programa clases en vivo con Google Meet para este curso.
+                  Programa clases en vivo con {meetingProviderInfo?.label || "Google Meet"} para este grupo.
                 </p>
               </div>
 
@@ -3536,6 +4409,18 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
+                          <div className="mb-3">
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                              {sesion.provider === "google"
+                                ? "Google Meet"
+                                : sesion.provider === "zoom"
+                                ? "Zoom"
+                                : sesion.provider === "teams"
+                                ? "Microsoft Teams"
+                                : "Google Meet"}
+                            </span>
+                          </div>
+
                           <p className="text-lg font-bold text-slate-800">{sesion.titulo}</p>
                           <p className="text-sm text-slate-500 mt-1">
                             {sesion.descripcion || "Sin descripción"}
@@ -3921,6 +4806,10 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
         </div>
       )}
 
+      {tabActiva === "foro" && (
+        <ForoGrupoPanel grupoId={id} modo="docente" />
+      )}
+
       {tabActiva === "asistencia" && (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -3974,6 +4863,89 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                 Exportar Excel
               </button>
             </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h4 className="font-bold text-amber-900">
+                  Configuración para marcado del alumno
+                </h4>
+                <p className="text-sm text-amber-800">
+                  Define el horario en el que el alumno podrá marcar su propia asistencia para la fecha seleccionada.
+                </p>
+              </div>
+
+              <label className="inline-flex items-center gap-2 text-sm font-semibold text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={configAsistencia.activo}
+                  onChange={(e) =>
+                    setConfigAsistencia((prev) => ({
+                      ...prev,
+                      activo: e.target.checked,
+                    }))
+                  }
+                />
+                Activar marcado del alumno
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-amber-900 mb-2">
+                  Hora inicio
+                </label>
+                <input
+                  type="time"
+                  value={configAsistencia.hora_inicio}
+                  onChange={(e) =>
+                    setConfigAsistencia((prev) => ({
+                      ...prev,
+                      hora_inicio: e.target.value,
+                    }))
+                  }
+                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-amber-900 mb-2">
+                  Hora fin
+                </label>
+                <input
+                  type="time"
+                  value={configAsistencia.hora_fin}
+                  onChange={(e) =>
+                    setConfigAsistencia((prev) => ({
+                      ...prev,
+                      hora_fin: e.target.value,
+                    }))
+                  }
+                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={guardarConfiguracionAsistencia}
+                  disabled={guardandoConfigAsistencia || cargandoConfigAsistencia}
+                  className="w-full bg-amber-600 text-white px-4 py-2 rounded-xl hover:bg-amber-700 disabled:opacity-60"
+                >
+                  {guardandoConfigAsistencia
+                    ? "Guardando..."
+                    : cargandoConfigAsistencia
+                    ? "Cargando..."
+                    : "Guardar configuración"}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-amber-700">
+              Esta configuración aplica al grupo actual y a la fecha seleccionada:{" "}
+              <span className="font-semibold">{fechaAsistencia}</span>.
+            </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl px-4 py-3 text-sm">
@@ -5430,6 +6402,43 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                     </div>
 
                                                     <div className="flex flex-wrap gap-2">
+                                                      <a
+                                                        href={PLANTILLA_BANCO_PREGUNTAS_URL}
+                                                        download
+                                                        className="rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                                                      >
+                                                        Descargar plantilla para banco
+                                                      </a>
+
+                                                      <label className={`rounded-2xl px-4 py-2 text-sm font-semibold text-white transition ${
+                                                        importandoBanco
+                                                          ? "bg-slate-400 cursor-not-allowed"
+                                                          : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                                                      }`}>
+                                                        {importandoBanco ? "Importando..." : "Importar Excel al banco"}
+
+                                                        <input
+                                                          type="file"
+                                                          accept=".xlsx,.xls"
+                                                          className="hidden"
+                                                          disabled={importandoBanco}
+                                                          onChange={handleImportarExcelBanco}
+                                                        />
+                                                      </label>
+
+                                                      <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                          abrirBancoPreguntas(null, {
+                                                            modo: "formulario",
+                                                            leccionId: leccion.id,
+                                                          })
+                                                        }
+                                                        className="rounded-2xl bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-200"
+                                                      >
+                                                        Agregar preguntas desde banco
+                                                      </button>
+
                                                       <button
                                                         type="button"
                                                         onClick={() => cancelarEdicionExamen(leccion.id)}
@@ -5504,9 +6513,21 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
 
                                                       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                                                         <div className="md:col-span-3">
-                                                          <label className="block font-semibold mb-2">Enunciado</label>
-                                                          <input
-                                                            type="text"
+                                                          <div className="flex items-center justify-between gap-2 mb-2">
+                                                            <label className="block font-semibold">Enunciado</label>
+
+                                                            {pregunta.tipo_pregunta === "numerica" && (
+                                                              <button
+                                                                type="button"
+                                                                onClick={() => abrirFormulaEnunciado(leccion.id, preguntaIndex)}
+                                                                className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+                                                              >
+                                                                Insertar fórmula
+                                                              </button>
+                                                            )}
+                                                          </div>
+
+                                                          <textarea
                                                             value={pregunta.enunciado || ""}
                                                             onChange={(e) =>
                                                               handleChangePreguntaExamen(
@@ -5516,9 +6537,16 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                                 e.target.value
                                                               )
                                                             }
-                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                            className="w-full min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
                                                             placeholder="Escribe la pregunta"
                                                           />
+
+                                                          {pregunta.tipo_pregunta === "numerica" && (
+                                                            <MathContentPreview
+                                                              content={pregunta.enunciado || ""}
+                                                              className="mt-3"
+                                                            />
+                                                          )}
                                                         </div>
 
                                                         <div>
@@ -5608,48 +6636,118 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                         )}
 
                                                         {pregunta.tipo_pregunta === "numerica" && (
-                                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div>
-                                                              <label className="block font-semibold mb-2">Respuesta numérica correcta</label>
-                                                              <input
-                                                                type="text"
-                                                                value={pregunta.respuesta_texto || ""}
-                                                                onChange={(e) =>
-                                                                  handleChangePreguntaExamen(
-                                                                    leccion.id,
-                                                                    preguntaIndex,
-                                                                    "respuesta_texto",
-                                                                    e.target.value.replace(/[^\d.-]/g, "")
-                                                                  )
-                                                                }
-                                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                placeholder="Ej. 25 o 25.5"
-                                                              />
-                                                            </div>
-
-                                                            <div className="flex items-end">
-                                                              <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
-                                                                <input
-                                                                  type="checkbox"
-                                                                  checked={!!pregunta.permitir_decimales}
+                                                          <div className="space-y-4">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                              <div>
+                                                                <label className="block font-semibold mb-2">Modo de respuesta</label>
+                                                                <select
+                                                                  value={pregunta.modo_respuesta_numerica || "numero"}
                                                                   onChange={(e) =>
                                                                     handleChangePreguntaExamen(
                                                                       leccion.id,
                                                                       preguntaIndex,
-                                                                      "permitir_decimales",
-                                                                      e.target.checked
+                                                                      "modo_respuesta_numerica",
+                                                                      e.target.value
                                                                     )
                                                                   }
-                                                                  className="h-4 w-4"
-                                                                />
-                                                                <div>
-                                                                  <p className="font-semibold text-gray-800">Permitir decimales</p>
-                                                                  <p className="text-sm text-gray-500">
-                                                                    Si lo desactivas, solo se aceptarán enteros.
-                                                                  </p>
+                                                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                >
+                                                                  <option value="numero">Solo número</option>
+                                                                  <option value="formula">Texto / fórmula matemática</option>
+                                                                </select>
+                                                              </div>
+
+                                                              {pregunta.modo_respuesta_numerica !== "formula" && (
+                                                                <div className="flex items-end">
+                                                                  <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
+                                                                    <input
+                                                                      type="checkbox"
+                                                                      checked={!!pregunta.permitir_decimales}
+                                                                      onChange={(e) =>
+                                                                        handleChangePreguntaExamen(
+                                                                          leccion.id,
+                                                                          preguntaIndex,
+                                                                          "permitir_decimales",
+                                                                          e.target.checked
+                                                                        )
+                                                                      }
+                                                                      className="h-4 w-4"
+                                                                    />
+                                                                    <div>
+                                                                      <p className="font-semibold text-gray-800">Permitir decimales</p>
+                                                                      <p className="text-sm text-gray-500">
+                                                                        Si lo desactivas, solo se aceptarán enteros.
+                                                                      </p>
+                                                                    </div>
+                                                                  </label>
                                                                 </div>
-                                                              </label>
+                                                              )}
                                                             </div>
+
+                                                            {(pregunta.modo_respuesta_numerica || "numero") === "numero" ? (
+                                                              <div>
+                                                                <label className="block font-semibold mb-2">
+                                                                  Respuesta numérica correcta
+                                                                </label>
+                                                                <input
+                                                                  type="text"
+                                                                  value={pregunta.respuesta_texto || ""}
+                                                                  onChange={(e) =>
+                                                                    handleChangePreguntaExamen(
+                                                                      leccion.id,
+                                                                      preguntaIndex,
+                                                                      "respuesta_texto",
+                                                                      e.target.value.replace(/[^\d.-]/g, "")
+                                                                    )
+                                                                  }
+                                                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                  placeholder="Ej. 25 o 25.5"
+                                                                />
+                                                              </div>
+                                                            ) : (
+                                                              <div className="space-y-3">
+                                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                                                  <label className="block font-semibold">
+                                                                    Fórmula de referencia
+                                                                  </label>
+
+                                                                  <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                      abrirFormulaNumerica(
+                                                                        leccion.id,
+                                                                        preguntaIndex,
+                                                                        pregunta.respuesta_texto || ""
+                                                                      )
+                                                                    }
+                                                                    className="rounded-xl bg-violet-100 text-violet-700 px-4 py-2 text-sm hover:bg-violet-200"
+                                                                  >
+                                                                    Insertar fórmula
+                                                                  </button>
+                                                                </div>
+
+                                                                <textarea
+                                                                  value={pregunta.respuesta_texto || ""}
+                                                                  onChange={(e) =>
+                                                                    handleChangePreguntaExamen(
+                                                                      leccion.id,
+                                                                      preguntaIndex,
+                                                                      "respuesta_texto",
+                                                                      e.target.value
+                                                                    )
+                                                                  }
+                                                                  className="w-full min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                  placeholder="Escribe el texto o fórmula matemática de referencia"
+                                                                />
+
+                                                                <FormulaNumericaPreview latex={pregunta.respuesta_texto || ""} />
+
+                                                                <p className="text-xs text-slate-500">
+                                                                  Usa este modo cuando quieras aceptar una fórmula o expresión
+                                                                  matemática en lugar de solo un número.
+                                                                </p>
+                                                              </div>
+                                                            )}
                                                           </div>
                                                         )}
 
@@ -5730,8 +6828,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                                     Opción {opcionIndex + 1}
                                                                   </label>
 
-                                                                  <input
-                                                                    type="text"
+                                                                  <textarea
                                                                     value={opcion.texto || ""}
                                                                     onChange={(e) =>
                                                                       handleChangeOpcionExamen(
@@ -5742,7 +6839,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                                                                         e.target.value
                                                                       )
                                                                     }
-                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
+                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3 min-h-[90px]"
                                                                     placeholder={`Texto de la opción ${opcionIndex + 1}`}
                                                                   />
 
@@ -6338,6 +7435,20 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
         </div>
       )}
 
+      <FormulaNumericaModal
+        open={formulaNumericaOpen}
+        initialValue={formulaNumericaInicial}
+        onClose={cerrarFormulaNumerica}
+        onInsert={insertarFormulaNumerica}
+      />
+
+      <FormulaEditorModal
+        open={formulaEnunciadoOpen}
+        initialLatex={formulaEnunciadoInicial}
+        onClose={cerrarFormulaEnunciado}
+        onInsert={insertarFormulaEnunciado}
+      />
+
       {configTareaOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -6465,6 +7576,185 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 whitespace-pre-line text-sm text-slate-700 max-h-[420px] overflow-auto">
                 {entregaSeleccionada?.contenido || "Sin contenido"}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bancoOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={cerrarBancoPreguntas}
+          />
+
+          <div className="relative z-10 w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200">
+            <div className="bg-gradient-to-r from-blue-700 to-violet-700 px-6 py-5 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-xl font-bold">
+                    Agregar preguntas desde banco
+                  </h3>
+                  <p className="text-sm text-blue-100 mt-1">
+                    Selecciona las preguntas que quieres copiar al examen:
+                    {" "}
+                    <span className="font-semibold">
+                      {bancoExamenActual?.titulo || "Sin título"}
+                    </span>
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={cerrarBancoPreguntas}
+                  className="rounded-xl border border-white/30 px-3 py-2 text-sm hover:bg-white/10"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-160px)]">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <input
+                  type="text"
+                  value={busquedaBanco}
+                  onChange={(e) => setBusquedaBanco(e.target.value)}
+                  placeholder="Buscar por enunciado, tipo, categoría o dificultad..."
+                  className="w-full md:max-w-lg rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+
+                <div className="text-sm text-slate-600">
+                  Seleccionadas:{" "}
+                  <span className="font-bold text-blue-700">
+                    {bancoSeleccionadas.length}
+                  </span>
+                </div>
+              </div>
+
+              {cargandoBanco ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-slate-500">
+                  Cargando banco de preguntas...
+                </div>
+              ) : bancoPreguntasFiltradas.length === 0 ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-700">
+                  No se encontraron preguntas en el banco. Primero importa un Excel o revisa el curso asociado.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {bancoPreguntasFiltradas.map((pregunta) => {
+                    const preguntaId = Number(pregunta.id);
+                    const seleccionada = bancoSeleccionadas.includes(preguntaId);
+
+                    return (
+                      <label
+                        key={pregunta.id}
+                        className={`block cursor-pointer rounded-2xl border p-4 transition ${
+                          seleccionada
+                            ? "border-blue-400 bg-blue-50"
+                            : "border-slate-200 bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={seleccionada}
+                            onChange={() => togglePreguntaBanco(preguntaId)}
+                            className="mt-1 h-4 w-4"
+                          />
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                {pregunta.tipo_pregunta || "sin tipo"}
+                              </span>
+
+                              {pregunta.categoria && (
+                                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                  {pregunta.categoria}
+                                </span>
+                              )}
+
+                              {pregunta.dificultad && (
+                                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                                  {pregunta.dificultad}
+                                </span>
+                              )}
+
+                              <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-700">
+                                {Number(pregunta.puntaje || 1)} pts
+                              </span>
+                            </div>
+
+                            <p className="text-sm font-semibold text-slate-800 whitespace-pre-line">
+                              {pregunta.enunciado}
+                            </p>
+
+                            {pregunta.opciones?.length > 0 && (
+                              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {pregunta.opciones.map((opcion, index) => (
+                                  <div
+                                    key={opcion.id || index}
+                                    className={`rounded-xl border px-3 py-2 text-xs ${
+                                      opcion.es_correcta
+                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                        : "border-slate-200 bg-slate-50 text-slate-600"
+                                    }`}
+                                  >
+                                    {String.fromCharCode(65 + index)}.{" "}
+                                    {opcion.texto_opcion || opcion.texto}
+                                    {opcion.es_correcta ? " ✓" : ""}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {pregunta.respuesta_referencia && (
+                              <p className="mt-2 text-xs text-slate-500">
+                                Respuesta de referencia:{" "}
+                                <span className="font-semibold">
+                                  {pregunta.respuesta_referencia}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <button
+                type="button"
+                onClick={cerrarBancoPreguntas}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={agregarPreguntasSeleccionadasBanco}
+                disabled={
+                  agregandoBanco ||
+                  cargandoBanco ||
+                  bancoSeleccionadas.length === 0
+                }
+                className={`rounded-xl px-5 py-3 text-sm font-semibold text-white transition ${
+                  agregandoBanco ||
+                  cargandoBanco ||
+                  bancoSeleccionadas.length === 0
+                    ? "bg-slate-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {agregandoBanco
+                  ? "Agregando..."
+                  : `Agregar ${bancoSeleccionadas.length} pregunta(s)`}
+              </button>
             </div>
           </div>
         </div>

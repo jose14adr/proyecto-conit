@@ -28,6 +28,8 @@ type SavePlantillaDto = {
   canvasWidth?: number;
   canvasHeight?: number;
   configJson?: any[];
+  dobleCara?: boolean;
+  configJsonReverso?: any[];
 };
 
 @Injectable()
@@ -374,6 +376,10 @@ export class CertificadoService {
       canvasWidth: dto.canvasWidth || 1600,
       canvasHeight: dto.canvasHeight || 1131,
       configJson: Array.isArray(dto.configJson) ? dto.configJson : [],
+      dobleCara: !!dto.dobleCara,
+      configJsonReverso: Array.isArray(dto.configJsonReverso)
+        ? dto.configJsonReverso
+        : [],
     });
 
     const saved = await this.plantillaRepo.save(plantilla);
@@ -404,6 +410,13 @@ export class CertificadoService {
     plantilla.configJson = Array.isArray(dto.configJson)
       ? dto.configJson
       : plantilla.configJson;
+
+    plantilla.dobleCara =
+      dto.dobleCara !== undefined ? !!dto.dobleCara : plantilla.dobleCara;
+
+    plantilla.configJsonReverso = Array.isArray(dto.configJsonReverso)
+      ? dto.configJsonReverso
+      : plantilla.configJsonReverso;  
 
     const saved = await this.plantillaRepo.save(plantilla);
     return this.hydratePlantilla(saved);

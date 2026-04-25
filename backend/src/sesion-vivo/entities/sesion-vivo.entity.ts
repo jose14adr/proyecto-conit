@@ -39,4 +39,7 @@ export class SesionVivo {
 
   @Column({ default: 'programada' })
   estado: string;
+
+  @Column({ type: 'int', nullable: true })
+  idgrupo: number | null;
 }

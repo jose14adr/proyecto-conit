@@ -44,6 +44,7 @@ import { S3Service } from './s3/s3.service';
 import { S3Module } from './s3/s3.module';
 import { CertificadoModule } from './certificado/certificado.module';
 import { AlumnoMaterialProgresoModule } from './alumno-material-progreso/alumno-material-progreso.module';
+import { BancoPreguntasModule } from './banco-preguntas/banco-preguntas.module';
 
 @Module({
   imports: [
@@ -114,6 +115,7 @@ import { AlumnoMaterialProgresoModule } from './alumno-material-progreso/alumno-
     S3Module,
     CertificadoModule,
     AlumnoMaterialProgresoModule,
+    BancoPreguntasModule,
   ],
 
   controllers: [AppController],

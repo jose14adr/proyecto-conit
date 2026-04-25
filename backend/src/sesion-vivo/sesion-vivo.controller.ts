@@ -8,36 +8,43 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { SesionVivoService } from './sesion-vivo.service';
-import { SesionVivo } from './entities/sesion-vivo.entity';
+import { SesionVivoResponseDto } from './dto/sesion-vivo-response.dto';
 
 @Controller('sesion-vivo')
 export class SesionVivoController {
   constructor(private readonly service: SesionVivoService) {}
 
   @Get()
-  async obtener(): Promise<SesionVivo[]> {
+  async obtener(): Promise<SesionVivoResponseDto[]> {
     return this.service.obtenerSesiones();
   }
 
-  @Get('curso/:idcurso')
-  async obtenerPorCurso(
-    @Param('idcurso', ParseIntPipe) idcurso: number,
-  ): Promise<SesionVivo[]> {
-    return this.service.obtenerSesionesPorCurso(idcurso);
+  @Get('grupo/:idgrupo')
+  async obtenerPorGrupo(
+    @Param('idgrupo', ParseIntPipe) idgrupo: number,
+  ): Promise<SesionVivoResponseDto[]> {
+    return this.service.obtenerSesionesPorGrupo(idgrupo);
+  }
+
+  @Get('grupo/:idgrupo/provider')
+  async obtenerProviderInfo(
+    @Param('idgrupo', ParseIntPipe) idgrupo: number,
+  ) {
+    return this.service.obtenerProviderInfoPorGrupo(idgrupo);
   }
 
   @Post()
-  async crear(@Body() body: any): Promise<SesionVivo> {
+  async crear(@Body() body: any): Promise<SesionVivoResponseDto> {
     if (!body) {
       throw new BadRequestException('Body vacío');
     }
 
-    if (!body.idcurso || !body.titulo || !body.fecha) {
+    if (!body.idgrupo || !body.titulo || !body.fecha) {
       throw new BadRequestException('Faltan campos obligatorios');
     }
 
     return this.service.crearSesion({
-      idcurso: Number(body.idcurso),
+      idgrupo: Number(body.idgrupo),
       titulo: String(body.titulo),
       descripcion: body.descripcion ? String(body.descripcion) : '',
       fecha: String(body.fecha),

@@ -4,11 +4,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
 import XLSX from "xlsx-js-style";
 import autoTable from "jspdf-autotable";
+import ForoGrupoPanel from "../components/ForoGrupoPanel";
 import {
   getCursoById,
   getAlumnosByCurso,
   guardarAsistenciaCurso,
   getAsistenciaCursoPorFecha,
+  getConfigAsistenciaGrupo,
+  guardarConfigAsistenciaGrupo,
   crearTarea,
   getTareasByCurso,
   marcarTareaRevisada,
@@ -328,6 +331,14 @@ function CursoDetalleDocente() {
   // ==============================
   const [fechaAsistencia, setFechaAsistencia] = useState(hoy);
   const [asistenciaMap, setAsistenciaMap] = useState({});
+  const [configAsistencia, setConfigAsistencia] = useState({
+    hora_inicio: "",
+    hora_fin: "",
+    activo: false,
+  });
+
+const [cargandoConfigAsistencia, setCargandoConfigAsistencia] = useState(false);
+const [guardandoConfigAsistencia, setGuardandoConfigAsistencia] = useState(false);
 
   //Filtrado asistencia
   const [busquedaAsistencia, setBusquedaAsistencia] = useState("");
@@ -879,11 +890,13 @@ const guardarSesionVivoCurso = async (e) => {
       try {
         setLoading(true);
 
-        const [cursoData, alumnosData, asistenciaData] = await Promise.all([
-          getCursoById(id),
-          getAlumnosByCurso(id),
-          getAsistenciaCursoPorFecha(id, hoy),
-        ]);
+        const [cursoData, alumnosData, asistenciaData, configAsistenciaData] =
+          await Promise.all([
+            getCursoById(id),
+            getAlumnosByCurso(id),
+            getAsistenciaCursoPorFecha(id, hoy),
+            getConfigAsistenciaGrupo(id, hoy),
+          ]);
 
         setCurso(cursoData);
         setAlumnos(alumnosData || []);
@@ -897,6 +910,15 @@ const guardarSesionVivoCurso = async (e) => {
           };
         });
         setAsistenciaMap(map);
+        setConfigAsistencia({
+          hora_inicio: configAsistenciaData?.hora_inicio
+            ? String(configAsistenciaData.hora_inicio).slice(0, 5)
+            : "",
+          hora_fin: configAsistenciaData?.hora_fin
+            ? String(configAsistenciaData.hora_fin).slice(0, 5)
+            : "",
+          activo: configAsistenciaData?.activo ?? false,
+        });
       } catch (error) {
         console.error(error);
         alert(error?.message || "Error cargando detalle del curso");
@@ -1007,6 +1029,66 @@ useEffect(() => {
   }
 };
 
+  const cargarConfigAsistenciaPorFecha = async (fecha) => {
+    try {
+      if (!fecha) return;
+
+      setCargandoConfigAsistencia(true);
+
+      const data = await getConfigAsistenciaGrupo(id, fecha);
+
+      setConfigAsistencia({
+        hora_inicio: data?.hora_inicio ? String(data.hora_inicio).slice(0, 5) : "",
+        hora_fin: data?.hora_fin ? String(data.hora_fin).slice(0, 5) : "",
+        activo: data?.activo ?? false,
+      });
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo cargar la configuración de asistencia.");
+    } finally {
+      setCargandoConfigAsistencia(false);
+    }
+  };
+
+  const guardarConfiguracionAsistencia = async () => {
+    try {
+      if (!fechaAsistencia) {
+        return alert("Selecciona una fecha para configurar la asistencia.");
+      }
+
+      if (!configAsistencia.hora_inicio || !configAsistencia.hora_fin) {
+        return alert("Debes indicar la hora de inicio y la hora de fin.");
+      }
+
+      if (configAsistencia.hora_fin <= configAsistencia.hora_inicio) {
+        return alert("La hora fin debe ser mayor que la hora inicio.");
+      }
+
+      setGuardandoConfigAsistencia(true);
+
+      const data = await guardarConfigAsistenciaGrupo(id, {
+        fecha: fechaAsistencia,
+        hora_inicio: configAsistencia.hora_inicio,
+        hora_fin: configAsistencia.hora_fin,
+        activo: Boolean(configAsistencia.activo),
+        creado_por_tipo: "admin",
+      });
+
+      setConfigAsistencia({
+        hora_inicio: data?.hora_inicio ? String(data.hora_inicio).slice(0, 5) : "",
+        hora_fin: data?.hora_fin ? String(data.hora_fin).slice(0, 5) : "",
+        activo: data?.activo ?? false,
+      });
+
+      alert("Configuración de asistencia guardada correctamente ✅");
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || "No se pudo guardar la configuración de asistencia.");
+    } finally {
+      setGuardandoConfigAsistencia(false);
+    }
+  };
+
   const cargarAsistenciaPorFecha = async (fecha) => {
     try {
       const data = await getAsistenciaCursoPorFecha(id, fecha);
@@ -1021,6 +1103,7 @@ useEffect(() => {
       });
 
       setAsistenciaMap(map);
+      await cargarConfigAsistenciaPorFecha(fecha);
     } catch (error) {
       console.error(error);
       alert(error?.message || "Error cargando asistencia");
@@ -3021,6 +3104,7 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
             { key: "tareas", label: "Tareas" },
             { key: "modulos", label: "Módulos" },
             { key: "progreso", label: "Progreso" },
+            { key: "foro", label: "Foro" },
           ].map((tab) => {
             const active = tabActiva === tab.key;
 
@@ -3294,6 +3378,10 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
         </div>
       )}
 
+      {tabActiva === "foro" && (
+        <ForoGrupoPanel grupoId={id} modo="admin" />
+      )}
+
       {tabActiva === "asistencia" && (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -3347,6 +3435,89 @@ const alumnosFiltradosAsistencia = alumnos.filter((a) => {
                 Exportar Excel
               </button>
             </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h4 className="font-bold text-amber-900">
+                  Configuración para marcado del alumno
+                </h4>
+                <p className="text-sm text-amber-800">
+                  Define el horario en el que el alumno podrá marcar su propia asistencia para la fecha seleccionada.
+                </p>
+              </div>
+
+              <label className="inline-flex items-center gap-2 text-sm font-semibold text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={configAsistencia.activo}
+                  onChange={(e) =>
+                    setConfigAsistencia((prev) => ({
+                      ...prev,
+                      activo: e.target.checked,
+                    }))
+                  }
+                />
+                Activar marcado del alumno
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-amber-900 mb-2">
+                  Hora inicio
+                </label>
+                <input
+                  type="time"
+                  value={configAsistencia.hora_inicio}
+                  onChange={(e) =>
+                    setConfigAsistencia((prev) => ({
+                      ...prev,
+                      hora_inicio: e.target.value,
+                    }))
+                  }
+                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-amber-900 mb-2">
+                  Hora fin
+                </label>
+                <input
+                  type="time"
+                  value={configAsistencia.hora_fin}
+                  onChange={(e) =>
+                    setConfigAsistencia((prev) => ({
+                      ...prev,
+                      hora_fin: e.target.value,
+                    }))
+                  }
+                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={guardarConfiguracionAsistencia}
+                  disabled={guardandoConfigAsistencia || cargandoConfigAsistencia}
+                  className="w-full bg-amber-600 text-white px-4 py-2 rounded-xl hover:bg-amber-700 disabled:opacity-60"
+                >
+                  {guardandoConfigAsistencia
+                    ? "Guardando..."
+                    : cargandoConfigAsistencia
+                    ? "Cargando..."
+                    : "Guardar configuración"}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-amber-700">
+              Esta configuración aplica al grupo actual y a la fecha seleccionada:{" "}
+              <span className="font-semibold">{fechaAsistencia}</span>.
+            </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl px-4 py-3 text-sm">
