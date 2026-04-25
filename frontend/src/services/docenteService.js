@@ -866,7 +866,7 @@ export const getAsistenciaCursoPorFecha = async (grupoId, fecha) => {
   let query = supabase
     .from("asistencia")
     .select("*")
-    .eq("idcurso", Number(grupoId)); // compatibilidad actual
+    .eq("idgrupo", Number(grupoId)); // compatibilidad actual
 
   if (fecha) {
     query = query.eq("fecha", fecha);
@@ -882,7 +882,7 @@ export const guardarAsistenciaCurso = async (grupoId, asistencias) => {
     const { data: existente, error: errBuscar } = await supabase
       .from("asistencia")
       .select("id")
-      .eq("idcurso", Number(grupoId)) // compatibilidad actual
+      .eq("idgrupo", Number(grupoId)) // compatibilidad actual
       .eq("idalumno", Number(item.idalumno))
       .eq("fecha", item.fecha)
       .maybeSingle();
@@ -1460,7 +1460,7 @@ export const getProgresoAlumnosByGrupo = async (idgrupo) => {
     const { data, error } = await supabase
       .from("asistencia")
       .select("idalumno, fecha, estado")
-      .eq("idcurso", grupoId)
+      .eq("idgrupo", grupoId)
       .in("idalumno", alumnoIds);
 
     if (error) throw new Error(error.message);
@@ -1793,7 +1793,7 @@ export const getProgresoDocenteByGrupo = async (idgrupo) => {
   const { data: asistencias, error: errAsistencias } = await supabase
     .from("asistencia")
     .select("fecha")
-    .eq("idcurso", grupoId);
+    .eq("idgrupo", grupoId);
 
   if (errAsistencias) throw new Error(errAsistencias.message);
 

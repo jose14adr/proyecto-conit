@@ -28,3 +28,8 @@ export const habilitarDocente = async (id: number) => {
   const response = await api.patch(`/docente/${id}/habilitar`);
   return response.data;
 };
+
+export const obtenerCargaAcademicaDocente = async (id: number) => {
+  const response = await api.get(`/grupo/docente/${id}`);
+  return response.data;
+};

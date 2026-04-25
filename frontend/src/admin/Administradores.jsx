@@ -19,6 +19,7 @@ import {
 
 export default function Administradores() {
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("habilitados");
   const [administradores, setAdministradores] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -90,12 +91,21 @@ export default function Administradores() {
       admin.numDocumento ||
       ""
     ).toLowerCase();
+    const correo = (admin.correo || "").toLowerCase();
 
-    return (
+    const coincideTexto =
       nombreCompleto.includes(termino) ||
-      (admin.correo || "").includes(termino) ||
-      documento.includes(termino)
-    );
+      documento.includes(termino) ||
+      correo.includes(termino);
+
+    let coincideEstado = true;
+    if (filtroEstado === "habilitados") {
+      coincideEstado = admin.estado === true || admin.estado === null;
+    } else if (filtroEstado === "inhabilitados") {
+      coincideEstado = admin.estado === false;
+    }
+
+    return coincideTexto && coincideEstado;
   });
 
   return (
@@ -132,6 +142,17 @@ export default function Administradores() {
               onChange={(e) => setBusqueda(e.target.value)}
               className="pl-10 border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-shadow"
             />
+          </div>
+          <div className="sm:w-48 shrink-0">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium cursor-pointer"
+            >
+              <option value="habilitados">Solo Habilitados</option>
+              <option value="inhabilitados">Solo Inhabilitados</option>
+              <option value="todos">Mostrar Todos</option>
+            </select>
           </div>
         </div>
 

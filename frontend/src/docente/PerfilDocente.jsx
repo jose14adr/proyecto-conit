@@ -27,13 +27,27 @@ function SkeletonBlock({ className = "" }) {
 }
 
 const parseRangeToMinutes = (range) => {
-  if (!range) return { startMinutes: 0, endMinutes: 0 };
-  const [ini, fin] = range.split("-").map((s) => s.trim());
+  // 1. Si no hay rango válido, devolvemos 0 para que no explote la gráfica
+  if (!range || typeof range !== "string") {
+    return { startMinutes: 0, endMinutes: 0 };
+  }
+
+  // 2. Separamos el texto. Si no hay guion, 'fin' quedará como undefined de forma segura
+  const parts = range.split("-").map((s) => s.trim());
+  const ini = parts[0];
+  const fin = parts[1];
+
   const toMin = (hhmm) => {
+    if (!hhmm || !hhmm.includes(":")) return 0;
+
     const [h, m] = hhmm.split(":").map(Number);
-    return h * 60 + m;
+    return h * 60 + (m || 0);
   };
-  return { startMinutes: toMin(ini), endMinutes: toMin(fin) };
+
+  return {
+    startMinutes: toMin(ini),
+    endMinutes: toMin(fin),
+  };
 };
 
 const minutesNow = () => {
@@ -137,7 +151,7 @@ function PerfilDocente() {
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
 
   const [nombreBloqueado, setNombreBloqueado] = useState(
-    () => localStorage.getItem(NAME_LOCK_KEY) === "true"
+    () => localStorage.getItem(NAME_LOCK_KEY) === "true",
   );
 
   const [form, setForm] = useState({
@@ -222,7 +236,10 @@ function PerfilDocente() {
     }
     localStorage.setItem(NAME_LOCK_KEY, "true");
     setNombreBloqueado(true);
-    showMessage("success", "Nombre confirmado. Ya no podrás editarlo nuevamente.");
+    showMessage(
+      "success",
+      "Nombre confirmado. Ya no podrás editarlo nuevamente.",
+    );
   };
 
   const onFotoSeleccionada = async (e) => {
@@ -277,7 +294,7 @@ function PerfilDocente() {
             cargo: row.cargo,
             area: row.area,
             sector: row.sector,
-          }))
+          })),
         );
       } catch (e) {
         console.error("Error cargando datos secundarios:", e);
@@ -298,7 +315,8 @@ function PerfilDocente() {
         setForm({
           estado: perfil.estado === false ? "Inactivo" : "Activo",
           estadoMotivo: (perfil.estado_motivo ?? "").trim(),
-          nombreCompleto: `${perfil.nombre ?? ""} ${perfil.apellido ?? ""}`.trim(),
+          nombreCompleto:
+            `${perfil.nombre ?? ""} ${perfil.apellido ?? ""}`.trim(),
           correo: perfil.correo ?? "",
           telefono:
             perfil.telefono !== null && perfil.telefono !== undefined
@@ -359,11 +377,11 @@ function PerfilDocente() {
       .sort(
         (a, b) =>
           parseRangeToMinutes(a.hora).startMinutes -
-          parseRangeToMinutes(b.hora).startMinutes
+          parseRangeToMinutes(b.hora).startMinutes,
       );
 
     const futuras = clasesHoy.filter(
-      (c) => parseRangeToMinutes(c.hora).endMinutes > now
+      (c) => parseRangeToMinutes(c.hora).endMinutes > now,
     );
 
     return futuras.length ? futuras[0] : null;
@@ -371,18 +389,20 @@ function PerfilDocente() {
 
   const edad = useMemo(
     () => calcularEdad(form.fechaNacimiento),
-    [form.fechaNacimiento]
+    [form.fechaNacimiento],
   );
 
   const resumenAcademico = useMemo(() => {
     const docsAcademicos = (documentos || []).filter((doc) =>
-      ["grado_academico", "titulo_profesional", "certificado_estudios"].includes(
-        String(doc.tipo || "").toLowerCase()
-      )
+      [
+        "grado_academico",
+        "titulo_profesional",
+        "certificado_estudios",
+      ].includes(String(doc.tipo || "").toLowerCase()),
     );
 
     const gradoSeleccionado = gradosInstruccion.find(
-      (g) => String(g.id) === String(form.gradoInstruccionId)
+      (g) => String(g.id) === String(form.gradoInstruccionId),
     );
 
     const completado =
@@ -469,7 +489,8 @@ function PerfilDocente() {
     if (!form.titulo) faltantes.push("título visible");
     if (!form.institucionEgreso) faltantes.push("institución de egreso");
     if (!form.perfilProfesional) faltantes.push("perfil profesional");
-    if (!form.contactoEmergenciaNombre) faltantes.push("contacto de emergencia");
+    if (!form.contactoEmergenciaNombre)
+      faltantes.push("contacto de emergencia");
 
     return {
       groups,
@@ -488,7 +509,10 @@ function PerfilDocente() {
   const guardarCambios = async () => {
     try {
       if (form.aniosExperiencia && !/^\d+$/.test(form.aniosExperiencia)) {
-        showMessage("error", "Los años de experiencia solo deben contener números.");
+        showMessage(
+          "error",
+          "Los años de experiencia solo deben contener números.",
+        );
         return;
       }
 
@@ -496,7 +520,10 @@ function PerfilDocente() {
         form.contactoEmergenciaTelefono &&
         !telefonoValido.test(form.contactoEmergenciaTelefono)
       ) {
-        showMessage("error", "El teléfono de contacto de emergencia no es válido.");
+        showMessage(
+          "error",
+          "El teléfono de contacto de emergencia no es válido.",
+        );
         return;
       }
 
@@ -609,7 +636,10 @@ function PerfilDocente() {
       }
 
       if (password.length < 8) {
-        showMessage("error", "La nueva contraseña debe tener al menos 8 caracteres.");
+        showMessage(
+          "error",
+          "La nueva contraseña debe tener al menos 8 caracteres.",
+        );
         return;
       }
 
@@ -636,7 +666,7 @@ function PerfilDocente() {
       console.error(error);
       showMessage(
         "error",
-        error?.message || "No se pudo actualizar la contraseña."
+        error?.message || "No se pudo actualizar la contraseña.",
       );
     } finally {
       setGuardandoPassword(false);
@@ -764,7 +794,11 @@ function PerfilDocente() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[360px]">
-            <MiniStat label="Cursos activos" value={cursosActivos} loading={loading} />
+            <MiniStat
+              label="Cursos activos"
+              value={cursosActivos}
+              loading={loading}
+            />
             <MiniStat label="Alumnos" value={alumnosTotal} loading={loading} />
             <MiniStat
               label="Próxima clase"
@@ -784,14 +818,16 @@ function PerfilDocente() {
 
             <div className="mt-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-600">Progreso</span>
+                <span className="text-sm font-medium text-slate-600">
+                  Progreso
+                </span>
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                     perfilCompletado >= 85
                       ? "bg-emerald-100 text-emerald-700"
                       : perfilCompletado >= 60
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-slate-100 text-slate-700"
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-slate-100 text-slate-700"
                   }`}
                 >
                   {perfilCompletado}%
@@ -846,12 +882,30 @@ function PerfilDocente() {
               Navegación
             </p>
             <div className="mt-4 space-y-2">
-              <NavBtn text="Datos personales" onClick={() => toggleSection("personales")} />
-              <NavBtn text="Formación académica" onClick={() => toggleSection("formacion")} />
-              <NavBtn text="Experiencia profesional" onClick={() => toggleSection("experiencia")} />
-              <NavBtn text="Documentos e historial" onClick={() => toggleSection("documentos")} />
-              <NavBtn text="Cursos y capacitaciones" onClick={() => toggleSection("cursos")} />
-              <NavBtn text="Contraseña" onClick={() => toggleSection("contrasena")} />
+              <NavBtn
+                text="Datos personales"
+                onClick={() => toggleSection("personales")}
+              />
+              <NavBtn
+                text="Formación académica"
+                onClick={() => toggleSection("formacion")}
+              />
+              <NavBtn
+                text="Experiencia profesional"
+                onClick={() => toggleSection("experiencia")}
+              />
+              <NavBtn
+                text="Documentos e historial"
+                onClick={() => toggleSection("documentos")}
+              />
+              <NavBtn
+                text="Cursos y capacitaciones"
+                onClick={() => toggleSection("cursos")}
+              />
+              <NavBtn
+                text="Contraseña"
+                onClick={() => toggleSection("contrasena")}
+              />
             </div>
           </div>
 
@@ -964,7 +1018,9 @@ function PerfilDocente() {
             subtitle="Grado, título visible y sustento académico del docente"
             open={openSections.formacion}
             onToggle={() => toggleSection("formacion")}
-            rightNode={<SmallStatusPill complete={resumenAcademico.completado} />}
+            rightNode={
+              <SmallStatusPill complete={resumenAcademico.completado} />
+            }
           >
             <div className="space-y-5">
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -1048,10 +1104,22 @@ function PerfilDocente() {
                   </p>
 
                   <div className="mt-3 space-y-2">
-                    <ChecklistItem done={!!form.gradoInstruccionId} text="Seleccionar grado académico" />
-                    <ChecklistItem done={!!form.titulo} text="Definir título visible" />
-                    <ChecklistItem done={!!form.institucionEgreso} text="Registrar institución" />
-                    <ChecklistItem done={resumenAcademico.totalDocs > 0} text="Subir documento" />
+                    <ChecklistItem
+                      done={!!form.gradoInstruccionId}
+                      text="Seleccionar grado académico"
+                    />
+                    <ChecklistItem
+                      done={!!form.titulo}
+                      text="Definir título visible"
+                    />
+                    <ChecklistItem
+                      done={!!form.institucionEgreso}
+                      text="Registrar institución"
+                    />
+                    <ChecklistItem
+                      done={resumenAcademico.totalDocs > 0}
+                      text="Subir documento"
+                    />
                   </div>
                 </div>
               </div>
@@ -1065,7 +1133,9 @@ function PerfilDocente() {
 
                 <select
                   value={form.gradoInstruccionId}
-                  onChange={(e) => updateForm("gradoInstruccionId", e.target.value)}
+                  onChange={(e) =>
+                    updateForm("gradoInstruccionId", e.target.value)
+                  }
                   className="w-full rounded-xl border px-4 py-3"
                 >
                   <option value="">Seleccione</option>
@@ -1131,7 +1201,9 @@ function PerfilDocente() {
                   </label>
                   <select
                     value={form.sectorExperiencia}
-                    onChange={(e) => updateForm("sectorExperiencia", e.target.value)}
+                    onChange={(e) =>
+                      updateForm("sectorExperiencia", e.target.value)
+                    }
                     className="w-full rounded-xl border bg-white px-4 py-3 outline-none transition focus:border-indigo-400"
                   >
                     <option value="">Seleccione</option>
@@ -1158,7 +1230,9 @@ function PerfilDocente() {
                 </label>
                 <textarea
                   value={form.perfilProfesional}
-                  onChange={(e) => updateForm("perfilProfesional", e.target.value)}
+                  onChange={(e) =>
+                    updateForm("perfilProfesional", e.target.value)
+                  }
                   rows={5}
                   className="w-full rounded-xl border px-4 py-3 outline-none transition focus:border-indigo-400"
                   placeholder="Describe de forma breve y profesional la experiencia y fortalezas del docente."
@@ -1261,10 +1335,10 @@ function PerfilDocente() {
                     {!form.password && !form.passwordConfirm
                       ? "Completa ambos campos para actualizar."
                       : form.password.length < 8
-                      ? "La contraseña debe tener al menos 8 caracteres."
-                      : form.password !== form.passwordConfirm
-                      ? "Las contraseñas no coinciden."
-                      : "La contraseña está lista para actualizarse."}
+                        ? "La contraseña debe tener al menos 8 caracteres."
+                        : form.password !== form.passwordConfirm
+                          ? "Las contraseñas no coinciden."
+                          : "La contraseña está lista para actualizarse."}
                   </p>
                 </div>
 
@@ -1274,7 +1348,9 @@ function PerfilDocente() {
                   disabled={guardandoPassword}
                   className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {guardandoPassword ? "Actualizando..." : "Actualizar contraseña"}
+                  {guardandoPassword
+                    ? "Actualizando..."
+                    : "Actualizar contraseña"}
                 </button>
               </div>
             </div>
@@ -1354,7 +1430,9 @@ function AccordionCard({
       >
         <div>
           <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-          {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -1365,7 +1443,9 @@ function AccordionCard({
         </div>
       </button>
 
-      {open && <div className="border-t border-slate-100 px-5 py-5">{children}</div>}
+      {open && (
+        <div className="border-t border-slate-100 px-5 py-5">{children}</div>
+      )}
     </div>
   );
 }
@@ -1411,14 +1491,11 @@ function InfoMiniCard({ label, value, help }) {
 function ChecklistItem({ done, text }) {
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className={done ? "text-green-500" : "text-yellow-500"}>
-        ●
-      </span>
+      <span className={done ? "text-green-500" : "text-yellow-500"}>●</span>
       {text}
     </div>
   );
 }
-
 
 function PasswordField({
   label,

@@ -32,8 +32,7 @@ import MisPagos from "./alumno/MisPagos";
 import Matricula from "./alumno/Matricula";
 import Soporte from "./alumno//Soporte";
 import HistorialAcademico from "./alumno/HistorialAcademico";
-import Asistencia from "./alumno/AsistenciaAlumno";
-import CursoDetalleAdmin from "./admin/CursoDetalleAdmin";
+import AsistenciaAlumno from "./alumno/AsistenciaAlumno";
 
 // ADMIN
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
@@ -46,6 +45,8 @@ const Usuarios = lazy(() => import("./admin/Usuarios"));
 const Pagos = lazy(() => import("./admin/Pagos"));
 const ControlSesiones = lazy(() => import("./admin/ControlSesiones"));
 import Certificados from "./admin/Certificados";
+const PerfilAdministrador = lazy(() => import("./admin/PerfilAdministrador"));
+import CursoDetalleAdmin from "./admin/CursoDetalleAdmin";
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
@@ -57,7 +58,6 @@ import CursoDetalleDocente from "./docente/CursoDetalleDocente";
 import RegistroNotas from "./docente/RegistroNotas";
 import ListaAprobados from "./docente/ListaAprobados";
 import TareasDocente from "./docente/TareasDocente";
-import AsistenciaAlumno from "./alumno/AsistenciaAlumno";
 
 function PublicWebLayout({ children }) {
   return (
@@ -181,6 +181,7 @@ export default function App() {
               <Route path="pagos" element={<Pagos />} />
               <Route path="sesiones" element={<ControlSesiones />} />
               <Route path="certificados" element={<Certificados />} />
+              <Route path="perfil" element={<PerfilAdministrador />} />
             </Route>
           </Route>
 

@@ -11,21 +11,20 @@ const generarCodigoBoleta = () => {
 };
 
 export default function MisPagos() {
-
   const [activeTab, setActiveTab] = useState("pendientes");
   const [selectedPago, setSelectedPago] = useState(null);
 
   const [pagosPendientes, setPagosPendientes] = useState([]);
 
   const [pagosRealizados, setPagosRealizados] = useState([
-    { 
-      id: 3, 
-      fecha: "10/02/2026", 
-      descripcion: "Matrícula 2025-II", 
-      curso: "Programación I", 
+    {
+      id: 3,
+      fecha: "10/02/2026",
+      descripcion: "Matrícula 2025-II",
+      curso: "Programación I",
       monto: 300,
-      codigo: "BOL-2025-0001"
-    }
+      codigo: "BOL-2025-0001",
+    },
   ]);
 
   const recargarPagos = async () => {
@@ -39,46 +38,44 @@ export default function MisPagos() {
 }
 
   useEffect(() => {
-  const cargarPagos = async () => {
-    try {
-      const [resPendientes, resRealizados] = await Promise.all([
-        fetch("http://localhost:3000/pago/pendientes"),
-        fetch("http://localhost:3000/pago/realizados"),
-      ]);
+    const cargarPagos = async () => {
+      try {
+        const [resPendientes, resRealizados] = await Promise.all([
+          fetch("http://localhost:3000/pago/pendientes"),
+          fetch("http://localhost:3000/pago/realizados"),
+        ]);
 
-      if (!resPendientes.ok) {
-        throw new Error("No se pudieron cargar los pagos pendientes");
+        if (!resPendientes.ok) {
+          throw new Error("No se pudieron cargar los pagos pendientes");
+        }
+
+        if (!resRealizados.ok) {
+          throw new Error("No se pudieron cargar los pagos realizados");
+        }
+
+        const dataPendientes = await resPendientes.json();
+        const dataRealizados = await resRealizados.json();
+
+        setPagosPendientes(dataPendientes || []);
+        setPagosRealizados(dataRealizados || []);
+      } catch (error) {
+        console.error("Error cargando pagos:", error);
       }
+    };
 
-      if (!resRealizados.ok) {
-        throw new Error("No se pudieron cargar los pagos realizados");
-      }
-
-      const dataPendientes = await resPendientes.json();
-      const dataRealizados = await resRealizados.json();
-
-      setPagosPendientes(dataPendientes || []);
-      setPagosRealizados(dataRealizados || []);
-    } catch (error) {
-      console.error("Error cargando pagos:", error);
-    }
-  };
-
-  cargarPagos();
-}, []);
+    cargarPagos();
+  }, []);
 
 
   const confirmarPago = async () => {
-
     if (!selectedPago) return;
 
     try {
-
       const res = await fetch(
         `http://localhost:3000/pago/pagar/${selectedPago.id}`,
         {
-          method: "PATCH"
-        }
+          method: "PATCH",
+        },
       );
 
       if (!res.ok) {
@@ -91,29 +88,25 @@ export default function MisPagos() {
       const nuevoPago = {
         ...selectedPago,
         fecha: fechaActual,
-        codigo: codigoBoleta
+        codigo: codigoBoleta,
       };
 
       setPagosRealizados((prev) => [...prev, nuevoPago]);
 
       setPagosPendientes((prev) =>
-        prev.filter((p) => p.id !== selectedPago.id)
+        prev.filter((p) => p.id !== selectedPago.id),
       );
 
       setSelectedPago(null);
 
       generarBoleta(nuevoPago);
-
     } catch (error) {
-
       console.error("Error al realizar pago:", error);
       alert("No se pudo realizar el pago");
-
     }
   };
 
   const generarBoleta = async (pago) => {
-
     const doc = new jsPDF();
 
     // ✅ NORMALIZAR DATOS (CLAVE 🔑)
@@ -200,7 +193,32 @@ export default function MisPagos() {
     doc.text(`SON: ${montoTexto}`, 20, 135);
 
     // QR
-    doc.addImage(qrImage, "PNG", 80, 155, 40, 40);
+    doc.addImage(qrImage, "PNG", 85, 160, 35, 35);
+
+    doc.text("SON: TRESCIENTOS CON 00/100 SOLES", 20, 134);
+
+    doc.setFontSize(10);
+
+    doc.text(
+      "Este comprobante ha sido generado automáticamente por el Sistema Universitario.",
+      40,
+      215,
+    );
+
+    doc.text("Para validar la autenticidad escanee el código QR.", 65, 230);
+
+    doc.line(20, 275, 190, 275);
+
+    doc.setFontSize(8);
+
+    doc.text(
+      "Representación impresa de la Boleta de Venta Electrónica",
+      105,
+      280,
+      { align: "center" },
+    );
+
+    doc.line(20, 150, 190, 150);
 
     // FOOTER
     doc.setFontSize(9);
@@ -210,7 +228,7 @@ export default function MisPagos() {
       210,
       null,
       null,
-      "center"
+      "center",
     );
 
     doc.text(
@@ -237,11 +255,9 @@ export default function MisPagos() {
 
   return (
     <div className="p-8">
-
       <h1 className="text-2xl font-bold mb-6">Mis Pagos</h1>
 
       <div className="flex gap-4 mb-6">
-
         <button
           onClick={() => setActiveTab("pendientes")}
           className={`px-4 py-2 rounded-lg ${
@@ -263,27 +279,21 @@ export default function MisPagos() {
         >
           Pagos Realizados
         </button>
-
       </div>
 
       {activeTab === "pendientes" && (
         <div className="bg-white shadow rounded-xl overflow-hidden">
-
           <table className="w-full text-sm">
-
             <thead className="bg-gray-100">
-
               <tr>
                 <th className="p-3 text-left">Descripción</th>
                 <th className="p-3 text-left">Curso</th>
                 <th className="p-3 text-left">Monto</th>
                 <th className="p-3 text-left">Acción</th>
               </tr>
-
             </thead>
 
             <tbody>
-
               {pagosPendientes.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="p-4 text-center text-gray-500">
@@ -293,30 +303,23 @@ export default function MisPagos() {
               ) : (
                 pagosPendientes.map((pago) => (
                   <tr key={pago.id} className="border-t">
-
                     <td className="p-3">{pago.descripcion}</td>
                     <td className="p-3">{pago.curso}</td>
                     <td className="p-3">S/ {pago.monto}</td>
 
                     <td className="p-3">
-
                       <button
                         onClick={() => setSelectedPago(pago)}
                         className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700"
                       >
                         Realizar Pago
                       </button>
-
                     </td>
-
                   </tr>
                 ))
               )}
-
             </tbody>
-
           </table>
-
         </div>
       )}
 
@@ -334,8 +337,6 @@ export default function MisPagos() {
             </thead>
 
             <tbody>
-
-              
               {pagosRealizados.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="p-4 text-center text-gray-500">
@@ -347,7 +348,9 @@ export default function MisPagos() {
                   <tr key={pago.id} className="border-t">
                     <td className="p-3">{pago.fechapago}</td>
                     <td className="p-3">{pago.estado}</td>
-                    <td className="p-3">{pago.matricula?.grupo?.curso?.nombrecurso}</td>
+                    <td className="p-3">
+                      {pago.matricula?.grupo?.curso?.nombrecurso}
+                    </td>
                     <td className="p-3">S/ {pago.preciofinal}</td>
                     <td className="p-3">
                       <button
@@ -402,6 +405,16 @@ export default function MisPagos() {
         </div>
       )}
 
+        <PagoModal
+          pago={selectedPago}
+          onClose={() => setSelectedPago(null)}
+          onConfirm={() => {
+            // Aquí recargamos la lista de pagos cuando Izipay termine con éxito
+            setSelectedPago(null);
+            window.location.reload();
+          }}
+        />
+    
     </div>
   );
 }

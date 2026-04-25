@@ -1,195 +1,178 @@
 import { useState, useEffect } from "react";
+import KRGlue from "@lyracom/embedded-form-glue";
+import { generarTokenIzipay } from "../services/pago.service";
+import api from "../api";
 
-export default function PagoIzipay({ curso_id, onClose }) {
-
+export default function PagoIzipay({ curso_id, monto, onSuccess, onClose }) {
   const [formToken, setFormToken] = useState(null);
   const [email, setEmail] = useState("");
-  const [estado, setEstado] = useState("idle"); 
-  const [tiempo, setTiempo] = useState(120);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const sonido = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+  const sonido = new Audio(
+    "https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg",
+  );
 
   const validarEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  // =============================
-  // GENERAR PAGO
-  // =============================
-  const generarQR = async () => {
+  const generarToken = async () => {
+    // 1. Validamos que Vite esté leyendo la llave del .env
+    const publicKey = import.meta.env.VITE_IZIPAY_PUBLIC_KEY;
+    if (!publicKey) {
+      setError(
+        "Error crítico: No se detectó VITE_IZIPAY_PUBLIC_KEY en el archivo .env. Revisa que el archivo esté en la raíz del proyecto y reinicia Vite.",
+      );
+      return;
+    }
 
     if (!validarEmail(email)) {
-      alert("Correo inválido");
+      setError("Ingresa un correo electrónico válido.");
+      return;
+    }
+
+    if (!monto || Number(monto) <= 0) {
+      setError("Error: El monto a cobrar no es válido.");
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
-      const res = await fetch("http://localhost:3000/pago/izipay", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          matricula_id: curso_id,
-          preciofinal: 50,
-          email
-        })
-      });
+      const data = await generarTokenIzipay(curso_id, Number(monto), email);
 
-      const data = await res.json();
+      if (!data || !data.formToken) {
+        throw new Error("El servidor no devolvió un token de pago.");
+      }
 
       setFormToken(data.formToken);
-      setEstado("esperando");
-
-    } catch (error) {
-      console.error(error);
-      setEstado("error");
+    } catch (err) {
+      console.error("Error al generar token:", err);
+      const mensaje =
+        err.response?.data?.message ||
+        err.message ||
+        "Error al conectar con la pasarela.";
+      setError(mensaje);
     } finally {
       setLoading(false);
     }
   };
 
-  // =============================
-  // INICIALIZAR IZIPAY
-  // =============================
   useEffect(() => {
+    if (!formToken) return;
 
-    if (!formToken || !window.Kr) return;
+    const setupIzipay = async () => {
+      try {
+        const publicKey = import.meta.env.VITE_IZIPAY_PUBLIC_KEY;
 
-    try {
-      window.Kr.setFormConfig({
-        formToken: formToken,
-        publicKey: import.meta.env.VITE_IZIPAY_PUBLIC_KEY,
-        language: "es-ES"
-      });
+        const { KR } = await KRGlue.loadLibrary(
+          "https://api.micuentaweb.pe",
+          publicKey,
+        );
 
-      window.Kr.renderElements("#izipay-container");
+        // Limpiamos cualquier formulario previo antes de crear uno nuevo
+        try {
+          await KR.removeForms();
+        } catch {
+          // Ignoramos si no había formularios previos
+        }
 
+        await KR.setFormConfig({
+          formToken: formToken,
+          "kr-language": "es-PE",
+          "kr-theme": "classic",
+        });
 
-    } catch (err) {
-      console.error("Error Izipay:", err);
-      setEstado("error");
-    }
+        // Usamos una función real
+        KR.onSubmit(async (paymentData) => {
+          if (paymentData.clientAnswer.orderStatus === "PAID") {
+            sonido.play();
 
+            // Le avisamos manualmente al backend que ya pagó
+            try {
+              await api.post("/pago/izipay/confirmar", {
+                formToken: formToken,
+                matricula_id: curso_id,
+                preciofinal: monto,
+                email: email,
+                igv: 0,
+                tipopago: "izipay"
+              });
+            } catch (error) {
+              console.error("Error al registrar el pago en la base de datos:", error);
+            }
+
+            if (onSuccess) onSuccess(paymentData);
+          }
+          return false; // Retornamos false para evitar que el iframe recargue la página
+        });
+
+        // Renderizamos el formulario
+        await KR.renderElements("#myPaymentForm");
+      } catch (err) {
+        console.error("Error crítico al renderizar Izipay:", err);
+        setError("Error al cargar el formulario de pago seguro.");
+      }
+    };
+
+    setupIzipay();
+
+    // Cuando el componente se cierra, destruimos el formulario
+    return () => {
+      if (window.KR) {
+        window.KR.removeForms().catch(() => {});
+      }
+    };
   }, [formToken]);
 
-  useEffect(() => {
-  if (!formToken || estado !== "esperando") return;
-
-  const interval = setInterval(async () => {
-    try {
-      const res = await fetch("http://localhost:3000/pago/estado", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          matricula_id: curso_id
-        })
-      });
-
-      const result = await res.json();
-
-      if (result.status === "pagado") {
-        setEstado("pagado");
-        sonido.play();
-        clearInterval(interval);
-
-        setTimeout(() => {
-          if (onClose) onClose();
-        }, 2000);
-      }
-
-    } catch (error) {
-      console.error(error);
-    }
-  }, 3000);
-
-  return () => clearInterval(interval);
-
-}, [formToken, estado]);
-
-  // =============================
-  // COUNTDOWN
-  // =============================
-  useEffect(() => {
-    if (estado !== "esperando") return;
-
-    const timer = setInterval(() => {
-      setTiempo((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setEstado("error");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [estado]);
-
-  const reset = () => {
-    setFormToken(null);
-    setEstado("idle");
-    setTiempo(120);
-  };
-
   return (
-    <div className="p-4 border rounded-xl shadow-lg text-center">
+    <div className="p-4 border rounded-xl shadow-lg bg-white">
+      <h3 className="text-lg font-bold mb-3 text-center text-slate-800">
+        Pago con Tarjeta - Izipay
+      </h3>
 
-      <h3 className="text-lg font-bold mb-3">📱 Pago con Yape</h3>
-
-      {!formToken && (
-        <>
-          <input
-            className="w-full border p-2 rounded mb-3"
-            placeholder="Tu correo"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <button
-            onClick={generarQR}
-            disabled={loading}
-            className="w-full bg-purple-600 text-white py-2 rounded-lg"
-          >
-            {loading ? "Generando..." : "Pagar con Yape"}
-          </button>
-        </>
-      )}
-
-      {formToken && (
-        <div className="mt-4">
-
-          <div id="izipay-container"></div>
-
-          {estado === "esperando" && (
-            <>
-              <p className="text-blue-600 mt-3">Esperando pago...</p>
-              <p className="text-sm text-gray-500">⏳ {tiempo}s</p>
-            </>
-          )}
-
-          {estado === "pagado" && (
-            <p className="text-green-600 text-xl font-bold mt-4">
-              ✅ Pago exitoso
-            </p>
-          )}
-
-          {estado === "error" && (
-            <>
-              <p className="text-red-600 mt-4">❌ Tiempo agotado</p>
-              <button onClick={reset} className="mt-2 bg-gray-300 px-3 py-1 rounded">
-                Intentar nuevamente
-              </button>
-            </>
-          )}
-
+      {error && (
+        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 text-center">
+          {error}
         </div>
       )}
 
+      {!formToken && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">
+              Correo para tu comprobante
+            </label>
+            <input
+              type="email"
+              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="tu@correo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <button
+            onClick={generarToken}
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 transition"
+          >
+            {loading ? "Conectando con Izipay..." : "Continuar al pago"}
+          </button>
+
+          <button
+            onClick={onClose}
+            className="w-full text-slate-500 py-2 hover:text-slate-800 transition"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {/* Contenedor Izipay */}
+      <div className={`${!formToken ? "hidden" : "block"} flex justify-center`}>
+        <div id="myPaymentForm" className="kr-embedded" kr-theme="classic"></div>
+      </div>
     </div>
   );
 }

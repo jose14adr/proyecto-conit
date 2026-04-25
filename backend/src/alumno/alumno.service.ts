@@ -63,16 +63,16 @@ export class AlumnoService {
     const resultado = await this.dataSource.transaction(async (manager) => {
       let usuarioCreado: Usuario | null = null;
 
+      // Crear credenciales y tokens si se solicita
       if (crearUsuario && contrasenia) {
         const hashedPassword = await bcrypt.hash(contrasenia, 10);
-
         const token = randomBytes(32).toString('hex');
         const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
         usuarioCreado = await manager.save(
           manager.create(Usuario, {
             correo: datosAlumno.correo,
-            contrasenia: hashedPassword,
+            contrasenia: hashedPassword, // ¡Hasheada!
             rol: 'ALUMNO',
             idempresa: 1,
             emailVerificado: false,
@@ -82,6 +82,7 @@ export class AlumnoService {
         );
       }
 
+      // Crear el perfil del alumno de forma directa
       const alumno = manager.create(Alumno, {
         ...datosAlumno,
         nombre_editado: true,
@@ -126,9 +127,9 @@ export class AlumnoService {
       const datosActualizar = { ...datosActualizarBase };
       let nuevoUsuario: Usuario | null = null;
 
+      // Si se edita el alumno y deciden crearle su usuario
       if (crearUsuario && contrasenia && !alumno.idusuario) {
         const hashedPassword = await bcrypt.hash(contrasenia, 10);
-
         const token = randomBytes(32).toString('hex');
         const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -179,6 +180,7 @@ export class AlumnoService {
   async remove(id: number) {
     await this.alumnoRepository.update(id, { estado: false });
 
+    // Inhabilitamos también su usuario para revocar acceso
     const alumno = await this.findOne(id);
 
     if (alumno.idusuario) {
@@ -191,6 +193,7 @@ export class AlumnoService {
   async habilitar(id: number) {
     await this.alumnoRepository.update(id, { estado: true });
 
+    // Habilitar credenciales
     const alumno = await this.findOne(id);
 
     if (alumno.idusuario) {

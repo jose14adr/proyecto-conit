@@ -6,7 +6,6 @@ import { Usuario } from 'src/usuario/entities/usuario.entity';
 import { Grupo } from 'src/grupo/entities/grupo.entity';
 import { Matricula } from 'src/matricula/entities/matricula.entity';
 
-
 @Injectable()
 export class CursoService {
   constructor(
@@ -135,7 +134,7 @@ async obtenerUnoCursoAlumno(idCurso: number, idAlumno: number) {
     return { message: 'Curso habilitado correctamente' };
   }
 
-  async create(data: Partial<Curso>){
+  async create(data: Partial<Curso>) {
     const nuevoCurso = this.cursoRepository.create(data);
     return this.cursoRepository.save(nuevoCurso);
   }

@@ -304,12 +304,12 @@ export default function Certificados() {
 
   const escala = useMemo(
     () => Math.min(1, PREVIEW_WIDTH / canvasWidth),
-    [canvasWidth]
+    [canvasWidth],
   );
 
   const seleccionado = useMemo(
     () => elementos.find((el) => el.id === seleccionadoId) || null,
-    [elementos, seleccionadoId]
+    [elementos, seleccionadoId],
   );
 
   const aplicarPlantillaEnEditor = (data) => {
@@ -338,7 +338,7 @@ export default function Certificados() {
     setElementos(
       Array.isArray(data.configJson) && data.configJson.length
         ? data.configJson
-        : crearElementosBase()
+        : crearElementosBase(),
     );
     setSeleccionadoId(null);
     setEsPlantillaActiva(!!data.activa);
@@ -456,8 +456,8 @@ export default function Certificados() {
               };
               img.onerror = () => resolve(null);
               img.src = src;
-            })
-        )
+            }),
+        ),
       );
 
       if (!cancelled) {
@@ -474,7 +474,7 @@ export default function Certificados() {
 
   const actualizarElemento = (id, cambios) => {
     setElementos((prev) =>
-      prev.map((el) => (el.id === id ? { ...el, ...cambios } : el))
+      prev.map((el) => (el.id === id ? { ...el, ...cambios } : el)),
     );
   };
 
@@ -665,7 +665,7 @@ export default function Certificados() {
     if (!plantilla) return;
 
     const confirmado = window.confirm(
-      `¿Seguro que deseas eliminar la plantilla "${plantilla.nombre}"?`
+      `¿Seguro que deseas eliminar la plantilla "${plantilla.nombre}"?`,
     );
 
     if (!confirmado) return;

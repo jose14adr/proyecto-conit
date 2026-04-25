@@ -1,11 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Award,
-  FileText,
-  Download,
-  BookOpen,
-  X,
-} from "lucide-react";
+import { Award, FileText, Download, BookOpen, X } from "lucide-react";
 import api from "../api";
 
 export default function MisCertificados() {
@@ -20,7 +14,10 @@ export default function MisCertificados() {
 
   const resumen = useMemo(() => {
     const total = certificados.length;
-    const horas = certificados.reduce((acc, c) => acc + Number(c.horas || 0), 0);
+    const horas = certificados.reduce(
+      (acc, c) => acc + Number(c.horas || 0),
+      0,
+    );
     return { total, horas };
   }, [certificados]);
 
@@ -46,15 +43,17 @@ export default function MisCertificados() {
           "Certificado",
         horas: Number(item.horas || 0),
         creditos: Number(item.creditos || 0),
-        archivo_url:
-          item.archivo_url ||
-          item.url ||
-          item.plantilla_url ||
-          "",
+        archivo_url: item.archivo_url || item.url || item.plantilla_url || "",
+        puede_ver: item.puede_ver_certificado === true,
+        puede_descargar: item.puede_descargar_certificado === true,
       }));
 
       // Si no hay nada real, quedará vacío
-      setCertificados(certificadosNormalizados.filter((c) => c.archivo_url || c.curso));
+      setCertificados(
+        certificadosNormalizados.filter(
+          (c) => (c.archivo_url || c.curso) && c.puede_ver,
+        ),
+      );
     } catch (err) {
       console.error("Error cargando certificados:", err);
 
@@ -134,8 +133,12 @@ export default function MisCertificados() {
                   <th className="px-5 py-4 text-left font-semibold">Fecha</th>
                   <th className="px-5 py-4 text-left font-semibold">Curso</th>
                   <th className="px-5 py-4 text-left font-semibold">Horas</th>
-                  <th className="px-5 py-4 text-left font-semibold">Créditos</th>
-                  <th className="px-5 py-4 text-left font-semibold">Acciones</th>
+                  <th className="px-5 py-4 text-left font-semibold">
+                    Créditos
+                  </th>
+                  <th className="px-5 py-4 text-left font-semibold">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
 
@@ -145,9 +148,7 @@ export default function MisCertificados() {
                     key={c.id}
                     className="border-t border-slate-100 hover:bg-slate-50"
                   >
-                    <td className="px-5 py-4">
-                      {formatearFecha(c.fecha)}
-                    </td>
+                    <td className="px-5 py-4">{formatearFecha(c.fecha)}</td>
 
                     <td className="px-5 py-4 font-medium text-slate-800">
                       {c.curso}
@@ -159,32 +160,41 @@ export default function MisCertificados() {
 
                     <td className="px-5 py-4">
                       <div className="flex gap-2">
+                        {/* El botón de Ver siempre está activo si el certificado es visible */}
                         <button
                           onClick={() => setPreview(c.archivo_url)}
                           disabled={!c.archivo_url}
                           className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium ${
                             c.archivo_url
                               ? "border-slate-300 hover:bg-slate-100"
-                              : "cursor-not-allowed border-slate-200 text-slate-400"
+                              : "cursor-not-allowed border-slate-200 text-slate-400 bg-slate-50"
                           }`}
                         >
                           <FileText size={16} />
-                          Ver
+                          Visualizar
                         </button>
 
-                        <a
-                          href={c.archivo_url || "#"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ${
-                            c.archivo_url
-                              ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                              : "pointer-events-none bg-slate-300 text-white"
-                          }`}
-                        >
-                          <Download size={16} />
-                          Descargar
-                        </a>
+                        {/* Bloqueamos la descarga según el permiso */}
+                        {!c.puede_descargar ? (
+                          <span className="flex items-center rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500 border border-slate-200 cursor-not-allowed">
+                            <Download size={16} className="mr-1 opacity-50" />{" "}
+                            Solo lectura
+                          </span>
+                        ) : (
+                          <a
+                            href={c.archivo_url || "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ${
+                              c.archivo_url
+                                ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                                : "pointer-events-none bg-slate-300 text-white"
+                            }`}
+                          >
+                            <Download size={16} />
+                            Descargar
+                          </a>
+                        )}
                       </div>
                     </td>
                   </tr>

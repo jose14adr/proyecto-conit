@@ -53,7 +53,6 @@ import { AsistenciaConfiguracionController } from './asistencia-configuracion/as
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: join(__dirname, '..', '.env'),
@@ -115,6 +114,7 @@ import { AsistenciaConfiguracionController } from './asistencia-configuracion/as
     ExamenPreguntaModule,
     ExamenOpcionModule,
     ExamenIntentoModule,
+    S3Module,
     GoogleMeetModule,
     MailModule,
     S3Module,

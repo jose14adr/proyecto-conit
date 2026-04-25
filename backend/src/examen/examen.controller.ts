@@ -47,5 +47,4 @@ async getHistorial(@Param('idAlumno') idAlumno: number) {
 getExamen(@Param('id') id: number) {
   return this.examenService.getExamenCompleto(Number(id));
 }
-
 }

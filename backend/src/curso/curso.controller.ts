@@ -18,36 +18,40 @@ import { Matricula } from '../matricula/entities/matricula.entity';
 @Controller('curso')
 @UseGuards(JwtAuthGuard)
 export class CursoController {
-  constructor(
-    private readonly cursoService: CursoService
-  ) {}
+  constructor(private readonly cursoService: CursoService) {}
 
   @Get()
   findAll() {
     return this.cursoService.findAll();
   }
 
+  // Ruta general para el detalle del curso (Tu versión local)
+  @Get('detalle/:id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.cursoService.obtenerUno(id);
+  }
+
+  // Rutas específicas para el alumno (Versión de la nube)
   @Get('/alumno/:id')
-  async obtenerCursos(@Param('id') id: number): Promise<Matricula[]> {
+  async obtenerCursos(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Matricula[]> {
     return this.cursoService.listarCursosAlumno(id);
   }
 
   @Get('/alumno/:idalumno/curso/:idcurso')
   async obtenerCursoAlumno(
-    @Param('idalumno') idalumno: string,
-    @Param('idcurso') idcurso: string,
+    @Param('idalumno', ParseIntPipe) idalumno: number,
+    @Param('idcurso', ParseIntPipe) idcurso: number,
   ) {
-    return this.cursoService.obtenerUnoCursoAlumno(
-      Number(idcurso),
-      Number(idalumno),
-    );
+    return this.cursoService.obtenerUnoCursoAlumno(idcurso, idalumno);
   }
   
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.cursoService.obtenerUno(id);
-  }
+  /*@Get(':id')
+  async obtenerCurso(@Param('id', ParseIntPipe) id: number) {
+    return this.cursoService.obtenerUnoCursoAlumno(id);
+  }*/
 
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {

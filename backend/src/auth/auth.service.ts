@@ -14,6 +14,7 @@ import { HistorialLoginService } from '../historial-login/historial-login.servic
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../usuario/entities/usuario.entity';
+import { Alumno } from 'src/alumno/entities/alumno.entity';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +26,8 @@ export class AuthService {
 
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(Alumno)
+    private readonly alumnoRepository: Repository<Alumno>,
   ) {}
 
   async login(loginDto: LoginDto, ip: string, dispositivo: string) {
@@ -91,11 +94,28 @@ export class AuthService {
       console.error('Error al registrar el inicio de sesión:', error);
     }
 
+    let idAlumnoRelacionado: number | null = null;
+
+    if (usuario.rol === 'ALUMNO') {
+      try {
+        const alumno = await this.alumnoRepository.findOne({
+          where: { idusuario: usuario.id } as any,
+        });
+
+        if (alumno) {
+          idAlumnoRelacionado = alumno.id;
+        }
+      } catch (error) {
+        console.error('Error al buscar el alumno vinculado:', error);
+      }
+    }
+
     const payload = {
       sub: usuario.id,
       correo: usuario.correo,
       rol: usuario.rol,
-      sessionId,
+      sessionId: sessionId,
+      idalumno: idAlumnoRelacionado,
     };
 
     return {

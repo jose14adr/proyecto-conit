@@ -22,6 +22,7 @@ import {
 
 export default function Docentes() {
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("habilitados");
   const [docentes, setDocentes] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,7 +93,26 @@ export default function Docentes() {
     const termino = busqueda.toLowerCase();
     const nombreCompleto =
       `${docente.nombre || ""} ${docente.apellido || ""}`.toLowerCase();
-    return nombreCompleto.includes(termino);
+    const documento = (
+      docente.numdocumento ||
+      docente.numDocumento ||
+      ""
+    ).toLowerCase();
+    const correo = (docente.correo || "").toLowerCase();
+
+    const coincideTexto =
+      nombreCompleto.includes(termino) ||
+      documento.includes(termino) ||
+      correo.includes(termino);
+
+    let coincideEstado = true;
+    if (filtroEstado === "habilitados") {
+      coincideEstado = docente.estado === true || docente.estado === null;
+    } else if (filtroEstado === "inhabilitados") {
+      coincideEstado = docente.estado === false;
+    }
+
+    return coincideTexto && coincideEstado;
   });
 
   return (
@@ -131,6 +151,17 @@ export default function Docentes() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
+          </div>
+          <div className="sm:w-48 shrink-0">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium cursor-pointer"
+            >
+              <option value="habilitados">Solo Habilitados</option>
+              <option value="inhabilitados">Solo Inhabilitados</option>
+              <option value="todos">Mostrar Todos</option>
+            </select>
           </div>
         </div>
 

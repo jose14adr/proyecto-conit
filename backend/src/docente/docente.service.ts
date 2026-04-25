@@ -48,7 +48,6 @@ export class DocenteService {
 
       if (crearUsuario && contrasenia) {
         const hashedPassword = await bcrypt.hash(contrasenia, 10);
-
         const token = randomBytes(32).toString('hex');
         const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -78,7 +77,7 @@ export class DocenteService {
     if (resultado.usuarioCreado?.tokenVerificacion) {
       try {
         await this.mailService.sendEmailVerificacion(
-          resultado.docenteGuardado.nombre || 'Docente',
+          resultado.docenteGuardado?.nombre || 'Docente',
           resultado.usuarioCreado.correo,
           resultado.usuarioCreado.tokenVerificacion,
           resultado.usuarioCreado.correo,
@@ -112,7 +111,6 @@ export class DocenteService {
 
       if (crearUsuario && contrasenia && !docente.usuario) {
         const hashedPassword = await bcrypt.hash(contrasenia, 10);
-
         const token = randomBytes(32).toString('hex');
         const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000);
 

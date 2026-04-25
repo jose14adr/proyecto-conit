@@ -1,23 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { getCursosDocente } from "../services/docenteService"
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getCursosDocente } from "../services/docenteService";
 
 function MisCursos() {
   // ==============================
   // Estados principales
   // ==============================
-  const [cursos, setCursos] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [cursos, setCursos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // ==============================
   // Buscador con sugerencias
   // ==============================
-  const [query, setQuery] = useState("")
-  const [open, setOpen] = useState(false)
-  const [activeIndex, setActiveIndex] = useState(-1)
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
 
-  const containerRef = useRef(null)
-  const navigate = useNavigate()
+  const containerRef = useRef(null);
+  const navigate = useNavigate();
 
   // ==============================
   // Cargar cursos del docente
@@ -25,169 +25,165 @@ function MisCursos() {
   useEffect(() => {
     const cargarCursos = async () => {
       try {
-        setLoading(true)
-        const data = await getCursosDocente()
-        setCursos(Array.isArray(data) ? data : [])
+        setLoading(true);
+        const data = await getCursosDocente();
+        setCursos(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Error al cargar cursos del docente:", error)
-        setCursos([])
+        console.error("Error al cargar cursos del docente:", error);
+        setCursos([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    cargarCursos()
-  }, [])
+    cargarCursos();
+  }, []);
 
   // ==============================
   // Resúmenes rápidos
   // ==============================
-  const totalCursos = cursos.length
+  const totalCursos = cursos.length;
 
   const cursosConHorario = useMemo(() => {
-    return cursos.filter((c) => (c.horario || "").trim() !== "").length
-  }, [cursos])
+    return cursos.filter((c) => (c.horario || "").trim() !== "").length;
+  }, [cursos]);
 
   const cursosSinHorario = useMemo(() => {
-    return cursos.filter((c) => !(c.horario || "").trim()).length
-  }, [cursos])
+    return cursos.filter((c) => !(c.horario || "").trim()).length;
+  }, [cursos]);
 
   // ==============================
   // Sugerencias del buscador
   // ==============================
   const sugerencias = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
 
     return cursos
       .filter((c) => {
-        const nombre = (c.nombre || "").toLowerCase()
-        const grupo = (c.grupo || "").toLowerCase()
-        const horario = (c.horario || "").toLowerCase()
+        const nombre = (c.nombre || "").toLowerCase();
+        const grupo = (c.grupo || "").toLowerCase();
+        const horario = (c.horario || "").toLowerCase();
 
-        return (
-          nombre.includes(q) ||
-          grupo.includes(q) ||
-          horario.includes(q)
-        )
+        return nombre.includes(q) || grupo.includes(q) || horario.includes(q);
       })
-      .slice(0, 8)
-  }, [cursos, query])
+      .slice(0, 8);
+  }, [cursos, query]);
 
   // ==============================
   // Cursos filtrados
   // ==============================
   const cursosFiltrados = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return cursos
+    const q = query.trim().toLowerCase();
+    if (!q) return cursos;
 
     return cursos.filter((c) => {
-      const nombre = (c.nombre || "").toLowerCase()
-      const grupo = (c.grupo || "").toLowerCase()
-      const horario = (c.horario || "").toLowerCase()
+      const nombre = (c.nombre || "").toLowerCase();
+      const grupo = (c.grupo || "").toLowerCase();
+      const horario = (c.horario || "").toLowerCase();
 
-      return (
-        nombre.includes(q) ||
-        grupo.includes(q) ||
-        horario.includes(q)
-      )
-    })
-  }, [cursos, query])
+      return nombre.includes(q) || grupo.includes(q) || horario.includes(q);
+    });
+  }, [cursos, query]);
 
   // ==============================
   // Resaltar coincidencias
   // ==============================
   const renderHighlight = (text, q) => {
-    const safeText = text || ""
-    const queryLower = q.trim().toLowerCase()
+    const safeText = text || "";
+    const queryLower = q.trim().toLowerCase();
 
-    if (!queryLower) return safeText
+    if (!queryLower) return safeText;
 
-    const textLower = safeText.toLowerCase()
-    const idx = textLower.indexOf(queryLower)
+    const textLower = safeText.toLowerCase();
+    const idx = textLower.indexOf(queryLower);
 
-    if (idx === -1) return safeText
+    if (idx === -1) return safeText;
 
-    const before = safeText.slice(0, idx)
-    const match = safeText.slice(idx, idx + q.length)
-    const after = safeText.slice(idx + q.length)
+    const before = safeText.slice(0, idx);
+    const match = safeText.slice(idx, idx + q.length);
+    const after = safeText.slice(idx + q.length);
 
     return (
       <>
         {before}
-        <span className="bg-yellow-200 text-gray-900 rounded px-1">{match}</span>
+        <span className="bg-yellow-200 text-gray-900 rounded px-1">
+          {match}
+        </span>
         {after}
       </>
-    )
-  }
+    );
+  };
 
   // ==============================
   // Navegación
   // ==============================
   const irACurso = (grupoId) => {
-    navigate(`/docente/cursos/${grupoId}`)
-  }
+    navigate(`/docente/cursos/${grupoId}`);
+  };
 
   const seleccionarCurso = (curso) => {
-    setQuery(curso.nombre || "")
-    setOpen(false)
-    setActiveIndex(-1)
-    irACurso(curso.idgrupo)
-  }
+    setQuery(curso.nombre || "");
+    setOpen(false);
+    setActiveIndex(-1);
+    irACurso(curso.idgrupo);
+  };
 
   // ==============================
   // Navegación con teclado
   // ==============================
   const onKeyDown = (e) => {
     if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
-      setOpen(true)
-      return
+      setOpen(true);
+      return;
     }
 
     if (e.key === "Escape") {
-      setOpen(false)
-      setActiveIndex(-1)
-      return
+      setOpen(false);
+      setActiveIndex(-1);
+      return;
     }
 
     if (e.key === "ArrowDown") {
-      e.preventDefault()
-      if (sugerencias.length === 0) return
-      setActiveIndex((prev) => (prev + 1) % sugerencias.length)
-      return
+      e.preventDefault();
+      if (sugerencias.length === 0) return;
+      setActiveIndex((prev) => (prev + 1) % sugerencias.length);
+      return;
     }
 
     if (e.key === "ArrowUp") {
-      e.preventDefault()
-      if (sugerencias.length === 0) return
-      setActiveIndex((prev) => (prev - 1 + sugerencias.length) % sugerencias.length)
-      return
+      e.preventDefault();
+      if (sugerencias.length === 0) return;
+      setActiveIndex(
+        (prev) => (prev - 1 + sugerencias.length) % sugerencias.length,
+      );
+      return;
     }
 
     if (e.key === "Enter") {
-      if (!open) return
-      e.preventDefault()
-      const selected = activeIndex >= 0 ? sugerencias[activeIndex] : sugerencias[0]
-      if (selected) seleccionarCurso(selected)
+      if (!open) return;
+      e.preventDefault();
+      const selected =
+        activeIndex >= 0 ? sugerencias[activeIndex] : sugerencias[0];
+      if (selected) seleccionarCurso(selected);
     }
-  }
+  };
 
-  
   // ==============================
   // Cerrar sugerencias al hacer click fuera
   // ==============================
   useEffect(() => {
     const handler = (event) => {
-      if (!containerRef.current) return
+      if (!containerRef.current) return;
       if (!containerRef.current.contains(event.target)) {
-        setOpen(false)
-        setActiveIndex(-1)
+        setOpen(false);
+        setActiveIndex(-1);
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [])
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -200,12 +196,11 @@ function MisCursos() {
             <p className="text-sm text-blue-200 font-medium mb-2">
               Panel docente
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold">
-              MIS CURSOS
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold">MIS CURSOS</h2>
             <p className="text-sm md:text-base text-slate-200 mt-2 max-w-2xl">
               Consulta tus cursos asignados, encuéntralos rápidamente y entra al
-              detalle de cada uno para gestionar contenido, tareas y organización.
+              detalle de cada uno para gestionar contenido, tareas y
+              organización.
             </p>
           </div>
 
@@ -229,7 +224,9 @@ function MisCursos() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <p className="text-sm text-gray-500">Total de cursos</p>
-          <h3 className="text-3xl font-bold text-gray-900 mt-2">{totalCursos}</h3>
+          <h3 className="text-3xl font-bold text-gray-900 mt-2">
+            {totalCursos}
+          </h3>
           <p className="text-xs text-gray-400 mt-2">
             Cursos actualmente asignados al docente.
           </p>
@@ -237,7 +234,9 @@ function MisCursos() {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <p className="text-sm text-gray-500">Cursos con horario</p>
-          <h3 className="text-3xl font-bold text-gray-900 mt-2">{cursosConHorario}</h3>
+          <h3 className="text-3xl font-bold text-gray-900 mt-2">
+            {cursosConHorario}
+          </h3>
           <p className="text-xs text-gray-400 mt-2">
             Cursos que ya muestran horario registrado.
           </p>
@@ -245,7 +244,9 @@ function MisCursos() {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <p className="text-sm text-gray-500">Cursos sin horario</p>
-          <h3 className="text-3xl font-bold text-gray-900 mt-2">{cursosSinHorario}</h3>
+          <h3 className="text-3xl font-bold text-gray-900 mt-2">
+            {cursosSinHorario}
+          </h3>
           <p className="text-xs text-gray-400 mt-2">
             Cursos que aún no tienen horario visible.
           </p>
@@ -268,9 +269,9 @@ function MisCursos() {
             <input
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value)
-                setOpen(true)
-                setActiveIndex(-1)
+                setQuery(e.target.value);
+                setOpen(true);
+                setActiveIndex(-1);
               }}
               onFocus={() => setOpen(true)}
               onKeyDown={onKeyDown}
@@ -282,9 +283,9 @@ function MisCursos() {
               <button
                 type="button"
                 onClick={() => {
-                  setQuery("")
-                  setOpen(false)
-                  setActiveIndex(-1)
+                  setQuery("");
+                  setOpen(false);
+                  setActiveIndex(-1);
                 }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-400 hover:text-gray-600"
               >
@@ -295,7 +296,7 @@ function MisCursos() {
             {open && sugerencias.length > 0 && (
               <div className="absolute z-20 mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
                 {sugerencias.map((c, idx) => {
-                  const active = idx === activeIndex
+                  const active = idx === activeIndex;
 
                   return (
                     <button
@@ -315,7 +316,7 @@ function MisCursos() {
                         {renderHighlight(c.horario || "Sin horario", query)}
                       </div>
                     </button>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -333,7 +334,9 @@ function MisCursos() {
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">Listado de cursos</h3>
+            <h3 className="text-2xl font-bold text-gray-900">
+              Listado de cursos
+            </h3>
             <p className="text-sm text-gray-500 mt-1">
               {query.trim()
                 ? `${cursosFiltrados.length} resultado(s) encontrados`
@@ -342,7 +345,9 @@ function MisCursos() {
           </div>
 
           <div className="text-sm text-gray-500">
-            {query.trim() ? `Filtro actual: "${query}"` : "Sin filtros aplicados"}
+            {query.trim()
+              ? `Filtro actual: "${query}"`
+              : "Sin filtros aplicados"}
           </div>
         </div>
 
@@ -407,12 +412,16 @@ function MisCursos() {
 
                     <div className="mt-4 space-y-2">
                       <p className="text-sm text-gray-600">
-                        <span className="font-semibold text-gray-800">Grupo:</span>{" "}
+                        <span className="font-semibold text-gray-800">
+                          Grupo:
+                        </span>{" "}
                         {c.grupo || "Sin grupo"}
                       </p>
 
                       <p className="text-sm text-gray-600">
-                        <span className="font-semibold text-gray-800">Horario:</span>{" "}
+                        <span className="font-semibold text-gray-800">
+                          Horario:
+                        </span>{" "}
                         {c.horario || "Sin horario"}
                       </p>
                     </div>
@@ -438,7 +447,7 @@ function MisCursos() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default MisCursos
+export default MisCursos;

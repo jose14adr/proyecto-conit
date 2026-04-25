@@ -56,7 +56,7 @@ export class MatriculaService {
       idcontrolacademico: 1,
     });
 
-    // 📧 Enviar correo (si aplica)
+    // 📧 Enviar correo de bienvenida
     try {
       const alumno = await this.alumnoRepo.findOne({
         where: { id: alumnoId },
@@ -97,6 +97,7 @@ export class MatriculaService {
     });
   }
 
+  // Función para listar alumnos por curso
   async obtenerAlumnosPorCurso(idcurso: number) {
     const matriculas = await this.matriculaRepo.find({
       where: {
@@ -112,9 +113,31 @@ export class MatriculaService {
       .map((m) => ({
         ...m.alumno,
         idmatricula: m.id,
-        grupo_asignado: m.grupo
-          ? m.grupo.nombregrupo
-          : 'Sin grupo',
+        grupo_asignado: m.grupo ? m.grupo.nombregrupo : 'Sin grupo',
       }));
+  }
+
+  async actualizarPermisosCertificado(
+    idMatricula: number,
+    puedeVer: boolean,
+    puedeDescargar: boolean,
+  ) {
+    const matricula = await this.matriculaRepo.findOne({
+      where: { id: idMatricula },
+    });
+
+    if (!matricula) throw new BadRequestException('Matrícula no encontrada');
+
+    matricula.puede_ver_certificado = puedeVer;
+    matricula.puede_descargar_certificado = puedeDescargar;
+
+    // Validar lógicamente: si no puede ver, no puede descargar
+    if (!puedeVer) {
+      matricula.puede_descargar_certificado = false;
+    }
+
+    await this.matriculaRepo.save(matricula);
+
+    return { message: 'Permisos de certificado actualizados correctamente' };
   }
 }

@@ -19,21 +19,45 @@ export class GrupoService {
 
   async gruposPorCurso(idcurso: number) {
     return this.grupoRepo.find({
-      where: {
-        curso: {
-          id: idcurso,
-        },
-      },
-      relations: ['curso', 'docente', 'docente.usuario'],
-      order: {
-        id: 'DESC',
-      },
+      where: { curso: { id: idcurso } },
+      relations: ['curso', 'docente'],
     });
   }
 
-  async asignarDocente(idGrupo: number, idDocente: number) {
-    await this.grupoRepo.update(idGrupo, { docente: { id: idDocente } });
-    return { message: 'Docente asignado al grupo exitosamente' };
+  async asignarDocente(idGrupo: number, idDocente: number, permisos?: any) {
+  const grupo = await this.grupoRepo.findOneBy({ id: idGrupo });
+  if (!grupo) throw new NotFoundException('Grupo no encontrado');
+
+  grupo.docente = { id: idDocente } as any;
+
+  // Forzamos la conversión a String para que PostgreSQL lo guarde como JSON real
+  if (permisos) {
+    grupo.permisos_docente = JSON.stringify(permisos);
+  } else {
+    // Si no hay permisos, por seguridad bloqueamos todo por defecto
+    grupo.permisos_docente = JSON.stringify({
+      control_total: false,
+      gestionar_contenido: false,
+      gestionar_tareas: false,
+      gestionar_examenes: false,
+      gestionar_sesiones: false,
+      tomar_asistencia: true, // Único permiso base
+      gestionar_calificaciones: false,
+    });
+  }
+
+  await this.grupoRepo.save(grupo);
+  return { message: 'Docente y permisos asignados exitosamente' };
+}
+
+  async gruposPorDocente(iddocente: number) {
+    return await this.grupoRepo.find({
+      where: {
+        docente: { id: iddocente },
+      },
+      relations: ['curso'],
+      order: { id: 'DESC' },
+    });
   }
 
   async create(data: any) {
@@ -47,7 +71,6 @@ export class GrupoService {
       fechaCierre: null,
       correoCierreDocenteEnviado: false,
     });
-
     return await this.grupoRepo.save(nuevoGrupo);
   }
 
@@ -132,20 +155,6 @@ export class GrupoService {
       message: 'Grupo cerrado correctamente',
       grupo: saved,
     };
-  }
-
-  async gruposPorDocente(iddocente: number) {
-    return await this.grupoRepo.find({
-      where: {
-        docente: {
-          id: iddocente,
-        },
-      },
-      relations: ['curso'],
-      order: {
-        id: 'DESC',
-      },
-    });
   }
 
   async obtenerPorAlumno(idalumno: number) {
