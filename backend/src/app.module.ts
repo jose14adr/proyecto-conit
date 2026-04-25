@@ -48,7 +48,6 @@ import { BancoPreguntasModule } from './banco-preguntas/banco-preguntas.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: join(__dirname, '..', '.env'),
@@ -110,6 +109,7 @@ import { BancoPreguntasModule } from './banco-preguntas/banco-preguntas.module';
     ExamenPreguntaModule,
     ExamenOpcionModule,
     ExamenIntentoModule,
+    S3Module,
     GoogleMeetModule,
     MailModule,
     S3Module,

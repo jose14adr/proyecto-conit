@@ -9,6 +9,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
+
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -38,12 +39,8 @@ export class AuthController {
   }
 
   @Get('verificar-correo')
-  async verificarCorreo(
-    @Query('token') token: string,
-    @Res() res: Response,
-  ) {
-    const frontendUrl =
-      process.env.FRONTEND_URL || 'http://localhost:5173';
+  async verificarCorreo(@Query('token') token: string, @Res() res: Response) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     if (!token) {
       return res.redirect(`${frontendUrl}/login?verified=error`);

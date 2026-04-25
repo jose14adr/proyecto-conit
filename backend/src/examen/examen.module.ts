@@ -8,7 +8,6 @@ import { ExamenOpcion } from 'src/examen_opcion/entities/examen_opcion.entity';
 import { ExamenIntento } from '../examen_intento/entities/examen_intento.entity';
 import { Matricula } from '../matricula/entities/matricula.entity';
 
-
 @Module({
   imports: [TypeOrmModule.forFeature([
     Examen, ExamenPregunta, ExamenOpcion,ExamenIntento,Matricula,

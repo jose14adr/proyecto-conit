@@ -14,6 +14,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
+    "@lyracom/embedded-form-glue": "^1.4.4",
     "@nestjs-modules/mailer": "^2.0.2",
     "@supabase/supabase-js": "^2.98.0",
     "@vimeo/player": "^2.30.3",

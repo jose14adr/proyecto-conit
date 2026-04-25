@@ -31,6 +31,9 @@ export class Grupo {
   @Column({ type: 'integer' })
   cantidadpersonas: number;
 
+  @Column({ type: 'text', nullable: true })
+  permisos_docente: string;
+
   @ManyToOne(() => Curso, (curso) => curso.grupos, { nullable: true })
   @JoinColumn({ name: 'idcurso' })
   curso?: Curso;

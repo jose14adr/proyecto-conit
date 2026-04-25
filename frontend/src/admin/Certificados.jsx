@@ -322,7 +322,7 @@ export default function Certificados() {
 
   const escala = useMemo(
     () => Math.min(1, PREVIEW_WIDTH / canvasWidth),
-    [canvasWidth]
+    [canvasWidth],
   );
 
   const elementosActuales = useMemo(
@@ -386,7 +386,7 @@ export default function Certificados() {
     setElementosAnverso(
       Array.isArray(data.configJson) && data.configJson.length
         ? data.configJson
-        : crearElementosBase()
+        : crearElementosBase(),
     );
     setElementosReverso(
       Array.isArray(data.configJsonReverso) ? data.configJsonReverso : []
@@ -523,8 +523,8 @@ export default function Certificados() {
               };
               img.onerror = () => resolve(null);
               img.src = src;
-            })
-        )
+            }),
+        ),
       );
 
       if (!cancelled) {
@@ -734,7 +734,7 @@ export default function Certificados() {
     if (!plantilla) return;
 
     const confirmado = window.confirm(
-      `¿Seguro que deseas eliminar la plantilla "${plantilla.nombre}"?`
+      `¿Seguro que deseas eliminar la plantilla "${plantilla.nombre}"?`,
     );
 
     if (!confirmado) return;

@@ -6,7 +6,6 @@ import { Usuario } from 'src/usuario/entities/usuario.entity';
 import { Grupo } from 'src/grupo/entities/grupo.entity';
 import { Matricula } from 'src/matricula/entities/matricula.entity';
 
-
 @Injectable()
 export class CursoService {
   constructor(
@@ -41,47 +40,53 @@ export class CursoService {
     });
   }
 
-async listarCursosAlumno(idAlumno: number): Promise<Matricula[]> {
-  return this.matriculaRepository.find({
-    where: {
-      alumno: { id: idAlumno },
-    },
-    relations: [
-      'grupo',
-      'grupo.curso',
-      'grupo.docente',
-    ],
-  });
-}
-async obtenerUnoCursoAlumno(idCurso: number, idAlumno: number) {
-  return this.cursoRepository
-    .createQueryBuilder('curso')
+  // 🔥 Se obtienen los cursos mediante las matrículas del alumno (Versión Nube)
+  async listarCursosAlumno(idAlumno: number): Promise<Matricula[]> {
+    return this.matriculaRepository.find({
+      where: {
+        alumno: { id: idAlumno },
+      },
+      relations: ['grupo', 'grupo.curso', 'grupo.docente'],
+    });
+  }
 
-    // VALIDAR MATRÍCULA
-    .innerJoin('curso.grupos', 'grupo')
-    .innerJoin('grupo.matriculas', 'matricula')
-    .innerJoin('matricula.alumno', 'alumno')
+  // 🔥 Consulta combinada: Trae todo el detalle y valida matrícula si se provee el alumno
+  async obtenerUnoCursoAlumno(idCurso: number, idAlumno?: number) {
+    const query = this.cursoRepository.createQueryBuilder('curso');
 
-    // ESTRUCTURA DEL CURSO
-    .leftJoinAndSelect('curso.modulos', 'modulo')
-    .leftJoinAndSelect('modulo.lecciones', 'leccion')
-    .leftJoinAndSelect('leccion.materiales', 'material')
+    if (idAlumno) {
+      // VALIDAR MATRÍCULA (Si viene desde la vista del alumno)
+      query
+        .innerJoin('curso.grupos', 'grupo')
+        .innerJoin('grupo.matriculas', 'matricula')
+        .innerJoin('matricula.alumno', 'alumno')
+        .where('curso.id = :idCurso', { idCurso })
+        .andWhere('alumno.id = :idAlumno', { idAlumno });
+    } else {
+      // BÚSQUEDA GENERAL (Si viene desde la vista general del curso)
+      query.where('curso.id = :idCurso', { idCurso });
+    }
 
-    // 🔥 AQUÍ ESTÁ LA CLAVE
-    .leftJoinAndSelect('leccion.examenes', 'examen')
+    return (
+      query
+        // ESTRUCTURA DEL CURSO (Tu versión local)
+        .leftJoinAndSelect('curso.temario', 'temario')
+        .leftJoinAndSelect('temario.unidades', 'unidad')
+        .leftJoinAndSelect('unidad.sesion', 'sesion')
 
-    // 🔥 PREGUNTAS
-    .leftJoinAndSelect('examen.preguntas', 'pregunta')
+        // MÓDULOS Y LECCIONES (Ambas versiones)
+        .leftJoinAndSelect('curso.modulos', 'modulo')
+        .leftJoinAndSelect('modulo.lecciones', 'leccion')
+        .leftJoinAndSelect('leccion.materiales', 'material')
 
-    // 🔥 OPCIONES
-    .leftJoinAndSelect('pregunta.opciones', 'opcion')
+        // EXÁMENES (Versión Nube)
+        .leftJoinAndSelect('leccion.examenes', 'examen')
+        .leftJoinAndSelect('examen.preguntas', 'pregunta')
+        .leftJoinAndSelect('pregunta.opciones', 'opcion')
 
-    // FILTRO
-    .where('curso.id = :idCurso', { idCurso })
-    .andWhere('alumno.id = :idAlumno', { idAlumno })
-
-    .getOne();
-}
+        .getOne()
+    );
+  }
 
   async remove(id: number) {
     await this.cursoRepository.update(id, { estado: false });
@@ -93,7 +98,7 @@ async obtenerUnoCursoAlumno(idCurso: number, idAlumno: number) {
     return { message: 'Curso habilitado correctamente' };
   }
 
-  async create(data: Partial<Curso>){
+  async create(data: Partial<Curso>) {
     const nuevoCurso = this.cursoRepository.create(data);
     return this.cursoRepository.save(nuevoCurso);
   }

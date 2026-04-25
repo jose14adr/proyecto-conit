@@ -19,7 +19,7 @@ export class Usuario {
   rol: string;
 
   @Column({ type: 'text', array: true, nullable: true })
-historialcontrasenias: string[];
+  historialcontrasenias: string[];
 
   @Column({ type: 'boolean', default: true })
   estado: boolean;

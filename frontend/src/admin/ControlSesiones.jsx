@@ -216,7 +216,6 @@ export default function ControlSesiones() {
                     <td className="px-6 py-4 text-center">
                       {sesion.estado === "ACTIVO" ? (
                         <button
-                          // 🔥 Ahora abre el modal en lugar del window.confirm
                           onClick={() => setSesionCerrando(sesion)}
                           title="Cerrar sesión remotamente"
                           className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"

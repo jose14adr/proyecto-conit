@@ -15,9 +15,11 @@ import {
   CheckCircle,
   Key,
 } from "lucide-react";
+import { toLowerCase } from "zod";
 
 export default function Usuarios() {
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("habilitados");
   const [usuarios, setUsuarios] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,7 +80,16 @@ export default function Usuarios() {
     const termino = busqueda.toLowerCase();
     const correo = (usuario.correo || "").toLowerCase();
     const rol = (usuario.rol || "").toLowerCase();
-    return correo.includes(termino) || rol.includes(termino);
+
+    const coincideTexto = correo.includes(termino) || rol.includes(termino);
+
+    let coincideEstado = true;
+    if (filtroEstado === "habilitados") {
+      coincideEstado = usuario.estado === true || usuario.estado === null;
+    } else if (filtroEstado === "inhabilitados") {
+      coincideEstado = usuario.estado === false;
+    }
+    return coincideTexto && coincideEstado;
   });
 
   const getRolBadgeColor = (rol) => {
@@ -128,6 +139,17 @@ export default function Usuarios() {
               onChange={(e) => setBusqueda(e.target.value)}
             />
           </div>
+          <div className="sm:w-48 shrink-0">
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="w-full px-4 py-2 border border-slate-200 rounded-xl bg-white text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium cursor-pointer"
+            >
+              <option value="habilitados">Solo Habilitados</option>
+              <option value="inhabilitados">Solo Inhabilitados</option>
+              <option value="todos">Mostrar Todos</option>
+            </select>
+          </div>
         </div>
 
         {/* Tabla */}
@@ -163,7 +185,7 @@ export default function Usuarios() {
               ) : (
                 usuariosFiltrados.map((usuario) => {
                   const esInactivo = usuario.estado === false;
-                  const textoEstado = esInactivo ? "BLOQUEADO" : "ACTIVO";
+                  const textoEstado = esInactivo ? "INACTIVO" : "ACTIVO";
 
                   return (
                     <tr

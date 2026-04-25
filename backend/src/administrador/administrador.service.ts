@@ -65,7 +65,22 @@ export class AdministradorService {
   async update(id: number, data: any) {
     const { crearUsuario, contrasenia, ...datosActualizar } = data;
 
-    await this.administradorRepository.update(id, datosActualizar);
+    if (contrasenia) {
+      const hashedPassword = await bcrypt.hash(contrasenia, 10);
+      datosActualizar.contrasenia = hashedPassword;
+
+      const admin = await this.findOne(id);
+      if (admin.idusuario) {
+        await this.usuarioRepository.update(admin.idusuario, { 
+          contrasenia: hashedPassword 
+        });
+      }
+    }
+
+    if (Object.keys(datosActualizar).length > 0) {
+      await this.administradorRepository.update(id, datosActualizar);
+    }
+
     return this.findOne(id);
   }
 

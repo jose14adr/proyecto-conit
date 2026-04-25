@@ -46,8 +46,8 @@ export class SesionVivoController {
     return this.service.crearSesion({
       idgrupo: Number(body.idgrupo),
       titulo: String(body.titulo),
-      descripcion: body.descripcion ? String(body.descripcion) : '',
-      fecha: String(body.fecha),
+      descripcion: body.descripcion ? String(body.descripcion) : undefined,
+      fecha: body.fecha,
       duracion: Number(body.duracion || 0),
     });
   }

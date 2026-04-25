@@ -16,9 +16,38 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx-js-style";
 
+// Nombre del alumno
 const formatearNombreAlumno = (alumno) => {
   if (!alumno) return "Alumno Desconocido";
-  return `${alumno.nombre || alumno.apellido || ""}`.trim();
+
+  // Extraemos el objeto real, ya sea que Supabase lo mande como Object o como Array
+  const data = Array.isArray(alumno) ? alumno[0] : alumno;
+  if (!data) return "Alumno Desconocido";
+
+  // Unimos nombre y apellido
+  const nombre = data.nombre || data.nombres || "";
+  const apellido = data.apellido || data.apellidos || "";
+
+  return `${nombre} ${apellido}`.trim() || "Alumno Desconocido";
+};
+
+// Nombre del curso
+const extraerNombreCurso = (matricula) => {
+  if (!matricula) return "Curso Desconocido";
+
+  const mat = Array.isArray(matricula) ? matricula[0] : matricula;
+  const grupo = mat?.grupo
+    ? Array.isArray(mat.grupo)
+      ? mat.grupo[0]
+      : mat.grupo
+    : null;
+  const curso = grupo?.curso
+    ? Array.isArray(grupo.curso)
+      ? grupo.curso[0]
+      : grupo.curso
+    : null;
+
+  return curso?.nombrecurso || mat?.curso?.nombrecurso || "Curso Desconocido";
 };
 
 export default function Pagos() {
@@ -45,21 +74,30 @@ export default function Pagos() {
       ]);
 
       // Mapear Pagos
-      const pagosFormateados = dataPagos.map((p) => ({
-        id: p.id,
-        fecha: p.fechapago?.split("T")[0] || "Sin fecha",
-        alumno: formatearNombreAlumno(p.matricula?.alumno),
-        curso: p.matricula?.grupo?.curso?.nombrecurso || "Curso Desconocido",
-        tipopago: p.tipopago || "N/A",
-        total: parseFloat(p.preciofinal) || 0,
-        estado: p.estado || "Pagado",
-      }));
+      const pagosFormateados = dataPagos.map((p) => {
+        const mat = Array.isArray(p.matricula) ? p.matricula[0] : p.matricula;
+        
+        return {
+          id: p.id,
+          fecha: p.fechapago?.split("T")[0] || "Sin fecha",
+          
+          alumno: formatearNombreAlumno(mat?.alumno),
+          
+          curso: extraerNombreCurso(mat),
+          
+          tipopago: p.tipopago || "N/A",
+          total: parseFloat(p.preciofinal) || 0,
+          estado: p.estado || "Pagado",
+        };
+      });
 
       // Mapear Deudas (Pensiones Pendientes)
       const hoy = new Date();
       const deudasFormateadas = dataPensiones
         .filter((p) => p.estado === "PENDIENTE")
         .map((d) => {
+          const mat = Array.isArray(d.matricula) ? d.matricula[0] : d.matricula;
+          
           const fechaVencimiento = new Date(d.fecha_vencimiento);
           const diasAtraso = Math.max(
             0,
@@ -68,8 +106,8 @@ export default function Pagos() {
 
           return {
             id: d.id,
-            alumno: formatearNombreAlumno(d.matricula?.alumno),
-            curso: d.matricula?.curso?.nombrecurso || "Curso Desconocido",
+            alumno: formatearNombreAlumno(mat?.alumno),
+            curso: mat?.curso?.nombrecurso || extraerNombreCurso(mat),
             cuota: d.numero_cuota,
             vencimiento: d.fecha_vencimiento?.split("T")[0] || "Sin fecha",
             monto: parseFloat(d.monto) || 0,
@@ -119,7 +157,7 @@ export default function Pagos() {
   const confirmarExportacion = () => {
     const { tipo, nombreArchivo } = modalExportacion;
 
-    if (!nombreArchivo.trim) {
+    if (!nombreArchivo.trim()) {
       toast.error("El nombre del archivo no puede estar vacío");
       return;
     }
@@ -159,7 +197,7 @@ export default function Pagos() {
       doc.save(`${nombreArchivo}.pdf`);
       toast.success("PDF generado exitosamente");
     } catch (error) {
-      toast.error("Error al generar PDF:", error);
+      toast.error("Error al generar PDF");
       console.error("Error al generar PDF", error);
     }
   };

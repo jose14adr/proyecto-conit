@@ -1,5 +1,4 @@
 import axios from "axios";
-import { error } from "node:console";
 
 //Creamos una instancia de axios con la URL base del backend
 const api = axios.create({

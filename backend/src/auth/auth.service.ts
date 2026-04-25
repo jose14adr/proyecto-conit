@@ -14,6 +14,7 @@ import { HistorialLoginService } from '../historial-login/historial-login.servic
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../usuario/entities/usuario.entity';
+import { Alumno } from 'src/alumno/entities/alumno.entity';
 
 @Injectable()
 export class AuthService {
@@ -25,9 +26,12 @@ export class AuthService {
 
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
+    @InjectRepository(Alumno)
+    private readonly alumnoRepository: Repository<Alumno>,
   ) {}
 
   async login(loginDto: LoginDto, ip: string, dispositivo: string) {
+    // 🔐 Validación del token de reCaptcha
     if (!loginDto.recaptchaToken) {
       throw new UnauthorizedException('Falta el token de reCaptcha');
     }
@@ -74,6 +78,7 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
+    // ⚠️ Bloquear login si no verificó correo
     if (!usuario.emailVerificado) {
       throw new UnauthorizedException('Debes verificar tu correo');
     }
@@ -91,11 +96,28 @@ export class AuthService {
       console.error('Error al registrar el inicio de sesión:', error);
     }
 
+    let idAlumnoRelacionado: number | null = null;
+
+    if (usuario.rol === 'ALUMNO') {
+      try {
+        const alumno = await this.alumnoRepository.findOne({
+          where: { idusuario: usuario.id } as any,
+        });
+
+        if (alumno) {
+          idAlumnoRelacionado = alumno.id;
+        }
+      } catch (error) {
+        console.error('Error al buscar el alumno vinculado:', error);
+      }
+    }
+
     const payload = {
       sub: usuario.id,
       correo: usuario.correo,
       rol: usuario.rol,
-      sessionId,
+      sessionId: sessionId,
+      idalumno: idAlumnoRelacionado,
     };
 
     return {
@@ -170,6 +192,48 @@ export class AuthService {
     };
   }
 
+  // Función para restablecer la contraseña usando el token enviado por correo
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    try {
+      // Verificamos el token. Si expiró o es inválido, lanzamos un error
+      const payload = this.jwtService.verify<{ correo: string; code: string }>(
+        resetPasswordDto.token,
+      );
+
+      const isCodeValid = await bcrypt.compare(
+        resetPasswordDto.codigoSeguridad,
+        payload.code,
+      );
+
+      if (!isCodeValid) {
+        throw new BadRequestException('Código de seguridad inválido');
+      }
+
+      // Buscamos al usuario en la base de datos
+      const usuario = await this.usuarioService.findOneByCorreo(payload.correo);
+
+      if (!usuario) {
+        throw new UnauthorizedException('Usuario no encontrado');
+      }
+
+      // Actualizamos la contraseña del usuario
+      await this.usuarioService.actualizarContrasenia(
+        usuario.id,
+        resetPasswordDto.contrasenia,
+      );
+
+      return { message: 'Contraseña restablecida exitosamente' };
+    } catch (error) {
+      console.error('Error al restablecer contraseña:', error);
+      // Si el error es nuestro BadRequestException, lo lanzamos tal cual
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      // Si el token es inválido o expiró, respondemos con un mensaje genérico
+      throw new UnauthorizedException('El enlace no es válido o expiró');
+    }
+  }
+
   async verificarCorreo(token: string) {
     const usuario = await this.usuarioRepository.findOne({
       where: { tokenVerificacion: token },
@@ -195,43 +259,32 @@ export class AuthService {
     return { message: 'Correo verificado correctamente' };
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    try {
-      const payload = this.jwtService.verify<{ correo: string; code: string }>(
-        resetPasswordDto.token,
-      );
+  async enviarCorreoVerificacion(
+    nombre: string,
+    correo: string,
+    token: string,
+  ) {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+    const link = `${backendUrl}/auth/verificar-correo?token=${token}`;
 
-      const isCodeValid = await bcrypt.compare(
-        resetPasswordDto.codigoSeguridad,
-        payload.code,
-      );
+    await this.mailerService.sendMail({
+      to: correo,
+      subject: 'Verifica tu correo',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #141426;">
+          <h2 style="color: #344c92;">Verificación de correo</h2>
+          <p>Hola ${nombre},</p>
+          <p>Haz clic en el siguiente botón para verificar tu correo:</p>
 
-      if (!isCodeValid) {
-        throw new BadRequestException('Código de seguridad inválido');
-      }
+          <a href="${link}" style="display: inline-block; padding: 10px 20px; background-color: #5573b3; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
+            Verificar correo
+          </a>
 
-      const usuario = await this.usuarioService.findOneByCorreo(payload.correo);
-
-      if (!usuario) {
-        throw new UnauthorizedException('Usuario no encontrado');
-      }
-
-      await this.usuarioService.actualizarContrasenia(
-        usuario.id,
-        resetPasswordDto.contrasenia,
-      );
-
-      return { message: 'Contraseña restablecida exitosamente' };
-    } catch (error) {
-      console.error('Error al restablecer contraseña:', error);
-
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-
-      throw new UnauthorizedException(
-        'El enlace de restablecimiento no es válido o ha expirado',
-      );
-    }
+          <p style="margin-top: 20px; font-size: 12px; color: #8a9585;">
+            Si no solicitaste esto, puedes ignorar este mensaje.
+          </p>
+        </div>
+      `,
+    });
   }
 }

@@ -286,10 +286,6 @@ export class CertificadoService {
       );
     }
 
-    if (!file?.mimetype?.startsWith('image/')) {
-      throw new BadRequestException('Solo se permiten imágenes');
-    }
-
     const safeName = this.sanitizeFilename(file.originalname || 'archivo.png');
     const key = `${this.prefix}/${Date.now()}-${randomUUID()}-${safeName}`;
 

@@ -31,7 +31,7 @@ export class GrupoService {
     });
   }
 
-  async asignarDocente(idGrupo: number, idDocente: number) {
+  async asignarDocente(idGrupo: number, idDocente: number, permisos?: any) {
     await this.grupoRepo.update(idGrupo, { docente: { id: idDocente } });
     return { message: 'Docente asignado al grupo exitosamente' };
   }
@@ -47,7 +47,6 @@ export class GrupoService {
       fechaCierre: null,
       correoCierreDocenteEnviado: false,
     });
-
     return await this.grupoRepo.save(nuevoGrupo);
   }
 
