@@ -24,7 +24,7 @@ async function bootstrap() {
     }),
   );
 
-   // CONFIG SWAGGER
+  // CONFIG SWAGGER
   const config = new DocumentBuilder()
   .setTitle('API Sistema')
   .setDescription('Documentación oficial de la API')
@@ -41,7 +41,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  SwaggerModule.setup('api-docs', app, document);
+  SwaggerModule.setup('api', app, document);
 
 
 

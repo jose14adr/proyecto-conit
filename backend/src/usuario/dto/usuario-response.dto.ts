@@ -1,18 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UsuarioResponseDto {
-  @ApiProperty()
+  @ApiProperty({ example: 1 })
   id: number;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'usuario@gmail.com' })
   correo: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 1 })
   idempresa: number;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'admin' })
   rol: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: true,
+    description: 'Estado de activación del usuario',
+  })
   estado: boolean;
 }

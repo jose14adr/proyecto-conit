@@ -50,6 +50,7 @@ import { AsistenciaController } from './asistencia/asistencia.controller';
 import { AsistenciaService } from './asistencia/asistencia.service';
 import { AsistenciaModule } from './asistencia/asistencia.module';
 import { AsistenciaConfiguracionController } from './asistencia-configuracion/asistencia-configuracion.controller';
+import { EntregaModule } from './entrega/entrega.module';
 
 @Module({
   imports: [
@@ -123,6 +124,7 @@ import { AsistenciaConfiguracionController } from './asistencia-configuracion/as
     ExamenRespuestaModule,
     HistorialAcademicoModule,
     AsistenciaModule,
+    EntregaModule,
   ],
 
   controllers: [AppController, AsistenciaConfiguracionController],

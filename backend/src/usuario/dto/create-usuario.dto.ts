@@ -5,30 +5,42 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-
 import { Type } from 'class-transformer';
-
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUsuarioDto {
-  @ApiProperty({ example: 'usuario@gmail.com' })
+  @ApiProperty({
+    example: 'usuario@gmail.com',
+    description: 'Correo electrónico único para el acceso',
+  })
   @IsEmail()
   @IsNotEmpty()
   correo: string;
 
-  @ApiProperty({ example: 1 })
+  @ApiProperty({
+    example: 1,
+    description: 'ID de la empresa a la que pertenece el usuario',
+  })
   @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   idempresa: number;
 
-  @ApiProperty({ example: '12345678', minLength: 8 })
+  @ApiProperty({
+    example: 'Password123!',
+    minLength: 8,
+    description: 'Contraseña de acceso (mínimo 8 caracteres)',
+  })
   @IsString()
   @IsNotEmpty()
   @MinLength(8)
   contrasenia: string;
 
-  @ApiProperty({ example: 'admin' })
+  @ApiProperty({
+    example: 'admin',
+    enum: ['admin', 'docente', 'alumno'],
+    description: 'Rol asignado dentro del sistema',
+  })
   @IsString()
   @IsNotEmpty()
   rol: string;
