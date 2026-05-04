@@ -26,8 +26,8 @@ async function bootstrap() {
 
   // CONFIG SWAGGER
   const config = new DocumentBuilder()
-  .setTitle('API Sistema')
-  .setDescription('Documentación oficial de la API')
+  .setTitle('API Endpoints')
+  .setDescription('Documentación de los endpoints de la API')
   .setVersion('1.0')
   .addBearerAuth(
     {
