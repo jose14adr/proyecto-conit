@@ -12,6 +12,7 @@ import {
   UserCog,
   Menu,
   User,
+  Globe2,
 } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
@@ -61,6 +62,7 @@ export default function AdminLayout() {
     { to: "/admin/administradores", label: "Administradores", icon: UserCog },
     { to: "/admin/docentes", label: "Docentes", icon: Library },
     { to: "/admin/cursos", label: "Cursos", icon: BookOpen },
+    { to: "/admin/gestion-web", label: "Gestión Web", icon: Globe2 },
     { to: "/admin/alumnos", label: "Alumnos", icon: FileText },
     { to: "/admin/usuarios", label: "Lista de Usuarios", icon: Users },
     { to: "/admin/certificados", label: "Certificados", icon: Award },

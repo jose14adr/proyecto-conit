@@ -17,6 +17,7 @@ import NosotrosWeb from "./pages/web/NosotrosWeb";
 import ContactoWeb from "./pages/web/ContactoWeb";
 import CarritoWeb from "./pages/web/CarritoWeb";
 import DetalleCursoWeb from "./pages/web/DetalleCursoWeb";
+import PaginaDinamicaWeb from "./pages/web/PaginaDinamicaWeb";
 
 // ESTUDIANTE
 import LayoutEstudiante from "./alumno/LayoutEstudiante";
@@ -45,6 +46,7 @@ const Pagos = lazy(() => import("./admin/Pagos"));
 const ControlSesiones = lazy(() => import("./admin/ControlSesiones"));
 const Certificados = lazy(() => import("./admin/Certificados"));
 const PerfilAdministrador = lazy(() => import("./admin/PerfilAdministrador"));
+const GestionWeb = lazy(() => import("./admin/GestionWeb"));
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
@@ -135,6 +137,14 @@ export default function App() {
               </PublicWebLayout>
             }
           />
+          <Route
+            path="/web/:slug"
+            element={
+              <PublicWebLayout>
+                <PaginaDinamicaWeb />
+              </PublicWebLayout>
+            }
+          />
 
           {/* Estudiantes */}
           <Route element={<ProtectedRoute allowedRoles={["ALUMNO"]} />}>
@@ -170,6 +180,7 @@ export default function App() {
               <Route path="sesiones" element={<ControlSesiones />} />
               <Route path="certificados" element={<Certificados />} />
               <Route path="perfil" element={<PerfilAdministrador />} />
+              <Route path="gestion-web" element={<GestionWeb />} />
             </Route>
           </Route>
 

@@ -45,6 +45,8 @@ import { S3Module } from './s3/s3.module';
 import { CertificadoModule } from './certificado/certificado.module';
 import { AlumnoMaterialProgresoModule } from './alumno-material-progreso/alumno-material-progreso.module';
 import { BancoPreguntasModule } from './banco-preguntas/banco-preguntas.module';
+import { WebModule } from './web/web.module';
+import { AdminWebModule } from './admin-web/admin-web.module';
 
 @Module({
   imports: [
@@ -116,6 +118,8 @@ import { BancoPreguntasModule } from './banco-preguntas/banco-preguntas.module';
     CertificadoModule,
     AlumnoMaterialProgresoModule,
     BancoPreguntasModule,
+    WebModule,
+    AdminWebModule,
   ],
 
   controllers: [AppController],

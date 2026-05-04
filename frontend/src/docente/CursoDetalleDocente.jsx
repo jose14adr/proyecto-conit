@@ -4238,15 +4238,20 @@ const guardarConfiguracionTarea = async () => {
 
           <div className="flex flex-wrap gap-3 xl:max-w-md xl:justify-end">
             {permisos.gestionar_contenido && (
-              <button onClick={() => setTabActiva("modulos")} className="...">
+              <button
+                type="button"
+                onClick={() => setTabActiva("modulos")}
+                className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-lg"
+              >
                 Gestionar módulos
               </button>
             )}
 
             {permisos.tomar_asistencia && (
               <button
+                type="button"
                 onClick={() => setTabActiva("asistencia")}
-                className="..."
+                className="rounded-2xl border border-emerald-300/20 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-emerald-50 backdrop-blur transition hover:-translate-y-0.5 hover:bg-emerald-400/25 hover:shadow-lg"
               >
                 Tomar asistencia
               </button>
@@ -4894,32 +4899,40 @@ const guardarConfiguracionTarea = async () => {
       )}
 
       {tabActiva === "asistencia" && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div className="rounded-[28px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.35)] space-y-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h3 className="text-xl font-bold">Asistencia</h3>
-              <p className="text-sm text-gray-500">
-                Registrar y consultar asistencia por fecha
+              <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                Control del grupo
+              </span>
+
+              <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
+                Asistencia
+              </h3>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Registra, consulta y exporta la asistencia del grupo según la fecha seleccionada.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div>
-                <label className="block font-semibold mb-2">
+                <label className="mb-2 block text-sm font-bold text-slate-700">
                   Consultar fecha
                 </label>
+
                 <input
                   type="date"
                   value={fechaAsistencia}
                   onChange={(e) => setFechaAsistencia(e.target.value)}
-                  className="border rounded-xl px-3 py-2"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => cargarAsistenciaPorFecha(fechaAsistencia)}
-                className="bg-gray-700 text-white px-4 py-2 rounded-xl hover:bg-gray-800"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm"
               >
                 Buscar
               </button>
@@ -4927,7 +4940,7 @@ const guardarConfiguracionTarea = async () => {
               <button
                 type="button"
                 onClick={irAHoy}
-                className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+                className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-lg"
               >
                 Hoy
               </button>
@@ -4935,33 +4948,40 @@ const guardarConfiguracionTarea = async () => {
               <button
                 type="button"
                 onClick={exportarPDF}
-                className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700"
+                className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100"
               >
-                Exportar PDF
+                PDF
               </button>
 
               <button
                 type="button"
                 onClick={exportarExcel}
-                className="bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700"
+                className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100"
               >
-                Exportar Excel
+                Excel
               </button>
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div>
-                <h4 className="font-bold text-amber-900">
-                  Configuración para marcado del alumno
-                </h4>
-                <p className="text-sm text-amber-800">
-                  Define el horario en el que el alumno podrá marcar su propia asistencia para la fecha seleccionada.
-                </p>
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-xl">
+                  ⏱️
+                </div>
+
+                <div>
+                  <h4 className="text-base font-black text-slate-900">
+                    Marcado automático del alumno
+                  </h4>
+
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                    Define el rango horario en el que los alumnos podrán registrar su propia asistencia para la fecha seleccionada.
+                  </p>
+                </div>
               </div>
 
-              <label className="inline-flex items-center gap-2 text-sm font-semibold text-amber-900">
+              <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
                 <input
                   type="checkbox"
                   checked={configAsistencia.activo}
@@ -4971,16 +4991,23 @@ const guardarConfiguracionTarea = async () => {
                       activo: e.target.checked,
                     }))
                   }
+                  className="h-4 w-4 accent-slate-900"
                 />
-                Activar marcado del alumno
+
+                <span>
+                  {configAsistencia.activo
+                    ? "Marcado activado"
+                    : "Activar marcado"}
+                </span>
               </label>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <label className="block text-sm font-semibold text-amber-900 mb-2">
+                <label className="mb-2 block text-sm font-bold text-slate-700">
                   Hora inicio
                 </label>
+
                 <input
                   type="time"
                   value={configAsistencia.hora_inicio}
@@ -4990,14 +5017,15 @@ const guardarConfiguracionTarea = async () => {
                       hora_inicio: e.target.value,
                     }))
                   }
-                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-amber-900 mb-2">
+                <label className="mb-2 block text-sm font-bold text-slate-700">
                   Hora fin
                 </label>
+
                 <input
                   type="time"
                   value={configAsistencia.hora_fin}
@@ -5007,7 +5035,7 @@ const guardarConfiguracionTarea = async () => {
                       hora_fin: e.target.value,
                     }))
                   }
-                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                 />
               </div>
 
@@ -5016,7 +5044,7 @@ const guardarConfiguracionTarea = async () => {
                   type="button"
                   onClick={guardarConfiguracionAsistencia}
                   disabled={guardandoConfigAsistencia || cargandoConfigAsistencia}
-                  className="w-full bg-amber-600 text-white px-4 py-2 rounded-xl hover:bg-amber-700 disabled:opacity-60"
+                  className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-slate-400 disabled:shadow-none"
                 >
                   {guardandoConfigAsistencia
                     ? "Guardando..."
@@ -5027,37 +5055,56 @@ const guardarConfiguracionTarea = async () => {
               </div>
             </div>
 
-            <p className="text-xs text-amber-700">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500">
               Esta configuración aplica al grupo actual y a la fecha seleccionada:{" "}
-              <span className="font-semibold">{fechaAsistencia}</span>.
-            </p>
+              <span className="font-bold text-slate-800">{fechaAsistencia}</span>.
+            </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl px-4 py-3 text-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <label className="block font-semibold mb-2">
+                <h4 className="text-base font-black text-slate-900">
+                  Buscar y filtrar alumnos
+                </h4>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Filtra la lista por nombre, documento o estado de asistencia.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+                Fecha seleccionada:{" "}
+                <span className="font-bold text-slate-900">{fechaAsistencia}</span>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
                   Buscar alumno
                 </label>
+
                 <input
                   type="text"
                   value={busquedaAsistencia}
                   onChange={(e) => setBusquedaAsistencia(e.target.value)}
                   placeholder="Nombre, apellido o DNI..."
-                  className="w-full border rounded-xl px-3 py-2"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold mb-2">
+                <label className="mb-2 block text-sm font-bold text-slate-700">
                   Filtrar estado
                 </label>
+
                 <select
                   value={filtroAsistencia}
                   onChange={(e) => setFiltroAsistencia(e.target.value)}
-                  className="w-full border rounded-xl px-3 py-2"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
                 >
-                  <option value="todos">Todos</option>
+                  <option value="todos">Todos los alumnos</option>
                   <option value="presente">Presentes</option>
                   <option value="tardanza">Tardanzas</option>
                   <option value="falta">Faltas</option>
@@ -5065,135 +5112,187 @@ const guardarConfiguracionTarea = async () => {
                 </select>
               </div>
             </div>
-            Mostrando asistencia correspondiente a la fecha:{" "}
-            <span className="font-semibold">{fechaAsistencia}</span>
           </div>
 
           {alumnosFiltradosAsistencia.length === 0 ? (
-            <p className="text-gray-500">
-              No se encontraron alumnos con ese filtro.
-            </p>
-          ) : (
-            <div className="overflow-auto rounded-2xl border border-gray-200">
-              <table className="w-full text-left min-w-[1100px]">
-                <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="py-3 px-2">Foto</th>
-                    <th className="py-3 px-2">Alumno</th>
-                    <th className="py-3 px-2">DNI</th>
-                    <th className="py-3 px-2">Presente</th>
-                    <th className="py-3 px-2">Tardanza</th>
-                    <th className="py-3 px-2">Falta</th>
-                    <th className="py-3 px-2">Justificación</th>
-                    <th className="py-3 px-2">Observación</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {alumnosFiltradosAsistencia.map((a) => {
-                    const key = a.idalumno || a.id;
-                    const asistencia = asistenciaMap[key] || {};
+            <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/80 p-8 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+                🔎
+              </div>
 
-                    return (
-                      <tr key={key} className="border-b align-top">
-                        <td className="py-3 px-2">
-                          <div className="w-12 h-12 rounded-full overflow-hidden border bg-gray-50 flex items-center justify-center">
-                            {a.foto_url ? (
-                              <img
-                                src={a.foto_url}
-                                alt={a.nombre}
-                                className="w-full h-full object-cover"
+              <h4 className="mt-4 text-base font-black text-slate-900">
+                No se encontraron alumnos
+              </h4>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Prueba cambiando el texto de búsqueda o el filtro de estado.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)]">
+              <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h4 className="text-base font-black text-slate-900">
+                    Lista de asistencia
+                  </h4>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    {alumnosFiltradosAsistencia.length} alumno(s) encontrados para la fecha seleccionada.
+                  </p>
+                </div>
+
+                <div className="inline-flex rounded-2xl bg-slate-100 p-1 text-xs font-bold text-slate-600">
+                  <span className="rounded-xl bg-white px-3 py-2 shadow-sm">
+                    {fechaAsistencia}
+                  </span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1120px] text-left text-sm">
+                  <thead className="bg-slate-50/95">
+                    <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                      <th className="px-5 py-4">Alumno</th>
+                      <th className="px-5 py-4">DNI</th>
+                      <th className="px-5 py-4 text-center">Presente</th>
+                      <th className="px-5 py-4 text-center">Tardanza</th>
+                      <th className="px-5 py-4 text-center">Falta</th>
+                      <th className="px-5 py-4">Justificación</th>
+                      <th className="px-5 py-4">Observación</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100">
+                    {alumnosFiltradosAsistencia.map((a) => {
+                      const key = a.idalumno || a.id;
+                      const asistencia = asistenciaMap[key] || {};
+
+                      return (
+                        <tr
+                          key={key}
+                          className="align-top transition hover:bg-slate-50/80"
+                        >
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                                {a.foto_url ? (
+                                  <img
+                                    src={a.foto_url}
+                                    alt={a.nombre}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-xs font-bold text-slate-400">
+                                    {`${a.nombre?.[0] || ""}${a.apellido?.[0] || ""}`.toUpperCase() || "A"}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div>
+                                <p className="font-black text-slate-900">
+                                  {a.nombre} {a.apellido}
+                                </p>
+
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                  Alumno del grupo
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-5 py-4">
+                            <span className="inline-flex rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">
+                              {a.numdocumento || "-"}
+                            </span>
+                          </td>
+
+                          <td className="px-5 py-4 text-center">
+                            <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100">
+                              <input
+                                type="radio"
+                                name={`asistencia-${key}`}
+                                checked={asistencia.estado === "presente"}
+                                onChange={() =>
+                                  actualizarEstadoAsistencia(key, "presente")
+                                }
+                                className="h-4 w-4 accent-emerald-600"
                               />
+                            </label>
+                          </td>
+
+                          <td className="px-5 py-4 text-center">
+                            <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-amber-100 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-700 transition hover:bg-amber-100">
+                              <input
+                                type="radio"
+                                name={`asistencia-${key}`}
+                                checked={asistencia.estado === "tardanza"}
+                                onChange={() =>
+                                  actualizarEstadoAsistencia(key, "tardanza")
+                                }
+                                className="h-4 w-4 accent-amber-500"
+                              />
+                            </label>
+                          </td>
+
+                          <td className="px-5 py-4 text-center">
+                            <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100">
+                              <input
+                                type="radio"
+                                name={`asistencia-${key}`}
+                                checked={asistencia.estado === "falta"}
+                                onChange={() =>
+                                  actualizarEstadoAsistencia(key, "falta")
+                                }
+                                className="h-4 w-4 accent-red-600"
+                              />
+                            </label>
+                          </td>
+
+                          <td className="px-5 py-4">
+                            {asistencia.estado === "tardanza" ||
+                            asistencia.estado === "falta" ? (
+                              <select
+                                value={asistencia.tipo_justificacion || ""}
+                                onChange={(e) =>
+                                  actualizarJustificacion(key, e.target.value)
+                                }
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                              >
+                                <option value="">Seleccione</option>
+                                <option value="justificada">Justificada</option>
+                                <option value="injustificada">Injustificada</option>
+                              </select>
                             ) : (
-                              <span className="text-xs text-gray-400">
-                                Sin foto
+                              <span className="inline-flex rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-400">
+                                No aplica
                               </span>
                             )}
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="py-3 px-2">
-                          <div className="font-medium">
-                            {a.nombre} {a.apellido}
-                          </div>
-                        </td>
-
-                        <td className="py-3 px-2">{a.numdocumento || "-"}</td>
-
-                        <td className="py-3 px-2">
-                          <input
-                            type="radio"
-                            name={`asistencia-${key}`}
-                            checked={asistencia.estado === "presente"}
-                            onChange={() =>
-                              actualizarEstadoAsistencia(key, "presente")
-                            }
-                          />
-                        </td>
-
-                        <td className="py-3 px-2">
-                          <input
-                            type="radio"
-                            name={`asistencia-${key}`}
-                            checked={asistencia.estado === "tardanza"}
-                            onChange={() =>
-                              actualizarEstadoAsistencia(key, "tardanza")
-                            }
-                          />
-                        </td>
-
-                        <td className="py-3 px-2">
-                          <input
-                            type="radio"
-                            name={`asistencia-${key}`}
-                            checked={asistencia.estado === "falta"}
-                            onChange={() =>
-                              actualizarEstadoAsistencia(key, "falta")
-                            }
-                          />
-                        </td>
-
-                        <td className="py-3 px-2">
-                          {(asistencia.estado === "tardanza" ||
-                            asistencia.estado === "falta") && (
-                            <select
-                              value={asistencia.tipo_justificacion || ""}
+                          <td className="px-5 py-4">
+                            <input
+                              value={asistencia.observacion || ""}
                               onChange={(e) =>
-                                actualizarJustificacion(key, e.target.value)
+                                actualizarObservacion(key, e.target.value)
                               }
-                              className="border rounded px-2 py-1 text-sm"
-                            >
-                              <option value="">Seleccione</option>
-                              <option value="justificada">Justificada</option>
-                              <option value="injustificada">
-                                Injustificada
-                              </option>
-                            </select>
-                          )}
-                        </td>
-
-                        <td className="py-3 px-2">
-                          <input
-                            value={asistencia.observacion || ""}
-                            onChange={(e) =>
-                              actualizarObservacion(key, e.target.value)
-                            }
-                            className="border rounded px-2 py-1 text-sm w-full"
-                            placeholder="Opcional"
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                              placeholder="Agregar observación..."
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
-          <div className="flex justify-end">
+          <div className="sticky bottom-4 z-20 flex justify-end">
             <button
               type="button"
               onClick={guardarAsistencia}
-              className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+              className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_35px_-20px_rgba(37,99,235,0.8)] transition hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-lg"
             >
               Guardar asistencia
             </button>
@@ -5203,47 +5302,92 @@ const guardarConfiguracionTarea = async () => {
 
       {tabActiva === "tareas" && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-bold">Tareas del curso</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Crea tareas directamente para este curso y administra su
-                  seguimiento.
-                </p>
-              </div>
+          <div className="rounded-[28px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.35)] space-y-6">
+            <div className="rounded-[24px] border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-5 md:p-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-3xl">
+                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                    Gestión académica
+                  </span>
 
-              {permisos.gestionar_tareas && (
-                <button
-                  type="button"
-                  onClick={() => setMostrarFormTarea((prev) => !prev)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
-                >
-                  {mostrarFormTarea ? "Cancelar" : "Nueva tarea"}
-                </button>
-              )}
+                  <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
+                    Tareas del curso
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500 md:text-base">
+                    Crea actividades, administra fechas de entrega, revisa evidencias y controla el avance de los alumnos desde una sola vista.
+                  </p>
+                </div>
+
+                {permisos.gestionar_tareas && (
+                  <button
+                    type="button"
+                    onClick={() => setMostrarFormTarea((prev) => !prev)}
+                    className={`rounded-2xl px-5 py-3 text-sm font-black transition hover:-translate-y-0.5 hover:shadow-lg ${
+                      mostrarFormTarea
+                        ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        : "bg-slate-900 text-white hover:bg-slate-800"
+                    }`}
+                  >
+                    {mostrarFormTarea ? "Cancelar creación" : "+ Nueva tarea"}
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-2xl border bg-slate-50 p-4">
-                <p className="text-sm text-gray-500">Total de tareas</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">
-                  {tareas.length}
-                </p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="group rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-slate-500">
+                      Total de tareas
+                    </p>
+
+                    <p className="mt-2 text-3xl font-black tracking-tight text-slate-900">
+                      {tareas.length}
+                    </p>
+                  </div>
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-xl">
+                    📌
+                  </div>
+                </div>
               </div>
 
-              <div className="rounded-2xl border bg-amber-50 p-4">
-                <p className="text-sm text-amber-700">Pendientes</p>
-                <p className="text-2xl font-bold text-amber-700 mt-1">
-                  {tareasPendientes}
-                </p>
+              <div className="group rounded-[24px] border border-amber-100 bg-amber-50/60 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-amber-700">
+                      Pendientes
+                    </p>
+
+                    <p className="mt-2 text-3xl font-black tracking-tight text-amber-700">
+                      {tareasPendientes}
+                    </p>
+                  </div>
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-xl">
+                    ⏳
+                  </div>
+                </div>
               </div>
 
-              <div className="rounded-2xl border bg-emerald-50 p-4">
-                <p className="text-sm text-emerald-700">Revisadas</p>
-                <p className="text-2xl font-bold text-emerald-700 mt-1">
-                  {tareasRevisadas}
-                </p>
+              <div className="group rounded-[24px] border border-emerald-100 bg-emerald-50/60 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-emerald-700">
+                      Revisadas
+                    </p>
+
+                    <p className="mt-2 text-3xl font-black tracking-tight text-emerald-700">
+                      {tareasRevisadas}
+                    </p>
+                  </div>
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-xl">
+                    ✅
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -5259,198 +5403,268 @@ const guardarConfiguracionTarea = async () => {
             {mostrarFormTarea && (
               <form
                 onSubmit={guardarTareaCurso}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6"
+                className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_18px_45px_-30px_rgba(15,23,42,0.35)]"
               >
-                <div className="md:col-span-2">
-                  <label className="block font-semibold mb-2">Título</label>
-                  <input
-                    type="text"
-                    name="titulo"
-                    value={formTarea.titulo}
-                    onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    placeholder="Ej. Tarea semana 1"
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="calificable"
-                      checked={formTarea.calificable}
-                      onChange={handleChangeTarea}
-                      className="h-4 w-4"
-                    />
+                <div className="border-b border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 px-5 py-5 md:px-6">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="font-semibold text-gray-800">
-                        Tarea calificada
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Si la marcas, esta tarea podrá usarse en el registro de
-                        notas.
+                      <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                        Nueva actividad
+                      </span>
+
+                      <h4 className="mt-3 text-xl font-black tracking-tight text-slate-900">
+                        Crear tarea
+                      </h4>
+
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        Completa la información de la actividad, define fechas y agrega material de apoyo si lo necesitas.
                       </p>
                     </div>
-                  </label>
-                </div>
 
-                <div className="md:col-span-2">
-                  <label className="block font-semibold mb-2">
-                    Descripción
-                  </label>
-                  <textarea
-                    name="descripcion"
-                    value={formTarea.descripcion}
-                    onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
-                    placeholder="Describe la actividad a realizar"
-                    required
-                  />
-                </div>
+                    <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:bg-slate-50">
+                      <input
+                        type="checkbox"
+                        name="calificable"
+                        checked={formTarea.calificable}
+                        onChange={handleChangeTarea}
+                        className="h-4 w-4 accent-slate-900"
+                      />
 
-                <div>
-                  <label className="block font-semibold mb-2">
-                    Fecha de inicio
-                  </label>
-                  <input
-                    type="date"
-                    name="fechaInicio"
-                    value={formTarea.fechaInicio}
-                    onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-2">
-                    Fecha límite
-                  </label>
-                  <input
-                    type="date"
-                    name="fechaLimite"
-                    value={formTarea.fechaLimite}
-                    onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-2">
-                    Tipo de entrega
-                  </label>
-                  <select
-                    name="tipoEntrega"
-                    value={formTarea.tipoEntrega}
-                    onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    required
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="archivo">Archivo</option>
-                    <option value="texto">Texto</option>
-                    <option value="link">Link</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold mb-2">
-                    Material de apoyo
-                  </label>
-                  <select
-                    name="tipoApoyo"
-                    value={formTarea.tipoApoyo}
-                    onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                  >
-                    <option value="ninguno">Ninguno</option>
-                    <option value="texto">Texto</option>
-                    <option value="archivo">Archivo</option>
-                    <option value="video">Video</option>
-                  </select>
-                </div>
-
-                {formTarea.tipoApoyo === "texto" && (
-                  <div className="md:col-span-2">
-                    <label className="block font-semibold mb-2">
-                      Texto de apoyo
+                      <div>
+                        <p className="text-sm font-black text-slate-800">
+                          Tarea calificada
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Usar en registro de notas
+                        </p>
+                      </div>
                     </label>
-                    <textarea
-                      name="textoApoyo"
-                      value={formTarea.textoApoyo}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2 md:p-6">
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                      Título de la tarea
+                    </label>
+
+                    <input
+                      type="text"
+                      name="titulo"
+                      value={formTarea.titulo}
                       onChange={handleChangeTarea}
-                      className="border rounded-xl px-3 py-2 w-full min-h-[100px]"
-                      placeholder="Agrega instrucciones o contenido de apoyo"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      placeholder="Ej. Actividad semana 1"
+                      required
                     />
                   </div>
-                )}
 
-                {formTarea.tipoApoyo === "archivo" && (
                   <div className="md:col-span-2">
-                    <label className="block font-semibold mb-2">
-                      Archivo de apoyo
+                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                      Descripción
                     </label>
-                    <input
-                      type="file"
-                      name="archivoApoyo"
-                      onChange={handleFileChangeTarea}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+
+                    <textarea
+                      name="descripcion"
+                      value={formTarea.descripcion}
+                      onChange={handleChangeTarea}
+                      className="min-h-[130px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      placeholder="Describe qué debe realizar el alumno..."
+                      required
                     />
                   </div>
-                )}
 
-                {formTarea.tipoApoyo === "video" && (
-                  <div className="md:col-span-2">
-                    <label className="block font-semibold mb-2">
-                      Video de apoyo
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                      Fecha de inicio
                     </label>
+
                     <input
-                      type="file"
-                      name="videoApoyo"
-                      accept="video/*"
-                      onChange={handleFileChangeTarea}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                      type="date"
+                      name="fechaInicio"
+                      value={formTarea.fechaInicio}
+                      onChange={handleChangeTarea}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      required
                     />
                   </div>
-                )}
 
-                <div className="md:col-span-2 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={guardandoTarea}
-                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
-                  >
-                    {guardandoTarea ? "Guardando..." : "Guardar tarea"}
-                  </button>
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                      Fecha límite
+                    </label>
+
+                    <input
+                      type="date"
+                      name="fechaLimite"
+                      value={formTarea.fechaLimite}
+                      onChange={handleChangeTarea}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                      Tipo de entrega
+                    </label>
+
+                    <select
+                      name="tipoEntrega"
+                      value={formTarea.tipoEntrega}
+                      onChange={handleChangeTarea}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      required
+                    >
+                      <option value="">Seleccione</option>
+                      <option value="archivo">Archivo</option>
+                      <option value="texto">Texto</option>
+                      <option value="link">Link</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                      Material de apoyo
+                    </label>
+
+                    <select
+                      name="tipoApoyo"
+                      value={formTarea.tipoApoyo}
+                      onChange={handleChangeTarea}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    >
+                      <option value="ninguno">Ninguno</option>
+                      <option value="texto">Texto</option>
+                      <option value="archivo">Archivo</option>
+                      <option value="video">Video</option>
+                    </select>
+                  </div>
+
+                  {formTarea.tipoApoyo === "texto" && (
+                    <div className="md:col-span-2">
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        Texto de apoyo
+                      </label>
+
+                      <textarea
+                        name="textoApoyo"
+                        value={formTarea.textoApoyo}
+                        onChange={handleChangeTarea}
+                        className="min-h-[110px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                        placeholder="Agrega instrucciones, recursos o contenido complementario..."
+                      />
+                    </div>
+                  )}
+
+                  {formTarea.tipoApoyo === "archivo" && (
+                    <div className="md:col-span-2">
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        Archivo de apoyo
+                      </label>
+
+                      <input
+                        type="file"
+                        name="archivoApoyo"
+                        onChange={handleFileChangeTarea}
+                        className="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 outline-none transition file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:bg-white focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                      />
+                    </div>
+                  )}
+
+                  {formTarea.tipoApoyo === "video" && (
+                    <div className="md:col-span-2">
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        Video de apoyo
+                      </label>
+
+                      <input
+                        type="file"
+                        name="videoApoyo"
+                        accept="video/*"
+                        onChange={handleFileChangeTarea}
+                        className="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 outline-none transition file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:bg-white focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
+                  <p className="text-sm text-slate-500">
+                    Revisa los datos antes de crear la tarea.
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setMostrarFormTarea(false)}
+                      className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      Cancelar
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={guardandoTarea}
+                      className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_35px_-20px_rgba(5,150,105,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-emerald-300 disabled:shadow-none"
+                    >
+                      {guardandoTarea ? "Creando..." : "Crear tarea"}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
           </div>
 
-          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold">Listado de tareas</h4>
+          <div className="rounded-[28px] border border-slate-200/80 bg-white/95 p-6 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.35)]">
+            <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+                  Seguimiento
+                </span>
+
+                <h4 className="mt-3 text-xl font-black tracking-tight text-slate-900">
+                  Listado de tareas
+                </h4>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Revisa las actividades creadas, sus fechas, estado y entregas de alumnos.
+                </p>
+              </div>
 
               <button
                 type="button"
                 onClick={cargarTareasCurso}
-                className="text-sm px-3 py-2 rounded-xl border hover:bg-gray-50"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm"
               >
                 Recargar
               </button>
             </div>
 
             {cargandoTareas ? (
-              <p className="text-gray-500">Cargando tareas...</p>
-            ) : tareas.length === 0 ? (
-              <div className="border border-dashed border-gray-300 rounded-2xl p-8 text-center">
-                <p className="text-gray-700 font-medium">
-                  No hay tareas registradas
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-8 text-center">
+                <div className="mx-auto h-10 w-10 animate-pulse rounded-2xl bg-slate-200" />
+
+                <p className="mt-4 text-sm font-bold text-slate-600">
+                  Cargando tareas...
                 </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Crea la primera tarea de este curso desde el botón “Nueva
-                  tarea”.
+
+                <p className="mt-1 text-xs text-slate-400">
+                  Estamos actualizando la información del curso.
+                </p>
+              </div>
+            ) : tareas.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/80 p-10 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+                  📝
+                </div>
+
+                <h5 className="mt-4 text-base font-black text-slate-900">
+                  No hay tareas registradas
+                </h5>
+
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                  Crea la primera actividad del curso desde el botón “Crear tarea” para empezar a recibir entregas de los alumnos.
                 </p>
               </div>
             ) : (
@@ -5475,12 +5689,13 @@ const guardarConfiguracionTarea = async () => {
                       return (
                         <SortableTareaItem key={tarea.id} tarea={tarea}>
                           <div
-                            className={`overflow-hidden rounded-2xl border shadow-sm transition ${
+                            className={`group overflow-hidden rounded-[24px] border shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                               tarea.revisada
-                                ? "border-emerald-200 bg-emerald-50/60"
-                                : "border-gray-200 bg-white"
+                                ? "border-emerald-200 bg-emerald-50/70"
+                                : "border-slate-200 bg-white"
                             }`}
                           >
+
                             <div
                               type="button"
                               onClick={() => {
@@ -5492,21 +5707,21 @@ const guardarConfiguracionTarea = async () => {
                                   abrirDetalleTarea(tarea);
                                 }
                               }}
-                              className="w-full text-left px-4 pr-16 py-4 hover:bg-black/5 transition"
+                              className="w-full cursor-pointer px-5 py-5 text-left transition hover:bg-slate-50"
                             >
                               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                                 <div className="flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <h5 className="text-lg font-bold text-gray-800">
+                                    <h5 className="text-lg font-black tracking-tight text-slate-900">
                                       {tarea.titulo}
                                     </h5>
 
                                     {tarea.revisada ? (
-                                      <span className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1">
+                                      <span className="inline-flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
                                         Revisada
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-1">
+                                      <span className="inline-flex items-center rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
                                         Pendiente
                                       </span>
                                     )}
@@ -5569,46 +5784,87 @@ const guardarConfiguracionTarea = async () => {
                             </div>
 
                             {abierta && (
-                              <div className="border-t bg-white px-4 py-4 md:px-5 md:py-5 space-y-4">
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-700 mb-2">
-                                    Descripción
-                                  </p>
-                                  <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700">
+                              <div className="border-t border-slate-200 bg-slate-50/70 px-5 py-5 md:px-6 md:py-6 space-y-5">
+                                <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+                                  <div className="mb-3 flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-lg">
+                                      🧾
+                                    </div>
+
+                                    <div>
+                                      <p className="text-sm font-black text-slate-900">
+                                        Descripción de la tarea
+                                      </p>
+                                      <p className="text-xs text-slate-500">
+                                        Indicaciones principales para el alumno.
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 whitespace-pre-line">
                                     {tarea.descripcion || "Sin descripción"}
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                  <div className="rounded-xl border bg-gray-50 p-3">
-                                    <p className="text-gray-500">
-                                      Tipo de entrega
-                                    </p>
-                                    <p className="font-medium text-gray-800">
-                                      {tarea.tipo_entrega || "-"}
-                                    </p>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                  <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-lg">
+                                        📤
+                                      </div>
+
+                                      <div>
+                                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                                          Tipo de entrega
+                                        </p>
+
+                                        <p className="mt-1 text-base font-black capitalize text-slate-900">
+                                          {tarea.tipo_entrega || "-"}
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  <div className="rounded-xl border bg-gray-50 p-3">
-                                    <p className="text-gray-500">
-                                      Tipo de apoyo
-                                    </p>
-                                    <p className="font-medium text-gray-800 capitalize">
-                                      {tarea.tipo_apoyo || "ninguno"}
-                                    </p>
+                                  <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-lg">
+                                        📎
+                                      </div>
+
+                                      <div>
+                                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                                          Material de apoyo
+                                        </p>
+
+                                        <p className="mt-1 text-base font-black capitalize text-slate-900">
+                                          {tarea.tipo_apoyo || "ninguno"}
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
 
                                 {(tarea.texto_apoyo ||
                                   tarea.archivo_apoyo_url ||
                                   tarea.video_apoyo_url) && (
-                                  <div>
-                                    <p className="text-sm font-semibold text-gray-700 mb-2">
-                                      Material de apoyo
-                                    </p>
+                                  <div className="rounded-[22px] border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div className="mb-4 flex items-center gap-3">
+                                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-lg">
+                                        🎒
+                                      </div>
+
+                                      <div>
+                                        <p className="text-sm font-black text-slate-900">
+                                          Recursos de apoyo
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                          Material complementario para desarrollar la actividad.
+                                        </p>
+                                      </div>
+                                    </div>
 
                                     {tarea.texto_apoyo && (
-                                      <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700 mb-3 whitespace-pre-line">
+                                      <div className="mb-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 whitespace-pre-line">
                                         {tarea.texto_apoyo}
                                       </div>
                                     )}
@@ -5619,7 +5875,7 @@ const guardarConfiguracionTarea = async () => {
                                           href={tarea.archivo_apoyo_url}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                          className="inline-flex items-center rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100"
                                         >
                                           Ver archivo de apoyo
                                         </a>
@@ -5630,7 +5886,7 @@ const guardarConfiguracionTarea = async () => {
                                           href={tarea.video_apoyo_url}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                          className="inline-flex items-center rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100"
                                         >
                                           Ver video de apoyo
                                         </a>
@@ -5640,7 +5896,7 @@ const guardarConfiguracionTarea = async () => {
                                 )}
 
                                 {tarea.calificable && (
-                                  <div className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4">
+                                  <div className="rounded-[22px] border border-violet-100 bg-violet-50/80 p-5 shadow-sm">
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                                       <div>
                                         <p className="text-sm font-semibold text-violet-800">
@@ -5669,7 +5925,7 @@ const guardarConfiguracionTarea = async () => {
                                               e.stopPropagation();
                                               abrirConfigTarea(tarea);
                                             }}
-                                            className="..."
+                                            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-200 bg-white text-violet-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50 hover:shadow-md"
                                           >
                                             <Settings className="w-4 h-4" />
                                           </button>
@@ -5678,231 +5934,294 @@ const guardarConfiguracionTarea = async () => {
                                   </div>
                                 )}
 
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-700 mb-2">
-                                    Entregas de alumnos
-                                  </p>
+                                <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+                                  <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-lg">
+                                        📥
+                                      </div>
 
-                                  {cargandoDetalleTarea &&
-                                  tareaDetalle?.id === tarea.id ? (
-                                    <p className="text-sm text-gray-500">
-                                      Cargando entregas...
-                                    </p>
+                                      <div>
+                                        <p className="text-base font-black text-slate-900">
+                                          Entregas de alumnos
+                                        </p>
+
+                                        <p className="text-sm text-slate-500">
+                                          Revisa archivos, textos, enlaces y registra la calificación correspondiente.
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {tareaDetalle?.id === tarea.id && (
+                                      <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600">
+                                        {entregasTarea.length} registro(s)
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {cargandoDetalleTarea && tareaDetalle?.id === tarea.id ? (
+                                    <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-8 text-center">
+                                      <div className="mx-auto h-10 w-10 animate-pulse rounded-2xl bg-slate-200" />
+
+                                      <p className="mt-4 text-sm font-bold text-slate-600">
+                                        Cargando entregas...
+                                      </p>
+
+                                      <p className="mt-1 text-xs text-slate-400">
+                                        Estamos consultando las entregas registradas para esta tarea.
+                                      </p>
+                                    </div>
                                   ) : tareaDetalle?.id === tarea.id ? (
                                     entregasTarea.length === 0 ? (
-                                      <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
-                                        No hay alumnos ni entregas registradas
-                                        para esta tarea.
+                                      <div className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50/80 p-8 text-center">
+                                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+                                          🗂️
+                                        </div>
+
+                                        <h5 className="mt-4 text-base font-black text-slate-900">
+                                          No hay entregas registradas
+                                        </h5>
+
+                                        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                                          Cuando los alumnos envíen su actividad, aparecerán aquí sus archivos, textos o enlaces.
+                                        </p>
                                       </div>
                                     ) : (
-                                      <div className="overflow-auto rounded-2xl border border-gray-200">
-                                        <table className="w-full min-w-[900px] text-sm">
-                                          <thead className="bg-gray-50">
-                                            <tr className="border-b">
-                                              <th className="px-3 py-3 text-left">
-                                                Alumno
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Fecha
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Hora
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Entrega
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Nota
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Acción
-                                              </th>
-                                            </tr>
-                                          </thead>
-                                          <tbody>
-                                            {entregasTarea.map((fila) => {
-                                              const fechaEntrega =
-                                                fila.fecha_entrega
+                                      <div className="overflow-hidden rounded-[22px] border border-slate-200">
+                                        <div className="overflow-x-auto">
+                                          <table className="w-full min-w-[980px] text-left text-sm">
+                                            <thead className="bg-slate-50">
+                                              <tr className="border-b border-slate-200 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                                                <th className="px-4 py-4">Alumno</th>
+                                                <th className="px-4 py-4">Estado</th>
+                                                <th className="px-4 py-4">Fecha</th>
+                                                <th className="px-4 py-4">Hora</th>
+                                                <th className="px-4 py-4">Entrega</th>
+                                                <th className="px-4 py-4">Nota</th>
+                                                <th className="px-4 py-4">Acción</th>
+                                              </tr>
+                                            </thead>
+
+                                            <tbody className="divide-y divide-slate-100">
+                                              {entregasTarea.map((fila) => {
+                                                const fechaEntrega = fila.fecha_entrega
                                                   ? new Date(fila.fecha_entrega)
                                                   : null;
 
-                                              return (
-                                                <tr
-                                                  key={fila.idmatricula}
-                                                  className="border-b align-middle"
-                                                >
-                                                  <td className="px-3 py-3">
-                                                    <div className="font-medium text-gray-800">
-                                                      {fila.nombre}{" "}
-                                                      {fila.apellido}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">
-                                                      DNI:{" "}
-                                                      {fila.numdocumento || "-"}
-                                                    </div>
-                                                  </td>
+                                                return (
+                                                  <tr
+                                                    key={fila.idmatricula}
+                                                    className="align-middle transition hover:bg-slate-50/80"
+                                                  >
+                                                    <td className="px-4 py-4">
+                                                      <div className="flex items-center gap-3">
+                                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-xs font-black text-slate-500">
+                                                          {`${fila.nombre?.[0] || ""}${fila.apellido?.[0] || ""}`.toUpperCase() || "A"}
+                                                        </div>
 
-                                                  <td className="px-3 py-3">
-                                                    {fechaEntrega
-                                                      ? fechaEntrega.toLocaleDateString(
-                                                          "es-PE",
-                                                        )
-                                                      : "—"}
-                                                  </td>
+                                                        <div>
+                                                          <p className="font-black text-slate-900">
+                                                            {fila.nombre} {fila.apellido}
+                                                          </p>
 
-                                                  <td className="px-3 py-3">
-                                                    {fechaEntrega
-                                                      ? fechaEntrega.toLocaleTimeString(
-                                                          "es-PE",
-                                                          {
+                                                          <p className="mt-0.5 text-xs text-slate-500">
+                                                            DNI: {fila.numdocumento || "-"}
+                                                          </p>
+                                                        </div>
+                                                      </div>
+                                                    </td>
+
+                                                    <td className="px-4 py-4">
+                                                      {fila.entrego ? (
+                                                        <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                                                          Entregado
+                                                        </span>
+                                                      ) : (
+                                                        <span className="inline-flex rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-black text-red-700">
+                                                          No entregó
+                                                        </span>
+                                                      )}
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-slate-600">
+                                                      {fechaEntrega
+                                                        ? fechaEntrega.toLocaleDateString("es-PE")
+                                                        : "—"}
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-slate-600">
+                                                      {fechaEntrega
+                                                        ? fechaEntrega.toLocaleTimeString("es-PE", {
                                                             hour: "2-digit",
                                                             minute: "2-digit",
-                                                          },
-                                                        )
-                                                      : "—"}
-                                                  </td>
+                                                          })
+                                                        : "—"}
+                                                    </td>
 
-                                                  <td className="px-3 py-3">
-                                                    {fila.entrego ? (
-                                                      <div className="flex flex-wrap gap-2">
-                                                        {fila.archivo_url && (
-                                                          <a
-                                                            href={
-                                                              fila.archivo_url
-                                                            }
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="inline-flex items-center rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                                                          >
-                                                            Ver archivo
-                                                          </a>
-                                                        )}
-
-                                                        {fila.comentario && (
-                                                          <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                              setEntregaSeleccionada(
-                                                                {
-                                                                  alumno: `${fila.nombre} ${fila.apellido}`,
-                                                                  contenido:
-                                                                    fila.comentario,
-                                                                  tipo: "texto",
-                                                                },
-                                                              );
-                                                              setModalEntregaOpen(
-                                                                true,
-                                                              );
-                                                            }}
-                                                            className="inline-flex items-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
-                                                          >
-                                                            Ver texto
-                                                          </button>
-                                                        )}
-
-                                                        {fila.enlace_url && (
-                                                          <a
-                                                            href={
-                                                              fila.enlace_url
-                                                            }
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="inline-flex items-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
-                                                          >
-                                                            Abrir enlace
-                                                          </a>
-                                                        )}
-
-                                                        {!fila.archivo_url &&
-                                                          !fila.comentario &&
-                                                          !fila.enlace_url && (
-                                                            <span className="inline-flex rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs font-semibold">
-                                                              Entregado
-                                                            </span>
+                                                    <td className="px-4 py-4">
+                                                      {fila.entrego ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                          {fila.archivo_url && (
+                                                            <a
+                                                              href={fila.archivo_url}
+                                                              target="_blank"
+                                                              rel="noreferrer"
+                                                              className="inline-flex items-center rounded-2xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100"
+                                                            >
+                                                              Ver archivo
+                                                            </a>
                                                           )}
-                                                      </div>
-                                                    ) : (
-                                                      <span className="inline-flex rounded-full bg-red-100 text-red-700 px-3 py-1 text-xs font-semibold">
-                                                        No entregó
-                                                      </span>
-                                                    )}
-                                                  </td>
 
-                                                  <td className="px-3 py-3">
-                                                    <input
-                                                      type="number"
-                                                      min="0"
-                                                      max="20"
-                                                      step="0.01"
-                                                      value={fila.nota ?? ""}
-                                                      onChange={(e) =>
-                                                        actualizarNotaLocalEntrega(
-                                                          fila.idmatricula,
-                                                          e.target.value,
-                                                        )
-                                                      }
-                                                      className="w-24 rounded-xl border px-3 py-2"
-                                                      placeholder="0-20"
-                                                    />
-                                                  </td>
+                                                          {fila.comentario && (
+                                                            <button
+                                                              type="button"
+                                                              onClick={() => {
+                                                                setEntregaSeleccionada({
+                                                                  alumno: `${fila.nombre} ${fila.apellido}`,
+                                                                  contenido: fila.comentario,
+                                                                  tipo: "texto",
+                                                                });
+                                                                setModalEntregaOpen(true);
+                                                              }}
+                                                              className="inline-flex items-center rounded-2xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 transition hover:-translate-y-0.5 hover:bg-violet-100"
+                                                            >
+                                                              Ver texto
+                                                            </button>
+                                                          )}
 
-                                                  <td className="px-3 py-3">
-                                                    <button
-                                                      type="button"
-                                                      disabled={
-                                                        !!guardandoNotaEntrega[
-                                                          fila.idmatricula
-                                                        ]
-                                                      }
-                                                      onClick={() =>
-                                                        guardarNotaEntrega(fila)
-                                                      }
-                                                      className="rounded-xl bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 disabled:opacity-60"
-                                                    >
-                                                      {guardandoNotaEntrega[
-                                                        fila.idmatricula
-                                                      ]
-                                                        ? "Guardando..."
-                                                        : "Guardar"}
-                                                    </button>
-                                                  </td>
-                                                </tr>
-                                              );
-                                            })}
-                                          </tbody>
-                                        </table>
+                                                          {fila.enlace_url && (
+                                                            <a
+                                                              href={fila.enlace_url}
+                                                              target="_blank"
+                                                              rel="noreferrer"
+                                                              className="inline-flex items-center rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100"
+                                                            >
+                                                              Abrir enlace
+                                                            </a>
+                                                          )}
+
+                                                          {!fila.archivo_url &&
+                                                            !fila.comentario &&
+                                                            !fila.enlace_url && (
+                                                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500">
+                                                                Sin adjunto
+                                                              </span>
+                                                            )}
+                                                        </div>
+                                                      ) : (
+                                                        <span className="text-sm text-slate-400">
+                                                          Sin entrega
+                                                        </span>
+                                                      )}
+                                                    </td>
+
+                                                    <td className="px-4 py-4">
+                                                      <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="20"
+                                                        step="0.01"
+                                                        value={fila.nota ?? ""}
+                                                        onChange={(e) =>
+                                                          actualizarNotaLocalEntrega(
+                                                            fila.idmatricula,
+                                                            e.target.value,
+                                                          )
+                                                        }
+                                                        className="w-24 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                                        placeholder="0-20"
+                                                      />
+                                                    </td>
+
+                                                    <td className="px-4 py-4">
+                                                      <button
+                                                        type="button"
+                                                        disabled={!!guardandoNotaEntrega[fila.idmatricula]}
+                                                        onClick={() => guardarNotaEntrega(fila)}
+                                                        className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-400"
+                                                      >
+                                                        {guardandoNotaEntrega[fila.idmatricula]
+                                                          ? "Guardando..."
+                                                          : "Guardar"}
+                                                      </button>
+                                                    </td>
+                                                  </tr>
+                                                );
+                                              })}
+                                            </tbody>
+                                          </table>
+                                        </div>
                                       </div>
                                     )
                                   ) : (
-                                    <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
-                                      Abre esta tarea para cargar entregas y
-                                      calificaciones.
+                                    <div className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50/80 p-8 text-center">
+                                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+                                        👁️
+                                      </div>
+
+                                      <h5 className="mt-4 text-base font-black text-slate-900">
+                                        Abre una tarea para ver sus entregas
+                                      </h5>
+
+                                      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                                        Al desplegar una tarea se cargarán los envíos y las calificaciones de los alumnos.
+                                      </p>
                                     </div>
                                   )}
                                 </div>
 
-                                <div className="flex flex-wrap justify-end gap-2 pt-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => cambiarEstadoRevision(tarea)}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium ${
-                                      tarea.revisada
-                                        ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                                        : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                                    }`}
-                                  >
-                                    {tarea.revisada
-                                      ? "Marcar como pendiente"
-                                      : "Marcar como revisada"}
-                                  </button>
+                                <div className="flex flex-col gap-4 rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`flex h-11 w-11 items-center justify-center rounded-2xl text-lg ${
+                                        tarea.revisada
+                                          ? "bg-emerald-50 text-emerald-700"
+                                          : "bg-amber-50 text-amber-700"
+                                      }`}
+                                    >
+                                      {tarea.revisada ? "✅" : "⏳"}
+                                    </div>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => eliminarTareaCurso(tarea.id)}
-                                    className="px-4 py-2 rounded-xl text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
-                                  >
-                                    Eliminar
-                                  </button>
+                                    <div>
+                                      <p className="text-sm font-black text-slate-900">
+                                        Estado de revisión
+                                      </p>
+
+                                      <p
+                                        className={`mt-0.5 text-xs font-bold ${
+                                          tarea.revisada ? "text-emerald-700" : "text-amber-700"
+                                        }`}
+                                      >
+                                        {tarea.revisada
+                                          ? "Esta tarea ya fue marcada como revisada."
+                                          : "Esta tarea todavía está pendiente de revisión."}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-col gap-2 sm:flex-row">
+                                    <button
+                                      type="button"
+                                      onClick={() => cambiarEstadoRevision(tarea)}
+                                      className={`rounded-2xl px-4 py-3 text-sm font-black transition hover:-translate-y-0.5 hover:shadow-md ${
+                                        tarea.revisada
+                                          ? "border border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                          : "border border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                      }`}
+                                    >
+                                      {tarea.revisada
+                                        ? "Marcar como pendiente"
+                                        : "Marcar como revisada"}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => eliminarTareaCurso(tarea.id)}
+                                      className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-black text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-md"
+                                    >
+                                      Eliminar tarea
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -5968,50 +6287,100 @@ const guardarConfiguracionTarea = async () => {
             {mostrarFormModulo && (
               <form
                 onSubmit={guardarModuloCurso}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 md:p-6 mb-6"
+                className="mb-6 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_18px_45px_-30px_rgba(15,23,42,0.35)]"
               >
-                <div>
-                  <label className="block font-semibold mb-2">
-                    Título del módulo
-                  </label>
-                  <input
-                    type="text"
-                    name="titulo"
-                    value={formModulo.titulo}
-                    onChange={handleChangeModulo}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    placeholder="Ej. Módulo 1 - Introducción"
-                  />
+                <div className="border-b border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 px-5 py-5 md:px-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-xl">
+                      📚
+                    </div>
+
+                    <div>
+                      <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                        Nuevo módulo
+                      </span>
+
+                      <h4 className="mt-3 text-xl font-black tracking-tight text-slate-900">
+                        Crear módulo del curso
+                      </h4>
+
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        Crea una sección principal para organizar submódulos, lecciones, materiales y tareas.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block font-semibold mb-2">
-                    Descripción
-                  </label>
-                  <input
-                    type="text"
-                    name="descripcion"
-                    value={formModulo.descripcion}
-                    onChange={handleChangeModulo}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    placeholder="Descripción breve del módulo"
-                  />
+                <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2 md:p-6">
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                      Título del módulo
+                    </label>
+
+                    <input
+                      type="text"
+                      name="titulo"
+                      value={formModulo.titulo}
+                      onChange={handleChangeModulo}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      placeholder="Ej. Módulo 1 - Introducción"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                      Descripción
+                    </label>
+
+                    <input
+                      type="text"
+                      name="descripcion"
+                      value={formModulo.descripcion}
+                      onChange={handleChangeModulo}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      placeholder="Descripción breve del módulo"
+                    />
+                  </div>
                 </div>
 
-                <div className="md:col-span-2 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={guardandoModulo}
-                    className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
-                  >
-                    {guardandoModulo ? "Guardando..." : "Guardar módulo"}
-                  </button>
+                <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
+                  <p className="text-sm text-slate-500">
+                    Este módulo aparecerá en la estructura académica del curso.
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setMostrarFormModulo(false)}
+                      className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      Cancelar
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={guardandoModulo}
+                      className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_35px_-20px_rgba(5,150,105,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-emerald-300 disabled:shadow-none"
+                    >
+                      {guardandoModulo ? "Creando..." : "Crear módulo"}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
 
             {cargandoModulos ? (
-              <p className="text-gray-500">Cargando módulos...</p>
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-8 text-center">
+                <div className="mx-auto h-10 w-10 animate-pulse rounded-2xl bg-slate-200" />
+
+                <p className="mt-4 text-sm font-bold text-slate-600">
+                  Cargando módulos...
+                </p>
+
+                <p className="mt-1 text-xs text-slate-400">
+                  Estamos actualizando la estructura académica del curso.
+                </p>
+              </div>
             ) : modulos.length === 0 ? (
               <div className="rounded-[28px] border border-dashed border-slate-300 bg-gradient-to-br from-white to-slate-50 p-10 text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-white text-2xl shadow-lg">
@@ -6115,184 +6484,256 @@ const guardarConfiguracionTarea = async () => {
                                   )}
                                 </div>
 
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2 xl:justify-end">
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      toggleFormSubModulo(modulo.id)
-                                    }
-                                    className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+                                    onClick={() => toggleFormSubModulo(modulo.id)}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-black text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-md"
                                   >
-                                    + Submódulo
+                                    <span>＋</span>
+                                    <span>Submódulo</span>
                                   </button>
 
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      abrirFormTareaDesdeModulo(modulo)
-                                    }
-                                    className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition shadow-sm"
+                                    onClick={() => abrirFormTareaDesdeModulo(modulo)}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-2.5 text-sm font-black text-violet-700 transition hover:-translate-y-0.5 hover:bg-violet-100 hover:shadow-md"
                                   >
-                                    + Tarea
+                                    <span>＋</span>
+                                    <span>Tarea</span>
                                   </button>
 
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      toggleLeccionesModulo(modulo.id)
-                                    }
-                                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                    onClick={() => toggleLeccionesModulo(modulo.id)}
+                                    className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5 hover:shadow-md ${
+                                      abierto
+                                        ? "border-slate-300 bg-slate-900 text-white hover:bg-slate-800"
+                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                    }`}
                                   >
-                                    {abierto ? "Ocultar" : "Ver contenido"}
+                                    <span>{abierto ? "👁️" : "📂"}</span>
+                                    <span>{abierto ? "Ocultar" : "Ver contenido"}</span>
                                   </button>
 
                                   <button
                                     type="button"
                                     onClick={() => iniciarEdicionModulo(modulo)}
-                                    className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-md"
                                   >
-                                    Editar
+                                    <span>✏️</span>
+                                    <span>Editar</span>
                                   </button>
 
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      eliminarModuloCurso(modulo.id)
-                                    }
-                                    className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                                    onClick={() => eliminarModuloCurso(modulo.id)}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-md"
                                   >
-                                    Eliminar
+                                    <span>🗑️</span>
+                                    <span>Eliminar</span>
                                   </button>
                                 </div>
                               </div>
 
                               {mostrarFormSubModulo[modulo.id] && (
                                 <form
-                                  onSubmit={(e) =>
-                                    guardarSubModuloCurso(e, modulo.id)
-                                  }
-                                  className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                                  onSubmit={(e) => guardarSubModuloCurso(e, modulo.id)}
+                                  className="mt-5 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_16px_40px_-28px_rgba(15,23,42,0.35)]"
                                 >
-                                  <div>
-                                    <label className="block font-semibold mb-2">
-                                      Título del submódulo
-                                    </label>
-                                    <input
-                                      type="text"
-                                      name="titulo"
-                                      value={
-                                        formSubModulo[modulo.id]?.titulo || ""
-                                      }
-                                      onChange={(e) =>
-                                        handleChangeSubModulo(modulo.id, e)
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                      placeholder="Ej. Submódulo 1.1"
-                                    />
+                                  <div className="border-b border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 px-5 py-5">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-lg">
+                                        🧩
+                                      </div>
+
+                                      <div>
+                                        <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                                          Nuevo submódulo
+                                        </span>
+
+                                        <h5 className="mt-3 text-lg font-black tracking-tight text-slate-900">
+                                          Agregar submódulo
+                                        </h5>
+
+                                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                                          Organiza el contenido dentro de este módulo para separar temas, unidades o semanas.
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  <div>
-                                    <label className="block font-semibold mb-2">
-                                      Descripción
-                                    </label>
-                                    <input
-                                      type="text"
-                                      name="descripcion"
-                                      value={
-                                        formSubModulo[modulo.id]?.descripcion ||
-                                        ""
-                                      }
-                                      onChange={(e) =>
-                                        handleChangeSubModulo(modulo.id, e)
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                      placeholder="Descripción breve"
-                                    />
+                                  <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+                                    <div>
+                                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                                        Título del submódulo
+                                      </label>
+
+                                      <input
+                                        type="text"
+                                        name="titulo"
+                                        value={formSubModulo[modulo.id]?.titulo || ""}
+                                        onChange={(e) => handleChangeSubModulo(modulo.id, e)}
+                                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        placeholder="Ej. Semana 1 - Fundamentos"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                                        Descripción
+                                      </label>
+
+                                      <input
+                                        type="text"
+                                        name="descripcion"
+                                        value={formSubModulo[modulo.id]?.descripcion || ""}
+                                        onChange={(e) => handleChangeSubModulo(modulo.id, e)}
+                                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        placeholder="Descripción breve del submódulo"
+                                      />
+                                    </div>
                                   </div>
 
-                                  <div className="md:col-span-2 flex justify-end">
-                                    <button
-                                      type="submit"
-                                      disabled={guardandoSubModulo}
-                                      className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
-                                    >
-                                      {guardandoSubModulo
-                                        ? "Guardando..."
-                                        : "Guardar submódulo"}
-                                    </button>
+                                  <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-sm text-slate-500">
+                                      El submódulo se agregará dentro de:{" "}
+                                      <span className="font-bold text-slate-800">
+                                        {modulo.titulo}
+                                      </span>
+                                    </p>
+
+                                    <div className="flex gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setMostrarFormSubModulo((prev) => ({
+                                            ...prev,
+                                            [modulo.id]: false,
+                                          }))
+                                        }
+                                        className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                                      >
+                                        Cancelar
+                                      </button>
+
+                                      <button
+                                        type="submit"
+                                        disabled={guardandoSubModulo}
+                                        className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_35px_-20px_rgba(5,150,105,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-emerald-300 disabled:shadow-none"
+                                      >
+                                        {guardandoSubModulo ? "Creando..." : "Crear submódulo"}
+                                      </button>
+                                    </div>
                                   </div>
                                 </form>
                               )}
 
                               {editandoModuloId === modulo.id && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5">
-                                  <div>
-                                    <label className="block font-semibold mb-2">
-                                      Editar título
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={formEditarModulo.titulo}
-                                      onChange={(e) =>
-                                        setFormEditarModulo((prev) => ({
-                                          ...prev,
-                                          titulo: e.target.value,
-                                        }))
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                    />
+                                <div className="mt-5 overflow-hidden rounded-[24px] border border-amber-100 bg-white shadow-[0_16px_40px_-28px_rgba(15,23,42,0.35)]">
+                                  <div className="border-b border-amber-100 bg-gradient-to-br from-amber-50 via-white to-slate-50 px-5 py-5">
+                                    <div className="flex items-start gap-4">
+                                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-lg">
+                                        ✏️
+                                      </div>
+
+                                      <div>
+                                        <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
+                                          Edición de módulo
+                                        </span>
+
+                                        <h5 className="mt-3 text-lg font-black tracking-tight text-slate-900">
+                                          Editar información del módulo
+                                        </h5>
+
+                                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                                          Actualiza el título o la descripción del módulo sin afectar sus submódulos, lecciones o materiales.
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  <div>
-                                    <label className="block font-semibold mb-2">
-                                      Editar descripción
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={formEditarModulo.descripcion}
-                                      onChange={(e) =>
-                                        setFormEditarModulo((prev) => ({
-                                          ...prev,
-                                          descripcion: e.target.value,
-                                        }))
-                                      }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                    />
+                                  <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+                                    <div>
+                                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                                        Título del módulo
+                                      </label>
+
+                                      <input
+                                        type="text"
+                                        value={formEditarModulo.titulo}
+                                        onChange={(e) =>
+                                          setFormEditarModulo((prev) => ({
+                                            ...prev,
+                                            titulo: e.target.value,
+                                          }))
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                                        placeholder="Editar título del módulo"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                                        Descripción del módulo
+                                      </label>
+
+                                      <input
+                                        type="text"
+                                        value={formEditarModulo.descripcion}
+                                        onChange={(e) =>
+                                          setFormEditarModulo((prev) => ({
+                                            ...prev,
+                                            descripcion: e.target.value,
+                                          }))
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                                        placeholder="Editar descripción del módulo"
+                                      />
+                                    </div>
                                   </div>
 
-                                  <div className="md:col-span-2 flex justify-end gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={cancelarEdicionModulo}
-                                      className="px-4 py-2 rounded-xl border hover:bg-gray-50"
-                                    >
-                                      Cancelar
-                                    </button>
+                                  <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-sm text-slate-500">
+                                      Los cambios se aplicarán solo a este módulo.
+                                    </p>
 
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        guardarEdicionModulo(modulo.id)
-                                      }
-                                      className="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700"
-                                    >
-                                      Guardar cambios
-                                    </button>
+                                    <div className="flex gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={cancelarEdicionModulo}
+                                        className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                                      >
+                                        Cancelar
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => guardarEdicionModulo(modulo.id)}
+                                        className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_35px_-20px_rgba(5,150,105,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg"
+                                      >
+                                        Guardar cambios
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               )}
                             </div>
 
                             {abierto && (
-                              <div className="p-5 space-y-4">
+                              <div className="border-t border-slate-200 bg-slate-50/70 p-5 space-y-4">
                                 {modulo.submodulos?.length === 0 ? (
-                                  <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
-                                    <p className="text-gray-700 font-medium">
+                                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-white/80 p-8 text-center">
+                                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-2xl shadow-sm">
+                                      🧩
+                                    </div>
+
+                                    <h5 className="mt-4 text-base font-black text-slate-900">
                                       Este módulo no tiene submódulos
-                                    </p>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                      Agrega el primer submódulo para empezar a
-                                      organizar sesiones y materiales.
+                                    </h5>
+
+                                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                                      Agrega el primer submódulo para organizar lecciones, materiales, tareas y evaluaciones de forma ordenada.
                                     </p>
                                   </div>
                                 ) : (
@@ -6315,135 +6756,165 @@ const guardarConfiguracionTarea = async () => {
                                             key={submodulo.id}
                                             submodulo={submodulo}
                                           >
-                                            <div className="rounded-[22px] border border-blue-100 bg-blue-50/60 overflow-hidden shadow-sm">
-                                              <div className="px-4 py-4 bg-blue-50/60">
+                                            <div className="overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_16px_40px_-28px_rgba(15,23,42,0.35)]">
+                                              <div className="border-b border-blue-100/70 bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-5">
                                                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
                                                   <div>
                                                     <div className="flex items-center gap-3 flex-wrap">
-                                                      <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5">
+                                                      <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700">
                                                         Submódulo {index + 1}.{idxSub + 1}
                                                       </span>
 
-                                                      <h5 className="text-lg font-bold text-slate-800">
+                                                      <h5 className="text-lg font-black tracking-tight text-slate-900">
                                                         {submodulo.titulo}
                                                       </h5>
                                                     </div>
 
                                                     {submodulo.descripcion && (
-                                                      <p className="text-sm text-slate-500 mt-2">
+                                                      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
                                                         {submodulo.descripcion}
                                                       </p>
                                                     )}
                                                   </div>
 
-                                                  <div className="flex flex-wrap gap-2">
+                                                  <div className="flex flex-wrap gap-2 xl:justify-end">
                                                     <button
                                                       type="button"
                                                       onClick={() => toggleFormLeccion(submodulo.id)}
-                                                      className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+                                                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-black text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-md"
                                                     >
-                                                      + Lección
+                                                      <span>＋</span>
+                                                      <span>Lección</span>
                                                     </button>
 
                                                     <button
                                                       type="button"
                                                       onClick={() => iniciarEdicionModulo(submodulo)}
-                                                      className="inline-flex items-center justify-center rounded-2xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition"
+                                                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-md"
                                                     >
-                                                      Editar
+                                                      <span>✏️</span>
+                                                      <span>Editar</span>
                                                     </button>
 
                                                     <button
                                                       type="button"
                                                       onClick={() => eliminarModuloCurso(submodulo.id)}
-                                                      className="inline-flex items-center justify-center rounded-2xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition"
+                                                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-md"
                                                     >
-                                                      Eliminar
+                                                      <span>🗑️</span>
+                                                      <span>Eliminar</span>
                                                     </button>
                                                   </div>
                                                 </div>
-                                                {mostrarFormLeccion[
-                                                  submodulo.id
-                                                ] && (
+                                                {mostrarFormLeccion[submodulo.id] && (
                                                   <form
-                                                    onSubmit={(e) =>
-                                                      guardarLeccionCurso(
-                                                        e,
-                                                        submodulo.id,
-                                                      )
-                                                    }
-                                                    className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5"
+                                                    onSubmit={(e) => guardarLeccionCurso(e, submodulo.id)}
+                                                    className="mt-5 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_16px_40px_-28px_rgba(15,23,42,0.35)]"
                                                   >
-                                                    <div>
-                                                      <label className="block font-semibold mb-2">
-                                                        Título de la lección
-                                                      </label>
-                                                      <input
-                                                        type="text"
-                                                        name="titulo"
-                                                        value={
-                                                          formLeccion[
-                                                            submodulo.id
-                                                          ]?.titulo || ""
-                                                        }
-                                                        onChange={(e) =>
-                                                          handleChangeLeccion(
-                                                            submodulo.id,
-                                                            e,
-                                                          )
-                                                        }
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                        placeholder="Ej. Lección 1 - Introducción"
-                                                      />
+                                                    <div className="border-b border-slate-200 bg-gradient-to-br from-slate-50 via-white to-indigo-50 px-5 py-5">
+                                                      <div className="flex items-start gap-4">
+                                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-lg">
+                                                          🎯​
+                                                        </div>
+
+                                                        <div>
+                                                          <span className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-indigo-700">
+                                                            Nueva lección
+                                                          </span>
+
+                                                          <h5 className="mt-3 text-lg font-black tracking-tight text-slate-900">
+                                                            Agregar lección
+                                                          </h5>
+
+                                                          <p className="mt-1 text-sm leading-6 text-slate-500">
+                                                            Crea una lección dentro de este submódulo para organizar el contenido que verá el alumno.
+                                                          </p>
+                                                        </div>
+                                                      </div>
                                                     </div>
 
-                                                    <div>
-                                                      <label className="block font-semibold mb-2">
-                                                        Descripción
-                                                      </label>
-                                                      <input
-                                                        type="text"
-                                                        name="descripcion"
-                                                        value={
-                                                          formLeccion[
-                                                            submodulo.id
-                                                          ]?.descripcion || ""
-                                                        }
-                                                        onChange={(e) =>
-                                                          handleChangeLeccion(
-                                                            submodulo.id,
-                                                            e,
-                                                          )
-                                                        }
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                        placeholder="Descripción breve"
-                                                      />
+                                                    <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+                                                      <div>
+                                                        <label className="mb-2 block text-sm font-bold text-slate-700">
+                                                          Título de la lección
+                                                        </label>
+
+                                                        <input
+                                                          type="text"
+                                                          name="titulo"
+                                                          value={formLeccion[submodulo.id]?.titulo || ""}
+                                                          onChange={(e) => handleChangeLeccion(submodulo.id, e)}
+                                                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                                          placeholder="Ej. Lección 1 - Introducción"
+                                                        />
+                                                      </div>
+
+                                                      <div>
+                                                        <label className="mb-2 block text-sm font-bold text-slate-700">
+                                                          Descripción
+                                                        </label>
+
+                                                        <input
+                                                          type="text"
+                                                          name="descripcion"
+                                                          value={formLeccion[submodulo.id]?.descripcion || ""}
+                                                          onChange={(e) => handleChangeLeccion(submodulo.id, e)}
+                                                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                                                          placeholder="Descripción breve de la lección"
+                                                        />
+                                                      </div>
                                                     </div>
 
-                                                    <div className="md:col-span-2 flex justify-end">
-                                                      <button
-                                                        type="submit"
-                                                        disabled={
-                                                          guardandoLeccion
-                                                        }
-                                                        className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
-                                                      >
-                                                        {guardandoLeccion
-                                                          ? "Guardando..."
-                                                          : "Guardar lección"}
-                                                      </button>
+                                                    <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                                      <p className="text-sm text-slate-500">
+                                                        La lección se agregará dentro de:{" "}
+                                                        <span className="font-bold text-slate-800">
+                                                          {submodulo.titulo}
+                                                        </span>
+                                                      </p>
+
+                                                      <div className="flex gap-3">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() =>
+                                                            setMostrarFormLeccion((prev) => ({
+                                                              ...prev,
+                                                              [submodulo.id]: false,
+                                                            }))
+                                                          }
+                                                          className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                                                        >
+                                                          Cancelar
+                                                        </button>
+
+                                                        <button
+                                                          type="submit"
+                                                          disabled={guardandoLeccion}
+                                                          className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-[0_18px_35px_-20px_rgba(5,150,105,0.8)] transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg disabled:cursor-not-allowed disabled:bg-emerald-300 disabled:shadow-none"
+                                                        >
+                                                          {guardandoLeccion ? "Creando..." : "Crear lección"}
+                                                        </button>
+                                                      </div>
                                                     </div>
                                                   </form>
                                                 )}
                                               </div>
 
                                               <div className="p-4 space-y-4">
-                                                {submodulo.lecciones?.length ===
-                                                0 ? (
-                                                  <p className="text-sm text-gray-500">
-                                                    Este submódulo no tiene
-                                                    lecciones.
-                                                  </p>
+                                                {submodulo.lecciones?.length === 0 ? (
+                                                  <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 p-8 text-center">
+                                                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-2xl shadow-sm">
+                                                      🎯
+                                                    </div>
+
+                                                    <h5 className="mt-4 text-base font-black text-slate-900">
+                                                      Este submódulo no tiene lecciones
+                                                    </h5>
+
+                                                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                                                      Agrega la primera lección para empezar a organizar videos, materiales, evaluaciones y recursos del curso.
+                                                    </p>
+                                                  </div>
                                                 ) : (
                                                   <DndContext
                                                     sensors={sensors}
@@ -6500,115 +6971,84 @@ const guardarConfiguracionTarea = async () => {
                                                               key={leccion.id}
                                                               leccion={leccion}
                                                             >
-                                                              <div className="relative ml-0 md:ml-8 rounded-[20px] border border-white bg-white overflow-hidden shadow-sm">
-                                                                <div className="px-4 py-4 bg-white">
+                                                              <div className="relative ml-0 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_16px_40px_-28px_rgba(15,23,42,0.35)] md:ml-8">
+                                                                <div className="border-b border-slate-100 bg-gradient-to-br from-white via-slate-50 to-indigo-50/40 px-5 py-5">
                                                                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
                                                                     <div>
                                                                       <div className="flex items-center gap-3 flex-wrap">
-                                                                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5">
+                                                                        <span className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-700">
                                                                           Lección{" "}
-                                                                          {index +
-                                                                            1}
+                                                                          {index + 1}
                                                                           .
-                                                                          {idxSub +
-                                                                            1}
+                                                                          {idxSub + 1}
                                                                           .
-                                                                          {idxLeccion +
-                                                                            1}
+                                                                          {idxLeccion + 1}
                                                                         </span>
 
-                                                                        <h5 className="text-lg font-bold text-slate-800">
-                                                                          {
-                                                                            leccion.titulo
-                                                                          }
+                                                                        <h5 className="text-lg font-black tracking-tight text-slate-900">
+                                                                          {leccion.titulo}
                                                                         </h5>
                                                                       </div>
 
                                                                       {leccion.descripcion && (
-                                                                        <p className="text-sm text-slate-500 mt-2">
-                                                                          {
-                                                                            leccion.descripcion
-                                                                          }
+                                                                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                                                                          {leccion.descripcion}
                                                                         </p>
                                                                       )}
                                                                     </div>
 
-                                                                    <div className="flex flex-wrap gap-2">
+                                                                    <div className="flex flex-wrap gap-2 xl:justify-end">
                                                                       <button
                                                                         type="button"
-                                                                        onClick={() =>
-                                                                          toggleFormMaterial(
-                                                                            leccion.id,
-                                                                          )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+                                                                        onClick={() => toggleFormMaterial(leccion.id)}
+                                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-md"
                                                                       >
-                                                                        +
-                                                                        Material
+                                                                        <span>＋</span>
+                                                                        <span>Material</span>
                                                                       </button>
 
                                                                       <button
                                                                         type="button"
-                                                                        onClick={() =>
-                                                                          toggleFormExamen(
-                                                                            leccion.id,
-                                                                          )
-                                                                        }
+                                                                        onClick={() => toggleFormExamen(leccion.id)}
                                                                         disabled={
                                                                           !!examenEditandoId &&
-                                                                          Number(
-                                                                            leccionExamenEditandoId,
-                                                                          ) !==
-                                                                            Number(
-                                                                              leccion.id,
-                                                                            )
+                                                                          Number(leccionExamenEditandoId) !== Number(leccion.id)
                                                                         }
-                                                                        className="px-3 py-2 rounded-xl bg-violet-600 text-white hover:bg-violet-700 text-sm disabled:opacity-50"
+                                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-2.5 text-sm font-black text-violet-700 transition hover:-translate-y-0.5 hover:bg-violet-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                                                                       >
-                                                                        {mostrarFormExamen[
-                                                                          leccion
-                                                                            .id
-                                                                        ]
-                                                                          ? "Cerrar examen"
-                                                                          : "+ Examen"}
+                                                                        <span>{mostrarFormExamen[leccion.id] ? "✕" : "＋"}</span>
+                                                                        <span>{mostrarFormExamen[leccion.id] ? "Cerrar examen" : "Examen"}</span>
                                                                       </button>
 
                                                                       <button
                                                                         type="button"
-                                                                        onClick={() =>
-                                                                          toggleMaterialesLeccion(
-                                                                            leccion.id,
-                                                                          )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                        onClick={() => toggleMaterialesLeccion(leccion.id)}
+                                                                        className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5 hover:shadow-md ${
+                                                                          abiertaMateriales
+                                                                            ? "border-slate-300 bg-slate-900 text-white hover:bg-slate-800"
+                                                                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                                                        }`}
                                                                       >
-                                                                        {abiertaMateriales
-                                                                          ? "Ocultar materiales"
-                                                                          : "Ver materiales"}
+                                                                        <span>{abiertaMateriales ? "👁️" : "📂"}</span>
+                                                                        <span>{abiertaMateriales ? "Ocultar materiales" : "Ver materiales"}</span>
                                                                       </button>
 
                                                                       <button
                                                                         type="button"
-                                                                        onClick={() =>
-                                                                          iniciarEdicionLeccion(
-                                                                            leccion,
-                                                                          )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                        onClick={() => iniciarEdicionLeccion(leccion)}
+                                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-md"
                                                                       >
-                                                                        Editar
+                                                                        <span>✏️</span>
+                                                                        <span>Editar</span>
                                                                       </button>
 
                                                                       <button
                                                                         type="button"
-                                                                        onClick={() =>
-                                                                          eliminarLeccionCurso(
-                                                                            leccion.id,
-                                                                          )
-                                                                        }
-                                                                        className="px-3 py-2 rounded-xl bg-red-100 text-red-700 hover:bg-red-200 text-sm"
+                                                                        onClick={() => eliminarLeccionCurso(leccion.id)}
+                                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-md"
                                                                       >
-                                                                        Eliminar
+                                                                        <span>🗑️</span>
+                                                                        <span>Eliminar</span>
                                                                       </button>
                                                                     </div>
                                                                   </div>

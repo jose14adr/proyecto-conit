@@ -78,4 +78,34 @@ export class Curso {
   @ManyToOne(() => Empresa, { nullable: true })
   @JoinColumn({ name: 'idempresa' })
   empresa?: Empresa;
+
+  @Column({ type: 'boolean', default: false })
+  visible_web: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  destacado_web: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  imagen_url: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  slug: string | null;
+
+  @Column({ type: 'int', default: 1 })
+  orden_web: number;
+
+  @Column({ type: 'varchar', length: 80, nullable: true, default: 'Curso' })
+  etiqueta_web: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  resumen_web: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  requisitos_web: string | null;
+
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  beneficios_web: any[];
+
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  actualizado_web: Date | null;
 }

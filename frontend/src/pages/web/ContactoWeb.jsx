@@ -1,7 +1,128 @@
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { contactoWebContent } from "../../data/contactoWebContent";
+import {
+  enviarMensajeContacto,
+  obtenerContenidoWeb,
+} from "../../services/webCatalogService";
 
 function ContactoWeb() {
-  const { hero, contactInfo, support, form } = contactoWebContent;
+  const [contenido, setContenido] = useState(contactoWebContent);
+  const [enviando, setEnviando] = useState(false);
+
+  const [formData, setFormData] = useState({
+    nombre: "",
+    correo: "",
+    asunto: "",
+    mensaje: "",
+  });
+
+  const hero = contenido?.hero || contactoWebContent.hero;
+  const contactInfo = contenido?.contactInfo || contactoWebContent.contactInfo;
+  const support = contenido?.support || contactoWebContent.support;
+  const form = contenido?.form || contactoWebContent.form;
+
+  const cargarContenidoContacto = async () => {
+    try {
+      const data = await obtenerContenidoWeb("contacto");
+
+      if (data && typeof data === "object") {
+        setContenido({
+          ...contactoWebContent,
+          ...data,
+          hero: {
+            ...contactoWebContent.hero,
+            ...(data.hero || {}),
+          },
+          contactInfo: {
+            ...contactoWebContent.contactInfo,
+            ...(data.contactInfo || {}),
+            items: Array.isArray(data.contactInfo?.items)
+              ? data.contactInfo.items
+              : contactoWebContent.contactInfo.items,
+          },
+          support: {
+            ...contactoWebContent.support,
+            ...(data.support || {}),
+            paragraphs: Array.isArray(data.support?.paragraphs)
+              ? data.support.paragraphs
+              : contactoWebContent.support.paragraphs,
+          },
+          form: {
+            ...contactoWebContent.form,
+            ...(data.form || {}),
+            fields: {
+              ...contactoWebContent.form.fields,
+              ...(data.form?.fields || {}),
+            },
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error cargando contenido de Contacto:", error);
+      setContenido(contactoWebContent);
+    }
+  };
+
+  useEffect(() => {
+    cargarContenidoContacto();
+  }, []);
+
+  const handleChange = (campo, valor) => {
+    setFormData((prev) => ({
+      ...prev,
+      [campo]: valor,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.nombre.trim()) {
+      toast.error("Ingresa tu nombre");
+      return;
+    }
+
+    if (!formData.correo.trim()) {
+      toast.error("Ingresa tu correo");
+      return;
+    }
+
+    if (!formData.asunto.trim()) {
+      toast.error("Ingresa el asunto");
+      return;
+    }
+
+    if (!formData.mensaje.trim()) {
+      toast.error("Escribe tu mensaje");
+      return;
+    }
+
+    try {
+      setEnviando(true);
+
+      await enviarMensajeContacto({
+        nombre: formData.nombre.trim(),
+        correo: formData.correo.trim(),
+        asunto: formData.asunto.trim(),
+        mensaje: formData.mensaje.trim(),
+      });
+
+      toast.success("Mensaje enviado correctamente");
+
+      setFormData({
+        nombre: "",
+        correo: "",
+        asunto: "",
+        mensaje: "",
+      });
+    } catch (error) {
+      console.error("Error enviando mensaje:", error);
+      toast.error(error?.message || "No se pudo enviar el mensaje");
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -31,7 +152,7 @@ function ContactoWeb() {
             </h2>
 
             <div className="space-y-4">
-              {contactInfo.items.map((item, index) => (
+              {(contactInfo.items || []).map((item, index) => (
                 <p key={index} className="leading-7 text-slate-600">
                   <span className="font-semibold text-slate-900">
                     {item.label}:
@@ -48,7 +169,7 @@ function ContactoWeb() {
             </h2>
 
             <div className="space-y-4">
-              {support.paragraphs.map((paragraph, index) => (
+              {(support.paragraphs || []).map((paragraph, index) => (
                 <p key={index} className="leading-8 text-slate-600">
                   {paragraph}
                 </p>
@@ -72,18 +193,22 @@ function ContactoWeb() {
               </h2>
             </div>
 
-            <form className="mx-auto max-w-3xl space-y-5">
+            <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-5">
               <div>
                 <label
                   htmlFor="nombre"
                   className="mb-2 block text-sm font-semibold text-slate-800"
                 >
-                  {form.fields.nombre.label}
+                  {form.fields?.nombre?.label || "Nombre"}
                 </label>
                 <input
                   id="nombre"
                   type="text"
-                  placeholder={form.fields.nombre.placeholder}
+                  value={formData.nombre}
+                  onChange={(e) => handleChange("nombre", e.target.value)}
+                  placeholder={
+                    form.fields?.nombre?.placeholder || "Ingresa tu nombre"
+                  }
                   className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                 />
               </div>
@@ -93,12 +218,16 @@ function ContactoWeb() {
                   htmlFor="correo"
                   className="mb-2 block text-sm font-semibold text-slate-800"
                 >
-                  {form.fields.correo.label}
+                  {form.fields?.correo?.label || "Correo"}
                 </label>
                 <input
                   id="correo"
                   type="email"
-                  placeholder={form.fields.correo.placeholder}
+                  value={formData.correo}
+                  onChange={(e) => handleChange("correo", e.target.value)}
+                  placeholder={
+                    form.fields?.correo?.placeholder || "Ingresa tu correo"
+                  }
                   className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                 />
               </div>
@@ -108,12 +237,16 @@ function ContactoWeb() {
                   htmlFor="asunto"
                   className="mb-2 block text-sm font-semibold text-slate-800"
                 >
-                  {form.fields.asunto.label}
+                  {form.fields?.asunto?.label || "Asunto"}
                 </label>
                 <input
                   id="asunto"
                   type="text"
-                  placeholder={form.fields.asunto.placeholder}
+                  value={formData.asunto}
+                  onChange={(e) => handleChange("asunto", e.target.value)}
+                  placeholder={
+                    form.fields?.asunto?.placeholder || "Motivo de contacto"
+                  }
                   className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                 />
               </div>
@@ -123,21 +256,28 @@ function ContactoWeb() {
                   htmlFor="mensaje"
                   className="mb-2 block text-sm font-semibold text-slate-800"
                 >
-                  {form.fields.mensaje.label}
+                  {form.fields?.mensaje?.label || "Mensaje"}
                 </label>
                 <textarea
                   id="mensaje"
                   rows="5"
-                  placeholder={form.fields.mensaje.placeholder}
+                  value={formData.mensaje}
+                  onChange={(e) => handleChange("mensaje", e.target.value)}
+                  placeholder={
+                    form.fields?.mensaje?.placeholder || "Escribe tu consulta"
+                  }
                   className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                 />
               </div>
 
               <button
-                type="button"
-                className="w-full rounded-2xl bg-sky-500 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-sky-600"
+                type="submit"
+                disabled={enviando}
+                className="w-full rounded-2xl bg-sky-500 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {form.buttonText}
+                {enviando
+                  ? "Enviando..."
+                  : form.buttonText || "Enviar mensaje"}
               </button>
             </form>
           </div>
