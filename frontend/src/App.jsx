@@ -50,7 +50,7 @@ const ControlSesiones = lazy(() => import("./admin/ControlSesiones"));
 const Certificados = lazy(() => import("./admin/Certificados"));
 const PerfilAdministrador = lazy(() => import("./admin/PerfilAdministrador"));
 const GestionWeb = lazy(() => import("./admin/GestionWeb"));
-import Certificados from "./admin/Certificados";
+
 
 
 // DOCENTE
