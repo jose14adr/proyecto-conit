@@ -9,7 +9,6 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
-
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';

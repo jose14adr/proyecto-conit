@@ -31,9 +31,42 @@ export class GrupoService {
     });
   }
 
-  async asignarDocente(idGrupo: number, idDocente: number, permisos?: any) {
-    await this.grupoRepo.update(idGrupo, { docente: { id: idDocente } });
-    return { message: 'Docente asignado al grupo exitosamente' };
+    async asignarDocente(idGrupo: number, idDocente: number, permisos?: any) {
+    const grupo = await this.grupoRepo.findOneBy({ id: idGrupo });
+
+    if (!grupo) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+
+    grupo.docente = { id: idDocente } as any;
+
+    if (permisos) {
+      grupo.permisos_docente = JSON.stringify(permisos);
+    } else {
+      grupo.permisos_docente = JSON.stringify({
+        control_total: false,
+        gestionar_contenido: false,
+        gestionar_tareas: false,
+        gestionar_examenes: false,
+        gestionar_sesiones: false,
+        tomar_asistencia: true,
+        gestionar_calificaciones: false,
+      });
+    }
+
+    await this.grupoRepo.save(grupo);
+
+    return { message: 'Docente y permisos asignados exitosamente' };
+  }
+
+  async gruposPorDocente(iddocente: number) {
+    return await this.grupoRepo.find({
+      where: {
+        docente: { id: iddocente },
+      },
+      relations: ['curso'],
+      order: { id: 'DESC' },
+    });
   }
 
   async create(data: any) {
@@ -133,17 +166,13 @@ export class GrupoService {
     };
   }
 
-  async gruposPorDocente(iddocente: number) {
-    return await this.grupoRepo.find({
-      where: {
-        docente: {
-          id: iddocente,
-        },
-      },
-      relations: ['curso'],
-      order: {
-        id: 'DESC',
-      },
-    });
+  async obtenerPorAlumno(idalumno: number) {
+    return this.grupoRepo.query(`
+      SELECT DISTINCT g.*, c.nombrecurso
+      FROM grupo g
+      INNER JOIN curso c ON c.id = g.idcurso
+      INNER JOIN matricula m ON m.idgrupo = g.id
+      WHERE m.idalumno = $1
+    `, [idalumno]);
   }
 }

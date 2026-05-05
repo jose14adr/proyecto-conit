@@ -51,4 +51,9 @@ export class GrupoController {
   ) {
     return this.grupoService.gruposPorDocente(iddocente);
   }
+
+  @Get('alumno/:idalumno')
+  obtenerGruposPorAlumno(@Param('idalumno') idalumno: string) {
+    return this.grupoService.obtenerPorAlumno(Number(idalumno));
+  }
 }

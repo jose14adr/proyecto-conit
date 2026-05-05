@@ -55,6 +55,22 @@ export default function LayoutEstudiante() {
           />
 
           <SidebarLink
+            to="/alumno/asistencia"
+            label="Mi Asistencia"
+            sidebarOpen={sidebarOpen}
+            active={location.pathname.startsWith("/alumno/asistencia")}
+            icon={<BookOpen size={iconSize} />}
+          />
+
+          <SidebarLink
+            to="/alumno/historial"
+            label="Historial Académico"
+            sidebarOpen={sidebarOpen}
+            active={location.pathname.startsWith("/alumno/historial")}
+            icon={<BookOpen size={iconSize} />}
+          />
+
+          <SidebarLink
             to="/alumno/matricula"
             label="Cursos Sugeridos"
             sidebarOpen={sidebarOpen}

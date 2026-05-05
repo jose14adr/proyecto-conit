@@ -44,11 +44,11 @@ import {
   asignarEvaluacionATarea,
   crearExamen,
   getExamenesByLeccion,
-  getExamenDetalle,
   getEvaluacionesExamenDisponiblesByGrupo,
   asignarEvaluacionAExamen,
   deleteExamen,
   actualizarExamen,
+  getExamenDetalle,
   getSesionesVivoByGrupo,
   getMeetingProviderByGrupo,
   crearSesionVivo,
@@ -320,17 +320,14 @@ function VideoEmbed({ url }) {
 function parseMathSegments(content = "") {
   if (!content) return [];
 
-  const regex = /\\\((.+?)\\\)|\\\[(.+?)\\\]/gs;
+  const regex = /\\((.+?)\\)|\\[(.+?)\\]/gs;
   const segments = [];
   let lastIndex = 0;
   let match;
 
   while ((match = regex.exec(content)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({
-        type: "text",
-        value: content.slice(lastIndex, match.index),
-      });
+      segments.push({ type: "text", value: content.slice(lastIndex, match.index) });
     }
 
     segments.push({
@@ -343,10 +340,7 @@ function parseMathSegments(content = "") {
   }
 
   if (lastIndex < content.length) {
-    segments.push({
-      type: "text",
-      value: content.slice(lastIndex),
-    });
+    segments.push({ type: "text", value: content.slice(lastIndex) });
   }
 
   return segments;
@@ -368,246 +362,12 @@ function MathContentPreview({ content, className = "" }) {
 
         return segment.display ? (
           <div key={index} className="my-2 overflow-x-auto">
-            <math-div>{segment.value}</math-div>
+            <math-field read-only value={segment.value} className="w-full" />
           </div>
         ) : (
-          <math-span key={index}>{segment.value}</math-span>
+          <math-field key={index} read-only value={segment.value} className="inline-block" />
         );
       })}
-    </div>
-  );
-}
-
-function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
-  const mfRef = useRef(null);
-  const [latex, setLatex] = useState(initialLatex || "");
-  const [displayMode, setDisplayMode] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setLatex(initialLatex || "");
-  }, [open, initialLatex]);
-
-  useEffect(() => {
-    if (!open || !mfRef.current) return;
-
-    const mf = mfRef.current;
-    mf.value = initialLatex || "";
-    mf.mathVirtualKeyboardPolicy = "manual";
-    mf.inlineShortcuts = {
-      ...(mf.inlineShortcuts || {}),
-      pi: "\\pi",
-      infty: "\\infty",
-      sqrt: "\\sqrt{#?}",
-      int: "\\int",
-      sum: "\\sum",
-      theta: "\\theta",
-    };
-
-    const handleInput = (evt) => {
-      setLatex(evt.target.value || "");
-    };
-
-    const handleFocusIn = () => {
-      if (window.mathVirtualKeyboard) {
-        window.mathVirtualKeyboard.layouts = [
-          "numeric",
-          "symbols",
-          "greek",
-          "alphabetic",
-        ];
-        window.mathVirtualKeyboard.show?.();
-      }
-    };
-
-    const handleFocusOut = () => {
-      window.mathVirtualKeyboard?.hide?.();
-    };
-
-    mf.addEventListener("input", handleInput);
-    mf.addEventListener("focusin", handleFocusIn);
-    mf.addEventListener("focusout", handleFocusOut);
-
-    return () => {
-      mf.removeEventListener("input", handleInput);
-      mf.removeEventListener("focusin", handleFocusIn);
-      mf.removeEventListener("focusout", handleFocusOut);
-      window.mathVirtualKeyboard?.hide?.();
-    };
-  }, [open, initialLatex]);
-
-  const insertarPlantilla = (snippet) => {
-    const mf = mfRef.current;
-    if (!mf) return;
-
-    if (typeof mf.executeCommand === "function") {
-      mf.executeCommand(["insert", snippet]);
-    } else {
-      mf.value = `${mf.value || ""}${snippet}`;
-    }
-
-    setLatex(mf.value || "");
-    mf.focus();
-  };
-
-  const handleInsert = () => {
-    const wrapped = displayMode ? `\\[${latex}\\]` : `\\(${latex}\\)`;
-    onInsert?.(wrapped);
-  };
-
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/45" onClick={onClose} />
-
-      <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-900 to-violet-800 px-6 py-5 text-white">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-bold">Insertar fórmula</h3>
-              <p className="text-sm text-slate-200 mt-1">
-                Puedes usar texto normal en el enunciado y añadir fórmulas cuando lo necesites.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10 transition"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-5">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => insertarPlantilla("\\frac{#?}{#?}")}
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              Fracción
-            </button>
-            <button
-              type="button"
-              onClick={() => insertarPlantilla("x^{#?}")}
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              Potencia
-            </button>
-            <button
-              type="button"
-              onClick={() => insertarPlantilla("\\sqrt{#?}")}
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              Raíz
-            </button>
-            <button
-              type="button"
-              onClick={() => insertarPlantilla("\\int_{#?}^{#?}")}
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              Integral
-            </button>
-            <button
-              type="button"
-              onClick={() => insertarPlantilla("\\sum_{#?}^{#?}")}
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              Sumatoria
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                insertarPlantilla("\\begin{bmatrix}#? & #?\\\\ #? & #?\\end{bmatrix}")
-              }
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              Matriz 2x2
-            </button>
-            <button
-              type="button"
-              onClick={() => insertarPlantilla("\\pi")}
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              π
-            </button>
-            <button
-              type="button"
-              onClick={() => insertarPlantilla("\\theta")}
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              θ
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (window.mathVirtualKeyboard) {
-                  window.mathVirtualKeyboard.visible =
-                    !window.mathVirtualKeyboard.visible;
-                }
-              }}
-              className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white hover:bg-violet-700"
-            >
-              Teclado matemático
-            </button>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <math-field
-              ref={mfRef}
-              className="block w-full min-h-[96px]"
-              style={{ width: "100%", minHeight: "96px" }}
-            >
-              {latex}
-            </math-field>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-              <input
-                type="checkbox"
-                checked={displayMode}
-                onChange={(e) => setDisplayMode(e.target.checked)}
-              />
-              Insertar como bloque
-            </label>
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold text-slate-700 mb-2">
-              Vista previa
-            </p>
-            <MathContentPreview
-              content={displayMode ? `\\[${latex}\\]` : `\\(${latex}\\)`}
-            />
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-            Puedes usar texto normal en el enunciado y añadir fórmulas cuando lo necesites.
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Cancelar
-            </button>
-
-            <button
-              type="button"
-              onClick={handleInsert}
-              className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700"
-            >
-              Insertar fórmula
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -707,14 +467,14 @@ function FormulaNumericaModal({
 
         <div className="p-6 space-y-5">
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => insertarPlantilla("\\frac{#0}{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Fracción</button>
+            <button type="button" onClick={() => insertarPlantilla("\frac{#0}{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Fracción</button>
             <button type="button" onClick={() => insertarPlantilla("x^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Potencia</button>
-            <button type="button" onClick={() => insertarPlantilla("\\sqrt{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Raíz</button>
-            <button type="button" onClick={() => insertarPlantilla("\\int_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Integral</button>
-            <button type="button" onClick={() => insertarPlantilla("\\sum_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Sumatoria</button>
-            <button type="button" onClick={() => insertarPlantilla("\\begin{bmatrix}#0 & #0\\\\ #0 & #0\\end{bmatrix}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Matriz 2x2</button>
-            <button type="button" onClick={() => insertarPlantilla("\\pi")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">π</button>
-            <button type="button" onClick={() => insertarPlantilla("\\theta")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">θ</button>
+            <button type="button" onClick={() => insertarPlantilla("\sqrt{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Raíz</button>
+            <button type="button" onClick={() => insertarPlantilla("\int_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Integral</button>
+            <button type="button" onClick={() => insertarPlantilla("\sum_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Sumatoria</button>
+            <button type="button" onClick={() => insertarPlantilla("\begin{bmatrix}#0 & #0\\ #0 & #0\end{bmatrix}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Matriz 2x2</button>
+            <button type="button" onClick={() => insertarPlantilla("\pi")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">π</button>
+            <button type="button" onClick={() => insertarPlantilla("\theta")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">θ</button>
             <button
               type="button"
               onClick={() => window.mathVirtualKeyboard?.toggle?.()}
@@ -749,6 +509,146 @@ function FormulaNumericaModal({
             <button
               type="button"
               onClick={() => onInsert(latex)}
+              className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700"
+            >
+              Insertar fórmula
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
+  const mfRef = useRef(null);
+  const [latex, setLatex] = useState(initialLatex || "");
+  const [displayMode, setDisplayMode] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLatex(initialLatex || "");
+  }, [open, initialLatex]);
+
+  useEffect(() => {
+    if (!open || !mfRef.current) return;
+
+    const mf = mfRef.current;
+    mf.value = initialLatex || "";
+    mf.mathVirtualKeyboardPolicy = "manual";
+
+    const handleInput = (evt) => {
+      setLatex(evt.target.value || "");
+    };
+
+    mf.addEventListener("input", handleInput);
+
+    return () => {
+      mf.removeEventListener("input", handleInput);
+      window.mathVirtualKeyboard?.hide?.();
+    };
+  }, [open, initialLatex]);
+
+  const insertarPlantilla = (snippet) => {
+    const mf = mfRef.current;
+    if (!mf) return;
+
+    if (typeof mf.executeCommand === "function") {
+      mf.executeCommand(["insert", snippet]);
+    } else {
+      mf.value = `${mf.value || ""}${snippet}`;
+    }
+
+    setLatex(mf.value || "");
+    mf.focus();
+  };
+
+  const handleInsert = () => {
+    const wrapped = displayMode ? `\[${latex}\]` : `\(${latex}\)`;
+    onInsert?.(wrapped);
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/45" onClick={onClose} />
+
+      <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-900 to-violet-800 px-6 py-5 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold">Insertar fórmula</h3>
+              <p className="text-sm text-slate-200 mt-1">
+                Puedes usar texto normal en el enunciado y añadir fórmulas cuando lo necesites.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:bg-white/10 transition"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => insertarPlantilla("\frac{#?}{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Fracción</button>
+            <button type="button" onClick={() => insertarPlantilla("x^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Potencia</button>
+            <button type="button" onClick={() => insertarPlantilla("\sqrt{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Raíz</button>
+            <button type="button" onClick={() => insertarPlantilla("\int_{#?}^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Integral</button>
+            <button type="button" onClick={() => insertarPlantilla("\sum_{#?}^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Sumatoria</button>
+            <button type="button" onClick={() => insertarPlantilla("\begin{bmatrix}#? & #?\\ #? & #?\end{bmatrix}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Matriz 2x2</button>
+            <button type="button" onClick={() => insertarPlantilla("\pi")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">π</button>
+            <button type="button" onClick={() => insertarPlantilla("\theta")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">θ</button>
+            <button
+              type="button"
+              onClick={() => window.mathVirtualKeyboard?.toggle?.()}
+              className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white hover:bg-violet-700"
+            >
+              Teclado matemático
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <math-field
+              ref={mfRef}
+              className="block w-full min-h-[96px]"
+              style={{ width: "100%", minHeight: "96px" }}
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={displayMode}
+                onChange={(e) => setDisplayMode(e.target.checked)}
+              />
+              Insertar como bloque
+            </label>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-slate-700 mb-2">Vista previa</p>
+            <MathContentPreview content={displayMode ? `\[${latex}\]` : `\(${latex}\)`} />
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={handleInsert}
               className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700"
             >
               Insertar fórmula
@@ -885,9 +785,9 @@ function CursoDetalleAdmin() {
   const [formMaterial, setFormMaterial] = useState({});
   const [subidaMaterialProgress, setSubidaMaterialProgress] = useState({});
   const [subidaMaterialEstado, setSubidaMaterialEstado] = useState({});
+
   const [notificacionesVideo, setNotificacionesVideo] = useState([]);
   
-
 
   // ==============================
   // EXAMENES
@@ -1137,6 +1037,7 @@ function CursoDetalleAdmin() {
   //==============================
   const exportarExcel = () => {
     const totalAlumnos = alumnosFiltradosAsistencia.length;
+
     const totalPresentes = alumnosFiltradosAsistencia.filter((a) => {
       const key = a.idalumno || a.id;
       return asistenciaMap[key]?.estado === "presente";
@@ -1256,36 +1157,32 @@ function CursoDetalleAdmin() {
       alignment: { horizontal: "center", vertical: "center" },
     };
 
-    // Título
-    ws["A1"].s = styleTitle;
+    if (ws["A1"]) ws["A1"].s = styleTitle;
 
-    // Secciones
-    ws["A3"].s = styleSection;
-    ws["A9"].s = styleSection;
-    ws["A16"].s = styleSection;
+    ["A3", "A9", "A16"].forEach((cell) => {
+      if (ws[cell]) ws[cell].s = styleSection;
+    });
 
-    // Datos del curso
     ["A4", "A5", "A6", "A7"].forEach((cell) => {
       if (ws[cell]) ws[cell].s = styleLabel;
     });
+
     ["B4", "B5", "B6", "B7"].forEach((cell) => {
       if (ws[cell]) ws[cell].s = styleValue;
     });
 
-    // Resumen
     ["A10", "A11", "A12", "A13", "A14"].forEach((cell) => {
       if (ws[cell]) ws[cell].s = styleLabel;
     });
+
     ["B10", "B11", "B12", "B13", "B14"].forEach((cell) => {
       if (ws[cell]) ws[cell].s = styleCentered;
     });
 
-    // Encabezado tabla
     ["A17", "B17", "C17", "D17", "E17", "F17"].forEach((cell) => {
       if (ws[cell]) ws[cell].s = styleHeader;
     });
 
-    // Filas de detalle
     for (let row = 18; row < 18 + alumnosFiltradosAsistencia.length; row++) {
       if (ws[`A${row}`]) ws[`A${row}`].s = styleCentered;
       if (ws[`B${row}`]) ws[`B${row}`].s = styleCell;
@@ -3199,16 +3096,6 @@ const guardarConfiguracionTarea = async () => {
     }));
   };
 
-  const handleChangeExamen = (leccionId, field, value) => {
-    setFormExamen((prev) => ({
-      ...prev,
-      [leccionId]: {
-        ...(prev[leccionId] || crearExamenVacio()),
-        [field]: value,
-      },
-    }));
-  };
-
   const handleChangePreguntaExamen = (leccionId, preguntaIndex, field, value) => {
     setFormExamen((prev) => {
       const actual = prev[leccionId] || crearExamenVacio();
@@ -4909,7 +4796,6 @@ const guardarConfiguracionTarea = async () => {
               >
                 Exportar PDF
               </button>
-
               <button
                 type="button"
                 onClick={exportarExcel}
@@ -5244,30 +5130,26 @@ const guardarConfiguracionTarea = async () => {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="calificable"
-                      checked={formTarea.calificable}
-                      onChange={handleChangeTarea}
-                      className="h-4 w-4"
-                    />
-                    <div>
-                      <p className="font-semibold text-gray-800">
-                        Tarea calificada
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Si la marcas, esta tarea podrá usarse en el registro de
-                        notas.
-                      </p>
-                    </div>
-                  </label>
-                </div>
+                <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="calificable"
+                    checked={formTarea.calificable}
+                    onChange={handleChangeTarea}
+                    className="h-4 w-4"
+                  />
+                  <div>
+                    <p className="font-semibold text-gray-800">Tarea calificada</p>
+                    <p className="text-sm text-gray-500">
+                      Si la marcas, esta tarea podrá usarse en el registro de notas.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
 
                 <div className="md:col-span-2">
-                  <label className="block font-semibold mb-2">
-                    Descripción
-                  </label>
+                  <label className="block font-semibold mb-2">Descripción</label>
                   <textarea
                     name="descripcion"
                     value={formTarea.descripcion}
@@ -5544,25 +5426,21 @@ const guardarConfiguracionTarea = async () => {
                                   <p className="text-sm font-semibold text-gray-700 mb-2">
                                     Descripción
                                   </p>
-                                  <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700">
+                                  <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700 whitespace-pre-line">
                                     {tarea.descripcion || "Sin descripción"}
                                   </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                   <div className="rounded-xl border bg-gray-50 p-3">
-                                    <p className="text-gray-500">
-                                      Tipo de entrega
-                                    </p>
+                                    <p className="text-gray-500">Tipo de entrega</p>
                                     <p className="font-medium text-gray-800">
                                       {tarea.tipo_entrega || "-"}
                                     </p>
                                   </div>
 
                                   <div className="rounded-xl border bg-gray-50 p-3">
-                                    <p className="text-gray-500">
-                                      Tipo de apoyo
-                                    </p>
+                                    <p className="text-gray-500">Tipo de apoyo</p>
                                     <p className="font-medium text-gray-800 capitalize">
                                       {tarea.tipo_apoyo || "ninguno"}
                                     </p>
@@ -5617,33 +5495,32 @@ const guardarConfiguracionTarea = async () => {
                                           Configuración de nota de la tarea
                                         </p>
                                         <p className="text-xs text-violet-700 mt-1">
-                                          Vincula esta tarea con una evaluación
-                                          del tipo tarea.
+                                          Vincula esta tarea con una evaluación del tipo tarea.
                                         </p>
+
+                                        {indicadorEvaluacion && (
+                                          <div className="mt-3">
+                                            <span
+                                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${indicadorEvaluacion.clase}`}
+                                            >
+                                              {indicadorEvaluacion.texto}
+                                            </span>
+                                          </div>
+                                        )}
                                       </div>
 
-                                      {indicadorEvaluacion && (
-                                        <div className="mt-3">
-                                          <span
-                                            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${indicadorEvaluacion.clase}`}
-                                          >
-                                            {indicadorEvaluacion.texto}
-                                          </span>
-                                        </div>
+                                      {permisos.gestionar_calificaciones && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            abrirConfigTarea(tarea);
+                                          }}
+                                          className="inline-flex items-center justify-center rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition"
+                                        >
+                                          Configurar nota
+                                        </button>
                                       )}
-
-                                      {permisos.gestionar_calificaciones &&
-                                        tarea.calificable && (
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              abrirConfigTarea(tarea);
-                                            }}
-                                            className="..."
-                                          >
-                                            <Settings className="w-4 h-4" />
-                                          </button>
-                                        )}
                                     </div>
                                   </div>
                                 )}
@@ -5653,48 +5530,32 @@ const guardarConfiguracionTarea = async () => {
                                     Entregas de alumnos
                                   </p>
 
-                                  {cargandoDetalleTarea &&
-                                  tareaDetalle?.id === tarea.id ? (
-                                    <p className="text-sm text-gray-500">
-                                      Cargando entregas...
-                                    </p>
+                                  {cargandoDetalleTarea && tareaDetalle?.id === tarea.id ? (
+                                    <p className="text-sm text-gray-500">Cargando entregas...</p>
                                   ) : tareaDetalle?.id === tarea.id ? (
                                     entregasTarea.length === 0 ? (
                                       <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
-                                        No hay alumnos ni entregas registradas
-                                        para esta tarea.
+                                        No hay alumnos ni entregas registradas para esta tarea.
                                       </div>
                                     ) : (
                                       <div className="overflow-auto rounded-2xl border border-gray-200">
                                         <table className="w-full min-w-[900px] text-sm">
                                           <thead className="bg-gray-50">
                                             <tr className="border-b">
-                                              <th className="px-3 py-3 text-left">
-                                                Alumno
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Fecha
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Hora
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Entrega
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Nota
-                                              </th>
-                                              <th className="px-3 py-3 text-left">
-                                                Acción
-                                              </th>
+                                              <th className="px-3 py-3 text-left">Alumno</th>
+                                              <th className="px-3 py-3 text-left">Fecha</th>
+                                              <th className="px-3 py-3 text-left">Hora</th>
+                                              <th className="px-3 py-3 text-left">Entrega</th>
+                                              <th className="px-3 py-3 text-left">Nota</th>
+                                              <th className="px-3 py-3 text-left">Acción</th>
                                             </tr>
                                           </thead>
+
                                           <tbody>
                                             {entregasTarea.map((fila) => {
-                                              const fechaEntrega =
-                                                fila.fecha_entrega
-                                                  ? new Date(fila.fecha_entrega)
-                                                  : null;
+                                              const fechaEntrega = fila.fecha_entrega
+                                                ? new Date(fila.fecha_entrega)
+                                                : null;
 
                                               return (
                                                 <tr
@@ -5703,32 +5564,25 @@ const guardarConfiguracionTarea = async () => {
                                                 >
                                                   <td className="px-3 py-3">
                                                     <div className="font-medium text-gray-800">
-                                                      {fila.nombre}{" "}
-                                                      {fila.apellido}
+                                                      {fila.nombre} {fila.apellido}
                                                     </div>
                                                     <div className="text-xs text-gray-500">
-                                                      DNI:{" "}
-                                                      {fila.numdocumento || "-"}
+                                                      DNI: {fila.numdocumento || "-"}
                                                     </div>
                                                   </td>
 
                                                   <td className="px-3 py-3">
                                                     {fechaEntrega
-                                                      ? fechaEntrega.toLocaleDateString(
-                                                          "es-PE",
-                                                        )
+                                                      ? fechaEntrega.toLocaleDateString("es-PE")
                                                       : "—"}
                                                   </td>
 
                                                   <td className="px-3 py-3">
                                                     {fechaEntrega
-                                                      ? fechaEntrega.toLocaleTimeString(
-                                                          "es-PE",
-                                                          {
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                          },
-                                                        )
+                                                      ? fechaEntrega.toLocaleTimeString("es-PE", {
+                                                          hour: "2-digit",
+                                                          minute: "2-digit",
+                                                        })
                                                       : "—"}
                                                   </td>
 
@@ -5737,9 +5591,7 @@ const guardarConfiguracionTarea = async () => {
                                                       <div className="flex flex-wrap gap-2">
                                                         {fila.archivo_url && (
                                                           <a
-                                                            href={
-                                                              fila.archivo_url
-                                                            }
+                                                            href={fila.archivo_url}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="inline-flex items-center rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
@@ -5752,17 +5604,12 @@ const guardarConfiguracionTarea = async () => {
                                                           <button
                                                             type="button"
                                                             onClick={() => {
-                                                              setEntregaSeleccionada(
-                                                                {
-                                                                  alumno: `${fila.nombre} ${fila.apellido}`,
-                                                                  contenido:
-                                                                    fila.comentario,
-                                                                  tipo: "texto",
-                                                                },
-                                                              );
-                                                              setModalEntregaOpen(
-                                                                true,
-                                                              );
+                                                              setEntregaSeleccionada({
+                                                                alumno: `${fila.nombre} ${fila.apellido}`,
+                                                                contenido: fila.comentario,
+                                                                tipo: "texto",
+                                                              });
+                                                              setModalEntregaOpen(true);
                                                             }}
                                                             className="inline-flex items-center rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
                                                           >
@@ -5772,9 +5619,7 @@ const guardarConfiguracionTarea = async () => {
 
                                                         {fila.enlace_url && (
                                                           <a
-                                                            href={
-                                                              fila.enlace_url
-                                                            }
+                                                            href={fila.enlace_url}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="inline-flex items-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
@@ -5819,19 +5664,11 @@ const guardarConfiguracionTarea = async () => {
                                                   <td className="px-3 py-3">
                                                     <button
                                                       type="button"
-                                                      disabled={
-                                                        !!guardandoNotaEntrega[
-                                                          fila.idmatricula
-                                                        ]
-                                                      }
-                                                      onClick={() =>
-                                                        guardarNotaEntrega(fila)
-                                                      }
+                                                      disabled={!!guardandoNotaEntrega[fila.idmatricula]}
+                                                      onClick={() => guardarNotaEntrega(fila)}
                                                       className="rounded-xl bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 disabled:opacity-60"
                                                     >
-                                                      {guardandoNotaEntrega[
-                                                        fila.idmatricula
-                                                      ]
+                                                      {guardandoNotaEntrega[fila.idmatricula]
                                                         ? "Guardando..."
                                                         : "Guardar"}
                                                     </button>
@@ -5845,8 +5682,7 @@ const guardarConfiguracionTarea = async () => {
                                     )
                                   ) : (
                                     <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
-                                      Abre esta tarea para cargar entregas y
-                                      calificaciones.
+                                      Abre esta tarea para cargar entregas y calificaciones.
                                     </div>
                                   )}
                                 </div>
@@ -5861,9 +5697,7 @@ const guardarConfiguracionTarea = async () => {
                                         : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                                     }`}
                                   >
-                                    {tarea.revisada
-                                      ? "Marcar como pendiente"
-                                      : "Marcar como revisada"}
+                                    {tarea.revisada ? "Marcar como pendiente" : "Marcar como revisada"}
                                   </button>
 
                                   <button
@@ -5876,7 +5710,7 @@ const guardarConfiguracionTarea = async () => {
                                 </div>
                               </div>
                             )}
-                          </div>
+                            </div>
                         </SortableTareaItem>
                       );
                     })}
@@ -7018,11 +6852,23 @@ const guardarConfiguracionTarea = async () => {
 
                                                                               <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                                                                                 <div className="md:col-span-3">
-                                                                                  <label className="block font-semibold mb-2">
-                                                                                    Enunciado
-                                                                                  </label>
-                                                                                  <input
-                                                                                    type="text"
+                                                                                  <div className="flex items-center justify-between gap-2 mb-2">
+                                                                                    <label className="block font-semibold">
+                                                                                      Enunciado
+                                                                                    </label>
+
+                                                                                    {pregunta.tipo_pregunta === "numerica" && (
+                                                                                      <button
+                                                                                        type="button"
+                                                                                        onClick={() => abrirFormulaEnunciado(leccion.id, preguntaIndex)}
+                                                                                        className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+                                                                                      >
+                                                                                        Insertar fórmula
+                                                                                      </button>
+                                                                                    )}
+                                                                                  </div>
+
+                                                                                  <textarea
                                                                                     value={
                                                                                       pregunta.enunciado ||
                                                                                       ""
@@ -7039,9 +6885,16 @@ const guardarConfiguracionTarea = async () => {
                                                                                           .value,
                                                                                       )
                                                                                     }
-                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                    className="w-full min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
                                                                                     placeholder="Escribe la pregunta"
                                                                                   />
+
+                                                                                  {pregunta.tipo_pregunta === "numerica" && (
+                                                                                    <MathContentPreview
+                                                                                      content={pregunta.enunciado || ""}
+                                                                                      className="mt-3"
+                                                                                    />
+                                                                                  )}
                                                                                 </div>
 
                                                                                 <div>
@@ -7208,75 +7061,121 @@ const guardarConfiguracionTarea = async () => {
 
                                                                               {pregunta.tipo_pregunta ===
                                                                                 "numerica" && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                  <div>
-                                                                                    <label className="block font-semibold mb-2">
-                                                                                      Respuesta
-                                                                                      numérica
-                                                                                      correcta
-                                                                                    </label>
-                                                                                    <input
-                                                                                      type="text"
-                                                                                      value={
-                                                                                        pregunta.respuesta_texto ||
-                                                                                        ""
-                                                                                      }
-                                                                                      onChange={(
-                                                                                        e,
-                                                                                      ) =>
-                                                                                        handleChangePreguntaExamen(
-                                                                                          leccion.id,
-                                                                                          preguntaIndex,
-                                                                                          "respuesta_texto",
-                                                                                          e.target.value.replace(
-                                                                                            /[^\d.-]/g,
-                                                                                            "",
-                                                                                          ),
-                                                                                        )
-                                                                                      }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                      placeholder="Ej. 25 o 25.5"
-                                                                                    />
-                                                                                  </div>
-
-                                                                                  <div className="flex items-end">
-                                                                                    <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
-                                                                                      <input
-                                                                                        type="checkbox"
-                                                                                        checked={
-                                                                                          !!pregunta.permitir_decimales
-                                                                                        }
-                                                                                        onChange={(
-                                                                                          e,
-                                                                                        ) =>
+                                                                                <div className="space-y-4">
+                                                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                    <div>
+                                                                                      <label className="block font-semibold mb-2">
+                                                                                        Modo de respuesta
+                                                                                      </label>
+                                                                                      <select
+                                                                                        value={pregunta.modo_respuesta_numerica || "numero"}
+                                                                                        onChange={(e) =>
                                                                                           handleChangePreguntaExamen(
                                                                                             leccion.id,
                                                                                             preguntaIndex,
-                                                                                            "permitir_decimales",
-                                                                                            e
-                                                                                              .target
-                                                                                              .checked,
+                                                                                            "modo_respuesta_numerica",
+                                                                                            e.target.value,
                                                                                           )
                                                                                         }
-                                                                                        className="h-4 w-4"
-                                                                                      />
-                                                                                      <div>
-                                                                                        <p className="font-semibold text-gray-800">
-                                                                                          Permitir
-                                                                                          decimales
-                                                                                        </p>
-                                                                                        <p className="text-sm text-gray-500">
-                                                                                          Si
-                                                                                          lo
-                                                                                          desactivas,
-                                                                                          solo
-                                                                                          se
-                                                                                          aceptarán
-                                                                                          enteros.
-                                                                                        </p>
+                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      >
+                                                                                        <option value="numero">Solo número</option>
+                                                                                        <option value="formula">Texto / fórmula matemática</option>
+                                                                                      </select>
+                                                                                    </div>
+
+                                                                                    {(pregunta.modo_respuesta_numerica || "numero") !== "formula" && (
+                                                                                      <div className="flex items-end">
+                                                                                        <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
+                                                                                          <input
+                                                                                            type="checkbox"
+                                                                                            checked={!!pregunta.permitir_decimales}
+                                                                                            onChange={(e) =>
+                                                                                              handleChangePreguntaExamen(
+                                                                                                leccion.id,
+                                                                                                preguntaIndex,
+                                                                                                "permitir_decimales",
+                                                                                                e.target.checked,
+                                                                                              )
+                                                                                            }
+                                                                                            className="h-4 w-4"
+                                                                                          />
+                                                                                          <div>
+                                                                                            <p className="font-semibold text-gray-800">
+                                                                                              Permitir decimales
+                                                                                            </p>
+                                                                                            <p className="text-sm text-gray-500">
+                                                                                              Si lo desactivas, solo se aceptarán enteros.
+                                                                                            </p>
+                                                                                          </div>
+                                                                                        </label>
                                                                                       </div>
-                                                                                    </label>
+                                                                                    )}
                                                                                   </div>
+
+                                                                                  {(pregunta.modo_respuesta_numerica || "numero") === "numero" ? (
+                                                                                    <div>
+                                                                                      <label className="block font-semibold mb-2">
+                                                                                        Respuesta numérica correcta
+                                                                                      </label>
+                                                                                      <input
+                                                                                        type="text"
+                                                                                        value={pregunta.respuesta_texto || ""}
+                                                                                        onChange={(e) =>
+                                                                                          handleChangePreguntaExamen(
+                                                                                            leccion.id,
+                                                                                            preguntaIndex,
+                                                                                            "respuesta_texto",
+                                                                                            e.target.value.replace(/[^\d.-]/g, ""),
+                                                                                          )
+                                                                                        }
+                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                        placeholder="Ej. 25 o 25.5"
+                                                                                      />
+                                                                                    </div>
+                                                                                  ) : (
+                                                                                    <div className="space-y-3">
+                                                                                      <div className="flex flex-wrap items-center justify-between gap-3">
+                                                                                        <label className="block font-semibold">
+                                                                                          Fórmula de referencia
+                                                                                        </label>
+
+                                                                                        <button
+                                                                                          type="button"
+                                                                                          onClick={() =>
+                                                                                            abrirFormulaNumerica(
+                                                                                              leccion.id,
+                                                                                              preguntaIndex,
+                                                                                              pregunta.respuesta_texto || "",
+                                                                                            )
+                                                                                          }
+                                                                                          className="rounded-xl bg-violet-100 text-violet-700 px-4 py-2 text-sm hover:bg-violet-200"
+                                                                                        >
+                                                                                          Insertar fórmula
+                                                                                        </button>
+                                                                                      </div>
+
+                                                                                      <textarea
+                                                                                        value={pregunta.respuesta_texto || ""}
+                                                                                        onChange={(e) =>
+                                                                                          handleChangePreguntaExamen(
+                                                                                            leccion.id,
+                                                                                            preguntaIndex,
+                                                                                            "respuesta_texto",
+                                                                                            e.target.value,
+                                                                                          )
+                                                                                        }
+                                                                                        className="w-full min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                        placeholder="Escribe el texto o fórmula matemática de referencia"
+                                                                                      />
+
+                                                                                      <FormulaNumericaPreview latex={pregunta.respuesta_texto || ""} />
+
+                                                                                      <p className="text-xs text-slate-500">
+                                                                                        Usa este modo cuando quieras aceptar una fórmula o expresión matemática en lugar de solo un número.
+                                                                                      </p>
+                                                                                    </div>
+                                                                                  )}
                                                                                 </div>
                                                                               )}
 
@@ -8330,9 +8229,7 @@ const guardarConfiguracionTarea = async () => {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-slate-800">
-                    {item.titulo || "Video"}
-                  </p>
+                  <p className="font-semibold text-slate-800">{item.titulo || "Video"}</p>
                   <p className="text-sm text-slate-600 mt-1">{item.mensaje}</p>
                 </div>
 
@@ -8746,9 +8643,7 @@ const guardarConfiguracionTarea = async () => {
 
             <div className="p-6 space-y-5">
               {cargandoConfigExamen ? (
-                <p className="text-slate-500">
-                  Cargando evaluaciones disponibles...
-                </p>
+                <p className="text-slate-500">Cargando evaluaciones disponibles...</p>
               ) : (
                 <>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -8765,9 +8660,7 @@ const guardarConfiguracionTarea = async () => {
 
                     <select
                       value={evaluacionSeleccionadaExamen}
-                      onChange={(e) =>
-                        setEvaluacionSeleccionadaExamen(e.target.value)
-                      }
+                      onChange={(e) => setEvaluacionSeleccionadaExamen(e.target.value)}
                       className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
                     >
                       <option value="">-- Selecciona una evaluación --</option>
@@ -8785,8 +8678,7 @@ const guardarConfiguracionTarea = async () => {
 
                   {evaluacionesExamenDisponibles.length === 0 && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                      No hay evaluaciones de tipo examen disponibles para este
-                      grupo. Primero configúralas en Registro de Notas.
+                      No hay evaluaciones de tipo examen disponibles para este grupo. Primero configúralas en Registro de Notas.
                     </div>
                   )}
 
@@ -8815,9 +8707,7 @@ const guardarConfiguracionTarea = async () => {
                           : "bg-violet-600 hover:bg-violet-700"
                       }`}
                     >
-                      {guardandoConfigExamen
-                        ? "Guardando..."
-                        : "Guardar asignación"}
+                      {guardandoConfigExamen ? "Guardando..." : "Guardar asignación"}
                     </button>
                   </div>
                 </>

@@ -56,7 +56,7 @@ export class MatriculaService {
       idcontrolacademico: 1,
     });
 
-    // 📧 Enviar correo (si aplica)
+    // 📧 Enviar correo de bienvenida
     try {
       const alumno = await this.alumnoRepo.findOne({
         where: { id: alumnoId },

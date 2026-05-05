@@ -80,7 +80,7 @@ export class AdministradorService {
     if (Object.keys(datosActualizar).length > 0) {
       await this.administradorRepository.update(id, datosActualizar);
     }
-
+    
     return this.findOne(id);
   }
 

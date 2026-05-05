@@ -4,10 +4,16 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class MultimediaService {
-  async upload(file: Express.Multer.File, usuario_id: string) {
+  async upload(file: Express.Multer.File, user: any) {
+
+    if (!file) {
+      throw new Error('No se recibió ningún archivo');
+    }
+
+    console.log("USER 👉", user);
+
     const fileName = `${uuidv4()}-${file.originalname}`;
 
-    // 1. Subir imagen al bucket
     const { error: storageError } = await supabase.storage
       .from('imagenes')
       .upload(fileName, file.buffer, {
@@ -18,25 +24,25 @@ export class MultimediaService {
       throw new Error(storageError.message);
     }
 
-    // 2. Obtener URL pública
     const { data } = supabase.storage
       .from('imagenes')
       .getPublicUrl(fileName);
 
     const publicUrl = data.publicUrl;
 
-    // 3. Buscar alumno por idusuario
+    // 🔥 CORRECCIÓN AQUÍ
     const { data: alumno, error: alumnoError } = await supabase
       .from('alumno')
       .select('id, idusuario')
-      .eq('idusuario', Number(usuario_id))
+      .eq('idusuario', user.userId) // 👈 ESTE ES EL CAMBIO
       .single();
+
+    console.log("ALUMNO 👉", alumno);
 
     if (alumnoError || !alumno) {
       throw new Error('No se encontró el alumno asociado al usuario');
     }
 
-    // 4. Actualizar foto_url del alumno
     const { error: updateError } = await supabase
       .from('alumno')
       .update({

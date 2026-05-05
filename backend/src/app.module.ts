@@ -47,6 +47,12 @@ import { AlumnoMaterialProgresoModule } from './alumno-material-progreso/alumno-
 import { BancoPreguntasModule } from './banco-preguntas/banco-preguntas.module';
 import { WebModule } from './web/web.module';
 import { AdminWebModule } from './admin-web/admin-web.module';
+import { ExamenRespuestaModule } from './examen_respuesta/examen_respuesta.module';
+import { HistorialAcademicoModule } from './historial_academico/historial_academico.module';
+import { AsistenciaController } from './asistencia/asistencia.controller';
+import { AsistenciaService } from './asistencia/asistencia.service';
+import { AsistenciaModule } from './asistencia/asistencia.module';
+import { AsistenciaConfiguracionController } from './asistencia-configuracion/asistencia-configuracion.controller';
 
 @Module({
   imports: [
@@ -120,9 +126,12 @@ import { AdminWebModule } from './admin-web/admin-web.module';
     BancoPreguntasModule,
     WebModule,
     AdminWebModule,
+    ExamenRespuestaModule,
+    HistorialAcademicoModule,
+    AsistenciaModule,
   ],
 
-  controllers: [AppController],
+  controllers: [AppController, AsistenciaConfiguracionController],
   providers: [AppService, GoogleMeetService, MailService, S3Service, VimeoService, VimeoController],
 })
 export class AppModule {}

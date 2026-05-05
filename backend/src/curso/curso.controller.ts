@@ -46,11 +46,12 @@ export class CursoController {
   ) {
     return this.cursoService.obtenerUnoCursoAlumno(idcurso, idalumno);
   }
+  
 
-  @Get(':id')
+  /*@Get(':id')
   async obtenerCurso(@Param('id', ParseIntPipe) id: number) {
     return this.cursoService.obtenerUnoCursoAlumno(id);
-  }
+  }*/
 
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {

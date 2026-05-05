@@ -42,7 +42,7 @@ const getDocenteActual = async () => {
   try {
     payload = JSON.parse(atob(token.split(".")[1]));
   } catch (e) {
-    throw new Error("No se pudo leer el token de sesión.", e);
+    throw new Error("No se pudo leer el token de sesión.");
   }
 
   const usuarioId = payload?.sub;
@@ -338,10 +338,9 @@ export const deleteHistorialDocente = async (id) => {
 export const getCursosDocente = async () => {
   const docente = await getDocenteActual();
 
-  // 👇 AÑADIDO: 'permisos_docente' a la consulta select
   const { data: grupos, error: errGrupos } = await supabase
     .from("grupo")
-    .select("id, idcurso, nombregrupo, horario, modalidad, cantidadpersonas, permisos_docente")
+    .select("id, idcurso, nombregrupo, horario, modalidad, cantidadpersonas")
     .eq("iddocente", docente.id);
 
   if (errGrupos) throw new Error(errGrupos.message);
@@ -369,7 +368,6 @@ export const getCursosDocente = async () => {
       horario: g.horario,
       modalidad: g.modalidad,
       cantidadpersonas: g.cantidadpersonas,
-      permisos_docente: g.permisos_docente, // Pasamos los permisos
       ...(curso || {}),
       nombre: curso?.nombrecurso || "Curso sin nombre",
     };
@@ -774,14 +772,13 @@ export const getCursoById = async (grupoIdParam) => {
   // 1. Buscamos el GRUPO por su propio ID (Esto trae el grupo correcto con sus permisos)
   const { data: grupo, error: errGrupo } = await supabase
     .from("grupo")
-    .select("id, idcurso, nombregrupo, horario, permisos_docente")
-    .eq("id", grupoId) // <-- ¡Regresamos a buscar por ID de grupo!
+    .select("id, idcurso, nombregrupo, horario")
+    .eq("id", grupoId)
     .maybeSingle();
 
   if (errGrupo) throw new Error(errGrupo.message);
   if (!grupo) return null;
 
-  // 2. Usamos el idcurso que venía en el grupo para traer la info del curso
   const { data: curso, error: errCurso } = await supabase
     .from("curso")
     .select("id, nombrecurso, descripcion")
@@ -791,7 +788,6 @@ export const getCursoById = async (grupoIdParam) => {
   if (errCurso) throw new Error(errCurso.message);
   if (!curso) return null;
 
-  // 3. Enviamos el paquete completo a CursoDetalleDocente
   return {
     id: curso.id,
     idgrupo: grupo.id,
@@ -799,8 +795,6 @@ export const getCursoById = async (grupoIdParam) => {
     descripcion: curso.descripcion,
     grupo: grupo.nombregrupo || "-",
     horario: grupo.horario || "-",
-    grupos: [grupo],
-    permisos_docente: grupo.permisos_docente || null, // ¡Aquí viajan los permisos sanos y salvos!
   };
 };
 
@@ -1235,15 +1229,12 @@ export const getHorarioDocente = async () => {
   }
 
   return grupos.map((g) => ({
-    id: g.id,
-    // CORREGIDO: Devolvemos texto simple en lugar de objetos
-    curso: cursosMap[g.idcurso]?.nombrecurso || "Curso", 
+    curso: cursosMap[g.idcurso]?.nombrecurso || "Curso",
     grupo: g.nombregrupo || "",
     modalidad: g.modalidad || "",
     hora: g.horario || "",
     dia: extraerDiaDesdeHorario(g.horario),
     salon: g.modalidad?.toLowerCase() === "presencial" ? g.salon || "" : "",
-    permisos_docente: g.permisos_docente, // Seguimos pasando los permisos intactos
   }));
 };
 

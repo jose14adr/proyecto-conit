@@ -40,54 +40,90 @@ export class CursoService {
     });
   }
 
-  // 🔥 Se obtienen los cursos mediante las matrículas del alumno (Versión Nube)
-  async listarCursosAlumno(idAlumno: number): Promise<Matricula[]> {
-    return this.matriculaRepository.find({
-      where: {
-        alumno: { id: idAlumno },
-      },
-      relations: ['grupo', 'grupo.curso', 'grupo.docente'],
+async listarCursosAlumno(idAlumno: number) {
+  console.log("ID ALUMNO BACK:", idAlumno);
+
+  const data = await this.matriculaRepository
+    .createQueryBuilder('matricula')
+
+    .innerJoinAndSelect('matricula.grupo', 'grupo')
+    .innerJoinAndSelect('grupo.curso', 'curso')
+    .leftJoinAndSelect('grupo.docente', 'docente')
+
+    .leftJoinAndSelect('matricula.alumno', 'alumno')
+
+    // 🔥 FILTRO CORRECTO
+    .where('alumno.id = :idAlumno', { idAlumno })
+
+    .getMany();
+
+  console.log("MATRICULAS ENCONTRADAS:", data.length);
+
+  return data;
+}
+async obtenerUnoCursoAlumno(idCurso: number, idAlumno: number) {
+
+  if (!idAlumno || isNaN(idAlumno)) {
+    throw new Error('idalumno inválido');
+  }
+
+  const curso = await this.cursoRepository
+    .createQueryBuilder('curso')
+
+    .leftJoin('curso.grupos', 'grupo')
+    .innerJoin('grupo.matriculas', 'matricula')
+    .innerJoin('matricula.alumno', 'alumno')
+
+    .where('curso.id = :idCurso', { idCurso })
+    .andWhere('alumno.id = :idAlumno', { idAlumno })
+
+    .leftJoinAndSelect(
+  'curso.modulos',
+  'modulo',
+  '(modulo.idgrupo = grupo.id)'
+)
+.leftJoinAndSelect('modulo.padre', 'padre')
+
+
+    .leftJoinAndSelect('modulo.hijos', 'hijos')
+
+    .leftJoinAndSelect('modulo.lecciones', 'leccion')
+    .leftJoinAndSelect('leccion.materiales', 'material')
+    .leftJoinAndSelect('leccion.examenes', 'examen')
+    .leftJoinAndSelect('examen.preguntas', 'pregunta')
+    .leftJoinAndSelect('pregunta.opciones', 'opcion')
+
+    .distinct(true)
+    .getOne();
+
+  // 🔥 AQUÍ ARMAMOS PADRE → HIJOS
+  if (curso?.modulos) {
+    const mapa: any = {};
+
+    // 1. crear mapa
+    curso.modulos.forEach((m: any) => {
+      mapa[m.id] = { ...m, hijos: [] };
     });
+
+    const arbol: any[] = [];
+
+    // 2. armar jerarquía
+    curso.modulos.forEach((m: any) => {
+      if (m.idpadre && mapa[m.idpadre]) {
+        mapa[m.idpadre].hijos.push(mapa[m.id]);
+      } else {
+        arbol.push(mapa[m.id]); // padres
+      }
+    });
+
+    // 3. asignar solo padres con hijos dentro
+    curso.modulos = arbol;
+    console.dir(curso.modulos, { depth: null });
   }
+  
 
-  // 🔥 Consulta combinada: Trae todo el detalle y valida matrícula si se provee el alumno
-  async obtenerUnoCursoAlumno(idCurso: number, idAlumno?: number) {
-    const query = this.cursoRepository.createQueryBuilder('curso');
-
-    if (idAlumno) {
-      // VALIDAR MATRÍCULA (Si viene desde la vista del alumno)
-      query
-        .innerJoin('curso.grupos', 'grupo')
-        .innerJoin('grupo.matriculas', 'matricula')
-        .innerJoin('matricula.alumno', 'alumno')
-        .where('curso.id = :idCurso', { idCurso })
-        .andWhere('alumno.id = :idAlumno', { idAlumno });
-    } else {
-      // BÚSQUEDA GENERAL (Si viene desde la vista general del curso)
-      query.where('curso.id = :idCurso', { idCurso });
-    }
-
-    return (
-      query
-        // ESTRUCTURA DEL CURSO (Tu versión local)
-        .leftJoinAndSelect('curso.temario', 'temario')
-        .leftJoinAndSelect('temario.unidades', 'unidad')
-        .leftJoinAndSelect('unidad.sesion', 'sesion')
-
-        // MÓDULOS Y LECCIONES (Ambas versiones)
-        .leftJoinAndSelect('curso.modulos', 'modulo')
-        .leftJoinAndSelect('modulo.lecciones', 'leccion')
-        .leftJoinAndSelect('leccion.materiales', 'material')
-
-        // EXÁMENES (Versión Nube)
-        .leftJoinAndSelect('leccion.examenes', 'examen')
-        .leftJoinAndSelect('examen.preguntas', 'pregunta')
-        .leftJoinAndSelect('pregunta.opciones', 'opcion')
-
-        .getOne()
-    );
-  }
-
+  return curso;
+}
   async remove(id: number) {
     await this.cursoRepository.update(id, { estado: false });
     return { message: 'Curso inhabilitado correctamente' };

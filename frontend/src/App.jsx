@@ -20,6 +20,7 @@ import DetalleCursoWeb from "./pages/web/DetalleCursoWeb";
 import PaginaDinamicaWeb from "./pages/web/PaginaDinamicaWeb";
 
 // ESTUDIANTE
+
 import LayoutEstudiante from "./alumno/LayoutEstudiante";
 import HomePage from "./alumno/HomePage";
 import MisCursos from "./alumno/MisCursos";
@@ -30,7 +31,9 @@ import Biblioteca from "./alumno/Biblioteca";
 import MiPerfil from "./alumno/MiPerfil";
 import MisPagos from "./alumno/MisPagos";
 import Matricula from "./alumno/Matricula";
-import Soporte from "./alumno/Soporte";
+import Soporte from "./alumno//Soporte";
+import HistorialAcademico from "./alumno/HistorialAcademico";
+import AsistenciaAlumno from "./alumno/AsistenciaAlumno";
 
 import CursoDetalleAdmin from "./admin/CursoDetalleAdmin";
 
@@ -47,6 +50,8 @@ const ControlSesiones = lazy(() => import("./admin/ControlSesiones"));
 const Certificados = lazy(() => import("./admin/Certificados"));
 const PerfilAdministrador = lazy(() => import("./admin/PerfilAdministrador"));
 const GestionWeb = lazy(() => import("./admin/GestionWeb"));
+import Certificados from "./admin/Certificados";
+
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
@@ -114,6 +119,14 @@ export default function App() {
             }
           />
           <Route
+            path="/web/cursos"
+            element={
+              <PublicWebLayout>
+                <CursosWeb />
+              </PublicWebLayout>
+            }
+          />
+          <Route
             path="/web/nosotros"
             element={
               <PublicWebLayout>
@@ -146,7 +159,7 @@ export default function App() {
             }
           />
 
-          {/* Estudiantes */}
+          {/* ESTUDIANTES */}
           <Route element={<ProtectedRoute allowedRoles={["ALUMNO"]} />}>
             <Route path="/alumno" element={<LayoutEstudiante />}>
               <Route index element={<HomePage />} />
@@ -159,6 +172,8 @@ export default function App() {
               <Route path="mis-pagos" element={<MisPagos />} />
               <Route path="matricula" element={<Matricula />} />
               <Route path="recursos" element={<Biblioteca />} />
+              <Route path="historial" element={<HistorialAcademico />} />
+              <Route path="asistencia" element={<AsistenciaAlumno />} />
             </Route>
           </Route>
 

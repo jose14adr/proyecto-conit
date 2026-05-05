@@ -29,9 +29,14 @@ export class PagoController {
   }
 
   @Post('mercadopago/card')
-  pagarTarjeta(@Body() body: any) {
-    return this.pagoService.pagarConTarjeta(body);
-  }
+    pagarTarjeta(@Body() body: any) {
+      console.log("📩 BODY:", body)
+      return this.pagoService.pagarConTarjeta(body);
+    }
+  @Post("preferencia")
+    crearPreferencia(@Body() body: any) {
+      return this.pagoService.crearPreferencia(body);
+    }
 
   @Post('webhook')
   webhook(@Body() body: any, @Query() query: any) {
@@ -74,4 +79,19 @@ export class PagoController {
 
     return { ok: true };
   }
+  @Post('yape')
+async pagarYape(@Body() body: any) {
+  return this.pagoService.pagarConYape(body)
+}
+
+@Post('yape-mp')
+pagarYapeMP(@Body() body: any) {
+  return this.pagoService.pagarYapeMP(body)
+}
+
+ @Get('verificar/:id')
+async verificar(@Param('id') id: number) {
+  return this.pagoService.buscarPorMatricula(Number(id))
+}
+  
 }

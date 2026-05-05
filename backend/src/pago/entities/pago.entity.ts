@@ -44,4 +44,10 @@ export class Pago {
   @Column({ type: 'text' })
   status_detail: string;
 
+  @Column({ type: 'varchar', length: 10 })
+codigo_aprobacion: string;
+
+@Column({ type: 'varchar', length: 15 })
+celular: string;
+
 }

@@ -1,8 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { supabase } from '../supabase.client';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ExamenIntento } from '../examen_intento/entities/examen_intento.entity';
+import { Examen } from './entities/examen.entity';
+import { Matricula } from 'src/matricula/entities/matricula.entity';
 
 @Injectable()
 export class ExamenService {
+    constructor(
+    @InjectRepository(ExamenIntento)
+    private intentoRepository: Repository<ExamenIntento>,
+
+    @InjectRepository(Matricula)
+    private matriculaRepository: Repository<Matricula>,
+
+    @InjectRepository(Examen)
+    private examenRepository: Repository<Examen>,
+  ) {}
+
   // 🔹 Obtener exámenes por curso
   async getByCurso(grupoId: number) {
     const { data: examenes, error: errExamenes } = await supabase
@@ -17,10 +33,6 @@ export class ExamenService {
     const examenIds = examenes.map((e) => e.id);
     const preguntas = await this.getPreguntasDeExamenes(examenIds);
 
-    // Agregar log para verificar los ids de los exámenes
-    console.log('IDs de los exámenes:', examenIds);
-
-    // Asegurarse de que las preguntas estén asociadas a los exámenes
     return examenes.map((examen) => ({
       ...examen,
       preguntas: preguntas.filter((preg) => preg.idexamen === examen.id),
@@ -35,7 +47,6 @@ export class ExamenService {
 
     if (errPreguntas) throw new Error(errPreguntas.message);
 
-    // Obtener las opciones asociadas a cada pregunta
     const preguntasConOpciones = await Promise.all(
       preguntas.map(async (pregunta) => {
         const { data: opciones, error: errOpciones } = await supabase
@@ -47,139 +58,334 @@ export class ExamenService {
 
         return {
           ...pregunta,
-          opciones, // Añadimos las opciones a la pregunta
+          opciones,
         };
-      }),
+      })
     );
 
     return preguntasConOpciones;
   }
 
-  // 🔹 Iniciar examen (Verifica si el alumno tiene intentos disponibles)
-  async iniciar(examenId: number, idAlumno: number) {
-    const { data: examen } = await supabase
-      .from('examen')
-      .select('*')
-      .eq('id', examenId)
-      .single();
+  // 🔥 RESPONDER EXAMEN (PRO)
+  async responder(intentoId: number, respuestas: Record<string, number | string>) {
 
-    if (!examen) throw new Error('Examen no encontrado.');
-
-    const { data: intentos } = await supabase
+    // 🔹 obtener intento
+    const { data: intento, error: errIntento } = await supabase
       .from('examen_intento')
       .select('*')
-      .eq('examen_id', examenId)
-      .eq('alumno_id', idAlumno);
-
-    // Asegurarse de que intentos sea siempre un array
-    const listaIntentos = intentos || [];
-
-    if (listaIntentos.length >= examen.intentos_permitidos) {
-      throw new Error('Ya no tienes intentos disponibles');
-    }
-
-    return { ok: true };
-  }
-
-  // 🔹 Guardar respuestas del examen y calcular la nota
-  async responder(examenId: number, respuestas: Record<string, number>) {
-    const idExamen = Number(examenId);
-
-    // Obtener examen y preguntas
-    const { data: examen, error: errExamen } = await supabase
-      .from('examen')
-      .select('*')
-      .eq('id', idExamen)
+      .eq('id', intentoId)
       .single();
 
-    if (errExamen) throw new Error(errExamen.message);
-    if (!examen) throw new Error('Examen no encontrado.');
+    if (errIntento) throw new Error(errIntento.message);
+    if (!intento) throw new Error("Intento no encontrado");
 
+    if (intento.finalizado) {
+      throw new Error("⚠️ Este intento ya fue finalizado");
+    }
+
+    const idExamen = intento.idexamen;
+
+    // 🔹 obtener preguntas
     const { data: preguntas, error: errPreguntas } = await supabase
       .from('examen_pregunta')
       .select('*')
       .eq('idexamen', idExamen)
-      .eq('estado', true)
-      .order('orden', { ascending: true });
+      .eq('estado', true);
 
     if (errPreguntas) throw new Error(errPreguntas.message);
 
-    const listaPreguntas = preguntas || [];
-    if (listaPreguntas.length === 0)
-      throw new Error('El examen no tiene preguntas.');
+    if (!preguntas || preguntas.length === 0) {
+      throw new Error("El examen no tiene preguntas");
+    }
 
-    const preguntaIds = listaPreguntas.map((p) => Number(p.id));
+    const preguntaIds = preguntas.map(p => p.id);
 
-    // Obtener las opciones correctas
+    // 🔹 obtener opciones
     const { data: opciones, error: errOpciones } = await supabase
       .from('examen_opcion')
       .select('*')
       .in('idpregunta', preguntaIds);
 
     if (errOpciones) throw new Error(errOpciones.message);
-    const listaOpciones = opciones || [];
 
-    // Verificar respuestas
     let puntajeTotal = 0;
     let puntajeObtenido = 0;
 
-    for (const pregunta of listaPreguntas) {
-      const idPregunta = Number(pregunta.id);
-      const puntajePregunta = Number(pregunta.puntaje || 1);
-      puntajeTotal += puntajePregunta;
+    // 🔥 limpiar respuestas previas (por seguridad)
+    await supabase
+      .from('examen_respuesta')
+      .delete()
+      .eq('idintento', intentoId);
 
-      const opcionCorrecta = listaOpciones.find(
-        (o) => Number(o.idpregunta) === idPregunta && o.es_correcta === true,
-      );
+    const respuestasAInsertar = preguntas.map(p => {
+    const respuestaAlumno = respuestas[p.id];
 
-      const respuestaAlumno = respuestas[idPregunta];
+    let esCorrecta = false;
+    let puntaje = 0;
 
-      if (
-        opcionCorrecta &&
-        Number(respuestaAlumno) === Number(opcionCorrecta.id)
-      ) {
-        puntajeObtenido += puntajePregunta;
-      }
+    // 🔥 PREGUNTA DE TEXTO
+    if (p.tipo_prgunta === 'texto') {
+      return {
+        idintento: intentoId,
+        idpregunta: p.id,
+        idopcion: null,
+        respuesta_texto: respuestaAlumno || null,
+        es_correcta: null,
+        puntaje_obtenido: 0
+      };
     }
 
-    const notaMaxima = Number(examen.nota_maxima || 20);
-    const notaFinal =
-      puntajeTotal > 0
-        ? Number(((puntajeObtenido / puntajeTotal) * notaMaxima).toFixed(2))
-        : 0;
+    // 🔥 PREGUNTA DE ALTERNATIVA
+    const correcta = opciones.find(
+      o => o.idpregunta === p.id && o.es_correcta
+    );
 
-    // Guardar intento en examen_intento
-    const { error: errorIntento } = await supabase
-      .from('examen_intento')
-      .insert({
-        examen_id: idExamen,
-        alumno_id: 1, // NOTA: Aquí debe ir el ID del alumno logueado en el futuro
-        puntaje_total: puntajeTotal,
-        puntaje_obtenido: puntajeObtenido,
-        nota: notaFinal,
-      });
+    esCorrecta = correcta && respuestaAlumno == correcta.id;
 
-    if (errorIntento) throw new Error(errorIntento.message);
+    puntaje = esCorrecta ? Number(p.puntaje || 1) : 0;
 
-    // Guardar respuestas en examen_respuesta
-    const respuestasAInsertar = Object.keys(respuestas).map((preguntaId) => ({
-      examen_id: idExamen,
-      pregunta_id: Number(preguntaId),
-      respuesta_id: respuestas[preguntaId],
-    }));
-
-    const { error: errorRespuestas } = await supabase
-      .from('examen_respuesta')
-      .insert(respuestasAInsertar);
-
-    if (errorRespuestas) throw new Error(errorRespuestas.message);
+    puntajeTotal += Number(p.puntaje || 1);
+    puntajeObtenido += puntaje;
 
     return {
-      examenId: idExamen,
+      idintento: intentoId,
+      idpregunta: p.id,
+      idopcion: respuestaAlumno || null,
+      respuesta_texto: null,
+      es_correcta: esCorrecta || false,
+      puntaje_obtenido: puntaje
+    };
+  });
+
+    await supabase.from('examen_respuesta').insert(respuestasAInsertar);
+
+    const notaFinal =
+  puntajeTotal > 0
+    ? Number(((puntajeObtenido / puntajeTotal) * 20).toFixed(2))
+    : 0;
+
+// 🔥 DEBUG
+console.log("INTENTO ID:", intentoId);
+console.log("NOTA FINAL:", notaFinal);
+
+// 🔥 ACTUALIZAR INTENTO
+const { data: updateData, error: updateError } = await supabase
+  .from('examen_intento')
+  .update({
+    nota: notaFinal,
+    finalizado: true,
+    fecha_fin: new Date()
+  })
+  .eq('id', intentoId)
+  .select();
+
+if (updateError) {
+  console.error("ERROR UPDATE:", updateError);
+  throw new Error(updateError.message);
+}
+
+console.log("UPDATE OK:", updateData);
+
+    return {
+      nota: notaFinal,
       puntajeTotal,
       puntajeObtenido,
-      nota: notaFinal,
-      mensaje: 'Examen enviado correctamente',
+      totalPreguntas: preguntas.length
+    };
+  }
+
+  // 🔥 INICIAR EXAMEN (PRO)
+  async iniciar(examenId: number, idAlumno: number) {
+    const examen = await this.examenRepository.findOne({
+        where: { id: examenId },
+        relations: ['grupo'],
+    });
+
+    if (!examen) {
+        throw new Error('Examen no encontrado');
+    }
+
+    // 🔥 BUSCAR MATRÍCULA CORRECTA
+    const matricula = await this.matriculaRepository.findOne({
+        where: {
+        alumno: { id: idAlumno },
+        grupo: { id: examen.grupo.id },
+        },
+    });
+
+    if (!matricula) {
+        throw new Error('El alumno no está matriculado en este grupo');
+    }
+
+    // 🔥 CONTAR INTENTOS
+    const intentos = await this.intentoRepository.count({
+        where: {
+        examen: { id: examenId },
+        alumno: { id: idAlumno },
+        },
+    });
+
+    console.log('Intentos:', intentos);
+    console.log('Permitidos:', examen.intentos_permitidos);
+
+    if (intentos >= examen.intentos_permitidos) {
+        throw new Error('Ya no tienes intentos disponibles');
+    }
+
+    // 🔥 CREAR INTENTO (SIN NULL)
+    const intento = this.intentoRepository.create({
+        examen: { id: examenId } as any,
+        alumno: { id: idAlumno } as any,
+        matricula: { id: matricula.id } as any,
+        intento_numero: intentos + 1,
+    });
+
+    return this.intentoRepository.save(intento);
+  }
+
+    async getIntentosAlumno(idAlumno: number) {
+    const { data, error } = await supabase
+        .from('examen_intento')
+        .select(`
+        id,
+        idexamen,
+        nota,
+        finalizado
+        `)
+        .eq('idalumno', idAlumno)
+        .eq('finalizado', true);
+
+    if (error) throw new Error(error.message);
+
+    return data;
+    }
+
+  async getHistorial(idAlumno: number) {
+
+    const { data, error } = await supabase
+      .from('examen_intento')
+      .select(`
+        id,
+        idexamen,
+        nota,
+        examen:idexamen (
+          id,
+          titulo,
+          grupo:idgrupo (
+            id,
+            nombregrupo,
+            horario,
+            modalidad,
+            curso:idcurso (
+              id,
+              nombrecurso
+            )
+          )
+        )
+      `)
+      .eq('idalumno', idAlumno)
+      .eq('finalizado', true);
+
+    if (error) throw new Error(error.message);
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    const cursosMap: any = {};
+
+    data.forEach((item) => {
+
+      const examenRaw = item.examen;
+
+      const examen = Array.isArray(examenRaw)
+        ? examenRaw[0]
+        : examenRaw;
+
+      if (!examen) return;
+
+      // 🔥 GRUPO
+      const grupoRaw = examen.grupo;
+      const grupo = Array.isArray(grupoRaw)
+        ? grupoRaw[0]
+        : grupoRaw;
+
+      if (!grupo) return;
+
+      // 🔥 CURSO
+      const cursoRaw = grupo.curso;
+      const curso = Array.isArray(cursoRaw)
+        ? cursoRaw[0]
+        : cursoRaw;
+
+      const cursoId = grupo.id;
+      const nombreCurso = curso?.nombrecurso || "Curso sin nombre";
+      const nombreGrupo = grupo?.nombregrupo || "Grupo sin nombre";
+      const horario = grupo?.horario || "Grupo sin horario";
+      const modalidad = grupo?.modalidad || "Grupo sin modalidad";
+
+      if (!cursosMap[cursoId]) {
+        cursosMap[cursoId] = {
+          cursoId,
+          nombreCurso,
+          nombreGrupo,
+          horario,
+          modalidad,
+          examenes: []
+        };
+      }
+
+      cursosMap[cursoId].examenes.push({
+        id: examen.id,
+        titulo: examen.titulo,
+        nota: item.nota
+      });
+
+    });
+
+    return Object.values(cursosMap);
+  }
+
+  async getExamenCompleto(examenId: number) {
+    // 🔹 EXAMEN
+    const { data: examen, error: errExamen } = await supabase
+      .from('examen')
+      .select('*')
+      .eq('id', examenId)
+      .single();
+
+    if (errExamen) throw new Error(errExamen.message);
+
+    // 🔹 PREGUNTAS
+    const { data: preguntas, error: errPreguntas } = await supabase
+      .from('examen_pregunta')
+      .select('*')
+      .eq('idexamen', examenId);
+
+    if (errPreguntas) throw new Error(errPreguntas.message);
+
+    const preguntasSafe = preguntas || [];
+
+    // 🔹 OPCIONES POR PREGUNTA
+    const preguntasConOpciones = await Promise.all(
+      preguntasSafe.map(async (p) => {
+        const { data: opciones, error: errOpciones } = await supabase
+          .from('examen_opcion')
+          .select('*')
+          .eq('idpregunta', p.id);
+
+        if (errOpciones) throw new Error(errOpciones.message);
+
+        return {
+          ...p,
+          opciones: opciones || [],
+        };
+      })
+    );
+
+    return {
+      ...examen,
+      preguntas: preguntasConOpciones,
     };
   }
 }

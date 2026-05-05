@@ -33,6 +33,13 @@ export class AlumnoService {
     return alumno;
   }
 
+  async buscarPorIdUsuario(idusuario: number): Promise<Alumno | null> {
+      if (!idusuario || isNaN(idusuario)) {
+        return null;
+      }
+      return this.alumnoRepository.findOne({ where: { idusuario } });
+    }
+
   async findAll() {
     return await this.alumnoRepository.find({
       order: { id: 'DESC' },

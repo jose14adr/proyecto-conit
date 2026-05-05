@@ -25,12 +25,26 @@ export class CursoModulo {
         @Column()
         created_at: Date;
 
-        @Column()
-        idpadre: number;
     
     @OneToMany(
     () => CursoLeccion,
     (cursoLeccion) => cursoLeccion.cursoModulo
     )
     lecciones: CursoLeccion[];
+
+    @Column()
+        idgrupo: number;
+
+        @Column({ nullable: true })
+idpadre: number;
+
+
+          // 🔥 PADRE
+  @ManyToOne(() => CursoModulo, modulo => modulo.hijos, { nullable: true })
+  @JoinColumn({ name: 'idpadre' })
+  padre: CursoModulo;
+
+  // 🔥 HIJOS
+  @OneToMany(() => CursoModulo, modulo => modulo.padre)
+  hijos: CursoModulo[];
 }

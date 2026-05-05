@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import PagoModal from "../components/PagosModal";
-import PagoTarjeta from "../components/PagoTarjeta";
-import Checkout from "../components/Checkout";
+import PagoTarjeta from "./PagoTarjeta";
+import Checkout from "./Checkout";
 
 const generarCodigoBoleta = () => {
   const random = Math.floor(Math.random() * 10000);
@@ -26,6 +26,16 @@ export default function MisPagos() {
       codigo: "BOL-2025-0001",
     },
   ]);
+
+  const recargarPagos = async () => {
+  const [pend, real] = await Promise.all([
+    fetch("http://localhost:3000/pago/pendientes").then(r => r.json()),
+    fetch("http://localhost:3000/pago/realizados").then(r => r.json())
+  ])
+
+  setPagosPendientes(pend)
+  setPagosRealizados(real)
+}
 
   useEffect(() => {
     const cargarPagos = async () => {
@@ -56,10 +66,6 @@ export default function MisPagos() {
     cargarPagos();
   }, []);
 
-  const generarCodigoBoleta = () => {
-    const random = Math.floor(Math.random() * 10000);
-    return `BOL-2026-${random}`;
-  };
 
   const confirmarPago = async () => {
     if (!selectedPago) return;
@@ -103,20 +109,34 @@ export default function MisPagos() {
   const generarBoleta = async (pago) => {
     const doc = new jsPDF();
 
+    // ✅ NORMALIZAR DATOS (CLAVE 🔑)
+    const curso = pago.matricula?.grupo?.curso?.nombrecurso || "Curso no definido";
+    const monto = pago.preciofinal || pago.monto || 0;
+    const fecha = pago.fechapago || pago.fecha || new Date().toLocaleDateString();
+    const alumno = pago.alumno || "Alumno";
+    const dni = pago.dni || "-";
+    const codigo = pago.codigo || `BOL-2026-${Math.floor(Math.random() * 10000)}`;
+
+    // ✅ TEXTO EN LETRAS (básico pero funcional)
+    const montoTexto = `${monto} CON 00/100 SOLES`;
+
+    // ✅ QR DATA (YA SIN UNDEFINED 💥)
     const qrData = `
-SISTEMA UNIVERSITARIO
-Código: ${pago.codigo}
-Fecha: ${pago.fecha}
-Curso: ${pago.curso}
-Monto: S/ ${pago.precio}
-Estado: VERIFICADO
-`;
+  SISTEMA UNIVERSITARIO
+  Código: ${codigo}
+  Fecha: ${fecha}
+  Curso: ${curso}
+  Monto: S/ ${monto}
+  Estado: PAGADO
+  `;
 
     const qrImage = await QRCode.toDataURL(qrData);
 
+    // LOGO
     const logo = "/logo.png";
     doc.addImage(logo, "PNG", 20, 10, 45, 20);
 
+    // CABECERA
     doc.rect(140, 10, 50, 25);
 
     doc.setFontSize(10);
@@ -125,59 +145,54 @@ Estado: VERIFICADO
     doc.text("RUC: 20610017828", 165, 15, null, null, "center");
     doc.text("BOLETA", 165, 20, null, null, "center");
     doc.text("ELECTRÓNICA", 165, 25, null, null, "center");
-    doc.text("B00000001", 165, 30, null, null, "center");
-
-    doc.setFontSize(2);
-    doc.setFont("helvetica", "normal");
+    doc.text(codigo, 165, 30, null, null, "center");
 
     doc.line(20, 35, 190, 35);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
 
-    doc.text(`SEÑOR(ES): ${pago.alumno || "Alumno"}`, 20, 40);
-    doc.text(`DNI: ${pago.dni || "-"}`, 20, 48);
-    doc.text(`FECHA DE EMISIÓN: ${pago.fecha}`, 20, 56);
-    doc.text(`CURSO: ${pago.curso}`, 20, 64);
+    // CLIENTE
+    doc.text(`SEÑOR(ES): ${alumno}`, 20, 40);
+    doc.text(`DNI: ${dni}`, 20, 48);
+    doc.text(`FECHA: ${fecha}`, 20, 56);
+    doc.text(`CURSO: ${curso}`, 20, 64);
     doc.text(`MONEDA: SOLES`, 20, 72);
 
     doc.line(20, 78, 190, 78);
 
+    // TABLA
     doc.setFont("helvetica", "bold");
-
     doc.text("CANT.", 20, 88);
     doc.text("DESCRIPCIÓN", 45, 88);
     doc.text("P. UNIT.", 130, 88);
-    doc.text("DESC.", 155, 88);
-    doc.text("IMPORTE", 175, 88);
+    doc.text("IMPORTE", 170, 88);
 
     doc.setFont("helvetica", "normal");
-
     doc.line(20, 92, 190, 92);
 
     doc.text("1.00", 20, 102);
-    doc.text(pago.descripcion, 45, 102);
-    doc.text(`S/ ${pago.monto}`, 130, 102);
-    doc.text("0.00", 155, 102);
-    doc.text(`S/ ${pago.monto}`, 175, 102);
+    doc.text(curso, 45, 102);
+    doc.text(`S/ ${monto}`, 130, 102);
+    doc.text(`S/ ${monto}`, 170, 102);
 
     doc.line(20, 110, 190, 110);
 
+    // TOTALES
     doc.rect(120, 120, 70, 25);
 
-    doc.text("Total Valor de Venta:", 125, 126);
-    doc.text(`S/ ${pago.monto}`, 185, 126, { align: "right" });
-
-    doc.text("IGV:", 125, 134);
-    doc.text("0.00", 185, 134, { align: "right" });
+    doc.text("Total:", 125, 130);
+    doc.text(`S/ ${monto}`, 185, 130, { align: "right" });
 
     doc.setFont("helvetica", "bold");
+    doc.text("IMPORTE TOTAL:", 125, 140);
+    doc.text(`S/ ${monto}`, 185, 140, { align: "right" });
 
-    doc.text("Importe Total:", 125, 142);
-    doc.text(`S/ ${pago.monto}`, 185, 142, { align: "right" });
-
+    // MONTO EN LETRAS
     doc.setFont("helvetica", "normal");
+    doc.text(`SON: ${montoTexto}`, 20, 135);
 
+    // QR
     doc.addImage(qrImage, "PNG", 85, 160, 35, 35);
 
     doc.text("SON: TRESCIENTOS CON 00/100 SOLES", 20, 134);
@@ -205,18 +220,37 @@ Estado: VERIFICADO
 
     doc.line(20, 150, 190, 150);
 
+    // FOOTER
     doc.setFontSize(9);
-
     doc.text(
-      "© 2026 Universidad Virtual - Todos los derechos reservados.",
+      "Este comprobante ha sido generado automáticamente.",
       105,
-      285,
+      210,
       null,
       null,
       "center",
     );
 
-    doc.save(`Boleta_${pago.codigo}.pdf`);
+    doc.text(
+      "Valide escaneando el código QR.",
+      105,
+      220,
+      null,
+      null,
+      "center"
+    );
+
+    doc.line(20, 270, 190, 270);
+
+    doc.setFontSize(8);
+    doc.text(
+      "Representación impresa del Comprobante de Pago",
+      105,
+      275,
+      { align: "center" }
+    );
+
+    doc.save(`Boleta_${codigo}.pdf`);
   };
 
   return (
@@ -335,6 +369,42 @@ Estado: VERIFICADO
       )}
 
       {selectedPago && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+
+          <div className="bg-white p-6 rounded-xl w-[420px] shadow-xl">
+
+            <Checkout
+              curso={selectedPago}
+              onClose={() => setSelectedPago(null)}
+              onSuccess={async() => {
+
+                alert("Pago exitoso ✅")
+
+                // 🔄 recargar listas
+                /*fetch("http://localhost:3000/pago/realizados")
+                  .then(res => res.json())
+                  .then(data => setPagosRealizados(data))
+
+                fetch("http://localhost:3000/pago/pendientes")
+                  .then(res => res.json())
+                  .then(data => setPagosPendientes(data))*/
+                await recargarPagos()
+                setSelectedPago(null)
+              }}
+            />
+
+            <button
+              onClick={() => setSelectedPago(null)}
+              className="mt-4 w-full bg-gray-300 py-2 rounded"
+            >
+              Cancelar
+            </button>
+
+          </div>
+
+        </div>
+      )}
+
         <PagoModal
           pago={selectedPago}
           onClose={() => setSelectedPago(null)}
@@ -344,7 +414,7 @@ Estado: VERIFICADO
             window.location.reload();
           }}
         />
-      )}
+    
     </div>
   );
 }
