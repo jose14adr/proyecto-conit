@@ -57,10 +57,6 @@ export class AuthController {
   }
 
   @Get('verificar-correo')
-<<<<<<< HEAD
-  async verificarCorreo(@Query('token') token: string, @Res() res: Response) {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-=======
   @ApiOperation({ 
     summary: 'Verificar correo electrónico', 
     description: 'Verifica el correo electrónico del usuario mediante un token de verificación.' 
@@ -73,7 +69,6 @@ export class AuthController {
   ) {
     const frontendUrl =
       process.env.FRONTEND_URL || 'http://localhost:5173';
->>>>>>> main
 
     if (!token) {
       return res.redirect(`${frontendUrl}/login?verified=error`);
