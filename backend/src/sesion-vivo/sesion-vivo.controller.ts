@@ -21,8 +21,6 @@ import { SesionVivoService } from './sesion-vivo.service';
 import { SesionVivoResponseDto } from './dto/sesion-vivo-response.dto';
 
 @ApiTags('Sesiones en Vivo')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('sesion-vivo')
 export class SesionVivoController {
   constructor(private readonly service: SesionVivoService) {}
@@ -87,9 +85,11 @@ export class SesionVivoController {
     return this.service.obtenerProviderInfoPorGrupo(idgrupo);
   }
 
-  @Post()
-  @ApiOperation({
-    summary: 'Programar una nueva sesión en vivo',
+    @Post()
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({
+      summary: 'Programar una nueva sesión en vivo',
     description:
       'Crea una nueva clase en vivo vinculada a un grupo. El proveedor puede depender de la empresa o configuración del grupo.',
   })
@@ -127,6 +127,13 @@ export class SesionVivoController {
           example: 60,
           description: 'Duración estimada en minutos',
         },
+        accessType: {
+          type: 'string',
+          example: 'RESTRICTED',
+          enum: ['OPEN', 'TRUSTED', 'RESTRICTED'],
+          description:
+            'Tipo de acceso a Google Meet. OPEN = libre, TRUSTED = confiable, RESTRICTED = con admisión.',
+        },
       },
       required: ['idgrupo', 'titulo', 'fecha'],
     },
@@ -159,6 +166,7 @@ export class SesionVivoController {
       descripcion: body.descripcion ? String(body.descripcion) : undefined,
       fecha: body.fecha,
       duracion: Number(body.duracion || 60),
+      accessType: body.accessType || body.access_type || 'RESTRICTED',
     });
   }
 }

@@ -317,6 +317,385 @@ function VideoEmbed({ url }) {
   );
 }
 
+function FormulaNumericaModal({
+  open,
+  initialValue = "",
+  onClose,
+  onInsert,
+}) {
+  const mathFieldRef = useRef(null);
+  const [latex, setLatex] = useState(initialValue || "");
+  const [tabActiva, setTabActiva] = useState("estructuras");
+
+  const grupos = {
+    estructuras: [
+      { label: "Fracción", icono: "a/b", value: "\\frac{}{}" },
+      { label: "Raíz", icono: "√x", value: "\\sqrt{}" },
+      { label: "Potencia", icono: "xⁿ", value: "^{}" },
+      { label: "Cuadrado", icono: "x²", value: "^{2}" },
+      { label: "Subíndice", icono: "xₙ", value: "_{}" },
+      { label: "Paréntesis", icono: "( )", value: "\\left(\\right)" },
+      { label: "Valor absoluto", icono: "|x|", value: "\\left|\\right|" },
+      { label: "Sistema", icono: "{", value: "\\begin{cases}  & \\\\  & \\end{cases}" },
+      { label: "Sumatoria", icono: "Σ", value: "\\sum_{}^{}" },
+      { label: "Integral", icono: "∫", value: "\\int_{}^{}" },
+      { label: "Límite", icono: "lim", value: "\\lim_{x\\to }" },
+      { label: "Logaritmo", icono: "log", value: "\\log_{}" },
+    ],
+    simbolos: [
+      { label: "Pi", icono: "π", value: "\\pi" },
+      { label: "Theta", icono: "θ", value: "\\theta" },
+      { label: "Alfa", icono: "α", value: "\\alpha" },
+      { label: "Beta", icono: "β", value: "\\beta" },
+      { label: "Delta", icono: "Δ", value: "\\Delta" },
+      { label: "Más menos", icono: "±", value: "\\pm" },
+      { label: "Mayor igual", icono: "≥", value: "\\ge" },
+      { label: "Menor igual", icono: "≤", value: "\\le" },
+      { label: "Distinto", icono: "≠", value: "\\ne" },
+      { label: "Infinito", icono: "∞", value: "\\infty" },
+      { label: "Aprox.", icono: "≈", value: "\\approx" },
+      { label: "Porcentaje", icono: "%", value: "\\%" },
+    ],
+    ejemplos: [
+      { label: "Área del círculo", icono: "A=πr²", value: "A=\\pi r^{2}" },
+      { label: "Pitágoras", icono: "a²+b²=c²", value: "a^{2}+b^{2}=c^{2}" },
+      { label: "Fórmula cuadrática", icono: "x=(-b±√Δ)/2a", value: "x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}" },
+      { label: "Promedio", icono: "x̄", value: "\\frac{x_{1}+x_{2}+x_{3}}{3}" },
+      { label: "Regla de tres", icono: "a/b=c/x", value: "\\frac{a}{b}=\\frac{c}{x}" },
+      { label: "Pendiente", icono: "m", value: "m=\\frac{y_{2}-y_{1}}{x_{2}-x_{1}}" },
+    ],
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    setLatex(initialValue || "");
+
+    setTimeout(() => {
+      if (mathFieldRef.current) {
+        mathFieldRef.current.value = initialValue || "";
+        mathFieldRef.current.focus?.();
+      }
+    }, 0);
+  }, [open, initialValue]);
+
+  if (!open) return null;
+
+  const sincronizarLatex = () => {
+    const valor = mathFieldRef.current?.value || "";
+    setLatex(valor);
+    return valor;
+  };
+
+  const insertarLatex = (valor) => {
+    const mathField = mathFieldRef.current;
+
+    if (!mathField) {
+      setLatex((prev) => `${prev || ""}${valor}`);
+      return;
+    }
+
+    mathField.focus?.();
+
+    if (typeof mathField.executeCommand === "function") {
+      mathField.executeCommand(["insert", valor]);
+      setTimeout(() => sincronizarLatex(), 0);
+      return;
+    }
+
+    const nuevoValor = `${mathField.value || latex || ""}${valor}`;
+    mathField.value = nuevoValor;
+    setLatex(nuevoValor);
+  };
+
+  const reemplazarFormula = (valor) => {
+    const mathField = mathFieldRef.current;
+
+    if (mathField) {
+      mathField.value = valor;
+      mathField.focus?.();
+    }
+
+    setLatex(valor);
+  };
+
+  const limpiarFormula = () => {
+    const mathField = mathFieldRef.current;
+
+    if (mathField) {
+      mathField.value = "";
+      mathField.focus?.();
+    }
+
+    setLatex("");
+  };
+
+  const handleInsertar = () => {
+    const valor = mathFieldRef.current?.value || latex || "";
+
+    if (!valor.trim()) {
+      alert("Escribe una fórmula antes de insertarla.");
+      return;
+    }
+
+    onInsert(valor.trim());
+  };
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <div className="relative z-10 w-full max-w-5xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-5 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold">Editor de fórmula</h3>
+              <p className="text-sm text-slate-200 mt-1">
+                Inserta una fórmula usando herramientas rápidas, similar al editor de ecuaciones de Word.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl bg-white/10 px-3 py-2 text-sm hover:bg-white/20 transition"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <div className="border-b border-slate-200 bg-slate-50">
+          <div className="flex flex-wrap gap-1 px-4 pt-3">
+            <button
+              type="button"
+              onClick={() => setTabActiva("estructuras")}
+              className={`rounded-t-xl px-4 py-2 text-sm font-semibold transition ${
+                tabActiva === "estructuras"
+                  ? "bg-white text-violet-700 border border-b-white border-slate-200"
+                  : "text-slate-600 hover:bg-white"
+              }`}
+            >
+              Estructuras
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTabActiva("simbolos")}
+              className={`rounded-t-xl px-4 py-2 text-sm font-semibold transition ${
+                tabActiva === "simbolos"
+                  ? "bg-white text-violet-700 border border-b-white border-slate-200"
+                  : "text-slate-600 hover:bg-white"
+              }`}
+            >
+              Símbolos
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTabActiva("ejemplos")}
+              className={`rounded-t-xl px-4 py-2 text-sm font-semibold transition ${
+                tabActiva === "ejemplos"
+                  ? "bg-white text-violet-700 border border-b-white border-slate-200"
+                  : "text-slate-600 hover:bg-white"
+              }`}
+            >
+              Fórmulas predeterminadas
+            </button>
+          </div>
+
+          <div className="bg-white px-4 py-4 border-t border-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              {(grupos[tabActiva] || []).map((item) => (
+                <button
+                  key={`${tabActiva}-${item.label}`}
+                  type="button"
+                  onClick={() =>
+                    tabActiva === "ejemplos"
+                      ? reemplazarFormula(item.value)
+                      : insertarLatex(item.value)
+                  }
+                  className="group rounded-xl border border-slate-200 bg-white px-3 py-3 text-center hover:border-violet-300 hover:bg-violet-50 transition"
+                >
+                  <span className="block text-lg font-bold text-slate-800 group-hover:text-violet-700">
+                    {item.icono}
+                  </span>
+                  <span className="block mt-1 text-[11px] font-semibold text-slate-500">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto">
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <label className="block text-sm font-semibold text-slate-700">
+                Fórmula
+              </label>
+
+              <button
+                type="button"
+                onClick={limpiarFormula}
+                className="rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
+              >
+                Limpiar
+              </button>
+            </div>
+
+            <math-field
+              ref={mathFieldRef}
+              onInput={(e) => setLatex(e.currentTarget.value)}
+              class="w-full min-h-[110px] rounded-2xl border border-slate-300 bg-white px-4 py-3 text-lg shadow-sm focus-within:border-violet-400"
+            />
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Vista guardada
+            </p>
+            <p className="mt-2 text-sm text-slate-700 break-all">
+              {latex || "Aún no escribes una fórmula."}
+            </p>
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={handleInsertar}
+              className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700 transition"
+            >
+              Insertar fórmula
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormulaEditorModal({
+  open,
+  initialLatex = "",
+  onClose,
+  onInsert,
+}) {
+  const mathFieldRef = useRef(null);
+  const [latex, setLatex] = useState(initialLatex || "");
+
+  useEffect(() => {
+    if (!open) return;
+
+    setLatex(initialLatex || "");
+
+    setTimeout(() => {
+      if (mathFieldRef.current) {
+        mathFieldRef.current.value = initialLatex || "";
+        mathFieldRef.current.focus?.();
+      }
+    }, 0);
+  }, [open, initialLatex]);
+
+  if (!open) return null;
+
+  const handleInsertar = () => {
+    const valor = mathFieldRef.current?.value || latex || "";
+
+    if (!valor.trim()) {
+      alert("Escribe una fórmula antes de insertarla.");
+      return;
+    }
+
+    onInsert(`\\(${valor.trim()}\\)`);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-5 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold">Insertar fórmula en el enunciado</h3>
+              <p className="text-sm text-slate-200 mt-1">
+                La fórmula se agregará al texto de la pregunta.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl bg-white/10 px-3 py-2 text-sm hover:bg-white/20 transition"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Fórmula
+            </label>
+
+            <math-field
+              ref={mathFieldRef}
+              onInput={(e) => setLatex(e.currentTarget.value)}
+              class="w-full min-h-[90px] rounded-2xl border border-slate-300 bg-white px-4 py-3 text-lg shadow-sm focus-within:border-violet-400"
+            />
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Se insertará como
+            </p>
+            <p className="mt-2 text-sm text-slate-700 break-all">
+              {latex ? `\\(${latex}\\)` : "Aún no escribes una fórmula."}
+            </p>
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={handleInsertar}
+              className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700 transition"
+            >
+              Insertar enunciado
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const FormularioNumericoModal = FormulaNumericaModal;
+
 function CursoDetalleAdmin() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -549,6 +928,7 @@ function CursoDetalleAdmin() {
     descripcion: "",
     fecha: "",
     duracion: 60,
+    accessType: "RESTRICTED",
   });  
 
   // ==============================
@@ -597,6 +977,7 @@ function CursoDetalleAdmin() {
       descripcion: "",
       fecha: "",
       duracion: 60,
+      accessType: "RESTRICTED",
     });
   };
 
@@ -628,6 +1009,7 @@ function CursoDetalleAdmin() {
         descripcion: formSesionVivo.descripcion,
         fecha: formSesionVivo.fecha,
         duracion: Number(formSesionVivo.duracion),
+        accessType: formSesionVivo.accessType || "RESTRICTED",
       });
 
       limpiarFormSesionVivo();
@@ -3966,6 +4348,35 @@ const guardarConfiguracionTarea = async () => {
                   />
                 </div>
 
+                {meetingProviderInfo?.provider === "google" && (
+                  <div className="md:col-span-2">
+                    <label className="block font-semibold mb-2">
+                      Acceso a la reunión
+                    </label>
+
+                    <select
+                      name="accessType"
+                      value={formSesionVivo.accessType}
+                      onChange={handleChangeSesionVivo}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    >
+                      <option value="RESTRICTED">
+                        Con admisión: los usuarios deben pedir permiso para entrar
+                      </option>
+                      <option value="OPEN">
+                        Libre: cualquiera con el enlace puede entrar
+                      </option>
+                      <option value="TRUSTED">
+                        Confiable: invitados/organización entran directo
+                      </option>
+                    </select>
+
+                    <p className="mt-2 text-xs text-slate-500">
+                      Si eliges libre, cualquier persona con el enlace podrá entrar sin pedir admisión.
+                    </p>
+                  </div>
+                )}
+
                 <div className="md:col-span-2 flex justify-end">
                   <button
                     type="submit"
@@ -4404,7 +4815,7 @@ const guardarConfiguracionTarea = async () => {
       )}
 
       {tabActiva === "foro" && (
-        <ForoGrupoPanel grupoId={id} modo="admin" />
+        <ForoGrupoPanel grupoId={id} modo="docente" />
       )}
 
       {tabActiva === "asistencia" && (
@@ -6700,76 +7111,130 @@ const guardarConfiguracionTarea = async () => {
                                                                                 </div>
                                                                               )}
 
-                                                                              {pregunta.tipo_pregunta ===
-                                                                                "numerica" && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                  <div>
-                                                                                    <label className="block font-semibold mb-2">
-                                                                                      Respuesta
-                                                                                      numérica
-                                                                                      correcta
-                                                                                    </label>
-                                                                                    <input
-                                                                                      type="text"
-                                                                                      value={
-                                                                                        pregunta.respuesta_texto ||
-                                                                                        ""
-                                                                                      }
-                                                                                      onChange={(
-                                                                                        e,
-                                                                                      ) =>
-                                                                                        handleChangePreguntaExamen(
-                                                                                          leccion.id,
-                                                                                          preguntaIndex,
-                                                                                          "respuesta_texto",
-                                                                                          e.target.value.replace(
-                                                                                            /[^\d.-]/g,
-                                                                                            "",
-                                                                                          ),
-                                                                                        )
-                                                                                      }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                      placeholder="Ej. 25 o 25.5"
-                                                                                    />
-                                                                                  </div>
+                                                                              {pregunta.tipo_pregunta === "numerica" && (
+                                                                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+                                                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                    <div>
+                                                                                      <label className="block font-semibold mb-2">
+                                                                                        Tipo de respuesta numérica
+                                                                                      </label>
 
-                                                                                  <div className="flex items-end">
-                                                                                    <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
-                                                                                      <input
-                                                                                        type="checkbox"
-                                                                                        checked={
-                                                                                          !!pregunta.permitir_decimales
-                                                                                        }
-                                                                                        onChange={(
-                                                                                          e,
-                                                                                        ) =>
+                                                                                      <select
+                                                                                        value={pregunta.modo_respuesta_numerica || "numero"}
+                                                                                        onChange={(e) =>
                                                                                           handleChangePreguntaExamen(
                                                                                             leccion.id,
                                                                                             preguntaIndex,
-                                                                                            "permitir_decimales",
-                                                                                            e
-                                                                                              .target
-                                                                                              .checked,
+                                                                                            "modo_respuesta_numerica",
+                                                                                            e.target.value
                                                                                           )
                                                                                         }
-                                                                                        className="h-4 w-4"
-                                                                                      />
-                                                                                      <div>
-                                                                                        <p className="font-semibold text-gray-800">
-                                                                                          Permitir
-                                                                                          decimales
-                                                                                        </p>
-                                                                                        <p className="text-sm text-gray-500">
-                                                                                          Si
-                                                                                          lo
-                                                                                          desactivas,
-                                                                                          solo
-                                                                                          se
-                                                                                          aceptarán
-                                                                                          enteros.
-                                                                                        </p>
+                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      >
+                                                                                        <option value="numero">Número exacto</option>
+                                                                                        <option value="formula">Fórmula</option>
+                                                                                      </select>
+                                                                                    </div>
+
+                                                                                    {pregunta.modo_respuesta_numerica !== "formula" && (
+                                                                                      <div className="flex items-end">
+                                                                                        <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-white cursor-pointer w-full">
+                                                                                          <input
+                                                                                            type="checkbox"
+                                                                                            checked={!!pregunta.permitir_decimales}
+                                                                                            onChange={(e) =>
+                                                                                              handleChangePreguntaExamen(
+                                                                                                leccion.id,
+                                                                                                preguntaIndex,
+                                                                                                "permitir_decimales",
+                                                                                                e.target.checked
+                                                                                              )
+                                                                                            }
+                                                                                            className="h-4 w-4"
+                                                                                          />
+
+                                                                                          <div>
+                                                                                            <p className="font-semibold text-gray-800">
+                                                                                              Permitir decimales
+                                                                                            </p>
+                                                                                            <p className="text-sm text-gray-500">
+                                                                                              Si lo desactivas, solo se aceptarán enteros.
+                                                                                            </p>
+                                                                                          </div>
+                                                                                        </label>
                                                                                       </div>
+                                                                                    )}
+
+                                                                                    {pregunta.modo_respuesta_numerica === "formula" && (
+                                                                                      <div className="flex items-end">
+                                                                                        <button
+                                                                                          type="button"
+                                                                                          onClick={() =>
+                                                                                            abrirFormulaNumerica(
+                                                                                              leccion.id,
+                                                                                              preguntaIndex,
+                                                                                              pregunta.respuesta_texto || ""
+                                                                                            )
+                                                                                          }
+                                                                                          className="w-full rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-700 transition"
+                                                                                        >
+                                                                                          Insertar fórmula
+                                                                                        </button>
+                                                                                      </div>
+                                                                                    )}
+                                                                                  </div>
+
+                                                                                  <div>
+                                                                                    <label className="block font-semibold mb-2">
+                                                                                      {pregunta.modo_respuesta_numerica === "formula"
+                                                                                        ? "Fórmula correcta"
+                                                                                        : "Respuesta numérica correcta"}
                                                                                     </label>
+
+                                                                                    <div className="flex flex-col md:flex-row gap-2">
+                                                                                      <input
+                                                                                        type="text"
+                                                                                        value={pregunta.respuesta_texto || ""}
+                                                                                        onChange={(e) =>
+                                                                                          handleChangePreguntaExamen(
+                                                                                            leccion.id,
+                                                                                            preguntaIndex,
+                                                                                            "respuesta_texto",
+                                                                                            pregunta.modo_respuesta_numerica === "formula"
+                                                                                              ? e.target.value
+                                                                                              : e.target.value.replace(/[^\d.-]/g, "")
+                                                                                          )
+                                                                                        }
+                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                        placeholder={
+                                                                                          pregunta.modo_respuesta_numerica === "formula"
+                                                                                            ? "Ej. \\frac{x+2}{3}"
+                                                                                            : "Ej. 25 o 25.5"
+                                                                                        }
+                                                                                      />
+
+                                                                                      {pregunta.modo_respuesta_numerica === "formula" && (
+                                                                                        <button
+                                                                                          type="button"
+                                                                                          onClick={() =>
+                                                                                            abrirFormulaNumerica(
+                                                                                              leccion.id,
+                                                                                              preguntaIndex,
+                                                                                              pregunta.respuesta_texto || ""
+                                                                                            )
+                                                                                          }
+                                                                                          className="rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 hover:bg-violet-100 transition"
+                                                                                        >
+                                                                                          Editor
+                                                                                        </button>
+                                                                                      )}
+                                                                                    </div>
+
+                                                                                    {pregunta.modo_respuesta_numerica === "formula" && (
+                                                                                      <p className="mt-2 text-xs text-slate-500">
+                                                                                        La fórmula se guardará como respuesta de referencia para esta pregunta numérica.
+                                                                                      </p>
+                                                                                    )}
                                                                                   </div>
                                                                                 </div>
                                                                               )}

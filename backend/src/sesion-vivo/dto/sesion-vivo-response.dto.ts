@@ -10,4 +10,5 @@ export class SesionVivoResponseDto {
   external_meeting_id: string | null;
   estado: string;
   idgrupo: number | null;
+  access_type?: string | null;
 }

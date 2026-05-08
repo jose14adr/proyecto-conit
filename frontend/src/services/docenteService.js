@@ -85,6 +85,97 @@ const getGrupoById = async (grupoId) => {
   return data || null;
 };
 
+const getAuthHeadersApi = (extraHeaders = {}) => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("No hay token en sesión. Inicia sesión nuevamente.");
+  }
+
+  return {
+    ...extraHeaders,
+    Authorization: `Bearer ${token}`,
+  };
+};
+
+const leerRespuestaApi = async (res) => {
+  const text = await res.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+};
+
+const subirVideoVimeoConToken = async ({
+  file,
+  titulo = "Video",
+  leccionId = null,
+  onProgress = null,
+}) => {
+  if (!file) {
+    throw new Error("No se seleccionó ningún video.");
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  const formData = new FormData();
+  formData.append("video", file);
+  formData.append("title", titulo || file.name);
+
+  if (leccionId) {
+    formData.append("leccionId", String(leccionId));
+  }
+
+  const result = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${apiUrl}/videos/upload`);
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        reject(new Error("No hay token en sesión. Inicia sesión nuevamente."));
+        return;
+      }
+
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+      xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && typeof onProgress === "function") {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        onProgress(percent);
+      }
+    };
+
+    xhr.onload = () => {
+      try {
+        const response = JSON.parse(xhr.responseText || "{}");
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(response);
+        } else {
+          reject(
+            new Error(response?.message || "No se pudo subir el video a Vimeo.")
+          );
+        }
+      } catch {
+        reject(new Error("Respuesta inválida del servidor de videos."));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error("Error de red al subir el video."));
+    };
+
+    xhr.send(formData);
+  });
+
+  return result;
+};
+
 // ======================================================
 // PERFIL DOCENTE
 // ======================================================
@@ -2417,38 +2508,11 @@ export const addMaterialLeccion = async (leccionId, payload) => {
 
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-      const result = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", `${apiUrl}/videos/upload`);
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable && typeof payload.onProgress === "function") {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            payload.onProgress(percent);
-          }
-        };
-
-        xhr.onload = () => {
-          try {
-            const response = JSON.parse(xhr.responseText || "{}");
-
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve(response);
-            } else {
-              reject(
-                new Error(response?.message || "No se pudo subir el video a Vimeo.")
-              );
-            }
-          } catch {
-            reject(new Error("Respuesta inválida del servidor."));
-          }
-        };
-
-        xhr.onerror = () => {
-          reject(new Error("Error de red al subir el video."));
-        };
-
-        xhr.send(formData);
+      const result = await subirVideoVimeoConToken({
+        file,
+        titulo: payload.titulo?.trim() || file.name,
+        leccionId,
+        onProgress: payload.onProgress,
       });
 
       videoUrl = result?.videoUrl || null;
@@ -3783,8 +3847,12 @@ export const agregarPreguntasBancoAExamen = async ({
 export const getSesionesVivoByGrupo = async (grupoId) => {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-  const res = await fetch(`${apiUrl}/sesion-vivo/grupo/${grupoId}`);
-  const data = await res.json();
+  const res = await fetch(`${apiUrl}/sesion-vivo/grupo/${grupoId}`, {
+    method: "GET",
+    headers: getAuthHeadersApi(),
+  });
+
+  const data = await leerRespuestaApi(res);
 
   if (!res.ok) {
     throw new Error(
@@ -3792,7 +3860,7 @@ export const getSesionesVivoByGrupo = async (grupoId) => {
     );
   }
 
-  return data || [];
+  return Array.isArray(data) ? data : [];
 };
 
 // Alias temporal para compatibilidad
@@ -3801,8 +3869,12 @@ export const getSesionesVivoByCurso = getSesionesVivoByGrupo;
 export const getMeetingProviderByGrupo = async (grupoId) => {
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-  const res = await fetch(`${apiUrl}/sesion-vivo/grupo/${grupoId}/provider`);
-  const data = await res.json();
+  const res = await fetch(`${apiUrl}/sesion-vivo/grupo/${grupoId}/provider`, {
+    method: "GET",
+    headers: getAuthHeadersApi(),
+  });
+
+  const data = await leerRespuestaApi(res);
 
   if (!res.ok) {
     throw new Error(
@@ -3818,19 +3890,20 @@ export const crearSesionVivo = async (payload) => {
 
   const res = await fetch(`${apiUrl}/sesion-vivo`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeadersApi({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({
       idgrupo: Number(payload.idgrupo),
       titulo: String(payload.titulo || ""),
       descripcion: payload.descripcion ? String(payload.descripcion) : "",
       fecha: String(payload.fecha || ""),
-      duracion: Number(payload.duracion || 0),
+      duracion: Number(payload.duracion || 60),
+      accessType: payload.accessType || "RESTRICTED",
     }),
   });
 
-  const data = await res.json();
+  const data = await leerRespuestaApi(res);
 
   if (!res.ok) {
     throw new Error(data?.message || "No se pudo crear la sesión en vivo.");
@@ -4144,12 +4217,13 @@ export const subirAdjuntoForo = async ({ file, grupoId }) => {
 
   const res = await fetch(`${apiUrl}/s3/upload-foro-adjunto`, {
     method: "POST",
+    headers: getAuthHeadersApi(),
     body: formData,
   });
 
-  const data = await res.json();
+  const data = await leerRespuestaApi(res);
 
-  if (!res.ok || !data.ok) {
+  if (!res.ok || !data?.ok) {
     throw new Error(data?.message || "No se pudo subir el adjunto del foro.");
   }
 
@@ -4207,46 +4281,18 @@ export const crearForoAdjunto = async ({
   return data;
 };
 
-export const subirVideoForoVimeo = async ({ file, titulo = "Video del foro" }) => {
+export const subirVideoForoVimeo = async ({
+  file,
+  titulo = "Video del foro",
+}) => {
   if (!file) {
     throw new Error("No se seleccionó ningún video.");
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
-  const formData = new FormData();
-  formData.append("video", file);
-  formData.append("title", titulo || file.name);
-
-  const result = await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-
-    xhr.open("POST", `${apiUrl}/videos/upload`);
-
-    xhr.onload = () => {
-      try {
-        const response = JSON.parse(xhr.responseText || "{}");
-
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(response);
-        } else {
-          reject(
-            new Error(response?.message || "No se pudo subir el video a Vimeo.")
-          );
-        }
-      } catch {
-        reject(new Error("Respuesta inválida del servidor de Vimeo."));
-      }
-    };
-
-    xhr.onerror = () => {
-      reject(new Error("Error de red al subir el video a Vimeo."));
-    };
-
-    xhr.send(formData);
+  return await subirVideoVimeoConToken({
+    file,
+    titulo: titulo || file.name,
   });
-
-  return result;
 };
 
 export const subirYGuardarAdjuntoForo = async ({
@@ -4388,15 +4434,15 @@ export const getForoAdjuntoDownloadUrl = async (objectKey) => {
 
   const res = await fetch(`${apiUrl}/s3/presign-download`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeadersApi({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({ key: objectKey }),
   });
 
-  const data = await res.json();
+  const data = await leerRespuestaApi(res);
 
-  if (!res.ok || !data.ok) {
+  if (!res.ok || !data?.ok) {
     throw new Error(data?.message || "No se pudo obtener la URL del adjunto.");
   }
 

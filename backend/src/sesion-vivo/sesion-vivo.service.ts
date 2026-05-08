@@ -12,6 +12,7 @@ import { EmpresaService } from '../empresa/empresa.service';
 import { MeetingProviderFactory } from '../meeting/meeting-provider.factory';
 import {
   CreateMeetingInput,
+  MeetingAccessType,
   MeetingProvider,
 } from '../meeting/meeting-provider.interface';
 import { SesionVivoResponseDto } from './dto/sesion-vivo-response.dto';
@@ -45,6 +46,7 @@ export class SesionVivoService {
       external_meeting_id: sesion.external_meeting_id,
       estado: sesion.estado,
       idgrupo: sesion.idgrupo ?? null,
+      access_type: sesion.access_type ?? 'RESTRICTED',
     };
   }
 
@@ -67,6 +69,18 @@ export class SesionVivoService {
 
     throw new BadRequestException(
       `Proveedor de reuniones no válido: ${provider}`,
+    );
+  }
+
+  private normalizarAccessType(accessType?: string): MeetingAccessType {
+    const valor = String(accessType || 'RESTRICTED').toUpperCase().trim();
+
+    if (valor === 'OPEN' || valor === 'TRUSTED' || valor === 'RESTRICTED') {
+      return valor;
+    }
+
+    throw new BadRequestException(
+      `Tipo de acceso de reunión no válido: ${accessType}`,
     );
   }
 
@@ -145,6 +159,7 @@ export class SesionVivoService {
     descripcion?: string;
     fecha: string;
     duracion: number;
+    accessType?: string;
   }): Promise<SesionVivoResponseDto> {
     if (!payload.idgrupo) {
       throw new BadRequestException('Falta idgrupo');
@@ -181,12 +196,14 @@ export class SesionVivoService {
 
     const provider = await this.obtenerProviderDesdeGrupo(Number(payload.idgrupo));
     const providerService = this.meetingProviderFactory.getProvider(provider);
+    const accessType = this.normalizarAccessType(payload.accessType);
 
     const meetingInput: CreateMeetingInput = {
       titulo: payload.titulo.trim(),
       descripcion: payload.descripcion?.trim() || '',
       fechaInicioIso: fechaInicio.toISOString(),
       fechaFinIso: fechaFin.toISOString(),
+      accessType,
     };
 
     const meeting = await providerService.createMeeting(meetingInput);
@@ -204,6 +221,7 @@ export class SesionVivoService {
       external_meeting_id: meeting.externalMeetingId || null,
       host_url: meeting.hostUrl || null,
       metadata: meeting.metadata || null,
+      access_type: accessType,
       estado: 'programada',
     };
 

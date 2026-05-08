@@ -1,34 +1,35 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Curso } from '../../curso/entities/curso.entity';
+
 @Entity({ name: 'sesion_vivo' })
-
 export class SesionVivo {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-@PrimaryGeneratedColumn()
-id: number;
-
-@ManyToOne(
-    () => Curso,
-    (curso) => curso.sesionesVivo,
-    { nullable: true }
-  )
+  @ManyToOne(() => Curso, (curso) => curso.sesionesVivo, { nullable: true })
   @JoinColumn({ name: 'idcurso' })
   curso?: Curso;
 
-@Column({ type: 'varchar' })
-titulo: string;
+  @Column({ type: 'varchar' })
+  titulo: string;
 
   @Column({ type: 'text', nullable: true })
   descripcion: string | null;
 
-@Column()
-fecha: Date;
+  @Column()
+  fecha: Date;
 
-@Column()
-duracion: number;
+  @Column()
+  duracion: number;
 
-@Column()
-link_reunion: string;
+  @Column()
+  link_reunion: string;
 
   @Column({ type: 'varchar', default: 'google' })
   provider: string;
@@ -47,4 +48,7 @@ link_reunion: string;
 
   @Column({ type: 'int', nullable: true })
   idgrupo: number | null;
+
+  @Column({ name: 'access_type', type: 'varchar', default: 'RESTRICTED' })
+  access_type: string;
 }
