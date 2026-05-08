@@ -1,8 +1,9 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { ConfiguracionPago } from '../../pago/entities/configuracion-pago.entity';
 
-@Entity({ name: 'Empresa' }) // Respeta el nombre exacto en BD
+
+@Entity({ name: 'empresa' })
 export class Empresa {
-
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -26,4 +27,7 @@ export class Empresa {
 
   @Column({ type: 'char' })
   ruc: string;
+
+  @OneToMany(() => ConfiguracionPago, (configuracion) => configuracion.empresa)
+  configuracionesPago: ConfiguracionPago[];
 }

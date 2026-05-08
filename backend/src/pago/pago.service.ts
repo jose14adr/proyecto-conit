@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { supabase } from '../supabase.client';
 import mercadopago from 'mercadopago';
 import { MatriculaService } from '../matricula/matricula.service';
@@ -10,6 +10,7 @@ import * as crypto from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Pago } from './entities/pago.entity';
+import { ConfiguracionPago } from './entities/configuracion-pago.entity'; // 👈 Nueva importación
 
 @Injectable()
 export class PagoService {
@@ -17,7 +18,26 @@ export class PagoService {
     private matriculaService: MatriculaService,
     @InjectRepository(Pago)
     private pagoRepository: Repository<Pago>,
+    @InjectRepository(ConfiguracionPago) // 👈 Inyección del repositorio de configuración
+    private configPagoRepo: Repository<ConfiguracionPago>,
   ) {}
+
+  // ==============================
+  // 🔐 MÉTODO AUXILIAR: OBTENER CREDENCIALES DE BD
+  // ==============================
+  private async _obtenerConfig(pasarela: string) {
+    const config = await this.configPagoRepo.findOne({
+      where: { pasarela, activa: true },
+    });
+
+    if (!config || !config.credenciales) {
+      throw new BadRequestException(
+        `La pasarela ${pasarela} no está configurada o se encuentra inactiva.`,
+      );
+    }
+
+    return config.credenciales;
+  }
 
   // ==============================
   // PAGOS PENDIENTES
@@ -48,9 +68,9 @@ export class PagoService {
     if (error) throw new Error(error.message);
 
     return (data || []).map((m: any) => {
-      const nombreAlumno = m.alumno.nombre
-        ? `${m.alumno.nombres} ${m.alumno.apellidos} || ''}`
-        : m.alumno?.nombres || 'Alumno Desconocido';
+      const nombreAlumno = m.alumno?.nombre
+        ? `${m.alumno.nombre} ${m.alumno.apellido || ''}`
+        : 'Alumno Desconocido';
 
       const montoCobrar =
         m.grupo?.curso?.precio_final || m.grupo?.curso?.precio || 0;
@@ -99,7 +119,7 @@ export class PagoService {
       )
     `,
       )
-      .eq('estado', 'pagado'); // Filtra por estado del pago
+      .eq('estado', 'pagado');
 
     if (error) {
       console.error('❌ Error en Supabase al obtener pagos realizados:', error);
@@ -110,10 +130,11 @@ export class PagoService {
   }
 
   // ==============================
-  // PAGO CON MERCADOPAGO
+  // PAGO CON MERCADOPAGO (Legacy)
   // ==============================
   async pagarConMercadoPago(data: any) {
-    mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
+    const credenciales = await this._obtenerConfig('mercadopago');
+    mercadopago.configure({ access_token: credenciales.access_token });
 
     const payment = await mercadopago.payment.create({
       transaction_amount: Number(data.preciofinal),
@@ -135,7 +156,9 @@ export class PagoService {
   // PAGO CON PAYPAL
   // ==============================
   async pagarConPaypal(data: any) {
-    // 🌐 Aquí usarías la API de PayPal REST v2
+    const credenciales = await this._obtenerConfig('paypal');
+    const token = credenciales.access_token; // Se lee de la BD
+
     const res = await axios.post(
       'https://api-m.sandbox.paypal.com/v2/checkout/orders',
       {
@@ -146,23 +169,22 @@ export class PagoService {
         payer: { email_address: data.email },
       },
       {
-        headers: { Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}` },
+        headers: { Authorization: `Bearer ${token}` },
       },
     );
 
-    // Capturar pago inmediatamente (sandbox)
     const orderId = res.data.id;
     const capture = await axios.post(
       `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`,
       {},
       {
-        headers: { Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}` },
+        headers: { Authorization: `Bearer ${token}` },
       },
     );
 
     const pago = {
       id: capture.data.id,
-      status: capture.data.status.toLowerCase(), // APPROVED -> approved
+      status: capture.data.status.toLowerCase(),
       status_detail: null,
     };
 
@@ -232,65 +254,9 @@ export class PagoService {
   }
 
   // ==============================
-  // PAGO CON TARJETA
+  // PAGO CON TARJETA (MercadoPago)
   // ==============================
-  /*async pagarConTarjeta(data: any) {
-    mercadopago.configure({ access_token: process.env.MP_ACCESS_TOKEN });
-
-    try {
-
-      // 🚨 VALIDACIÓN FUERTE BACKEND
-      if (!data.token) throw new Error("Falta token");
-      if (!data.payment_method_id) throw new Error("Falta payment_method_id");
-      if (!data.transaction_amount) throw new Error("Falta monto");
-
-      const payment = await mercadopago.payment.create({
-        transaction_amount: Number(data.transaction_amount),
-        token: data.token,
-        description: data.description || "Pago curso",
-        installments: Number(data.installments) || 1,
-        payment_method_id: data.payment_method_id,
-        issuer_id: data.issuer_id || undefined,
-
-        payer: {
-          email: data.payer?.email || "kdaniela.paredes.11@gmail.com",
-        },
-      });
-
-      console.log("✅ MP RESPONSE:", payment.body);
-
-      const dataAdaptada = {
-        preciofinal: data.transaction_amount,
-        precioinicial: data.transaction_amount,
-        preciodescuento: 0,
-        igv: 0,
-        tipopago: "mercadopago",
-        matricula_id: data.matricula_id,
-        email: data.payer?.email || "kdaniela.paredes.11@gmail.com",
-      };
-
-      await this._guardarPago(dataAdaptada, payment);
-
-      return {
-        id: payment.body.id,
-        status: payment.body.status,
-        status_detail: payment.body.status_detail,
-      };
-
-    } catch (error) {
-
-      console.error("💥 ERROR REAL MP:", error.response?.data || error);
-
-      throw new Error(
-        error.response?.data?.message ||
-        JSON.stringify(error.response?.data) ||
-        error.message
-      );
-    }
-  }*/
-
   async pagarConTarjeta(body: any) {
-
     const {
       token,
       payment_method_id,
@@ -299,22 +265,20 @@ export class PagoService {
       transaction_amount,
       description,
       payer,
-      matricula_id
-    } = body
+      matricula_id,
+    } = body;
 
-    console.log("📩 BODY:", body)
+    console.log('📩 BODY:', body);
 
-    if (!token) {
-      throw new Error("Falta token")
-    }
+    if (!token) throw new Error('Falta token');
+    if (!payer?.email) throw new Error('Falta email');
 
-    if (!payer?.email) throw new Error("Falta email")
-
-    const mercadopago = require("mercadopago")
+    const credenciales = await this._obtenerConfig('mercadopago');
+    const mercadopago = require('mercadopago');
 
     mercadopago.configure({
-      access_token: process.env.MP_ACCESS_TOKEN // 🔥 PRODUCCIÓN
-    })
+      access_token: credenciales.access_token, // 🔥 Viene de la BD
+    });
 
     const paymentData: any = {
       transaction_amount,
@@ -322,54 +286,46 @@ export class PagoService {
       description,
       installments: Number(installments) || 1,
       payment_method_id,
-      payer
-    }
+      payer,
+    };
 
-    // ✅ SOLO agregar issuer_id si existe
     if (issuer_id) {
-      paymentData.issuer_id = issuer_id.toString()
+      paymentData.issuer_id = issuer_id.toString();
     }
 
-    const payment = await mercadopago.payment.create(paymentData)
+    const payment = await mercadopago.payment.create(paymentData);
+    const data = payment.body;
 
-    const data = payment.body
-
-    console.log("💳 RESPUESTA MP:", data)
-    console.log("🔥 LIVE MODE:", data.live_mode)
+    console.log('💳 RESPUESTA MP:', data);
 
     const pago = await this.pagoRepository.save({
-
       matricula: { id: matricula_id },
-
-      tipopago: "tarjeta",
-
+      tipopago: 'tarjeta',
       mp_payment_id: data.id,
       collector_id: data.collector_id,
-
       estado: data.status,
       status_detail: data.status_detail,
-
-      precioinicial: data.transaction_details?.total_paid_amount || transaction_amount,
+      precioinicial:
+        data.transaction_details?.total_paid_amount || transaction_amount,
       preciofinal: data.transaction_amount,
       igv: 0,
-
       descripcion: description,
-
       idtipocomprobante: 1,
       idpagodoc: 1,
-
-      fechapago: new Date()
-    })
+      fechapago: new Date(),
+    });
 
     return {
       status: data.status,
       status_detail: data.status_detail,
-      pago
-    }
+      pago,
+    };
   }
-  // 🔹 Método privado para guardar pago + PDF + correo
-  private async _guardarPago(data: any, payment: any) {
 
+  // ==============================
+  // MÉTODO PRIVADO GUARDAR PAGO
+  // ==============================
+  private async _guardarPago(data: any, payment: any) {
     if (!payment || !payment.body) {
       throw new Error('Respuesta inválida de Mercado Pago');
     }
@@ -382,7 +338,6 @@ export class PagoService {
       estado = 'rechazado';
     }
 
-    // 🔒 evitar duplicados
     const { data: existe } = await supabase
       .from('pago')
       .select('*')
@@ -410,7 +365,6 @@ export class PagoService {
     if (errorPago) throw new Error(errorPago.message);
 
     if (estado === 'pagado') {
-
       const { error: errorMatricula } = await supabase
         .from('matricula')
         .update({ estado: 'pagado' })
@@ -422,81 +376,78 @@ export class PagoService {
         const pdfPath = await this.generarPDF(data, payment);
         await this.enviarCorreo(data.email, data, pdfPath);
       } catch (err) {
-        console.error("Error en PDF/correo:", err);
+        console.error('Error en PDF/correo:', err);
       }
     }
   }
 
+  // ==============================
+  // YAPE DIRECTO
+  // ==============================
   async pagarConYape(body: any) {
-
     const {
       matricula_id,
       codigo_aprobacion,
       celular,
       precioinicial,
       preciodescuento = 0,
-      descripcion
-    } = body
+      descripcion,
+    } = body;
+
+    // Aquí no necesitamos llaves de API porque Yape directo es un registro manual,
+    // pero si lo validaras contra una API, usarías _obtenerConfig('yape').
 
     if (!celular || !codigo_aprobacion) {
-      throw new Error("Datos incompletos")
+      throw new Error('Datos incompletos');
     }
 
-    const subtotal = precioinicial - preciodescuento
-    const igv = subtotal * 0.18
-    const precioFinal = subtotal + igv
+    const subtotal = precioinicial - preciodescuento;
+    const igv = subtotal * 0.18;
+    const precioFinal = subtotal + igv;
 
     const pago = await this.pagoRepository.save({
       matricula_id,
-      tipopago: "yape",
-
+      tipopago: 'yape',
       celular,
       codigo_aprobacion,
-
       precioinicial,
       preciodescuento,
-      precioFinal,
+      preciofinal: precioFinal,
       igv,
-
       descripcion,
-
-      estado: "pagado",
-      status_detail: "accredited",
-
+      estado: 'pagado',
+      status_detail: 'accredited',
       idpagodoc: Math.floor(Math.random() * 10000),
       idtipocomprobante: 1,
+      fechapago: new Date(),
+    });
 
-      fechapago: new Date()
-    })
-
-    return {
-      status: "approved",
-      pago
-    }
+    return { status: 'approved', pago };
   }
-  
+
   async buscarPorMatricula(matricula_id: number) {
-  return await this.pagoRepository.findOne({
-    where: {
-      matricula: { id: matricula_id },
-    },
-  })
-}
+    return await this.pagoRepository.findOne({
+      where: {
+        matricula: { id: matricula_id },
+      },
+    });
+  }
 
   // ==============================
-  // WEBHOOK
+  // WEBHOOK MERCADOPAGO
   // ==============================
   async procesarWebhook(body: any) {
     if (body.type === 'payment') {
       const paymentId = body.data.id;
 
-      const payment = await mercadopago.payment.findById(paymentId);
+      const credenciales = await this._obtenerConfig('mercadopago');
+      mercadopago.configure({ access_token: credenciales.access_token });
 
+      const payment = await mercadopago.payment.findById(paymentId);
       const metodo = payment.body.payment_method_id;
 
-      // 👇 AQUÍ detectas Yape
-      if (metodo === "yape") {
-        console.log("📱 Pago con Yape");
+      if (metodo === 'yape') {
+        console.log('📱 Pago con Yape detectado en Webhook');
       }
 
       const estadoMP = payment.body.status;
@@ -510,7 +461,7 @@ export class PagoService {
         .update({
           estado,
           status_detail: payment.body.status_detail,
-          tipopago: metodo // 👈 GUARDAS YAPE AQUÍ
+          tipopago: metodo,
         })
         .eq('idpagodoc', paymentId);
     }
@@ -518,10 +469,14 @@ export class PagoService {
     return { received: true };
   }
 
-
+  // ==============================
+  // CREAR PREFERENCIA MP
+  // ==============================
   async crearPreferencia(data: any) {
+    const credenciales = await this._obtenerConfig('mercadopago');
+
     mercadopago.configure({
-      access_token: process.env.MP_ACCESS_TOKEN,
+      access_token: credenciales.access_token,
     });
 
     const preference = {
@@ -530,84 +485,79 @@ export class PagoService {
           title: data.nombre,
           quantity: 1,
           unit_price: Number(data.preciofinal),
-          currency_id: "PEN",
+          currency_id: 'PEN',
         },
       ],
-
       payer: {
         email: data.email,
       },
-
       metadata: {
         matricula_id: data.matricula_id,
       },
-
-      // 🔥 IMPORTANTE
       payment_methods: {
         installments: 1,
       },
-
-      notification_url: "https://buddy-blunt-crumpled.ngrok-free.dev/pago/webhook",
+      // Idealmente, esto también podría venir de la BD o variables de entorno del servidor
+      notification_url:
+        'https://buddy-blunt-crumpled.ngrok-free.dev/pago/webhook',
     };
 
     const res = await mercadopago.preferences.create(preference);
-
     return { preferenceId: res.body.id };
   }
 
+  // ==============================
+  // YAPE VÍA MERCADOPAGO
+  // ==============================
   async pagarYapeMP(body: any) {
-
-    const mercadopago = require("mercadopago")
+    const credenciales = await this._obtenerConfig('mercadopago');
+    const mercadopago = require('mercadopago');
 
     mercadopago.configure({
-      access_token: process.env.MP_ACCESS_TOKEN
-    })
+      access_token: credenciales.access_token,
+    });
 
     const payment = await mercadopago.payment.create({
       transaction_amount: Number(body.transaction_amount),
       token: body.token,
       description: body.description,
       installments: 1,
-      payment_method_id: "yape", // 🔥 CLAVE
+      payment_method_id: 'yape',
       payer: {
-        email: body.payer.email
-      }
-    })
+        email: body.payer.email,
+      },
+    });
 
-    const data = payment.body
-
-    console.log("🧾 YAPE RESPONSE:", data)
+    const data = payment.body;
+    console.log('🧾 YAPE RESPONSE:', data);
 
     const estado =
-      data.status === "approved"
-        ? "pagado"
-        : data.status === "rejected"
-        ? "rechazado"
-        : "pendiente"
+      data.status === 'approved'
+        ? 'pagado'
+        : data.status === 'rejected'
+          ? 'rechazado'
+          : 'pendiente';
 
     await this.pagoRepository.save({
       matricula: { id: body.matricula_id },
-      tipopago: "yape",
-
+      tipopago: 'yape',
       mp_payment_id: data.id,
       estado: estado,
       status_detail: data.status_detail,
-
       preciofinal: data.transaction_amount,
-      fechapago: new Date()
-    })
+      fechapago: new Date(),
+    });
 
     return {
       status: data.status,
-      detail: data.status_detail
-    }
+      detail: data.status_detail,
+    };
   }
 
   // ==============================
   // PDF Y CORREO
   // ==============================
   async generarPDF(data: any, payment: any) {
-    // Detectamos si el ID viene de MercadoPago (body.id) o de Izipay (id)
     const paymentId = payment.body ? payment.body.id : payment.id;
 
     const filePath = `boleta-${paymentId}.pdf`;
@@ -628,6 +578,7 @@ export class PagoService {
   }
 
   async enviarCorreo(email: string, detalle: any, pdfPath: string) {
+    // Nota: Las credenciales de correo se mantienen en .env por seguridad de la plataforma
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
@@ -646,6 +597,8 @@ export class PagoService {
   // PAGO CON IZIPAY
   // ==============================
   async pagarConIzipay(data: any) {
+    const credenciales = await this._obtenerConfig('izipay');
+
     const res = await axios.post(
       'https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment',
       {
@@ -662,7 +615,7 @@ export class PagoService {
           Authorization:
             'Basic ' +
             Buffer.from(
-              `${process.env.IZIPAY_USER}:${process.env.IZIPAY_PASSWORD}`,
+              `${credenciales.usuario}:${credenciales.password}`, // 🔥 Viene de la BD
             ).toString('base64'),
           'Content-Type': 'application/json',
         },
@@ -676,11 +629,10 @@ export class PagoService {
 
   async confirmarPagoIzipay(formToken: string, data: any) {
     try {
-      // Como estamos en localhost, pasamos directamente a procesar el pago y guardar en BD
       const resultado = await this.procesarPagoBackend(
         {
           ...data,
-          precioinicial: data.preciofinal, // Evitamos nulos en BD
+          precioinicial: data.preciofinal,
           preciodescuento: 0,
         },
         { id: Date.now(), status: 'approved', status_detail: 'accredited' },
@@ -698,26 +650,24 @@ export class PagoService {
     console.log('📩 WEBHOOK RAW:', body);
 
     const hashRecibido = body['kr-hash'];
-    const claveSecreta = process.env.IZIPAY_HMAC_SHA256;
+    const credenciales = await this._obtenerConfig('izipay');
+    const claveSecreta = credenciales.hmac_sha256; // 🔥 Viene de la BD
 
     if (!claveSecreta) {
-      throw new Error('❌ Falta IZIPAY_HMAC_SHA256 en .env');
+      throw new Error('❌ Falta HMAC_SHA256 en la configuración de BD');
     }
 
-    // 🔐 1. Construir string para firma
     const data = Object.keys(body)
       .filter((key) => key.startsWith('kr-') && key !== 'kr-hash')
       .sort()
       .map((key) => `${key}=${body[key]}`)
       .join('&');
 
-    // 🔐 2. Generar hash local
     const hashCalculado = crypto
       .createHmac('sha256', claveSecreta)
       .update(data)
       .digest('hex');
 
-    // 🔐 3. Validar firma
     if (hashCalculado !== hashRecibido) {
       console.error('❌ FIRMA INVÁLIDA');
       throw new Error('Firma inválida');
@@ -725,18 +675,12 @@ export class PagoService {
 
     console.log('✅ FIRMA VÁLIDA');
 
-    // ============================
-    // 📊 DATOS IMPORTANTES
-    // ============================
-    const estado = body['kr-answer-orderStatus']; // PAID / REFUSED
+    const estado = body['kr-answer-orderStatus'];
     const orderId = body['kr-answer-orderDetails-orderId'];
     const monto = body['kr-answer-orderDetails-orderTotalAmount'];
 
     console.log('📊 ESTADO:', estado);
 
-    // ============================
-    // 💾 ACTUALIZAR BD
-    // ============================
     if (estado === 'PAID') {
       await supabase
         .from('matricula')
@@ -750,7 +694,6 @@ export class PagoService {
 
       console.log('💰 Pago confirmado en BD');
 
-      // 📄 PDF + 📧 correo
       const pdfPath = await this.generarPDF(
         { preciofinal: monto / 100 },
         { id: orderId },
@@ -765,14 +708,6 @@ export class PagoService {
 
     return { ok: true };
   }
-
-  /*async buscarPorMatricula(matricula_id: number) {
-    return await this.pagoRepository.findOne({
-      where: {
-        matricula: { id: matricula_id },
-      },
-    });
-  }*/
 
   async marcarPagado(matricula_id: number, data: any) {
     const pago = await this.pagoRepository.findOne({
