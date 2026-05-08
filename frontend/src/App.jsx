@@ -17,6 +17,7 @@ import NosotrosWeb from "./pages/web/NosotrosWeb";
 import ContactoWeb from "./pages/web/ContactoWeb";
 import CarritoWeb from "./pages/web/CarritoWeb";
 import DetalleCursoWeb from "./pages/web/DetalleCursoWeb";
+import PaginaDinamicaWeb from "./pages/web/PaginaDinamicaWeb";
 
 // ESTUDIANTE
 
@@ -34,6 +35,8 @@ import Soporte from "./alumno//Soporte";
 import HistorialAcademico from "./alumno/HistorialAcademico";
 import AsistenciaAlumno from "./alumno/AsistenciaAlumno";
 
+import CursoDetalleAdmin from "./admin/CursoDetalleAdmin";
+
 // ADMIN
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const Dashboard = lazy(() => import("./admin/Dashboard"));
@@ -44,9 +47,11 @@ const Alumnos = lazy(() => import("./admin/Alumnos"));
 const Usuarios = lazy(() => import("./admin/Usuarios"));
 const Pagos = lazy(() => import("./admin/Pagos"));
 const ControlSesiones = lazy(() => import("./admin/ControlSesiones"));
-import Certificados from "./admin/Certificados";
+const Certificados = lazy(() => import("./admin/Certificados"));
 const PerfilAdministrador = lazy(() => import("./admin/PerfilAdministrador"));
-import CursoDetalleAdmin from "./admin/CursoDetalleAdmin";
+const GestionWeb = lazy(() => import("./admin/GestionWeb"));
+
+
 
 // DOCENTE
 import DocenteLayout from "./docente/DocenteLayout";
@@ -145,6 +150,14 @@ export default function App() {
               </PublicWebLayout>
             }
           />
+          <Route
+            path="/web/:slug"
+            element={
+              <PublicWebLayout>
+                <PaginaDinamicaWeb />
+              </PublicWebLayout>
+            }
+          />
 
           {/* ESTUDIANTES */}
           <Route element={<ProtectedRoute allowedRoles={["ALUMNO"]} />}>
@@ -182,6 +195,7 @@ export default function App() {
               <Route path="sesiones" element={<ControlSesiones />} />
               <Route path="certificados" element={<Certificados />} />
               <Route path="perfil" element={<PerfilAdministrador />} />
+              <Route path="gestion-web" element={<GestionWeb />} />
             </Route>
           </Route>
 

@@ -6,7 +6,6 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
-  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { S3Service } from './s3.service';
@@ -16,13 +15,10 @@ import {
   ApiResponse,
   ApiConsumes,
   ApiBody,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
+
 
 @ApiTags('Almacenamiento S3 (AWS)')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('s3')
 export class S3Controller {
   constructor(private readonly s3Service: S3Service) {}
@@ -241,6 +237,87 @@ export class S3Controller {
       key,
       bucket: this.s3Service.getBucketName(),
       originalName: file.originalname,
+    };
+  }
+
+    @Post('upload-foro-adjunto')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Subir adjunto del foro',
+    description:
+      'Sube imágenes o archivos asociados a publicaciones/respuestas del foro por grupo.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Adjunto del foro subido exitosamente.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Error en los datos o formato del archivo para el foro.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        grupoId: { type: 'string', example: '5' },
+      },
+      required: ['file', 'grupoId'],
+    },
+  })
+  async uploadForoAdjunto(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('grupoId') grupoId: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No se recibió ningún archivo.');
+    }
+
+    if (!grupoId) {
+      throw new BadRequestException('Falta grupoId.');
+    }
+
+    const maxBytes = 25 * 1024 * 1024; // 25 MB
+
+    if (file.size > maxBytes) {
+      throw new BadRequestException('El archivo no debe superar los 25 MB.');
+    }
+
+    const mimeType = file.mimetype || 'application/octet-stream';
+
+    if (mimeType.startsWith('video/')) {
+      throw new BadRequestException(
+        'Los videos del foro deben subirse por Vimeo.',
+      );
+    }
+
+    const esImagen = mimeType.startsWith('image/');
+
+    const safeName = String(file.originalname || 'archivo')
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9._-]/g, '');
+
+    const safeGrupoId = String(grupoId).replace(/[^0-9]/g, '') || String(grupoId);
+
+    const carpetaTipo = esImagen ? 'imagenes' : 'archivos';
+
+    const key = `foro/grupo-${safeGrupoId}/${carpetaTipo}/${Date.now()}-${safeName}`;
+
+    await this.s3Service.uploadBuffer({
+      key,
+      body: file.buffer,
+      contentType: mimeType,
+    });
+
+    return {
+      ok: true,
+      key,
+      bucket: this.s3Service.getBucketName(),
+      originalName: file.originalname,
+      mimeType,
+      size: file.size,
+      tipo: esImagen ? 'imagen' : 'archivo',
     };
   }
 

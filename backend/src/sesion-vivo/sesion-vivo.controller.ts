@@ -8,8 +8,6 @@ import {
   BadRequestException,
   UseGuards,
 } from '@nestjs/common';
-import { SesionVivoService } from './sesion-vivo.service';
-import { SesionVivo } from './entities/sesion-vivo.entity';
 import {
   ApiTags,
   ApiOperation,
@@ -19,10 +17,10 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
+import { SesionVivoService } from './sesion-vivo.service';
+import { SesionVivoResponseDto } from './dto/sesion-vivo-response.dto';
 
 @ApiTags('Sesiones en Vivo')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('sesion-vivo')
 export class SesionVivoController {
   constructor(private readonly service: SesionVivoService) {}
@@ -41,46 +39,82 @@ export class SesionVivoController {
     status: 401,
     description: 'No autorizado. Token JWT faltante o inválido.',
   })
-  async obtener(): Promise<SesionVivo[]> {
+  async obtener(): Promise<SesionVivoResponseDto[]> {
     return this.service.obtenerSesiones();
   }
 
-  @Get('curso/:idcurso')
+  @Get('grupo/:idgrupo')
   @ApiOperation({
-    summary: 'Obtener sesiones por curso',
+    summary: 'Obtener sesiones por grupo',
     description:
-      'Filtra y retorna las sesiones en vivo que pertenecen a un curso específico.',
+      'Filtra y retorna las sesiones en vivo programadas para un grupo específico.',
   })
-  @ApiParam({ name: 'idcurso', description: 'ID del curso', example: 1 })
-  @ApiResponse({ status: 200, description: 'Lista de sesiones del curso.' })
+  @ApiParam({ name: 'idgrupo', description: 'ID del grupo', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de sesiones del grupo obtenida con éxito.',
+  })
   @ApiResponse({
     status: 401,
     description: 'No autorizado. Token JWT faltante o inválido.',
   })
-  async obtenerPorCurso(
-    @Param('idcurso', ParseIntPipe) idcurso: number,
-  ): Promise<SesionVivo[]> {
-    return this.service.obtenerSesionesPorCurso(idcurso);
+  async obtenerPorGrupo(
+    @Param('idgrupo', ParseIntPipe) idgrupo: number,
+  ): Promise<SesionVivoResponseDto[]> {
+    return this.service.obtenerSesionesPorGrupo(idgrupo);
   }
 
-  @Post()
+  @Get('grupo/:idgrupo/provider')
   @ApiOperation({
-    summary: 'Programar una nueva sesión en vivo',
+    summary: 'Obtener proveedor de reuniones del grupo',
     description:
-      'Crea una nueva clase en vivo vinculada a un curso. Requiere título, fecha e ID del curso.',
+      'Retorna información del proveedor configurado para crear sesiones en vivo del grupo.',
+  })
+  @ApiParam({ name: 'idgrupo', description: 'ID del grupo', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Información del proveedor obtenida con éxito.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token JWT faltante o inválido.',
+  })
+  async obtenerProviderInfo(
+    @Param('idgrupo', ParseIntPipe) idgrupo: number,
+  ) {
+    return this.service.obtenerProviderInfoPorGrupo(idgrupo);
+  }
+
+    @Post()
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({
+      summary: 'Programar una nueva sesión en vivo',
+    description:
+      'Crea una nueva clase en vivo vinculada a un grupo. El proveedor puede depender de la empresa o configuración del grupo.',
   })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        idcurso: { type: 'number', example: 1 },
+        idgrupo: {
+          type: 'number',
+          example: 1,
+          description: 'ID del grupo donde se programará la sesión',
+        },
+        idcurso: {
+          type: 'number',
+          example: 1,
+          nullable: true,
+          description: 'ID del curso, opcional si la sesión se gestiona por grupo',
+        },
         titulo: {
           type: 'string',
-          example: 'Clase Magistral: Arquitectura de Microservicios',
+          example: 'Clase en vivo - Introducción',
         },
         descripcion: {
           type: 'string',
-          example: 'En esta sesión revisaremos patrones de diseño aplicados...',
+          example: 'Sesión introductoria del curso',
           nullable: true,
         },
         fecha: {
@@ -93,11 +127,21 @@ export class SesionVivoController {
           example: 60,
           description: 'Duración estimada en minutos',
         },
+        accessType: {
+          type: 'string',
+          example: 'RESTRICTED',
+          enum: ['OPEN', 'TRUSTED', 'RESTRICTED'],
+          description:
+            'Tipo de acceso a Google Meet. OPEN = libre, TRUSTED = confiable, RESTRICTED = con admisión.',
+        },
       },
-      required: ['idcurso', 'titulo', 'fecha'],
+      required: ['idgrupo', 'titulo', 'fecha'],
     },
   })
-  @ApiResponse({ status: 201, description: 'Sesión programada correctamente.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Sesión programada correctamente.',
+  })
   @ApiResponse({
     status: 400,
     description:
@@ -107,21 +151,22 @@ export class SesionVivoController {
     status: 401,
     description: 'No autorizado. Token JWT faltante o inválido.',
   })
-  async crear(@Body() body: any): Promise<SesionVivo> {
+  async crear(@Body() body: any): Promise<SesionVivoResponseDto> {
     if (!body) {
       throw new BadRequestException('Body vacío');
     }
 
-    if (!body.idcurso || !body.titulo || !body.fecha) {
+    if (!body.idgrupo || !body.titulo || !body.fecha) {
       throw new BadRequestException('Faltan campos obligatorios');
     }
 
     return this.service.crearSesion({
-      idcurso: Number(body.idcurso),
+      idgrupo: Number(body.idgrupo),
       titulo: String(body.titulo),
-      descripcion: body.descripcion ? String(body.descripcion) : '',
-      fecha: String(body.fecha),
-      duracion: Number(body.duracion || 0),
+      descripcion: body.descripcion ? String(body.descripcion) : undefined,
+      fecha: body.fecha,
+      duracion: Number(body.duracion || 60),
+      accessType: body.accessType || body.access_type || 'RESTRICTED',
     });
   }
 }

@@ -11,9 +11,6 @@ export class Certificado {
   @Column({ name: 'codigoqr', type: 'bytea', nullable: true })
   codigoqr: Buffer | null;
 
-  @Column({ type: 'date', nullable: true })
-  fechaemision: Date;
-
   @Column({ name: 'plantilla', type: 'bytea', nullable: true })
   plantilla: Buffer | null;
 

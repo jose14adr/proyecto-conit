@@ -119,15 +119,15 @@ function MisCursos() {
   // Navegación
   // ==============================
   const irACurso = (grupoId) => {
-    navigate(`/docente/cursos/${grupoId}`);
-  };
+    navigate(`/docente/cursos/${grupoId}`)
+  }
 
   const seleccionarCurso = (curso) => {
-    setQuery(curso.nombre || "");
-    setOpen(false);
-    setActiveIndex(-1);
-    irACurso(curso.idgrupo);
-  };
+    setQuery(curso.nombre || "")
+    setOpen(false)
+    setActiveIndex(-1)
+    irACurso(curso.idgrupo)
+  }
 
   // ==============================
   // Navegación con teclado

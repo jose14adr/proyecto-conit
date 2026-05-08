@@ -74,6 +74,11 @@ function buildCertCode(idalumno, fecha = new Date()) {
   return `CERT-${year}-${alumno}-${random}`;
 }
 
+function asMultiline(value) {
+  if (Array.isArray(value)) return value.join("\n");
+  return value || "";
+}
+
 function construirValores(datos, codigoFinal) {
   const fecha = datos.fechaEmision ? new Date(datos.fechaEmision) : new Date();
 
@@ -85,6 +90,9 @@ function construirValores(datos, codigoFinal) {
     horas: datos.horas ? `${datos.horas} HORAS ACADÉMICAS` : "",
     codigo: codigoFinal || "",
     dni: datos.dniAlumno || "",
+    nota_final: datos.notaFinal ? `Nota final: ${datos.notaFinal}` : "",
+    detalle_notas: asMultiline(datos.detalleNotas),
+    temario: asMultiline(datos.temario),
   };
 }
 
@@ -183,6 +191,54 @@ function dibujarQrEnPosicion(doc, qrElement, qrDataUrl, codigoFinal) {
   });
 }
 
+async function renderizarCara(doc, plantilla, elementos, valores, codigoFinal) {
+  const width = Number(plantilla.canvasWidth || 1600);
+  const height = Number(plantilla.canvasHeight || 1131);
+
+  if (plantilla.fondoTemporalUrl) {
+    const fondoDataUrl = await urlToDataUrl(plantilla.fondoTemporalUrl);
+    doc.addImage(
+      fondoDataUrl,
+      dataUrlToImageFormat(fondoDataUrl),
+      0,
+      0,
+      width,
+      height
+    );
+  }
+
+  let qrDataUrlCache = null;
+
+  for (const el of elementos) {
+    if (el?.type === "image" && el?.src) {
+      const imageDataUrl = await urlToDataUrl(el.src);
+      doc.addImage(
+        imageDataUrl,
+        dataUrlToImageFormat(imageDataUrl),
+        Number(el.x || 0),
+        Number(el.y || 0),
+        Number(el.width || 100),
+        Number(el.height || 100)
+      );
+      continue;
+    }
+
+    if (el?.type === "qr") {
+      if (!qrDataUrlCache) {
+        qrDataUrlCache = await generarQrDataUrl(codigoFinal);
+      }
+      dibujarQrEnPosicion(doc, el, qrDataUrlCache, codigoFinal);
+      continue;
+    }
+
+    if (el?.type === "text") {
+      const text = el.dynamicField ? valores[el.dynamicField] || "" : el.text || "";
+      if (!String(text).trim()) continue;
+      drawWrappedText(doc, el, text);
+    }
+  }
+}
+
 async function construirPdfDesdePlantilla(plantilla, datos, codigoFinal) {
   if (!plantilla) {
     throw new Error("No hay plantilla activa");
@@ -201,48 +257,20 @@ async function construirPdfDesdePlantilla(plantilla, datos, codigoFinal) {
 
   const valores = construirValores(datos, codigoFinal);
 
-  if (plantilla.fondoTemporalUrl) {
-    const fondoDataUrl = await urlToDataUrl(plantilla.fondoTemporalUrl);
-    doc.addImage(
-      fondoDataUrl,
-      dataUrlToImageFormat(fondoDataUrl),
-      0,
-      0,
-      width,
-      height
-    );
-  }
-
-  const elementos = Array.isArray(plantilla.configJson)
+  const elementosAnverso = Array.isArray(plantilla.configJson)
     ? plantilla.configJson
     : [];
 
-  for (const el of elementos) {
-    if (el?.type === "image" && el?.src) {
-      const imageDataUrl = await urlToDataUrl(el.src);
-      doc.addImage(
-        imageDataUrl,
-        dataUrlToImageFormat(imageDataUrl),
-        Number(el.x || 0),
-        Number(el.y || 0),
-        Number(el.width || 100),
-        Number(el.height || 100)
-      );
-      continue;
-    }
+  await renderizarCara(doc, plantilla, elementosAnverso, valores, codigoFinal);
 
-    if (el?.type === "text") {
-      const text = el.dynamicField ? valores[el.dynamicField] || "" : el.text || "";
-      if (!String(text).trim()) continue;
-      drawWrappedText(doc, el, text);
-    }
-  }
+  if (plantilla.dobleCara) {
+    doc.addPage([width, height], orientation);
 
-  const qrElement = elementos.find((el) => el?.type === "qr");
+    const elementosReverso = Array.isArray(plantilla.configJsonReverso)
+      ? plantilla.configJsonReverso
+      : [];
 
-  if (qrElement) {
-    const qrDataUrl = await generarQrDataUrl(codigoFinal);
-    dibujarQrEnPosicion(doc, qrElement, qrDataUrl, codigoFinal);
+    await renderizarCara(doc, plantilla, elementosReverso, valores, codigoFinal);
   }
 
   return doc.output("blob");
