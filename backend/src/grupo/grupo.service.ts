@@ -19,36 +19,45 @@ export class GrupoService {
 
   async gruposPorCurso(idcurso: number) {
     return this.grupoRepo.find({
-      where: { curso: { id: idcurso } },
-      relations: ['curso', 'docente'],
+      where: {
+        curso: {
+          id: idcurso,
+        },
+      },
+      relations: ['curso', 'docente', 'docente.usuario'],
+      order: {
+        id: 'DESC',
+      },
     });
   }
 
-  async asignarDocente(idGrupo: number, idDocente: number, permisos?: any) {
-  const grupo = await this.grupoRepo.findOneBy({ id: idGrupo });
-  if (!grupo) throw new NotFoundException('Grupo no encontrado');
+    async asignarDocente(idGrupo: number, idDocente: number, permisos?: any) {
+    const grupo = await this.grupoRepo.findOneBy({ id: idGrupo });
 
-  grupo.docente = { id: idDocente } as any;
+    if (!grupo) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
 
-  // Forzamos la conversión a String para que PostgreSQL lo guarde como JSON real
-  if (permisos) {
-    grupo.permisos_docente = JSON.stringify(permisos);
-  } else {
-    // Si no hay permisos, por seguridad bloqueamos todo por defecto
-    grupo.permisos_docente = JSON.stringify({
-      control_total: false,
-      gestionar_contenido: false,
-      gestionar_tareas: false,
-      gestionar_examenes: false,
-      gestionar_sesiones: false,
-      tomar_asistencia: true, // Único permiso base
-      gestionar_calificaciones: false,
-    });
+    grupo.docente = { id: idDocente } as any;
+
+    if (permisos) {
+      grupo.permisos_docente = JSON.stringify(permisos);
+    } else {
+      grupo.permisos_docente = JSON.stringify({
+        control_total: false,
+        gestionar_contenido: false,
+        gestionar_tareas: false,
+        gestionar_examenes: false,
+        gestionar_sesiones: false,
+        tomar_asistencia: true,
+        gestionar_calificaciones: false,
+      });
+    }
+
+    await this.grupoRepo.save(grupo);
+
+    return { message: 'Docente y permisos asignados exitosamente' };
   }
-
-  await this.grupoRepo.save(grupo);
-  return { message: 'Docente y permisos asignados exitosamente' };
-}
 
   async gruposPorDocente(iddocente: number) {
     return await this.grupoRepo.find({

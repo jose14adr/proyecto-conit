@@ -1,29 +1,31 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: 'Empresa' }) // Respeta el nombre exacto en BD
+@Entity({ name: 'empresa' })
 export class Empresa {
-
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar' })
+  @Column({ name: 'nombreempresa', type: 'varchar' })
   nombreEmpresa: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ name: 'rubro', type: 'varchar' })
   rubro: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ name: 'direccion', type: 'varchar' })
   direccion: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ name: 'distrito', type: 'varchar' })
   distrito: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ name: 'provincia', type: 'varchar' })
   provincia: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ name: 'departamento', type: 'varchar' })
   departamento: string;
 
-  @Column({ type: 'char' })
+  @Column({ name: 'ruc', type: 'char' })
   ruc: string;
+
+  @Column({ name: 'meeting_provider', type: 'varchar', default: 'google' })
+  meetingProvider: string;
 }

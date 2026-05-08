@@ -44,6 +44,9 @@ import { S3Service } from './s3/s3.service';
 import { S3Module } from './s3/s3.module';
 import { CertificadoModule } from './certificado/certificado.module';
 import { AlumnoMaterialProgresoModule } from './alumno-material-progreso/alumno-material-progreso.module';
+import { BancoPreguntasModule } from './banco-preguntas/banco-preguntas.module';
+import { WebModule } from './web/web.module';
+import { AdminWebModule } from './admin-web/admin-web.module';
 import { ExamenRespuestaModule } from './examen_respuesta/examen_respuesta.module';
 import { HistorialAcademicoModule } from './historial_academico/historial_academico.module';
 import { AsistenciaController } from './asistencia/asistencia.controller';
@@ -121,6 +124,9 @@ import { EntregaModule } from './entrega/entrega.module';
     S3Module,
     CertificadoModule,
     AlumnoMaterialProgresoModule,
+    BancoPreguntasModule,
+    WebModule,
+    AdminWebModule,
     ExamenRespuestaModule,
     HistorialAcademicoModule,
     AsistenciaModule,

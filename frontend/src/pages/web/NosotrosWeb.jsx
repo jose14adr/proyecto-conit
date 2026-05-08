@@ -1,7 +1,57 @@
+import { useEffect, useState } from "react";
 import { nosotrosWebContent } from "../../data/nosotrosWebContent";
+import { obtenerContenidoWeb } from "../../services/webCatalogService";
 
 function NosotrosWeb() {
-  const { hero, about, pillars, values } = nosotrosWebContent;
+  const [contenido, setContenido] = useState(nosotrosWebContent);
+
+  const hero = contenido?.hero || nosotrosWebContent.hero;
+  const about = Array.isArray(contenido?.about)
+    ? contenido.about
+    : nosotrosWebContent.about;
+  const pillars = contenido?.pillars || nosotrosWebContent.pillars;
+  const values = contenido?.values || nosotrosWebContent.values;
+
+  const cargarContenidoNosotros = async () => {
+    try {
+      const data = await obtenerContenidoWeb("nosotros");
+
+      if (data && typeof data === "object") {
+        setContenido({
+          ...nosotrosWebContent,
+          ...data,
+          hero: {
+            ...nosotrosWebContent.hero,
+            ...(data.hero || {}),
+          },
+          about: Array.isArray(data.about)
+            ? data.about
+            : nosotrosWebContent.about,
+          pillars: {
+            ...nosotrosWebContent.pillars,
+            ...(data.pillars || {}),
+            items: Array.isArray(data.pillars?.items)
+              ? data.pillars.items
+              : nosotrosWebContent.pillars.items,
+          },
+          values: {
+            ...nosotrosWebContent.values,
+            ...(data.values || {}),
+            items: Array.isArray(data.values?.items)
+              ? data.values.items
+              : nosotrosWebContent.values.items,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error cargando contenido de Nosotros:", error);
+      setContenido(nosotrosWebContent);
+    }
+  };
+
+  useEffect(() => {
+    cargarContenidoNosotros();
+  }, []);
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -35,7 +85,7 @@ function NosotrosWeb() {
               </h2>
 
               <div className="space-y-4">
-                {item.paragraphs.map((paragraph, paragraphIndex) => (
+                {(item.paragraphs || []).map((paragraph, paragraphIndex) => (
                   <p
                     key={paragraphIndex}
                     className="leading-8 text-slate-600"
@@ -56,13 +106,14 @@ function NosotrosWeb() {
             <p className="mb-3 inline-block rounded-full bg-sky-400/20 px-4 py-2 text-sm font-semibold text-sky-500">
               {pillars.tag}
             </p>
+
             <h2 className="text-3xl font-bold text-slate-900">
               {pillars.title}
             </h2>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
-            {pillars.items.map((item, index) => (
+            {(pillars.items || []).map((item, index) => (
               <article
                 key={index}
                 className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
@@ -87,13 +138,14 @@ function NosotrosWeb() {
             <p className="mb-3 inline-block rounded-full bg-sky-400/20 px-4 py-2 text-sm font-semibold text-sky-500">
               {values.tag}
             </p>
+
             <h2 className="text-3xl font-bold text-slate-900">
               {values.title}
             </h2>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {values.items.map((item, index) => (
+            {(values.items || []).map((item, index) => (
               <article
                 key={index}
                 className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-md"

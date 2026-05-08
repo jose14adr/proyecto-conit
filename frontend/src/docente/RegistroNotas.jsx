@@ -1094,7 +1094,7 @@ const guardarConfigEvaluaciones = async () => {
                 </th>
 
                 <th className="px-4 py-3 text-left text-sm font-bold text-slate-700">
-                  Porcentaje
+                  Porcentaje (%)
                 </th>
 
                 <th className="px-4 py-3 text-left text-sm font-bold text-slate-700">
@@ -1133,18 +1133,23 @@ const guardarConfigEvaluaciones = async () => {
 
                   {/* PORCENTAJE */}
                   <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={ev.porcentaje}
-                      onChange={(e) =>
-                        cambiarEvaluacionDraft(index, "porcentaje", e.target.value)
-                      }
-                      placeholder="0 - 100"
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={ev.porcentaje}
+                        onChange={(e) =>
+                          cambiarEvaluacionDraft(index, "porcentaje", e.target.value)
+                        }
+                        placeholder="0 - 100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 pr-8 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-slate-500">
+                        %
+                      </span>
+                    </div>
                   </td>
 
                   {/* TIPO */}
