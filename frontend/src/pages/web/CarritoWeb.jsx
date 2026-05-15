@@ -63,18 +63,24 @@ function CarritoWeb() {
   const total = subtotal - descuento;
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="bg-gradient-to-r from-slate-900 to-blue-900 py-16 text-white">
+    <main className="min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
+      <section
+        className="py-16 text-white"
+        style={{
+          background:
+            "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+        }}
+      >
         <div className="mx-auto max-w-6xl px-5">
-          <p className="mb-4 inline-block rounded-full bg-sky-400/20 px-4 py-2 text-sm font-semibold text-sky-300">
+          <p className="mb-4 inline-block rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 backdrop-blur">
             {hero.tag}
           </p>
 
-          <h1 className="mb-4 text-4xl font-bold md:text-5xl">
+          <h1 className="mb-4 text-4xl font-black md:text-5xl">
             {hero.title}
           </h1>
 
-          <p className="max-w-3xl text-base leading-relaxed text-slate-200 md:text-lg">
+          <p className="max-w-3xl text-base leading-relaxed text-white/80 md:text-lg">
             {hero.description}
           </p>
         </div>
@@ -83,28 +89,30 @@ function CarritoWeb() {
       <section className="py-14">
         <div className="mx-auto grid max-w-6xl gap-6 px-5 lg:grid-cols-[2fr_1fr]">
           <div>
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-7">
+            <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm md:p-7">
               <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-2xl font-bold text-slate-900">
+                <h2 className="text-2xl font-bold text-[var(--color-text)]">
                   {list.title}
                 </h2>
-                <span className="text-slate-500">
+
+                <span className="text-[var(--color-muted-text)]">
                   {productosCarrito.length} curso(s)
                 </span>
               </div>
 
               {productosCarrito.length === 0 ? (
-                <div className="py-8">
-                  <h3 className="mb-3 text-xl font-semibold text-slate-900">
+                <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-6 py-8">
+                  <h3 className="mb-3 text-xl font-semibold text-[var(--color-text)]">
                     {list.emptyTitle}
                   </h3>
-                  <p className="max-w-2xl leading-7 text-slate-600">
+
+                  <p className="max-w-2xl leading-7 text-[var(--color-muted-text)]">
                     {list.emptyDescription}
                   </p>
 
                   <Link
                     to="/web/cursos"
-                    className="mt-6 inline-flex rounded-xl bg-sky-500 px-5 py-3 font-semibold text-white transition hover:bg-sky-600"
+                    className="mt-6 inline-flex rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-[var(--color-button-primary-text)] transition hover:brightness-95"
                   >
                     Ver cursos
                   </Link>
@@ -120,24 +128,24 @@ function CarritoWeb() {
                       return (
                         <article
                           key={item.id}
-                          className="grid gap-4 rounded-2xl border border-slate-200 p-5 lg:grid-cols-[1.8fr_auto_auto_auto]"
+                          className="grid gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-5 lg:grid-cols-[1.8fr_auto_auto_auto]"
                         >
                           <div>
-                            <p className="mb-3 inline-block rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
+                            <p className="mb-3 inline-block rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--color-primary)]">
                               {item.modalidad || "Curso"}
                             </p>
 
-                            <h3 className="mb-2 text-xl font-bold text-slate-900">
+                            <h3 className="mb-2 text-xl font-bold text-[var(--color-text)]">
                               {item.titulo}
                             </h3>
 
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-[var(--color-muted-text)]">
                               {list.unitPriceLabel}: {item.precio}
                             </p>
                           </div>
 
                           <div className="flex flex-col items-start gap-3 lg:items-center">
-                            <p className="text-sm font-semibold text-slate-500">
+                            <p className="text-sm font-semibold text-[var(--color-muted-text)]">
                               {list.quantityLabel}
                             </p>
 
@@ -145,19 +153,19 @@ function CarritoWeb() {
                               <button
                                 type="button"
                                 onClick={() => handleDecrease(item.id)}
-                                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 text-xl font-bold text-slate-900 transition hover:bg-slate-300"
+                                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] text-xl font-bold text-[var(--color-text)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] hover:text-[var(--color-primary)]"
                               >
                                 -
                               </button>
 
-                              <span className="min-w-[28px] text-center text-base font-bold text-slate-900">
+                              <span className="min-w-[28px] text-center text-base font-bold text-[var(--color-text)]">
                                 {cantidad}
                               </span>
 
                               <button
                                 type="button"
                                 onClick={() => handleIncrease(item.id)}
-                                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 text-xl font-bold text-slate-900 transition hover:bg-slate-300"
+                                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] text-xl font-bold text-[var(--color-text)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] hover:text-[var(--color-primary)]"
                               >
                                 +
                               </button>
@@ -165,7 +173,7 @@ function CarritoWeb() {
                           </div>
 
                           <div className="flex items-center">
-                            <p className="text-xl font-bold text-slate-900">
+                            <p className="text-xl font-bold text-[var(--color-primary)]">
                               S/ {totalItem.toFixed(2)}
                             </p>
                           </div>
@@ -174,7 +182,7 @@ function CarritoWeb() {
                             <button
                               type="button"
                               onClick={() => handleRemove(item.id)}
-                              className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-200"
+                              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
                             >
                               {list.removeButton}
                             </button>
@@ -188,7 +196,7 @@ function CarritoWeb() {
                     <button
                       type="button"
                       onClick={handleClearCart}
-                      className="w-full rounded-2xl bg-slate-200 px-5 py-3 font-semibold text-slate-900 transition hover:bg-slate-300"
+                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-5 py-3 font-semibold text-[var(--color-text)] transition hover:bg-red-50 hover:text-red-700"
                     >
                       {list.clearButton}
                     </button>
@@ -199,36 +207,38 @@ function CarritoWeb() {
           </div>
 
           <aside>
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-7">
-              <h2 className="mb-6 text-2xl font-bold text-slate-900">
+            <div className="sticky top-28 rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm md:p-7">
+              <h2 className="mb-6 text-2xl font-bold text-[var(--color-text)]">
                 {summary.title}
               </h2>
 
-              <div className="mb-4 flex items-center justify-between gap-4 text-slate-700">
-                <span>{summary.subtotalLabel}</span>
-                <span className="font-semibold">S/ {subtotal.toFixed(2)}</span>
-              </div>
+              <ResumenRow
+                label={summary.subtotalLabel}
+                value={`S/ ${subtotal.toFixed(2)}`}
+              />
 
-              <div className="mb-4 flex items-center justify-between gap-4 text-slate-700">
-                <span>{summary.discountLabel}</span>
-                <span className="font-semibold">S/ {descuento.toFixed(2)}</span>
-              </div>
+              <ResumenRow
+                label={summary.discountLabel}
+                value={`S/ ${descuento.toFixed(2)}`}
+              />
 
-              <div className="mb-6 flex items-center justify-between gap-4 border-t border-slate-200 pt-4 text-lg font-bold text-slate-900">
+              <div className="mb-6 flex items-center justify-between gap-4 border-t border-[var(--color-border)] pt-4 text-lg font-bold text-[var(--color-text)]">
                 <span>{summary.totalLabel}</span>
-                <span>S/ {total.toFixed(2)}</span>
+                <span className="text-[var(--color-primary)]">
+                  S/ {total.toFixed(2)}
+                </span>
               </div>
 
               <button
                 type="button"
-                className="mb-3 w-full rounded-2xl bg-sky-500 px-5 py-3 font-semibold text-white transition hover:bg-sky-600"
+                className="mb-3 w-full rounded-2xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-[var(--color-button-primary-text)] transition hover:brightness-95"
               >
                 {summary.checkoutButton}
               </button>
 
               <Link
                 to="/web/cursos"
-                className="block w-full rounded-2xl bg-slate-200 px-5 py-3 text-center font-semibold text-slate-900 transition hover:bg-slate-300"
+                className="block w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-5 py-3 text-center font-semibold text-[var(--color-text)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] hover:text-[var(--color-primary)]"
               >
                 {summary.exploreButton}
               </Link>
@@ -237,6 +247,15 @@ function CarritoWeb() {
         </div>
       </section>
     </main>
+  );
+}
+
+function ResumenRow({ label, value }) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-4 text-[var(--color-muted-text)]">
+      <span>{label}</span>
+      <span className="font-semibold text-[var(--color-text)]">{value}</span>
+    </div>
   );
 }
 

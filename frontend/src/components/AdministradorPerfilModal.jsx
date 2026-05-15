@@ -27,75 +27,96 @@ export default function AdministradorPerfilModal({
   const esInactivo = admin.estado === false;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col max-h-[90vh]">
-        {/* Header adaptado al azul/indigo */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-700 p-6 flex justify-between items-center text-white shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-2xl animate-fadeIn">
+        {/* Header */}
+        <div
+          className="flex shrink-0 items-center justify-between p-6 text-white"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+          }}
+        >
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold backdrop-blur-md shadow-inner uppercase">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-black uppercase shadow-inner backdrop-blur-md">
               {admin.nombre?.charAt(0)}
               {admin.apellido?.charAt(0)}
             </div>
+
             <div>
-              <h2 className="text-2xl font-bold flex items-center gap-2">
+              <h2 className="flex items-center gap-2 text-2xl font-black">
                 {admin.nombre} {admin.apellido}
-                <span className="bg-white/20 px-2 py-0.5 rounded text-xs font-semibold tracking-wider uppercase ml-2 flex items-center gap-1">
-                  <ShieldCheck size={12} /> Staff
+
+                <span className="ml-2 flex items-center gap-1 rounded-lg bg-white/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider">
+                  <ShieldCheck size={12} />
+                  Staff
                 </span>
               </h2>
-              <p className="text-indigo-100 flex items-center gap-2 mt-1">
+
+              <p className="mt-1 flex items-center gap-2 text-white/80">
                 <CreditCard size={16} />
-                {admin.tipodocumento || "DNI"}:{" "}
-                {admin.numdocumento || admin.numDocumento}
+                {admin.tipodocumento || admin.tipoDocumento || "DNI"}:{" "}
+                {admin.numdocumento || admin.numDocumento || "-"}
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            className="rounded-full p-2 transition hover:bg-white/20"
+            title="Cerrar"
           >
             <X size={24} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-1 space-y-6">
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
+        <div className="flex-1 overflow-y-auto bg-[var(--color-background)] p-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            <div className="space-y-6 md:col-span-1">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-sm">
+                <h3 className="mb-4 border-b border-[var(--color-border)] pb-2 text-sm font-black uppercase tracking-wider text-[var(--color-muted-text)]">
                   Información de Contacto
                 </h3>
 
-                <div className="space-y-4 text-sm text-gray-600">
+                <div className="space-y-4 text-sm text-[var(--color-muted-text)]">
                   <div className="flex items-start gap-3">
                     <Mail
                       size={18}
-                      className="text-indigo-500 shrink-0 mt-0.5"
+                      className="mt-0.5 shrink-0 text-[var(--color-primary)]"
                     />
-                    <span className="break-all font-medium text-gray-800">
-                      {admin.correo}
+
+                    <span className="break-all font-medium text-[var(--color-text)]">
+                      {admin.correo || "No registrado"}
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
-                    <Phone size={18} className="text-indigo-500 shrink-0" />
-                    <span>{admin.telefono}</span>
+                    <Phone
+                      size={18}
+                      className="shrink-0 text-[var(--color-primary)]"
+                    />
+
+                    <span>{admin.telefono || "No registrado"}</span>
                   </div>
+
                   <div className="flex items-start gap-3">
                     <MapPin
                       size={18}
-                      className="text-indigo-500 shrink-0 mt-0.5"
+                      className="mt-0.5 shrink-0 text-[var(--color-primary)]"
                     />
+
                     <span>{admin.direccion || "No registrada"}</span>
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <span className="text-xs text-gray-500 block mb-2 font-medium">
+                <div className="mt-6 border-t border-[var(--color-border)] pt-4">
+                  <span className="mb-2 block text-xs font-semibold text-[var(--color-muted-text)]">
                     Estado en el sistema:
                   </span>
+
                   <span
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide uppercase inline-block ${
+                    className={`inline-block rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wide ${
                       esInactivo
                         ? "bg-red-100 text-red-700"
                         : "bg-green-100 text-green-700"
@@ -108,47 +129,43 @@ export default function AdministradorPerfilModal({
             </div>
 
             <div className="md:col-span-2">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6 pb-4 border-b border-gray-50">
-                  <Shield size={22} className="text-indigo-600" />
+              <div className="h-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm">
+                <h3 className="mb-6 flex items-center gap-2 border-b border-[var(--color-border)] pb-4 text-lg font-black text-[var(--color-text)]">
+                  <Shield size={22} className="text-[var(--color-primary)]" />
                   Nivel de Acceso y Privilegios
                 </h3>
 
                 <div className="space-y-6">
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                  <p className="text-sm leading-relaxed text-[var(--color-muted-text)]">
                     Este perfil pertenece al grupo de{" "}
-                    <strong>Staff Administrativo</strong>. Cuenta con
-                    credenciales de acceso global a la plataforma CONIT, lo que
-                    le permite gestionar procesos críticos del sistema.
+                    <strong className="text-[var(--color-text)]">
+                      Staff Administrativo
+                    </strong>
+                    . Cuenta con credenciales de acceso global a la plataforma
+                    CONIT, lo que le permite gestionar procesos críticos del
+                    sistema.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100/50">
-                      <div className="flex items-center gap-2 text-blue-700 font-bold text-sm mb-2">
-                        <Key size={16} /> Gestión de Usuarios
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Control total sobre creación, edición y estado de
-                        cuentas de alumnos, docentes y otros administradores.
-                      </p>
-                    </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <PrivilegioCard
+                      icon={Key}
+                      title="Gestión de Usuarios"
+                      text="Control total sobre creación, edición y estado de cuentas de alumnos, docentes y otros administradores."
+                    />
 
-                    <div className="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100/50">
-                      <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm mb-2">
-                        <BookOpen size={16} /> Gestión Académica
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Capacidad para crear cursos, asignar cargas académicas a
-                        docentes y matricular alumnos.
-                      </p>
-                    </div>
+                    <PrivilegioCard
+                      icon={BookOpen}
+                      title="Gestión Académica"
+                      text="Capacidad para crear cursos, asignar cargas académicas a docentes y matricular alumnos."
+                    />
                   </div>
 
                   {esInactivo && (
-                    <div className="mt-4 bg-red-50 p-4 rounded-lg border border-red-100 flex gap-3">
-                      <div className="text-red-500 shrink-0 mt-0.5">
+                    <div className="mt-4 flex gap-3 rounded-2xl border border-red-100 bg-red-50 p-4">
+                      <div className="mt-0.5 shrink-0 text-red-500">
                         <X size={20} />
                       </div>
+
                       <p className="text-sm text-red-700">
                         Actualmente este usuario tiene el{" "}
                         <strong>acceso revocado</strong>. No podrá iniciar
@@ -163,15 +180,16 @@ export default function AdministradorPerfilModal({
           </div>
         </div>
 
-        <div className="bg-white border-t border-gray-200 px-6 py-4 shrink-0 flex flex-wrap justify-between items-center gap-4">
-          <p className="text-sm font-medium text-gray-500">
+        {/* Footer */}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-[var(--color-border)] bg-[var(--color-card)] px-6 py-4">
+          <p className="text-sm font-semibold text-[var(--color-muted-text)]">
             Acciones rápidas del administrador
           </p>
 
           <div className="flex items-center gap-3">
             <button
               onClick={onEdit}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-semibold transition-colors border border-indigo-100"
+              className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-4 py-2 font-semibold text-[var(--color-primary)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_16%,transparent)]"
             >
               <Edit2 size={18} />
               <span className="hidden sm:inline">Editar Perfil</span>
@@ -180,7 +198,7 @@ export default function AdministradorPerfilModal({
             {esInactivo ? (
               <button
                 onClick={onHabilitar}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-200 rounded-lg font-semibold transition-all border border-transparent"
+                className="flex items-center gap-2 rounded-xl border border-transparent bg-[var(--color-background)] px-4 py-2 font-semibold text-[var(--color-text)] transition hover:border-green-200 hover:bg-green-50 hover:text-green-700"
               >
                 <CheckCircle size={18} />
                 <span className="hidden sm:inline">Habilitar</span>
@@ -188,7 +206,7 @@ export default function AdministradorPerfilModal({
             ) : (
               <button
                 onClick={onInhabilitar}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200 rounded-lg font-semibold transition-all border border-transparent"
+                className="flex items-center gap-2 rounded-xl border border-transparent bg-[var(--color-background)] px-4 py-2 font-semibold text-[var(--color-text)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
               >
                 <Trash2 size={18} />
                 <span className="hidden sm:inline">Inhabilitar</span>
@@ -197,6 +215,21 @@ export default function AdministradorPerfilModal({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PrivilegioCard({ icon: Icon, title, text }) {
+  return (
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-primary)_7%,var(--color-card))] p-4">
+      <div className="mb-2 flex items-center gap-2 text-sm font-black text-[var(--color-primary)]">
+        <Icon size={16} />
+        {title}
+      </div>
+
+      <p className="text-xs leading-relaxed text-[var(--color-muted-text)]">
+        {text}
+      </p>
     </div>
   );
 }

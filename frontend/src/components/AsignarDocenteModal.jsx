@@ -18,41 +18,46 @@ export default function AsignarDocenteModal({ docente, onClose, onSuccess }) {
   const [isLoadingGrupos, setIsLoadingGrupos] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Carga cursos disponibles
   useEffect(() => {
     const cargarCursos = async () => {
       setIsLoadingCursos(true);
+
       try {
         const response = await api.get("/curso");
         const cursosActivos = response.data.filter((c) => c.estado !== false);
         setCursos(cursosActivos);
       } catch (error) {
-        toast.error("Error al cargar la lista de cursos", error);
+        console.error("Error al cargar la lista de cursos:", error);
+        toast.error("Error al cargar la lista de cursos");
       } finally {
         setIsLoadingCursos(false);
       }
     };
+
     cargarCursos();
   }, []);
 
-  // Carga grupos al seleccionar un curso
   useEffect(() => {
     if (!cursoSeleccionado) {
       setGrupos([]);
       setGrupoSeleccionado("");
       return;
     }
+
     const cargarGrupos = async () => {
       setIsLoadingGrupos(true);
+
       try {
         const response = await api.get(`/grupo/curso/${cursoSeleccionado}`);
         setGrupos(response.data);
       } catch (error) {
-        toast.error("Error al cargar los grupos", error);
+        console.error("Error al cargar los grupos:", error);
+        toast.error("Error al cargar los grupos");
       } finally {
         setIsLoadingGrupos(false);
       }
     };
+
     cargarGrupos();
   }, [cursoSeleccionado]);
 
@@ -63,47 +68,51 @@ export default function AsignarDocenteModal({ docente, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!cursoSeleccionado || !grupoSeleccionado) {
       return toast.error("Por favor, selecciona un curso y un grupo");
     }
 
-    // VALIDACIÓN PARA EVITAR DOBLE ASIGNACIÓN
     const grupoEncontrado = grupos.find(
-      (g) => g.id.toString() === grupoSeleccionado,
+      (g) => g.id.toString() === grupoSeleccionado
     );
+
     if (grupoEncontrado && grupoEncontrado.docente) {
       if (grupoEncontrado.docente.id === docente.id) {
         return toast.error("Este docente ya está asignado a este grupo.");
-      } else {
-        return toast.error(
-          `Este grupo ya está siendo dictado por el docente ${grupoEncontrado.docente.nombre} ${grupoEncontrado.docente.apellido}.`,
-        );
       }
+
+      return toast.error(
+        `Este grupo ya está siendo dictado por el docente ${grupoEncontrado.docente.nombre} ${grupoEncontrado.docente.apellido}.`
+      );
     }
 
     setIsSubmitting(true);
+
     try {
       const permisosDefault = {
         control_total: false,
+        gestionar_contenido: false,
+        gestionar_tareas: false,
+        gestionar_examenes: false,
+        gestionar_sesiones: false,
         tomar_asistencia: true,
-        crear_tareas: false,
-        modificar_modulos: false,
-        modificar_notas: false,
-        cargar_notas: true,
-        enviar_mensajes: false,
+        gestionar_calificaciones: false,
       };
 
       await asignarDocenteAGrupo(
         grupoSeleccionado,
         docente.id,
-        permisosDefault,
+        permisosDefault
       );
+
       toast.success("Carga académica asignada exitosamente");
       onSuccess();
       onClose();
     } catch (error) {
+      console.error("Error al asignar carga académica:", error);
       toast.error(
-        error.response?.data?.message || "Error al asignar carga académica",
+        error.response?.data?.message || "Error al asignar carga académica"
       );
     } finally {
       setIsSubmitting(false);
@@ -111,84 +120,104 @@ export default function AsignarDocenteModal({ docente, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-2xl animate-fadeIn">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white flex justify-between items-center">
+        <div
+          className="flex items-center justify-between p-6 text-white"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+          }}
+        >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <div className="rounded-2xl bg-white/20 p-2 backdrop-blur-sm">
               <Briefcase size={24} />
             </div>
+
             <div>
-              <h2 className="text-xl font-bold">Asignar Carga Académica</h2>
-              <p className="text-emerald-100 text-sm mt-0.5">
+              <h2 className="text-xl font-black">Asignar Carga Académica</h2>
+              <p className="mt-0.5 text-sm text-white/75">
                 Docente: {docente.nombre} {docente.apellido}
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="hover:bg-white/20 p-2 rounded-full transition-colors"
+            className="rounded-full p-2 transition hover:bg-white/20"
+            title="Cerrar"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* BUSCADOR DE CURSOS */}
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+          {/* Buscador de cursos */}
           <div className="relative">
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              1. Busca y Selecciona el Curso
+            <label className="mb-1.5 block text-sm font-semibold text-[var(--color-text)]">
+              1. Busca y selecciona el curso
             </label>
+
             <div
-              className={`flex items-center border rounded-lg px-3 py-2 bg-gray-50 transition-all ${mostrarDropdownCursos ? "border-emerald-500 ring-2 ring-emerald-100 bg-white" : "border-gray-300"}`}
+              className={`flex items-center rounded-2xl border px-3 py-2.5 transition-all ${
+                mostrarDropdownCursos
+                  ? "border-[var(--color-primary)] bg-[var(--color-card)] ring-4 ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
+                  : "border-[var(--color-border)] bg-[var(--color-background)]"
+              }`}
             >
-              <Search size={18} className="text-gray-400 mr-2 shrink-0" />
+              <Search
+                size={18}
+                className="mr-2 shrink-0 text-[var(--color-muted-text)]"
+              />
+
               <input
                 type="text"
-                className="w-full outline-none bg-transparent text-gray-700"
+                className="w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-muted-text)]"
                 placeholder="Escribe el nombre del curso..."
                 value={busquedaCurso}
                 onChange={(e) => {
                   setBusquedaCurso(e.target.value);
                   setMostrarDropdownCursos(true);
                   setCursoSeleccionado("");
-                  setGrupoSeleccionado(""); // Resetea el grupo
+                  setGrupoSeleccionado("");
                 }}
                 onFocus={() => setMostrarDropdownCursos(true)}
                 onBlur={() =>
                   setTimeout(() => setMostrarDropdownCursos(false), 200)
                 }
               />
+
               {isLoadingCursos && (
                 <Loader2
                   size={16}
-                  className="animate-spin text-emerald-500 shrink-0"
+                  className="shrink-0 animate-spin text-[var(--color-primary)]"
                 />
               )}
             </div>
 
             {mostrarDropdownCursos && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute z-20 mt-2 max-h-48 w-full overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-xl">
                 {cursosFiltrados.length === 0 ? (
-                  <div className="p-3 text-sm text-gray-500 text-center">
+                  <div className="p-3 text-center text-sm text-[var(--color-muted-text)]">
                     No se encontraron cursos
                   </div>
                 ) : (
                   cursosFiltrados.map((curso) => {
                     const nombreVisible =
                       curso.nombrecurso || `Curso #${curso.id}`;
+
                     return (
                       <button
                         key={curso.id}
                         type="button"
-                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 hover:text-emerald-700 border-b border-gray-50 last:border-0 transition-colors"
+                        className="w-full border-b border-[var(--color-border)] px-4 py-3 text-left text-sm text-[var(--color-text)] transition last:border-0 hover:bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] hover:text-[var(--color-primary)]"
                         onClick={() => {
                           setCursoSeleccionado(curso.id.toString());
                           setBusquedaCurso(nombreVisible);
                           setMostrarDropdownCursos(false);
-                          setGrupoSeleccionado(""); // Al cambiar curso, limpia grupo
+                          setGrupoSeleccionado("");
                         }}
                       >
                         {nombreVisible}
@@ -200,14 +229,15 @@ export default function AsignarDocenteModal({ docente, onClose, onSuccess }) {
             )}
           </div>
 
-          {/* SELECTOR DE GRUPOS */}
+          {/* Selector de grupos */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              2. Selecciona el Grupo
+            <label className="mb-1.5 block text-sm font-semibold text-[var(--color-text)]">
+              2. Selecciona el grupo
             </label>
+
             <div className="relative">
               <select
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all outline-none appearance-none disabled:opacity-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full appearance-none rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)] disabled:cursor-not-allowed disabled:opacity-50"
                 value={grupoSeleccionado}
                 onChange={(e) => setGrupoSeleccionado(e.target.value)}
                 disabled={
@@ -219,9 +249,10 @@ export default function AsignarDocenteModal({ docente, onClose, onSuccess }) {
                   {!cursoSeleccionado
                     ? "Primero elige un curso arriba"
                     : grupos.length === 0 && !isLoadingGrupos
-                      ? "No hay grupos disponibles para este curso"
-                      : "-- Elige un grupo --"}
+                    ? "No hay grupos disponibles para este curso"
+                    : "-- Elige un grupo --"}
                 </option>
+
                 {grupos.map((grupo) => (
                   <option key={grupo.id} value={grupo.id}>
                     {grupo.nombregrupo} ({grupo.horario}){" "}
@@ -229,36 +260,40 @@ export default function AsignarDocenteModal({ docente, onClose, onSuccess }) {
                   </option>
                 ))}
               </select>
+
               {isLoadingGrupos && (
                 <Loader2
                   size={16}
-                  className="absolute right-3 top-3 animate-spin text-emerald-500"
+                  className="absolute right-3 top-3.5 animate-spin text-[var(--color-primary)]"
                 />
               )}
             </div>
           </div>
 
-          {/* BOTONES */}
-          <div className="pt-2 flex justify-end gap-3">
+          {/* Botones */}
+          <div className="flex justify-end gap-3 border-t border-[var(--color-border)] pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors"
+              className="rounded-xl px-5 py-2.5 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
             >
               Cancelar
             </button>
+
             <button
               type="submit"
               disabled={!grupoSeleccionado || isSubmitting}
-              className="px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors shadow-md disabled:opacity-50 flex items-center gap-2"
+              className="flex items-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-2.5 font-semibold text-[var(--color-button-primary-text)] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 size={18} className="animate-spin" /> Asignando...
+                  <Loader2 size={18} className="animate-spin" />
+                  Asignando...
                 </>
               ) : (
                 <>
-                  <BookPlus size={18} /> Asignar Curso
+                  <BookPlus size={18} />
+                  Asignar Curso
                 </>
               )}
             </button>

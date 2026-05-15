@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+﻿import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   Stage,
   Layer,
@@ -77,7 +77,7 @@ const MUESTRAS = {
   dni: "73251708",
   nota_final: "Nota final: 17",
   detalle_notas: "Práctica 1 - 16\nExamen final - 18\nPromedio final - 17",
-  temario: "• Introducción\n• Conceptos principales\n• Casos prácticos",
+  temario: "- Introducción\n- Conceptos principales\n- Casos prácticos",
 };
 
 const PREVIEW_WIDTH = 920;
@@ -734,7 +734,7 @@ export default function Certificados() {
     if (!plantilla) return;
 
     const confirmado = window.confirm(
-      `¿Seguro que deseas eliminar la plantilla "${plantilla.nombre}"?`,
+      `Â¿Seguro que deseas eliminar la plantilla "${plantilla.nombre}"?`,
     );
 
     if (!confirmado) return;
@@ -1009,8 +1009,8 @@ export default function Certificados() {
 
   if (cargando) {
     return (
-      <div className="p-8 bg-gray-50 min-h-screen">
-        <div className="bg-white rounded-2xl shadow p-8 text-gray-500">
+      <div className="p-8 bg-[var(--color-background)] min-h-screen">
+        <div className="bg-[var(--color-card)] rounded-2xl shadow p-8 text-[var(--color-muted-text)]">
           Cargando módulo de certificados...
         </div>
       </div>
@@ -1018,8 +1018,8 @@ export default function Certificados() {
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen space-y-8">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 h-32 rounded-xl flex items-center justify-between px-8 text-white shadow">
+    <div className="p-8 bg-[var(--color-background)] min-h-screen space-y-8">
+      <div className="bg-gradient-to-r from-[var(--color-sidenav)] to-[var(--color-primary)] h-32 rounded-xl flex items-center justify-between px-8 text-white shadow">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-3">
             <Award size={28} /> Certificados
@@ -1030,44 +1030,44 @@ export default function Certificados() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="bg-[var(--color-card)] rounded-2xl shadow overflow-hidden">
         <button
           type="button"
           onClick={() => setMostrarEmision((prev) => !prev)}
-          className="w-full flex items-center justify-between px-6 py-5 bg-white hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-5 bg-[var(--color-card)] hover:bg-[var(--color-background)] transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-xl bg-emerald-100 text-emerald-700">
               <FileBadge size={22} />
             </div>
             <div className="text-left">
-              <h3 className="text-lg font-bold text-gray-800">
+              <h3 className="text-lg font-bold text-[var(--color-text)]">
                 Emitir certificado
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[var(--color-muted-text)]">
                 Genera un certificado final usando la plantilla activa.
               </p>
             </div>
           </div>
 
           {mostrarEmision ? (
-            <ChevronUp className="text-gray-500" size={22} />
+            <ChevronUp className="text-[var(--color-muted-text)]" size={22} />
           ) : (
-            <ChevronDown className="text-gray-500" size={22} />
+            <ChevronDown className="text-[var(--color-muted-text)]" size={22} />
           )}
         </button>
 
         {mostrarEmision && (
-          <div className="border-t border-gray-100 p-6">
+          <div className="border-t border-[var(--color-border)] p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Alumno
                 </label>
                 <select
                   value={emision.idalumno}
                   onChange={(e) => handleSeleccionAlumno(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                 >
                   <option value="">Selecciona un alumno</option>
                   {alumnos.map((alumno) => (
@@ -1079,7 +1079,7 @@ export default function Certificados() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Nombre del alumno
                 </label>
                 <input
@@ -1091,20 +1091,20 @@ export default function Certificados() {
                       nombreAlumno: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  placeholder="Nombre que irá en el certificado"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
+                  placeholder="Nombre que iría en el certificado"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Curso
                 </label>
 
                 <select
                   value={emision.idgrupo}
                   onChange={(e) => handleSeleccionCurso(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   disabled={!emision.idalumno || cargandoCursosAlumno}
                 >
                   <option value="">
@@ -1120,18 +1120,18 @@ export default function Certificados() {
                       disabled={!curso.completo && !permitirEmisionManual}
                     >
                       {curso.nombrecurso}
-                      {curso.completo ? " ✅" : " — Incompleto"}
+                      {curso.completo ? " âœ…" : " â€” Incompleto"}
                     </option>
                   ))}
                 </select>
 
-                <label className="flex items-center gap-2 text-sm text-gray-700 mt-3">
+                <label className="flex items-center gap-2 text-sm text-[var(--color-text)] mt-3">
                   <input
                     type="checkbox"
                     checked={permitirEmisionManual}
                     onChange={(e) => setPermitirEmisionManual(e.target.checked)}
                   />
-                  Permitir emisión manual aunque el curso no esté completo
+                  Permitir emisión manual aunque el curso no está completo
                 </label>
 
                 {emision.idgrupo &&
@@ -1169,8 +1169,8 @@ export default function Certificados() {
                   !cargandoCursosAlumno &&
                   cursosAlumno.length > 0 &&
                   !permitirEmisionManual && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Solo se pueden seleccionar cursos que ya estén completos.
+                    <p className="text-xs text-[var(--color-muted-text)] mt-2">
+                      Solo se pueden seleccionar cursos que ya están completos.
                       Los incompletos aparecen bloqueados.
                     </p>
                   )}
@@ -1184,7 +1184,7 @@ export default function Certificados() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Fecha de emisión
                 </label>
                 <input
@@ -1196,12 +1196,12 @@ export default function Certificados() {
                       fechaEmision: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Curso a mostrar
                 </label>
                 <input
@@ -1213,13 +1213,13 @@ export default function Certificados() {
                       curso: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  placeholder="Nombre que irá en el certificado"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
+                  placeholder="Nombre que iría en el certificado"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Descripción
                 </label>
                 <input
@@ -1231,13 +1231,13 @@ export default function Certificados() {
                       descripcion: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="Texto que irá en el certificado"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Horas
                 </label>
                 <input
@@ -1249,13 +1249,13 @@ export default function Certificados() {
                       horas: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="Ej. 120"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Créditos
                 </label>
                 <input
@@ -1267,13 +1267,13 @@ export default function Certificados() {
                       creditos: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="Ej. 3"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Código de certificado
                 </label>
                 <input
@@ -1285,8 +1285,8 @@ export default function Certificados() {
                       codigoCertificado: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  placeholder="Opcional, si lo dejas vacío se genera automático"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
+                  placeholder="Opcional, si lo dejas vací­o se genera automático"
                 />
               </div>
             </div>
@@ -1304,21 +1304,21 @@ export default function Certificados() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="bg-[var(--color-card)] rounded-2xl shadow overflow-hidden">
         <button
           type="button"
           onClick={() => setMostrarConfigCurso((prev) => !prev)}
-          className="w-full flex items-center justify-between px-6 py-5 bg-white hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-5 bg-[var(--color-card)] hover:bg-[var(--color-background)] transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-blue-100 text-blue-700">
+            <div className="p-3 rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]">
               <Settings2 size={22} />
             </div>
             <div className="text-left">
-              <h3 className="text-lg font-bold text-gray-800">
+              <h3 className="text-lg font-bold text-[var(--color-text)]">
                 Configuración de certificado por curso
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[var(--color-muted-text)]">
                 Define cómo se entregará el certificado automáticamente cuando
                 el curso se complete.
               </p>
@@ -1326,23 +1326,23 @@ export default function Certificados() {
           </div>
 
           {mostrarConfigCurso ? (
-            <ChevronUp className="text-gray-500" size={22} />
+            <ChevronUp className="text-[var(--color-muted-text)]" size={22} />
           ) : (
-            <ChevronDown className="text-gray-500" size={22} />
+            <ChevronDown className="text-[var(--color-muted-text)]" size={22} />
           )}
         </button>
 
         {mostrarConfigCurso && (
-          <div className="border-t border-gray-100 p-6">
+          <div className="border-t border-[var(--color-border)] p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Curso
                 </label>
                 <select
                   value={configCurso.idcurso}
                   onChange={(e) => handleSeleccionCursoConfig(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                 >
                   <option value="">Selecciona un curso</option>
                   {cursos.map((curso) => (
@@ -1354,7 +1354,7 @@ export default function Certificados() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Modo de entrega
                 </label>
                 <select
@@ -1365,7 +1365,7 @@ export default function Certificados() {
                       modoEntrega: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                 >
                   <option value="DESCARGA_UNICA">
                     Descarga única del alumno
@@ -1375,7 +1375,7 @@ export default function Certificados() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Plantilla
                 </label>
                 <select
@@ -1386,7 +1386,7 @@ export default function Certificados() {
                       plantillaId: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                 >
                   <option value="">Usar plantilla activa</option>
                   {plantillas.map((plantilla) => (
@@ -1398,7 +1398,7 @@ export default function Certificados() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Nota mínima
                 </label>
                 <input
@@ -1410,14 +1410,14 @@ export default function Certificados() {
                       notaMinima: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="Opcional"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
-                  Asistencia mínima
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
+                  Asistencia mí­nima
                 </label>
                 <input
                   type="number"
@@ -1428,13 +1428,13 @@ export default function Certificados() {
                       asistenciaMinima: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="Opcional"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Progreso mínimo
                 </label>
                 <input
@@ -1446,13 +1446,13 @@ export default function Certificados() {
                       progresoMinimo: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="Ej. 100"
                 />
               </div>
 
               <div className="flex flex-col justify-end gap-3">
-                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                <label className="flex items-center gap-3 text-sm font-medium text-[var(--color-text)]">
                   <input
                     type="checkbox"
                     checked={!!configCurso.habilitado}
@@ -1466,7 +1466,7 @@ export default function Certificados() {
                   Certificado habilitado
                 </label>
 
-                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                <label className="flex items-center gap-3 text-sm font-medium text-[var(--color-text)]">
                   <input
                     type="checkbox"
                     checked={!!configCurso.requiereAprobacion}
@@ -1480,7 +1480,7 @@ export default function Certificados() {
                   Requiere aprobación general
                 </label>
 
-                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                <label className="flex items-center gap-3 text-sm font-medium text-[var(--color-text)]">
                   <input
                     type="checkbox"
                     checked={!!configCurso.requiereExamenAprobado}
@@ -1494,7 +1494,7 @@ export default function Certificados() {
                   Requiere examen aprobado
                 </label>
 
-                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                <label className="flex items-center gap-3 text-sm font-medium text-[var(--color-text)]">
                   <input
                     type="checkbox"
                     checked={!!configCurso.requiereProgresoCompleto}
@@ -1508,7 +1508,7 @@ export default function Certificados() {
                   Requiere progreso completo
                 </label>
 
-                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                <label className="flex items-center gap-3 text-sm font-medium text-[var(--color-text)]">
                   <input
                     type="checkbox"
                     checked={!!configCurso.soloCursosCompletosEnEmision}
@@ -1528,7 +1528,7 @@ export default function Certificados() {
               <button
                 onClick={handleGuardarConfigCurso}
                 disabled={guardandoConfigCurso}
-                className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors disabled:opacity-70"
+                className="px-5 py-2.5 rounded-lg bg-[var(--color-button-primary)] text-white font-semibold hover:bg-[var(--color-button-primary)] transition-colors disabled:opacity-70"
               >
                 {guardandoConfigCurso
                   ? "Guardando..."
@@ -1539,38 +1539,38 @@ export default function Certificados() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="bg-[var(--color-card)] rounded-2xl shadow overflow-hidden">
         <button
           type="button"
           onClick={() => setMostrarListadoCertificados((prev) => !prev)}
-          className="w-full flex items-center justify-between px-6 py-5 bg-white hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-5 bg-[var(--color-card)] hover:bg-[var(--color-background)] transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-violet-100 text-violet-700">
+            <div className="p-3 rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]">
               <FileBadge size={22} />
             </div>
             <div className="text-left">
-              <h3 className="text-lg font-bold text-gray-800">
+              <h3 className="text-lg font-bold text-[var(--color-text)]">
                 Certificados generados
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[var(--color-muted-text)]">
                 Busca, filtra, abre y anula certificados emitidos.
               </p>
             </div>
           </div>
 
           {mostrarListadoCertificados ? (
-            <ChevronUp className="text-gray-500" size={22} />
+            <ChevronUp className="text-[var(--color-muted-text)]" size={22} />
           ) : (
-            <ChevronDown className="text-gray-500" size={22} />
+            <ChevronDown className="text-[var(--color-muted-text)]" size={22} />
           )}
         </button>
 
         {mostrarListadoCertificados && (
-          <div className="border-t border-gray-100 p-6 space-y-5">
+          <div className="border-t border-[var(--color-border)] p-6 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Búsqueda general
                 </label>
                 <input
@@ -1582,13 +1582,13 @@ export default function Certificados() {
                       search: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="Alumno, código, curso..."
                 />
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   DNI
                 </label>
                 <input
@@ -1600,13 +1600,13 @@ export default function Certificados() {
                       dni: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="DNI del alumno"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Curso
                 </label>
                 <input
@@ -1618,13 +1618,13 @@ export default function Certificados() {
                       curso: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   placeholder="Nombre del curso"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Estado
                 </label>
                 <select
@@ -1635,7 +1635,7 @@ export default function Certificados() {
                       estado: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                 >
                   <option value="TODOS">Todos</option>
                   <option value="ENVIADO">Enviado</option>
@@ -1647,7 +1647,7 @@ export default function Certificados() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 block mb-2">
+                <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                   Anulado
                 </label>
                 <select
@@ -1658,7 +1658,7 @@ export default function Certificados() {
                       anulado: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                 >
                   <option value="NO">Solo activos</option>
                   <option value="SI">Solo anulados</option>
@@ -1670,35 +1670,35 @@ export default function Certificados() {
             <div className="flex justify-end">
               <button
                 onClick={handleBuscarCertificados}
-                className="px-5 py-2.5 rounded-lg bg-violet-600 text-white font-semibold hover:bg-violet-700 transition-colors"
+                className="px-5 py-2.5 rounded-lg bg-[var(--color-button-primary)] text-white font-semibold hover:brightness-95 transition-colors"
               >
                 Buscar
               </button>
             </div>
 
-            <div className="overflow-x-auto border border-gray-200 rounded-xl">
+            <div className="overflow-x-auto border border-[var(--color-border)] rounded-xl">
               <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[var(--color-background)]">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                    <th className="px-4 py-3 text-left font-semibold text-[var(--color-text)]">
                       Código
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                    <th className="px-4 py-3 text-left font-semibold text-[var(--color-text)]">
                       Alumno
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                    <th className="px-4 py-3 text-left font-semibold text-[var(--color-text)]">
                       DNI
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                    <th className="px-4 py-3 text-left font-semibold text-[var(--color-text)]">
                       Curso
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                    <th className="px-4 py-3 text-left font-semibold text-[var(--color-text)]">
                       Estado
                     </th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                    <th className="px-4 py-3 text-left font-semibold text-[var(--color-text)]">
                       Fecha
                     </th>
-                    <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                    <th className="px-4 py-3 text-center font-semibold text-[var(--color-text)]">
                       Acciones
                     </th>
                   </tr>
@@ -1709,7 +1709,7 @@ export default function Certificados() {
                     <tr>
                       <td
                         colSpan="7"
-                        className="px-4 py-8 text-center text-gray-500"
+                        className="px-4 py-8 text-center text-[var(--color-muted-text)]"
                       >
                         Cargando certificados...
                       </td>
@@ -1718,14 +1718,14 @@ export default function Certificados() {
                     <tr>
                       <td
                         colSpan="7"
-                        className="px-4 py-8 text-center text-gray-500"
+                        className="px-4 py-8 text-center text-[var(--color-muted-text)]"
                       >
                         No se encontraron certificados.
                       </td>
                     </tr>
                   ) : (
                     certificadosAdmin.map((cert) => (
-                      <tr key={cert.id} className="border-t border-gray-100">
+                      <tr key={cert.id} className="border-t border-[var(--color-border)]">
                         <td className="px-4 py-3">
                           {cert.codigoCertificado || "-"}
                         </td>
@@ -1740,7 +1740,7 @@ export default function Certificados() {
                                 : cert.estado === "ANULADO"
                                 ? "bg-rose-100 text-rose-700"
                                 : cert.estado === "DESCARGADO"
-                                ? "bg-blue-100 text-blue-700"
+                                ? "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]"
                                 : "bg-amber-100 text-amber-700"
                             }`}
                           >
@@ -1763,7 +1763,7 @@ export default function Certificados() {
                                   "_blank"
                                 )
                               }
-                              className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50"
+                              className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-background)]"
                             >
                               Ver
                             </button>
@@ -1791,42 +1791,42 @@ export default function Certificados() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="bg-[var(--color-card)] rounded-2xl shadow overflow-hidden">
         <button
           type="button"
           onClick={() => setMostrarGestionPlantilla((prev) => !prev)}
-          className="w-full flex items-center justify-between px-6 py-5 bg-white hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-5 bg-[var(--color-card)] hover:bg-[var(--color-background)] transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-indigo-100 text-indigo-700">
+            <div className="p-3 rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]">
               <Award size={22} />
             </div>
             <div className="text-left">
-              <h3 className="text-lg font-bold text-gray-800">
+              <h3 className="text-lg font-bold text-[var(--color-text)]">
                 Gestionar plantilla de certificado
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[var(--color-muted-text)]">
                 Administra plantillas guardadas y edita el diseño visual.
               </p>
             </div>
           </div>
 
           {mostrarGestionPlantilla ? (
-            <ChevronUp className="text-gray-500" size={22} />
+            <ChevronUp className="text-[var(--color-muted-text)]" size={22} />
           ) : (
-            <ChevronDown className="text-gray-500" size={22} />
+            <ChevronDown className="text-[var(--color-muted-text)]" size={22} />
           )}
         </button>
 
         {mostrarGestionPlantilla && (
-          <div className="border-t border-gray-100 p-6 space-y-6">
-            <div className="bg-gray-50 rounded-2xl p-5 space-y-4">
+          <div className="border-t border-[var(--color-border)] p-6 space-y-6">
+            <div className="bg-[var(--color-background)] rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">
+                  <h3 className="text-lg font-bold text-[var(--color-text)]">
                     Plantillas guardadas
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-[var(--color-muted-text)]">
                     Carga, activa o elimina una plantilla existente.
                   </p>
                 </div>
@@ -1840,7 +1840,7 @@ export default function Certificados() {
               </div>
 
               {plantillas.length === 0 ? (
-                <div className="text-sm text-gray-500 border border-dashed rounded-xl p-4 bg-white">
+                <div className="text-sm text-[var(--color-muted-text)] border border-dashed rounded-xl p-4 bg-[var(--color-card)]">
                   Aún no hay plantillas guardadas.
                 </div>
               ) : (
@@ -1854,16 +1854,16 @@ export default function Certificados() {
                         className={`rounded-xl border p-4 transition-all ${
                           estaSeleccionada
                             ? "border-indigo-500 bg-indigo-50/50"
-                            : "border-gray-200 bg-white"
+                            : "border-[var(--color-border)] bg-[var(--color-card)]"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h4 className="font-semibold text-gray-800">
+                            <h4 className="font-semibold text-[var(--color-text)]">
                               {plantilla.nombre}
                             </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {plantilla.canvasWidth} × {plantilla.canvasHeight}
+                            <p className="text-xs text-[var(--color-muted-text)] mt-1">
+                              {plantilla.canvasWidth} — {plantilla.canvasHeight}
                             </p>
                           </div>
 
@@ -1875,7 +1875,7 @@ export default function Certificados() {
                             )}
 
                             {plantilla.dobleCara && (
-                              <span className="text-xs font-semibold px-2 py-1 rounded-md bg-sky-100 text-sky-700">
+                              <span className="text-xs font-semibold px-2 py-1 rounded-md bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]">
                                 Doble cara
                               </span>
                             )}
@@ -1885,7 +1885,7 @@ export default function Certificados() {
                         <div className="mt-4 flex flex-wrap gap-2">
                           <button
                             onClick={() => aplicarPlantillaEnEditor(plantilla)}
-                            className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+                            className="px-3 py-2 rounded-lg border border-[var(--color-border)] text-sm hover:bg-[var(--color-background)]"
                           >
                             Cargar
                           </button>
@@ -1895,7 +1895,7 @@ export default function Certificados() {
                               onClick={() =>
                                 handleActivarPlantilla(plantilla.id)
                               }
-                              className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700"
+                              className="px-3 py-2 rounded-lg bg-[var(--color-button-primary)] text-white text-sm hover:bg-[var(--color-button-primary)]"
                             >
                               Activar
                             </button>
@@ -1921,16 +1921,16 @@ export default function Certificados() {
               <button
                 onClick={guardar}
                 disabled={guardando}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 px-5 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm disabled:opacity-70"
+                className="bg-[var(--color-button-primary)] text-white hover:bg-[var(--color-button-primary)] px-5 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm disabled:opacity-70"
               >
                 <Save size={18} />
                 {guardando ? "Guardando..." : "Guardar plantilla"}
               </button>
             </div>
 
-            <div className="bg-white rounded-2xl shadow p-5 border border-gray-100">
+            <div className="bg-[var(--color-card)] rounded-2xl shadow p-5 border border-[var(--color-border)]">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                <label className="flex items-center gap-3 text-sm font-medium text-[var(--color-text)]">
                   <input
                     type="checkbox"
                     checked={!!dobleCara}
@@ -1954,8 +1954,8 @@ export default function Certificados() {
                     }}
                     className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                       caraActiva === "anverso"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "bg-[var(--color-button-primary)] text-white"
+                        : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-gray-200"
                     }`}
                   >
                     Anverso
@@ -1970,8 +1970,8 @@ export default function Certificados() {
                       }}
                       className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                         caraActiva === "reverso"
-                          ? "bg-indigo-600 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          ? "bg-[var(--color-button-primary)] text-white"
+                          : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-gray-200"
                       }`}
                     >
                       Reverso
@@ -1981,7 +1981,7 @@ export default function Certificados() {
               </div>
 
               {dobleCara && (
-                <p className="text-xs text-gray-500 mt-3">
+                <p className="text-xs text-[var(--color-muted-text)] mt-3">
                   En el reverso se habilitan además los campos: Nota final,
                   Detalle de notas y Temario.
                 </p>
@@ -1989,21 +1989,21 @@ export default function Certificados() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_320px] gap-6">
-              <div className="bg-white rounded-2xl shadow p-5 space-y-5 border border-gray-100">
+              <div className="bg-[var(--color-card)] rounded-2xl shadow p-5 space-y-5 border border-[var(--color-border)]">
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 block mb-2">
+                  <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                     Nombre de plantilla
                   </label>
                   <input
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm font-semibold text-gray-700 block mb-2">
+                    <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                       Ancho
                     </label>
                     <input
@@ -2012,12 +2012,12 @@ export default function Certificados() {
                       onChange={(e) =>
                         setCanvasWidth(Number(e.target.value) || 1600)
                       }
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm font-semibold text-gray-700 block mb-2">
+                    <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                       Alto
                     </label>
                     <input
@@ -2026,17 +2026,17 @@ export default function Certificados() {
                       onChange={(e) =>
                         setCanvasHeight(Number(e.target.value) || 1131)
                       }
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-sm font-semibold text-gray-700 block">
+                  <label className="text-sm font-semibold text-[var(--color-text)] block">
                     Fondo del certificado
                   </label>
 
-                  <label className="w-full flex items-center justify-center gap-2 cursor-pointer border border-dashed border-indigo-300 bg-indigo-50 text-indigo-700 px-4 py-3 rounded-xl hover:bg-indigo-100 transition-colors">
+                  <label className="w-full flex items-center justify-center gap-2 cursor-pointer border border-dashed border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] text-[var(--color-primary)] px-4 py-3 rounded-xl hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] transition-colors">
                     <Upload size={18} />
                     Subir fondo
                     <input
@@ -2048,7 +2048,7 @@ export default function Certificados() {
                   </label>
 
                   {fondoKey && (
-                    <div className="text-xs text-gray-500 break-all">
+                    <div className="text-xs text-[var(--color-muted-text)] break-all">
                       Fondo cargado: {fondoKey}
                     </div>
                   )}
@@ -2076,13 +2076,13 @@ export default function Certificados() {
 
                   <button
                     onClick={agregarQrPlaceholder}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sky-600 text-white hover:bg-sky-700 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-button-primary)] text-white hover:bg-sky-700 transition-colors"
                   >
                     Agregar QR
                   </button>
 
                   <div className="space-y-2">
-                    <div className="text-sm font-semibold text-gray-700">
+                    <div className="text-sm font-semibold text-[var(--color-text)]">
                       Campos dinámicos
                     </div>
 
@@ -2090,7 +2090,7 @@ export default function Certificados() {
                       <button
                         key={campo.key}
                         onClick={() => agregarCampo(campo.key)}
-                        className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm"
+                        className="w-full text-left px-3 py-2 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-background)] transition-colors text-sm"
                       >
                         + {campo.label}
                       </button>
@@ -2099,19 +2099,19 @@ export default function Certificados() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow p-5 overflow-auto border border-gray-100">
+              <div className="bg-[var(--color-card)] rounded-2xl shadow p-5 overflow-auto border border-[var(--color-border)]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800">
+                    <h3 className="text-lg font-bold text-[var(--color-text)]">
                       Vista previa
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-[var(--color-muted-text)]">
                       Arrastra los elementos para moverlos.
                     </p>
                   </div>
                 </div>
 
-                <div className="overflow-auto border rounded-xl bg-gray-100 p-4">
+                <div className="overflow-auto border rounded-xl bg-[var(--color-background)] p-4">
                   <div
                     style={{
                       width: canvasWidth * escala,
@@ -2316,11 +2316,11 @@ export default function Certificados() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow p-5 space-y-5 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800">Propiedades</h3>
+              <div className="bg-[var(--color-card)] rounded-2xl shadow p-5 space-y-5 border border-[var(--color-border)]">
+                <h3 className="text-lg font-bold text-[var(--color-text)]">Propiedades</h3>
 
                 {!seleccionado ? (
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[var(--color-muted-text)]">
                     Selecciona un elemento para editarlo.
                   </div>
                 ) : (
@@ -2328,7 +2328,7 @@ export default function Certificados() {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={duplicarSeleccionado}
-                        className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border hover:bg-gray-50"
+                        className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border hover:bg-[var(--color-background)]"
                       >
                         <Copy size={16} />
                         Duplicar
@@ -2344,7 +2344,7 @@ export default function Certificados() {
 
                       <button
                         onClick={traerAlFrente}
-                        className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border hover:bg-gray-50"
+                        className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border hover:bg-[var(--color-background)]"
                       >
                         <ArrowUp size={16} />
                         Al frente
@@ -2352,7 +2352,7 @@ export default function Certificados() {
 
                       <button
                         onClick={enviarAtras}
-                        className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border hover:bg-gray-50"
+                        className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border hover:bg-[var(--color-background)]"
                       >
                         <ArrowDown size={16} />
                         Atrás
@@ -2362,7 +2362,7 @@ export default function Certificados() {
                     {seleccionado.type !== "image" &&
                       seleccionado.type !== "qr" && (
                         <div>
-                          <label className="text-sm font-semibold text-gray-700 block mb-2">
+                          <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                             Tipo de contenido
                           </label>
                           <select
@@ -2372,7 +2372,7 @@ export default function Certificados() {
                                 dynamicField: e.target.value || null,
                               })
                             }
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                            className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                           >
                             <option value="">Texto libre</option>
                             {camposDisponibles.map((campo) => (
@@ -2388,7 +2388,7 @@ export default function Certificados() {
                       seleccionado.type !== "qr" &&
                       !seleccionado.dynamicField && (
                         <div>
-                          <label className="text-sm font-semibold text-gray-700 block mb-2">
+                          <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                             Texto
                           </label>
                           <textarea
@@ -2397,14 +2397,14 @@ export default function Certificados() {
                             onChange={(e) =>
                               actualizarSeleccionado({ text: e.target.value })
                             }
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                            className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                           />
                         </div>
                       )}
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-sm font-semibold text-gray-700 block mb-2">
+                        <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                           X
                         </label>
                         <input
@@ -2415,12 +2415,12 @@ export default function Certificados() {
                               x: Number(e.target.value) || 0,
                             })
                           }
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                         />
                       </div>
 
                       <div>
-                        <label className="text-sm font-semibold text-gray-700 block mb-2">
+                        <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                           Y
                         </label>
                         <input
@@ -2431,12 +2431,12 @@ export default function Certificados() {
                               y: Number(e.target.value) || 0,
                             })
                           }
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                         />
                       </div>
 
                       <div>
-                        <label className="text-sm font-semibold text-gray-700 block mb-2">
+                        <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                           Ancho
                         </label>
                         <input
@@ -2447,14 +2447,14 @@ export default function Certificados() {
                               width: Number(e.target.value) || 300,
                             })
                           }
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                         />
                       </div>
 
                       {seleccionado.type === "image" ||
                       seleccionado.type === "qr" ? (
                         <div>
-                          <label className="text-sm font-semibold text-gray-700 block mb-2">
+                          <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                             Alto
                           </label>
                           <input
@@ -2465,12 +2465,12 @@ export default function Certificados() {
                                 height: Number(e.target.value) || 300,
                               })
                             }
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                            className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                           />
                         </div>
                       ) : (
                         <div>
-                          <label className="text-sm font-semibold text-gray-700 block mb-2">
+                          <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                             Tamaño
                           </label>
                           <input
@@ -2481,7 +2481,7 @@ export default function Certificados() {
                                 fontSize: Number(e.target.value) || 24,
                               })
                             }
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                            className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                           />
                         </div>
                       )}
@@ -2491,7 +2491,7 @@ export default function Certificados() {
                       seleccionado.type !== "qr" && (
                         <>
                           <div>
-                            <label className="text-sm font-semibold text-gray-700 block mb-2">
+                            <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                               Color
                             </label>
                             <input
@@ -2502,13 +2502,13 @@ export default function Certificados() {
                                   color: e.target.value,
                                 })
                               }
-                              className="w-full h-11 border border-gray-300 rounded-lg px-2"
+                              className="w-full h-11 border border-[var(--color-border)] rounded-lg px-2"
                             />
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className="text-sm font-semibold text-gray-700 block mb-2">
+                              <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                                 Alineación
                               </label>
                               <select
@@ -2518,7 +2518,7 @@ export default function Certificados() {
                                     align: e.target.value,
                                   })
                                 }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                               >
                                 <option value="left">Izquierda</option>
                                 <option value="center">Centro</option>
@@ -2527,7 +2527,7 @@ export default function Certificados() {
                             </div>
 
                             <div>
-                              <label className="text-sm font-semibold text-gray-700 block mb-2">
+                              <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                                 Estilo
                               </label>
                               <select
@@ -2537,7 +2537,7 @@ export default function Certificados() {
                                     fontStyle: e.target.value,
                                   })
                                 }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                               >
                                 <option value="normal">Normal</option>
                                 <option value="bold">Negrita</option>
@@ -2547,7 +2547,7 @@ export default function Certificados() {
                           </div>
 
                           <div>
-                            <label className="text-sm font-semibold text-gray-700 block mb-2">
+                            <label className="text-sm font-semibold text-[var(--color-text)] block mb-2">
                               Fuente
                             </label>
                             <select
@@ -2557,7 +2557,7 @@ export default function Certificados() {
                                   fontFamily: e.target.value,
                                 })
                               }
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                              className="w-full border border-[var(--color-border)] rounded-lg px-3 py-2"
                             >
                               <option value="Arial">Arial</option>
                               <option value="Georgia">Georgia</option>
@@ -2570,7 +2570,7 @@ export default function Certificados() {
                         </>
                       )}
 
-                    <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                    <label className="flex items-center gap-3 text-sm font-medium text-[var(--color-text)]">
                       <input
                         type="checkbox"
                         checked={!!seleccionado.locked}
@@ -2592,3 +2592,4 @@ export default function Certificados() {
     </div>
   );
 }
+

@@ -17,6 +17,10 @@ import {
   Loader2,
   Search,
   Key,
+  X,
+  UserPlus,
+  BookPlus,
+  Save,
 } from "lucide-react";
 
 const regexContrasenia =
@@ -52,6 +56,7 @@ const docenteSchema = z
         message: "El DNI debe tener 8 dígitos",
       });
     }
+
     if (
       data.tipoDocumento === "Carnet Extranjería" &&
       !/^[a-zA-Z0-9]{1,9}$/.test(data.numDocumento)
@@ -62,6 +67,7 @@ const docenteSchema = z
         message: "Máximo 9 caracteres",
       });
     }
+
     if (
       data.tipoDocumento === "Pasaporte" &&
       (data.numDocumento.length < 8 || data.numDocumento.length > 12)
@@ -94,21 +100,23 @@ const docenteSchema = z
 export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
   const [step, setStep] = useState(1);
   const [docenteCreado, setDocenteCreado] = useState(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false);
 
   const [cursosBD, setCursosBD] = useState([]);
   const [gruposBD, setGruposBD] = useState([]);
+
   const [cursoSeleccionado, setCursoSeleccionado] = useState("");
   const [grupoSeleccionado, setGrupoSeleccionado] = useState("");
+
   const [isLoadingCursos, setIsLoadingCursos] = useState(false);
   const [isLoadingGrupos, setIsLoadingGrupos] = useState(false);
 
   const [busquedaCurso, setBusquedaCurso] = useState("");
   const [mostrarDropdownCursos, setMostrarDropdownCursos] = useState(false);
 
-  // NUEVO: Estado para los permisos del docente
   const [permisos, setPermisos] = useState({
     control_total: false,
     tomar_asistencia: true,
@@ -157,14 +165,15 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
   useEffect(() => {
     if (docenteEditar) {
       reset({
-        nombre: docenteEditar.nombre,
-        apellido: docenteEditar.apellido,
+        nombre: docenteEditar.nombre || "",
+        apellido: docenteEditar.apellido || "",
         tipoDocumento:
-          docenteEditar.tipoDocumento || docenteEditar.tipodocumento,
-        numDocumento: docenteEditar.numDocumento || docenteEditar.numdocumento,
-        telefono: String(docenteEditar.telefono),
-        direccion: docenteEditar.direccion,
-        correo: docenteEditar.correo,
+          docenteEditar.tipoDocumento || docenteEditar.tipodocumento || "DNI",
+        numDocumento:
+          docenteEditar.numDocumento || docenteEditar.numdocumento || "",
+        telefono: String(docenteEditar.telefono || "").replace(/[^\d]/g, ""),
+        direccion: docenteEditar.direccion || "",
+        correo: docenteEditar.correo || "",
         titulo: docenteEditar.titulo || "",
         experiencia:
           docenteEditar.experiencia || docenteEditar.perfil_profesional || "",
@@ -175,6 +184,7 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
           docenteEditar.contacto_emergencia_telefono || "",
         isEditing: true,
         contrasenia: "",
+        prefijo: "+51",
       });
     }
   }, [docenteEditar, reset]);
@@ -190,18 +200,24 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
       const fetchCursos = async () => {
         try {
           setIsLoadingCursos(true);
+
           const data = await obtenerCurso();
+
           setCursosBD(
-            data.filter((c) =>
-              c.estado !== true && c.estado !== false ? true : c.estado,
-            ),
+            Array.isArray(data)
+              ? data.filter((c) =>
+                  c.estado !== true && c.estado !== false ? true : c.estado
+                )
+              : []
           );
         } catch (error) {
-          toast.error("Error al cargar los cursos:", error);
+          console.error(error);
+          toast.error("Error al cargar los cursos");
         } finally {
           setIsLoadingCursos(false);
         }
       };
+
       fetchCursos();
     }
   }, [step]);
@@ -212,17 +228,21 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
         try {
           setIsLoadingGrupos(true);
           setGrupoSeleccionado("");
+
           const data = await obtenerGruposPorCurso(cursoSeleccionado);
-          setGruposBD(data);
+          setGruposBD(Array.isArray(data) ? data : []);
         } catch (error) {
-          toast.error("Error al cargar los grupos de este curso", error);
+          console.error(error);
+          toast.error("Error al cargar los grupos de este curso");
         } finally {
           setIsLoadingGrupos(false);
         }
       };
+
       fetchGrupos();
     } else {
       setGruposBD([]);
+      setGrupoSeleccionado("");
     }
   }, [cursoSeleccionado]);
 
@@ -246,6 +266,7 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
         delete dataToSend.contrasenia;
 
         await actualizarDocente(docenteEditar.id, dataToSend);
+
         toast.success("Docente actualizado correctamente");
         onSuccess();
         onClose();
@@ -253,6 +274,7 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
         dataToSend.crearUsuario = true;
 
         const nuevoDocente = await crearDocente(dataToSend);
+
         toast.success("Docente y credenciales creados exitosamente");
         setDocenteCreado(nuevoDocente);
         setStep(2);
@@ -260,7 +282,7 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Ocurrió un error al guardar el docente",
+          "Ocurrió un error al guardar el docente"
       );
       console.error(error);
     } finally {
@@ -268,9 +290,9 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
     }
   };
 
-  // NUEVO: Función para manejar el cambio de los checkboxes de permisos
   const handlePermisoChange = (e) => {
     const { name, checked } = e.target;
+
     if (name === "control_total") {
       setPermisos({
         control_total: checked,
@@ -284,9 +306,9 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
     } else {
       setPermisos((prev) => {
         const next = { ...prev, [name]: checked };
-        // Si apagas alguno específico, se apaga el control total
+
         if (!checked) next.control_total = false;
-        // Si por casualidad marcas todos manualmente, se marca el control total
+
         const todosMarcados = [
           "tomar_asistencia",
           "crear_tareas",
@@ -295,7 +317,9 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
           "cargar_notas",
           "enviar_mensajes",
         ].every((k) => next[k]);
+
         if (todosMarcados) next.control_total = true;
+
         return next;
       });
     }
@@ -309,13 +333,16 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
 
     try {
       setIsLoading(true);
-      // OJO: Le pasamos los permisos en la petición (Asegúrate de que tu backend lo reciba)
+
       await asignarDocenteAGrupo(grupoSeleccionado, docenteCreado.id, permisos);
-      toast.success(`Docente asignado al grupo con sus permisos exitosamente`);
+
+      toast.success("Docente asignado al grupo con sus permisos exitosamente");
+
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error("Ocurrió un error al intentar asignar el grupo", error);
+      console.error(error);
+      toast.error("Ocurrió un error al intentar asignar el grupo");
     } finally {
       setIsLoading(false);
     }
@@ -329,84 +356,105 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
 
   const getInputClass = (error, hasPrefix = false) => {
     const baseClass =
-      "w-full border p-2 focus:ring-2 outline-none transition-colors ";
+      "w-full border px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-muted-text)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]";
+
     const roundedClass = hasPrefix
-      ? "rounded-r-lg border-l-0"
-      : "rounded-lg mt-1";
+      ? "rounded-r-2xl border-l-0"
+      : "rounded-2xl mt-1";
+
     return `${baseClass} ${roundedClass} ${
       error
-        ? "border-red-500 focus:ring-red-500 bg-red-50"
-        : "border-gray-300 focus:ring-indigo-600 bg-white"
+        ? "border-red-400 bg-red-50 focus:border-red-500"
+        : "border-[var(--color-border)] bg-[var(--color-background)] focus:border-[var(--color-primary)]"
     }`;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 py-4">
-      <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl p-8 animate-fadeIn max-h-[95vh] overflow-y-visible my-auto flex flex-col">
-        {step === 1 && (
-          <div className="overflow-y-auto pr-2">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              {docenteEditar ? "Editar Docente" : "Registrar Nuevo Docente"}
-            </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-2xl animate-fadeIn">
+        {/* HEADER */}
+        <div
+          className="flex shrink-0 items-center justify-between px-8 py-6 text-white"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-white/20 p-2 backdrop-blur-sm">
+              {step === 1 ? <UserPlus size={24} /> : <BookPlus size={24} />}
+            </div>
 
+            <div>
+              <h2 className="text-2xl font-black">
+                {step === 1
+                  ? docenteEditar
+                    ? "Editar Docente"
+                    : "Registrar Nuevo Docente"
+                  : "Asignar Carga Académica"}
+              </h2>
+
+              <p className="mt-1 text-sm text-white/75">
+                {step === 1
+                  ? "Completa los datos personales, profesionales y de acceso."
+                  : "Selecciona curso, grupo y permisos iniciales del docente."}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 transition hover:bg-white/20"
+            title="Cerrar"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto bg-[var(--color-background)] p-8">
+          {step === 1 && (
             <form onSubmit={handleSubmit(onSubmitPaso1)} onKeyUp={handleKeyUp}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
-                <div className="md:col-span-2">
-                  <h3 className="font-semibold text-indigo-600 mb-2 border-b pb-1">
-                    Datos Personales y Contacto
-                  </h3>
-                </div>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-5 md:grid-cols-2">
+                <SectionTitle title="Datos personales y contacto" />
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    Nombre *
-                  </label>
+                <Campo label="Nombre *" error={errors.nombre}>
                   <input
                     type="text"
                     {...register("nombre")}
                     onChange={(e) =>
                       setValue(
                         "nombre",
-                        e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
-                        { shouldValidate: true },
+                        e.target.value.replace(
+                          /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+                          ""
+                        ),
+                        { shouldValidate: true }
                       )
                     }
                     className={getInputClass(errors.nombre)}
                   />
-                  {errors.nombre && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.nombre.message}
-                    </p>
-                  )}
-                </div>
+                </Campo>
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    Apellido *
-                  </label>
+                <Campo label="Apellido *" error={errors.apellido}>
                   <input
                     type="text"
                     {...register("apellido")}
                     onChange={(e) =>
                       setValue(
                         "apellido",
-                        e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
-                        { shouldValidate: true },
+                        e.target.value.replace(
+                          /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+                          ""
+                        ),
+                        { shouldValidate: true }
                       )
                     }
                     className={getInputClass(errors.apellido)}
                   />
-                  {errors.apellido && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.apellido.message}
-                    </p>
-                  )}
-                </div>
+                </Campo>
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    Tipo Documento
-                  </label>
+                <Campo label="Tipo Documento" error={errors.tipoDocumento}>
                   <select
                     {...register("tipoDocumento")}
                     className={getInputClass(errors.tipoDocumento)}
@@ -417,73 +465,67 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
                       Carnet Extranjería
                     </option>
                   </select>
-                </div>
+                </Campo>
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    N° Documento *
-                  </label>
+                <Campo label="N° Documento *" error={errors.numDocumento}>
                   <input
                     type="text"
                     {...register("numDocumento")}
                     onChange={(e) => {
                       let val = e.target.value;
-                      if (tipoDocumentoActual === "DNI")
+
+                      if (tipoDocumentoActual === "DNI") {
                         val = val.replace(/\D/g, "").slice(0, 8);
-                      else if (tipoDocumentoActual === "Carnet Extranjería")
+                      } else if (tipoDocumentoActual === "Carnet Extranjería") {
                         val = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 9);
-                      else if (tipoDocumentoActual === "Pasaporte")
+                      } else if (tipoDocumentoActual === "Pasaporte") {
                         val = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
-                      setValue("numDocumento", val, { shouldValidate: true });
+                      }
+
+                      setValue("numDocumento", val, {
+                        shouldValidate: true,
+                      });
                     }}
                     className={getInputClass(errors.numDocumento)}
                   />
-                  {errors.numDocumento && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.numDocumento.message}
-                    </p>
-                  )}
-                </div>
+                </Campo>
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    Correo Electrónico *
-                  </label>
+                <Campo label="Correo Electrónico *" error={errors.correo}>
                   <input
                     type="email"
                     {...register("correo")}
                     className={getInputClass(errors.correo)}
                   />
-                  {errors.correo && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.correo.message}
-                    </p>
-                  )}
-                </div>
+                </Campo>
 
                 <div>
-                  <label className="text-sm text-gray-600 font-medium">
+                  <label className="text-sm font-semibold text-[var(--color-text)]">
                     Celular / Teléfono *
                   </label>
-                  <div className="flex mt-1">
+
+                  <div className="mt-1 flex">
                     <input
                       type="text"
                       placeholder="+51"
                       {...register("prefijo")}
                       onChange={(e) => {
                         let val = e.target.value.replace(/[^\d+]/g, "");
-                        if (!val.startsWith("+"))
+
+                        if (!val.startsWith("+")) {
                           val = "+" + val.replace(/\+/g, "");
+                        }
+
                         setValue("prefijo", val.slice(0, 5), {
                           shouldValidate: true,
                         });
                       }}
-                      className={`w-20 border border-r-0 rounded-l-lg px-2 bg-gray-50 text-gray-700 font-medium outline-none text-center transition-colors focus:bg-white ${
+                      className={`w-20 rounded-l-2xl border border-r-0 px-2 text-center text-sm font-semibold text-[var(--color-text)] outline-none transition ${
                         errors.prefijo
-                          ? "border-red-500 bg-red-50"
-                          : "border-gray-300 focus:border-indigo-600"
+                          ? "border-red-400 bg-red-50"
+                          : "border-[var(--color-border)] bg-[var(--color-background)] focus:border-[var(--color-primary)]"
                       }`}
                     />
+
                     <input
                       type="text"
                       placeholder="Número..."
@@ -492,117 +534,101 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
                         setValue(
                           "telefono",
                           e.target.value.replace(/\D/g, ""),
-                          { shouldValidate: true },
+                          { shouldValidate: true }
                         )
                       }
                       className={getInputClass(errors.telefono, true)}
                     />
                   </div>
+
                   {(errors.prefijo || errors.telefono) && (
-                    <p className="text-red-500 text-xs mt-1">
+                    <p className="mt-1 text-xs font-medium text-red-500">
                       {errors.prefijo?.message || errors.telefono?.message}
                     </p>
                   )}
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="text-sm text-gray-600 font-medium">
-                    Dirección *
-                  </label>
-                  <input
-                    type="text"
-                    {...register("direccion")}
-                    className={getInputClass(errors.direccion)}
-                  />
-                  {errors.direccion && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.direccion.message}
-                    </p>
-                  )}
+                  <Campo label="Dirección *" error={errors.direccion}>
+                    <input
+                      type="text"
+                      {...register("direccion")}
+                      className={getInputClass(errors.direccion)}
+                    />
+                  </Campo>
                 </div>
 
-                <div className="md:col-span-2 mt-2">
-                  <h3 className="font-semibold text-indigo-600 mb-2 border-b pb-1">
-                    Perfil Profesional (Opcional)
-                  </h3>
-                </div>
+                <SectionTitle title="Perfil profesional" />
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    Grado Académico / Título
-                  </label>
+                <Campo label="Grado Académico / Título" error={errors.titulo}>
                   <input
                     type="text"
                     {...register("titulo")}
                     className={getInputClass(errors.titulo)}
                   />
-                </div>
+                </Campo>
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    Experiencia Laboral
-                  </label>
+                <Campo label="Experiencia Laboral" error={errors.experiencia}>
                   <input
                     type="text"
                     {...register("experiencia")}
                     className={getInputClass(errors.experiencia)}
                   />
-                </div>
+                </Campo>
 
                 <div className="md:col-span-2">
-                  <label className="text-sm text-gray-600 font-medium">
-                    Biografía Breve
-                  </label>
-                  <textarea
-                    rows={2}
-                    {...register("bio")}
-                    className={`${getInputClass(errors.bio)} resize-none`}
-                  />
+                  <Campo label="Biografía breve" error={errors.bio}>
+                    <textarea
+                      rows={2}
+                      {...register("bio")}
+                      className={`${getInputClass(errors.bio)} resize-none`}
+                    />
+                  </Campo>
                 </div>
 
-                <div className="md:col-span-2 mt-2">
-                  <h3 className="font-semibold text-indigo-600 mb-2 border-b pb-1">
-                    Contacto de Emergencia (Opcional)
-                  </h3>
-                </div>
+                <SectionTitle title="Contacto de emergencia" />
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    Nombre de Contacto
-                  </label>
+                <Campo
+                  label="Nombre de Contacto"
+                  error={errors.contacto_emergencia_nombre}
+                >
                   <input
                     type="text"
                     {...register("contacto_emergencia_nombre")}
-                    className={getInputClass(errors.contacto_emergencia_nombre)}
+                    className={getInputClass(
+                      errors.contacto_emergencia_nombre
+                    )}
                   />
-                </div>
+                </Campo>
 
-                <div>
-                  <label className="text-sm text-gray-600 font-medium">
-                    Teléfono de Emergencia
-                  </label>
+                <Campo
+                  label="Teléfono de Emergencia"
+                  error={errors.contacto_emergencia_telefono}
+                >
                   <input
                     type="text"
                     {...register("contacto_emergencia_telefono")}
                     className={getInputClass(
-                      errors.contacto_emergencia_telefono,
+                      errors.contacto_emergencia_telefono
                     )}
                   />
-                </div>
+                </Campo>
 
                 {!docenteEditar && (
-                  <div className="md:col-span-2 mt-4 bg-blue-50 p-5 rounded-xl border border-blue-100">
-                    <h3 className="font-bold text-blue-900 mb-1 flex items-center gap-2">
+                  <div className="md:col-span-2 rounded-3xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] p-5">
+                    <h3 className="mb-1 flex items-center gap-2 font-black text-[var(--color-text)]">
                       Credenciales de Acceso
                     </h3>
-                    <p className="text-xs text-blue-700 mb-4">
+
+                    <p className="mb-4 text-xs font-medium text-[var(--color-muted-text)]">
                       Se creará automáticamente un usuario con el correo
                       ingresado.
                     </p>
 
-                    <label className="text-sm font-medium block mb-1 text-blue-900">
+                    <label className="mb-1 block text-sm font-semibold text-[var(--color-text)]">
                       Contraseña de acceso *
                     </label>
+
                     <div className="relative mt-1">
                       <input
                         type={showPassword ? "text" : "password"}
@@ -610,10 +636,11 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
                         className={getInputClass(errors.contrasenia)}
                         placeholder="Ej: P@ssw0rd123"
                       />
+
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-text)] transition hover:text-[var(--color-primary)]"
                       >
                         {showPassword ? (
                           <EyeOff size={20} />
@@ -622,13 +649,16 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
                         )}
                       </button>
                     </div>
+
                     {capsLockOn && (
-                      <p className="text-orange-500 text-xs mt-1 flex items-center gap-1 font-medium">
-                        <AlertTriangle size={14} /> Bloq Mayús activado
+                      <p className="mt-1 flex items-center gap-1 text-xs font-medium text-orange-500">
+                        <AlertTriangle size={14} />
+                        Bloq Mayús activado
                       </p>
                     )}
+
                     {errors.contrasenia && (
-                      <p className="text-red-500 text-xs mt-1 font-medium">
+                      <p className="mt-1 text-xs font-medium text-red-500">
                         {errors.contrasenia.message}
                       </p>
                     )}
@@ -636,297 +666,350 @@ export default function DocenteModal({ onClose, onSuccess, docenteEditar }) {
                 )}
               </div>
 
-              <div className="flex justify-end gap-4 mt-8 border-t pt-5">
+              <div className="mt-8 flex justify-end gap-4 border-t border-[var(--color-border)] pt-5">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={isLoading}
-                  className="px-5 py-2.5 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  className="rounded-xl px-5 py-2.5 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-card)] disabled:opacity-60"
                 >
                   Cancelar
                 </button>
+
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-6 py-2.5 rounded-lg bg-[#5573b3] text-white hover:bg-[#344c92] shadow-md flex items-center justify-center min-w-[160px] font-semibold transition-colors"
+                  className="flex min-w-[190px] items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-6 py-2.5 font-semibold text-[var(--color-button-primary-text)] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isLoading
-                    ? "Procesando..."
-                    : docenteEditar
-                      ? "Actualizar Docente"
-                      : "Guardar y Continuar"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Procesando...
+                    </>
+                  ) : docenteEditar ? (
+                    <>
+                      <Save size={18} />
+                      Actualizar Docente
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Guardar y Continuar
+                    </>
+                  )}
                 </button>
               </div>
             </form>
-          </div>
-        )}
+          )}
 
-        {/* ASIGNACIÓN DE CURSO Y PERMISOS */}
-        {step === 2 && docenteCreado && (
-          <div className="animate-fadeIn overflow-y-auto pr-2">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-3">
-              <BookOpen className="text-indigo-600" size={28} />
-              Asignar Carga Académica
-            </h2>
+          {step === 2 && docenteCreado && (
+            <div className="animate-fadeIn">
+              <div className="mb-8 rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-sm">
+                <h3 className="mb-2 flex items-center gap-2 text-xl font-black text-[var(--color-text)]">
+                  <BookOpen className="text-[var(--color-primary)]" size={24} />
+                  Asignar Carga Académica
+                </h3>
 
-            <p className="text-gray-600 mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100 font-medium">
-              ¡Docente{" "}
-              <span className="font-bold text-blue-800">
-                {docenteCreado.nombre}
-              </span>{" "}
-              creado con éxito! <br />
-              Selecciona primero el Curso, luego el Grupo y finalmente configura
-              sus permisos.
-            </p>
+                <p className="text-[var(--color-muted-text)]">
+                  Docente{" "}
+                  <span className="font-black text-[var(--color-primary)]">
+                    {docenteCreado.nombre}
+                  </span>{" "}
+                  creado con éxito. Puedes asignarle un grupo ahora o continuar
+                  sin asignación.
+                </p>
+              </div>
 
-            <div className="space-y-6 mb-6">
-              {/* BUSCADOR DE CURSOS */}
-              <div className="relative">
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  1. Busca y Selecciona el Curso
-                </label>
-                <div
-                  className={`flex items-center border rounded-lg px-3 py-2 bg-gray-50 transition-all ${
-                    mostrarDropdownCursos
-                      ? "border-indigo-500 ring-2 ring-indigo-100 bg-white"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <Search size={18} className="text-gray-400 mr-2 shrink-0" />
-                  <input
-                    type="text"
-                    className="w-full outline-none bg-transparent text-gray-700"
-                    placeholder="Escribe el nombre del curso..."
-                    value={busquedaCurso}
-                    onChange={(e) => {
-                      setBusquedaCurso(e.target.value);
-                      setMostrarDropdownCursos(true);
-                      setCursoSeleccionado("");
-                      setGrupoSeleccionado("");
-                    }}
-                    onFocus={() => setMostrarDropdownCursos(true)}
-                    onBlur={() =>
-                      setTimeout(() => setMostrarDropdownCursos(false), 200)
-                    }
-                  />
-                  {isLoadingCursos && (
-                    <Loader2
-                      size={16}
-                      className="animate-spin text-indigo-500 shrink-0"
+              <div className="mb-8 space-y-6">
+                <div className="relative">
+                  <label className="mb-1.5 block text-sm font-semibold text-[var(--color-text)]">
+                    1. Busca y selecciona el curso
+                  </label>
+
+                  <div
+                    className={`flex items-center rounded-2xl border px-3 py-3 transition-all ${
+                      mostrarDropdownCursos
+                        ? "border-[var(--color-primary)] bg-[var(--color-card)] ring-4 ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
+                        : "border-[var(--color-border)] bg-[var(--color-card)]"
+                    }`}
+                  >
+                    <Search
+                      size={18}
+                      className="mr-2 shrink-0 text-[var(--color-muted-text)]"
                     />
+
+                    <input
+                      type="text"
+                      className="w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-muted-text)]"
+                      placeholder="Escribe el nombre del curso..."
+                      value={busquedaCurso}
+                      onChange={(e) => {
+                        setBusquedaCurso(e.target.value);
+                        setMostrarDropdownCursos(true);
+                        setCursoSeleccionado("");
+                        setGrupoSeleccionado("");
+                      }}
+                      onFocus={() => setMostrarDropdownCursos(true)}
+                      onBlur={() =>
+                        setTimeout(() => setMostrarDropdownCursos(false), 200)
+                      }
+                    />
+
+                    {isLoadingCursos && (
+                      <Loader2
+                        size={16}
+                        className="shrink-0 animate-spin text-[var(--color-primary)]"
+                      />
+                    )}
+                  </div>
+
+                  {mostrarDropdownCursos && (
+                    <div className="absolute z-50 mt-2 max-h-48 w-full overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-xl">
+                      {cursosFiltrados.length === 0 ? (
+                        <div className="p-3 text-center text-sm text-[var(--color-muted-text)]">
+                          No se encontraron cursos
+                        </div>
+                      ) : (
+                        cursosFiltrados.map((curso) => {
+                          const nombreVisible =
+                            curso.nombrecurso || `Curso #${curso.id}`;
+
+                          return (
+                            <button
+                              key={curso.id}
+                              type="button"
+                              className="w-full border-b border-[var(--color-border)] px-4 py-3 text-left text-sm text-[var(--color-text)] transition last:border-0 hover:bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] hover:text-[var(--color-primary)]"
+                              onClick={() => {
+                                setCursoSeleccionado(curso.id.toString());
+                                setBusquedaCurso(nombreVisible);
+                                setMostrarDropdownCursos(false);
+                                setGrupoSeleccionado("");
+                              }}
+                            >
+                              {nombreVisible}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   )}
                 </div>
 
-                {mostrarDropdownCursos && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                    {cursosFiltrados.length === 0 ? (
-                      <div className="p-3 text-sm text-gray-500 text-center">
-                        No se encontraron cursos
+                {cursoSeleccionado && (
+                  <div className="animate-fadeIn">
+                    <label className="mb-1.5 block text-sm font-semibold text-[var(--color-text)]">
+                      2. Seleccionar grupo específico
+                    </label>
+
+                    <div className="relative">
+                      <select
+                        value={grupoSeleccionado}
+                        onChange={(e) => setGrupoSeleccionado(e.target.value)}
+                        disabled={isLoadingGrupos}
+                        className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <option value="">-- Elige un grupo --</option>
+
+                        {gruposBD.length === 0 && !isLoadingGrupos ? (
+                          <option value="" disabled>
+                            Este curso no tiene grupos creados
+                          </option>
+                        ) : (
+                          gruposBD.map((grupo) => (
+                            <option key={grupo.id} value={grupo.id}>
+                              {grupo.nombregrupo} ({grupo.horario})
+                            </option>
+                          ))
+                        )}
+                      </select>
+
+                      {isLoadingGrupos && (
+                        <Loader2
+                          className="absolute right-4 top-3.5 animate-spin text-[var(--color-primary)]"
+                          size={20}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {grupoSeleccionado && (
+                  <div className="animate-fadeIn overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
+                    <div className="flex items-start gap-3 border-b border-[var(--color-border)] bg-[var(--color-background)] px-5 py-4">
+                      <div className="shrink-0 rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] p-2 text-[var(--color-primary)]">
+                        <Key size={20} />
                       </div>
-                    ) : (
-                      cursosFiltrados.map((curso) => {
-                        const nombreVisible =
-                          curso.nombrecurso || `Curso #${curso.id}`;
-                        return (
-                          <button
-                            key={curso.id}
-                            type="button"
-                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 border-b border-gray-50 last:border-0 transition-colors"
-                            onClick={() => {
-                              setCursoSeleccionado(curso.id.toString());
-                              setBusquedaCurso(nombreVisible);
-                              setMostrarDropdownCursos(false);
-                              setGrupoSeleccionado("");
-                            }}
-                          >
-                            {nombreVisible}
-                          </button>
-                        );
-                      })
-                    )}
+
+                      <div>
+                        <h4 className="font-black text-[var(--color-text)]">
+                          Permisos de docente para el grupo
+                        </h4>
+
+                        <p className="mt-0.5 text-sm text-[var(--color-muted-text)]">
+                          Configura qué acciones podrá realizar este docente en
+                          el grupo asignado.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      <div className="mb-4 border-b border-[var(--color-border)] pb-4">
+                        <label className="group flex cursor-pointer items-center gap-3">
+                          <SwitchInput
+                            name="control_total"
+                            checked={permisos.control_total}
+                            onChange={handlePermisoChange}
+                          />
+
+                          <span className="font-black text-[var(--color-text)] group-hover:text-[var(--color-primary)]">
+                            Control total
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <CheckPermiso
+                          name="tomar_asistencia"
+                          checked={permisos.tomar_asistencia}
+                          onChange={handlePermisoChange}
+                          label="Tomar asistencia"
+                        />
+
+                        <CheckPermiso
+                          name="crear_tareas"
+                          checked={permisos.crear_tareas}
+                          onChange={handlePermisoChange}
+                          label="Crear tareas"
+                        />
+
+                        <CheckPermiso
+                          name="modificar_modulos"
+                          checked={permisos.modificar_modulos}
+                          onChange={handlePermisoChange}
+                          label="Modificar módulos"
+                        />
+
+                        <CheckPermiso
+                          name="modificar_notas"
+                          checked={permisos.modificar_notas}
+                          onChange={handlePermisoChange}
+                          label="Modificar notas"
+                        />
+
+                        <CheckPermiso
+                          name="cargar_notas"
+                          checked={permisos.cargar_notas}
+                          onChange={handlePermisoChange}
+                          label="Cargar notas"
+                        />
+
+                        <CheckPermiso
+                          name="enviar_mensajes"
+                          checked={permisos.enviar_mensajes}
+                          onChange={handlePermisoChange}
+                          label="Enviar mensajes"
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* SELECTOR DE GRUPO */}
-              {cursoSeleccionado && (
-                <div className="animate-fadeIn">
-                  <label className="text-sm text-gray-600 font-medium block mb-2">
-                    2. Seleccionar Grupo Específico
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={grupoSeleccionado}
-                      onChange={(e) => setGrupoSeleccionado(e.target.value)}
-                      disabled={isLoadingGrupos}
-                      className="w-full rounded-lg border border-gray-300 p-3 focus:ring-2 focus:ring-emerald-500 bg-white outline-none cursor-pointer"
-                    >
-                      <option value="">-- Elige un grupo --</option>
-                      {gruposBD.length === 0 && !isLoadingGrupos ? (
-                        <option value="" disabled>
-                          Este curso no tiene grupos creados
-                        </option>
-                      ) : (
-                        gruposBD.map((grupo) => (
-                          <option key={grupo.id} value={grupo.id}>
-                            {grupo.nombregrupo} ({grupo.horario})
-                          </option>
-                        ))
-                      )}
-                    </select>
-                    {isLoadingGrupos && (
-                      <Loader2
-                        className="absolute right-8 top-3.5 animate-spin text-emerald-500"
-                        size={20}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
+              <div className="flex justify-end gap-4 border-t border-[var(--color-border)] pt-6">
+                <button
+                  type="button"
+                  onClick={handleOmitirAsignacion}
+                  disabled={isLoading}
+                  className="rounded-xl px-6 py-2.5 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-card)] disabled:opacity-60"
+                >
+                  Omitir Paso
+                </button>
 
-              {/* PERMISOS Y ACCESOS (Aparece cuando ya se seleccionó grupo) */}
-              {grupoSeleccionado && (
-                <div className="animate-fadeIn border rounded-xl overflow-hidden shadow-sm">
-                  <div className="bg-[#eef2f6] px-5 py-4 border-b flex items-start gap-3">
-                    <div className="bg-white p-2 rounded-lg shadow-sm shrink-0">
-                      <Key size={20} className="text-[#5573b3]" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-800">
-                        Permisos de Docente para el Grupo
-                      </h4>
-                      <p className="text-sm text-gray-500 mt-0.5">
-                        Configura qué acciones podrá realizar este docente en el
-                        grupo asignado.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-white p-5">
-                    {/* Control Total Master Switch */}
-                    <div className="mb-4 pb-4 border-b border-gray-100">
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <div className="relative flex items-center">
-                          <input
-                            type="checkbox"
-                            name="control_total"
-                            checked={permisos.control_total}
-                            onChange={handlePermisoChange}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#5573b3]"></div>
-                        </div>
-                        <span className="font-bold text-gray-800 group-hover:text-black">
-                          Control total
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* Checkboxes Individuales */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          name="tomar_asistencia"
-                          checked={permisos.tomar_asistencia}
-                          onChange={handlePermisoChange}
-                          className="w-5 h-5 rounded border-gray-300 text-[#5573b3] focus:ring-[#5573b3]"
-                        />
-                        <span className="text-gray-700 group-hover:text-black font-medium">
-                          Tomar asistencia
-                        </span>
-                      </label>
-
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          name="crear_tareas"
-                          checked={permisos.crear_tareas}
-                          onChange={handlePermisoChange}
-                          className="w-5 h-5 rounded border-gray-300 text-[#5573b3] focus:ring-[#5573b3]"
-                        />
-                        <span className="text-gray-700 group-hover:text-black font-medium">
-                          Crear tareas
-                        </span>
-                      </label>
-
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          name="modificar_modulos"
-                          checked={permisos.modificar_modulos}
-                          onChange={handlePermisoChange}
-                          className="w-5 h-5 rounded border-gray-300 text-[#5573b3] focus:ring-[#5573b3]"
-                        />
-                        <span className="text-gray-700 group-hover:text-black font-medium">
-                          Modificar módulos
-                        </span>
-                      </label>
-
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          name="modificar_notas"
-                          checked={permisos.modificar_notas}
-                          onChange={handlePermisoChange}
-                          className="w-5 h-5 rounded border-gray-300 text-[#5573b3] focus:ring-[#5573b3]"
-                        />
-                        <span className="text-gray-700 group-hover:text-black font-medium">
-                          Modificar notas
-                        </span>
-                      </label>
-
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          name="cargar_notas"
-                          checked={permisos.cargar_notas}
-                          onChange={handlePermisoChange}
-                          className="w-5 h-5 rounded border-gray-300 text-[#5573b3] focus:ring-[#5573b3]"
-                        />
-                        <span className="text-gray-700 group-hover:text-black font-medium">
-                          Cargar notas
-                        </span>
-                      </label>
-
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          name="enviar_mensajes"
-                          checked={permisos.enviar_mensajes}
-                          onChange={handlePermisoChange}
-                          className="w-5 h-5 rounded border-gray-300 text-[#5573b3] focus:ring-[#5573b3]"
-                        />
-                        <span className="text-gray-700 group-hover:text-black font-medium">
-                          Enviar mensajes
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
+                <button
+                  type="button"
+                  onClick={handleAsignarCurso}
+                  disabled={isLoading || !grupoSeleccionado}
+                  className="flex min-w-[210px] items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-7 py-2.5 font-semibold text-[var(--color-button-primary-text)] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <BookPlus size={18} />
+                      Asignar y Finalizar
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-
-            <div className="flex justify-end gap-4 mt-4 border-t border-gray-100 pt-6">
-              <button
-                type="button"
-                onClick={handleOmitirAsignacion}
-                disabled={isLoading}
-                className="px-6 py-2.5 rounded-lg font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-              >
-                Omitir Paso
-              </button>
-              <button
-                type="button"
-                onClick={handleAsignarCurso}
-                disabled={isLoading || !grupoSeleccionado}
-                className="px-7 py-2.5 rounded-lg bg-[#059669] text-white hover:bg-[#047857] disabled:bg-gray-300 shadow-md flex items-center justify-center min-w-[180px] font-semibold transition-colors"
-              >
-                {isLoading ? "Procesando..." : "Asignar Grupo y Finalizar"}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+function SectionTitle({ title }) {
+  return (
+    <div className="md:col-span-2 mt-2">
+      <h3 className="border-b border-[var(--color-border)] pb-2 font-black text-[var(--color-primary)]">
+        {title}
+      </h3>
+    </div>
+  );
+}
+
+function Campo({ label, error, children }) {
+  return (
+    <div>
+      <label className="text-sm font-semibold text-[var(--color-text)]">
+        {label}
+      </label>
+
+      {children}
+
+      {error && (
+        <p className="mt-1 text-xs font-medium text-red-500">
+          {error.message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SwitchInput({ name, checked, onChange }) {
+  return (
+    <div className="relative flex items-center">
+      <input
+        type="checkbox"
+        name={name}
+        checked={checked}
+        onChange={onChange}
+        className="peer sr-only"
+      />
+
+      <div className="h-6 w-11 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[var(--color-primary)] peer-checked:after:translate-x-full peer-checked:after:border-white" />
+    </div>
+  );
+}
+
+function CheckPermiso({ name, checked, onChange, label }) {
+  return (
+    <label className="group flex cursor-pointer items-center gap-3">
+      <input
+        type="checkbox"
+        name={name}
+        checked={checked}
+        onChange={onChange}
+        className="h-5 w-5 cursor-pointer rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+      />
+
+      <span className="font-medium text-[var(--color-muted-text)] group-hover:text-[var(--color-text)]">
+        {label}
+      </span>
+    </label>
   );
 }

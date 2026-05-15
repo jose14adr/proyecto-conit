@@ -12,7 +12,7 @@ import { obtenerAlumno } from "../services/alumno.service";
 import { obtenerDocente } from "../services/docente.service";
 import { obtenerCurso } from "../services/curso.service";
 import { obtenerUsuario } from "../services/usuario.service";
-import { obtenerSesiones } from "../services/historial-login.service"
+import { obtenerSesiones } from "../services/historial-login.service";
 import { Link } from "react-router-dom";
 import AlumnoPerfilModal from "../components/AlumnoPerfilModal";
 
@@ -56,6 +56,7 @@ export default function Dashboard() {
               ? alumno.matriculas[0].grupo?.curso?.nombrecurso ||
                 "Curso sin nombre"
               : "Sin cursos";
+
           return { ...alumno, ultimoCurso };
         });
 
@@ -75,95 +76,114 @@ export default function Dashboard() {
     {
       titulo: "Alumnos Activos",
       valor: stats.alumnosActivos,
-      icono: <Users size={28} className="text-blue-600" />,
-      bg: "bg-blue-100",
+      icono: Users,
+      accent: "var(--color-primary)",
+      bg: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
       ruta: "/admin/alumnos",
     },
     {
       titulo: "Docentes",
       valor: stats.docentesActivos,
-      icono: <GraduationCap size={28} className="text-purple-600" />,
-      bg: "bg-purple-100",
+      icono: GraduationCap,
+      accent: "var(--color-secondary)",
+      bg: "color-mix(in srgb, var(--color-secondary) 16%, transparent)",
       ruta: "/admin/docentes",
     },
     {
       titulo: "Cursos Abiertos",
       valor: stats.cursosActivos,
-      icono: <BookOpen size={28} className="text-emerald-600" />,
-      bg: "bg-emerald-100",
+      icono: BookOpen,
+      accent: "var(--color-sidenav)",
+      bg: "color-mix(in srgb, var(--color-sidenav) 12%, transparent)",
       ruta: "/admin/cursos",
     },
     {
       titulo: "Usuarios Sistema",
       valor: stats.usuariosActivos,
-      icono: <ShieldCheck size={28} className="text-orange-600" />,
-      bg: "bg-orange-100",
+      icono: ShieldCheck,
+      accent: "var(--color-button-primary)",
+      bg: "color-mix(in srgb, var(--color-button-primary) 14%, transparent)",
       ruta: "/admin/usuarios",
     },
   ];
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen space-y-8 animate-fadeIn">
+    <div className="min-h-screen space-y-8 bg-[var(--color-background)] text-[var(--color-text)] animate-fadeIn">
       {/* HEADER */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
+        <h1 className="text-3xl font-bold text-[var(--color-text)] tracking-tight">
           Panel de Control
         </h1>
-        <p className="text-gray-500 mt-2 flex items-center gap-2">
-          <Activity size={18} className="text-indigo-500" />
+
+        <p className="mt-2 flex items-center gap-2 text-[var(--color-muted-text)]">
+          <Activity size={18} className="text-[var(--color-primary)]" />
           Resumen de actividad y métricas del sistema
         </p>
       </div>
 
       {/* Tarjetas de métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {cards.map((card, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-xl ${card.bg}`}>{card.icono}</div>
-              <Link
-                to={card.ruta}
-                className="text-gray-400 hover:text-indigo-600 transition-colors"
-              >
-                <ArrowRight
-                  size={20}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </Link>
-            </div>
-            <div>
-              <h3 className="text-gray-500 text-sm font-medium">
-                {card.titulo}
-              </h3>
-              <div className="text-3xl font-bold text-gray-800 mt-1">
-                {isLoading ? (
-                  <div className="h-8 w-16 bg-gray-200 animate-pulse rounded mt-1"></div>
-                ) : (
-                  card.valor
-                )}
+        {cards.map((card, index) => {
+          const Icon = card.icono;
+
+          return (
+            <div
+              key={index}
+              className="relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm transition-shadow hover:shadow-md group"
+            >
+              <div className="mb-4 flex items-start justify-between">
+                <div
+                  className="rounded-xl p-3"
+                  style={{ backgroundColor: card.bg }}
+                >
+                  <Icon size={28} style={{ color: card.accent }} />
+                </div>
+
+                <Link
+                  to={card.ruta}
+                  className="text-[var(--color-muted-text)] transition-colors hover:text-[var(--color-primary)]"
+                >
+                  <ArrowRight
+                    size={20}
+                    className="transition-transform group-hover:translate-x-1"
+                  />
+                </Link>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-[var(--color-muted-text)]">
+                  {card.titulo}
+                </h3>
+
+                <div className="mt-1 text-3xl font-bold text-[var(--color-text)]">
+                  {isLoading ? (
+                    <div className="mt-1 h-8 w-16 animate-pulse rounded bg-[color-mix(in_srgb,var(--color-muted-text)_20%,transparent)]"></div>
+                  ) : (
+                    card.valor
+                  )}
+                </div>
+              </div>
+
+              <div className="absolute -right-6 -bottom-6 opacity-[0.04] transition-transform duration-500 group-hover:scale-110">
+                <Icon size={110} style={{ color: card.accent }} />
               </div>
             </div>
-            <div className="absolute -right-6 -bottom-6 opacity-[0.03] transform group-hover:scale-110 transition-transform duration-500">
-              {card.icono}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Sección de últimas actividades */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Tabla de últimos alumnos */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-gray-800">
+        <div className="lg:col-span-2 flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
+          <div className="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-5">
+            <h2 className="text-lg font-bold text-[var(--color-text)]">
               Últimos Alumnos Inscritos
             </h2>
+
             <Link
               to="/admin/alumnos"
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+              className="text-sm font-medium text-[var(--color-primary)] hover:opacity-80"
             >
               Ver todos
             </Link>
@@ -171,46 +191,52 @@ export default function Dashboard() {
 
           <div className="flex-1">
             {isLoading ? (
-              <div className="p-8 flex justify-center h-full items-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <div className="flex h-full items-center justify-center p-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-[var(--color-primary)]"></div>
               </div>
             ) : ultimosRegistros.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-[var(--color-muted-text)]">
                 No hay registros recientes.
               </div>
             ) : (
-              <ul className="divide-y divide-gray-50">
+              <ul className="divide-y divide-[var(--color-border)]">
                 {ultimosRegistros.map((alumno) => (
                   <li
                     key={alumno.id}
-                    //Hacemos que toda la fila sea clickeable
                     onClick={() => setAlumnoSeleccionado(alumno)}
-                    className="px-6 py-4 hover:bg-indigo-50/50 cursor-pointer transition-colors flex justify-between items-center group"
+                    className="group flex cursor-pointer items-center justify-between px-6 py-4 transition-colors hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                        {alumno.nombre.charAt(0)}
-                        {alumno.apellido.charAt(0)}
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_14%,transparent)] font-bold text-[var(--color-primary)] transition-colors group-hover:bg-[var(--color-primary)] group-hover:text-white">
+                        {alumno.nombre?.charAt(0)}
+                        {alumno.apellido?.charAt(0)}
                       </div>
+
                       <div>
-                        <p className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700 transition-colors">
+                        <p className="text-sm font-semibold text-[var(--color-text)] transition-colors group-hover:text-[var(--color-primary)]">
                           {alumno.nombre} {alumno.apellido}
                         </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <BookOpen size={12} className="text-gray-400" />
-                          <p className="text-xs text-gray-500 font-medium truncate max-w-[200px] md:max-w-xs">
+
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <BookOpen
+                            size={12}
+                            className="text-[var(--color-muted-text)]"
+                          />
+                          <p className="max-w-[200px] truncate text-xs font-medium text-[var(--color-muted-text)] md:max-w-xs">
                             {alumno.ultimoCurso}
                           </p>
                         </div>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-medium px-2.5 py-1 bg-green-100 text-green-700 rounded-lg hidden sm:block">
+                      <span className="hidden rounded-lg bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-2.5 py-1 text-xs font-medium text-[var(--color-primary)] sm:block">
                         Nuevo
                       </span>
+
                       <ArrowRight
                         size={16}
-                        className="text-gray-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all"
+                        className="text-[var(--color-muted-text)] opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100"
                       />
                     </div>
                   </li>
@@ -220,43 +246,56 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Tarjeta de estado del sistema (Logs Dinámicos) */}
-        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl shadow-sm p-6 text-white flex flex-col justify-between relative overflow-hidden">
+        {/* Tarjeta de estado del sistema */}
+        <div
+          className="relative flex flex-col justify-between overflow-hidden rounded-2xl p-6 text-white shadow-sm"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-primary), var(--color-sidenav))",
+          }}
+        >
           <div className="relative z-10 flex-1">
-            <div className="flex items-center justify-between text-indigo-100 mb-5 border-b border-indigo-400/30 pb-3">
+            <div className="mb-5 flex items-center justify-between border-b border-white/20 pb-3 text-white/80">
               <div className="flex items-center gap-2">
                 <ShieldCheck size={20} />
-                <span className="font-medium text-sm">
+                <span className="text-sm font-medium">
                   Inicios de Sesión Recientes
                 </span>
               </div>
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
               </span>
             </div>
 
             {isLoading ? (
               <div className="flex justify-center py-6">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-white"></div>
+              </div>
+            ) : ultimosIniciosSesion.length === 0 ? (
+              <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-sm text-white/80">
+                No hay inicios de sesión recientes.
               </div>
             ) : (
-              <div className="space-y-3 mb-6">
+              <div className="mb-6 space-y-3">
                 {ultimosIniciosSesion.map((log) => (
                   <div
                     key={log.id}
-                    className="bg-white/10 rounded-lg p-3 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors"
+                    className="rounded-lg border border-white/10 bg-white/10 p-3 backdrop-blur-md transition-colors hover:bg-white/20"
                   >
-                    <div className="flex justify-between items-start mb-1.5">
-                      <span className="font-semibold text-sm truncate pr-2">
+                    <div className="mb-1.5 flex items-start justify-between">
+                      <span className="truncate pr-2 text-sm font-semibold">
                         {log.usuario?.nombre || "Usuario Sistema"}
                       </span>
-                      <span className="text-[10px] text-indigo-200 shrink-0 flex items-center gap-1">
+
+                      <span className="flex shrink-0 items-center gap-1 text-[10px] text-white/70">
                         <Clock size={10} />
-                        {log.fecha.split(",")[1] || log.fecha}
+                        {log.fecha?.split(",")[1] || log.fecha}
                       </span>
                     </div>
-                    <div className="text-xs text-indigo-100 flex items-center gap-1.5 opacity-90">
+
+                    <div className="flex items-center gap-1.5 text-xs text-white/80 opacity-90">
                       <Activity size={12} className="text-emerald-300" />
                       <span className="truncate">
                         {log.ubicacion || log.dispositivo}
@@ -271,19 +310,20 @@ export default function Dashboard() {
           <div className="relative z-10 mt-auto pt-2">
             <Link
               to="/admin/sesiones"
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors w-full text-left flex justify-between items-center group"
+              className="group flex w-full items-center justify-between rounded-lg bg-white/20 px-4 py-2.5 text-left text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/30"
             >
               <span>Ver historial completo</span>
+
               <ArrowRight
                 size={16}
-                className="group-hover:translate-x-1 transition-transform"
+                className="transition-transform group-hover:translate-x-1"
               />
             </Link>
           </div>
 
           {/* Círculos decorativos */}
-          <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-48 h-48 bg-blue-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
+          <div className="pointer-events-none absolute top-0 right-0 h-48 w-48 translate-x-12 -translate-y-12 rounded-full bg-white opacity-10 blur-2xl"></div>
+          <div className="pointer-events-none absolute bottom-0 left-0 h-48 w-48 -translate-x-12 translate-y-12 rounded-full bg-white opacity-10 blur-2xl"></div>
         </div>
       </div>
 

@@ -54,6 +54,7 @@ import { AsistenciaService } from './asistencia/asistencia.service';
 import { AsistenciaModule } from './asistencia/asistencia.module';
 import { AsistenciaConfiguracionController } from './asistencia-configuracion/asistencia-configuracion.controller';
 import { EntregaModule } from './entrega/entrega.module';
+import { EstilosModule } from './estilos/estilos.module';
 
 @Module({
   imports: [
@@ -127,6 +128,7 @@ import { EntregaModule } from './entrega/entrega.module';
     BancoPreguntasModule,
     WebModule,
     AdminWebModule,
+    EstilosModule,
     ExamenRespuestaModule,
     HistorialAcademicoModule,
     AsistenciaModule,

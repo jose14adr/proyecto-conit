@@ -41,9 +41,9 @@ function DetalleCursoWeb() {
 
   if (cargando) {
     return (
-      <main className="min-h-screen bg-slate-50 px-5 py-16 text-slate-900">
-        <div className="mx-auto max-w-4xl rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
-          <p className="font-semibold text-slate-700">
+      <main className="min-h-screen bg-[var(--color-background)] px-5 py-16 text-[var(--color-text)]">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-10 text-center shadow-sm">
+          <p className="font-semibold text-[var(--color-muted-text)]">
             Cargando información del curso...
           </p>
         </div>
@@ -53,17 +53,19 @@ function DetalleCursoWeb() {
 
   if (error || !curso) {
     return (
-      <main className="min-h-screen bg-slate-50 px-5 py-16 text-slate-900">
-        <div className="mx-auto max-w-4xl rounded-3xl bg-white p-10 shadow-sm ring-1 ring-slate-200">
-          <h1 className="mb-4 text-3xl font-bold">Curso no encontrado</h1>
+      <main className="min-h-screen bg-[var(--color-background)] px-5 py-16 text-[var(--color-text)]">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-10 shadow-sm">
+          <h1 className="mb-4 text-3xl font-bold text-[var(--color-text)]">
+            Curso no encontrado
+          </h1>
 
-          <p className="mb-6 text-slate-600">
+          <p className="mb-6 text-[var(--color-muted-text)]">
             {error || "El curso que buscas no existe o no está disponible."}
           </p>
 
           <Link
             to="/web/cursos"
-            className="inline-flex rounded-xl bg-sky-500 px-5 py-3 font-semibold text-white transition hover:bg-sky-600"
+            className="inline-flex rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-[var(--color-button-primary-text)] transition hover:brightness-95"
           >
             Volver a cursos
           </Link>
@@ -84,21 +86,21 @@ function DetalleCursoWeb() {
   const beneficios = Array.isArray(curso.beneficios) ? curso.beneficios : [];
 
   return (
-    <main className="min-h-screen bg-slate-50 py-14 text-slate-900">
+    <main className="min-h-screen bg-[var(--color-background)] py-14 text-[var(--color-text)]">
       <div className="mx-auto max-w-6xl px-5">
         <div className="mb-6">
           <Link
             to="/web/cursos"
-            className="text-sm font-semibold text-sky-600 hover:underline"
+            className="text-sm font-semibold text-[var(--color-primary)] hover:underline"
           >
             ← Volver al catálogo
           </Link>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-          <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+          <section className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
             {curso.imagenUrl ? (
-              <div className="h-72 w-full overflow-hidden bg-slate-100">
+              <div className="h-72 w-full overflow-hidden bg-[var(--color-background)]">
                 <img
                   src={curso.imagenUrl}
                   alt={curso.titulo}
@@ -106,7 +108,13 @@ function DetalleCursoWeb() {
                 />
               </div>
             ) : (
-              <div className="flex h-72 w-full items-center justify-center bg-gradient-to-br from-slate-900 to-blue-900 px-8 text-center text-white">
+              <div
+                className="flex h-72 w-full items-center justify-center px-8 text-center text-white"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+                }}
+              >
                 <h1 className="max-w-3xl text-4xl font-bold">
                   {curso.titulo}
                 </h1>
@@ -115,7 +123,7 @@ function DetalleCursoWeb() {
 
             <div className="p-8">
               <div className="mb-5 flex flex-wrap gap-2">
-                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
+                <span className="rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--color-primary)]">
                   {curso.etiqueta || "Curso"}
                 </span>
 
@@ -129,87 +137,54 @@ function DetalleCursoWeb() {
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     curso.estado
                       ? "bg-emerald-100 text-emerald-700"
-                      : "bg-slate-200 text-slate-700"
+                      : "bg-[var(--color-background)] text-[var(--color-muted-text)]"
                   }`}
                 >
                   {curso.estado ? "Disponible" : "Próximamente"}
                 </span>
               </div>
 
-              <h1 className="mb-4 text-4xl font-bold">{curso.titulo}</h1>
+              <h1 className="mb-4 text-4xl font-black text-[var(--color-text)]">
+                {curso.titulo}
+              </h1>
 
-              <p className="mb-8 text-lg leading-8 text-slate-600">
+              <p className="mb-8 text-lg leading-8 text-[var(--color-muted-text)]">
                 {curso.descripcionCompleta ||
                   curso.descripcion ||
                   "Sin descripción disponible."}
               </p>
 
               <div className="mb-8 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm font-medium text-slate-500">
-                    Duración
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {curso.duracion ?? 0} horas
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm font-medium text-slate-500">
-                    Tiempo por semana
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {curso.tiempoSemana || "No especificado"}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm font-medium text-slate-500">
-                    Créditos
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">
-                    {curso.creditos ?? 0}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-sm font-medium text-slate-500">Precio</p>
-                  <p className="mt-1 text-lg font-semibold text-sky-700">
-                    S/ {Number(precio).toFixed(2)}
-                  </p>
-                </div>
+                <DatoCurso label="Duración" value={`${curso.duracion ?? 0} horas`} />
+                <DatoCurso
+                  label="Tiempo por semana"
+                  value={curso.tiempoSemana || "No especificado"}
+                />
+                <DatoCurso label="Créditos" value={curso.creditos ?? 0} />
+                <DatoCurso
+                  label="Precio"
+                  value={`S/ ${Number(precio).toFixed(2)}`}
+                  destacado
+                />
               </div>
 
-              <div className="mb-8">
-                <h2 className="mb-3 text-2xl font-bold">
-                  ¿A quién va dirigido?
-                </h2>
-                <p className="leading-7 text-slate-600">
-                  {curso.publicoObjetivo || "No especificado"}
-                </p>
-              </div>
+              <SeccionTexto
+                titulo="¿A quién va dirigido?"
+                texto={curso.publicoObjetivo || "No especificado"}
+              />
 
-              <div className="mb-8">
-                <h2 className="mb-3 text-2xl font-bold">
-                  Contenido del curso
-                </h2>
-                <p className="leading-7 text-slate-600">
-                  {curso.contenidoMultimedia || "Contenido no especificado"}
-                </p>
-              </div>
+              <SeccionTexto
+                titulo="Contenido del curso"
+                texto={curso.contenidoMultimedia || "Contenido no especificado"}
+              />
 
               {curso.requisitos && (
-                <div className="mb-8">
-                  <h2 className="mb-3 text-2xl font-bold">Requisitos</h2>
-                  <p className="leading-7 text-slate-600">
-                    {curso.requisitos}
-                  </p>
-                </div>
+                <SeccionTexto titulo="Requisitos" texto={curso.requisitos} />
               )}
 
               {beneficios.length > 0 && (
                 <div>
-                  <h2 className="mb-3 text-2xl font-bold">
+                  <h2 className="mb-3 text-2xl font-bold text-[var(--color-text)]">
                     Beneficios del curso
                   </h2>
 
@@ -217,7 +192,7 @@ function DetalleCursoWeb() {
                     {beneficios.map((beneficio, index) => (
                       <li
                         key={index}
-                        className="rounded-2xl bg-slate-50 px-4 py-3 text-slate-700"
+                        className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-muted-text)]"
                       >
                         {beneficio}
                       </li>
@@ -228,49 +203,40 @@ function DetalleCursoWeb() {
             </div>
           </section>
 
-          <aside className="h-fit rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h2 className="mb-4 text-2xl font-bold">Inscripción</h2>
+          <aside className="h-fit rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-8 shadow-sm">
+            <h2 className="mb-4 text-2xl font-bold text-[var(--color-text)]">
+              Inscripción
+            </h2>
 
-            <p className="mb-2 text-sm text-slate-500">Precio del curso</p>
-            <p className="mb-6 text-4xl font-bold text-sky-700">
+            <p className="mb-2 text-sm text-[var(--color-muted-text)]">
+              Precio del curso
+            </p>
+
+            <p className="mb-6 text-4xl font-black text-[var(--color-primary)]">
               S/ {Number(precio).toFixed(2)}
             </p>
 
             <div className="mb-6 space-y-3">
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-slate-500">Nivel</span>
-                <span className="font-semibold text-slate-800">
-                  {curso.nivel || "No definido"}
-                </span>
-              </div>
-
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-slate-500">Duración</span>
-                <span className="font-semibold text-slate-800">
-                  {curso.duracion ?? 0} horas
-                </span>
-              </div>
-
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-slate-500">Estado</span>
-                <span className="font-semibold text-slate-800">
-                  {curso.estado ? "Disponible" : "Próximamente"}
-                </span>
-              </div>
+              <ResumenRow label="Nivel" value={curso.nivel || "No definido"} />
+              <ResumenRow label="Duración" value={`${curso.duracion ?? 0} horas`} />
+              <ResumenRow
+                label="Estado"
+                value={curso.estado ? "Disponible" : "Próximamente"}
+              />
             </div>
 
             <div className="flex flex-col gap-3">
               <button
                 type="button"
                 onClick={handleAgregarCarrito}
-                className="w-full rounded-xl bg-sky-500 px-5 py-3 font-semibold text-white transition hover:bg-sky-600"
+                className="w-full rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-[var(--color-button-primary-text)] transition hover:brightness-95"
               >
                 Agregar al carrito
               </button>
 
               <Link
                 to="/web/cursos"
-                className="w-full rounded-xl bg-slate-200 px-5 py-3 text-center font-semibold text-slate-800 transition hover:bg-slate-300"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-5 py-3 text-center font-semibold text-[var(--color-text)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] hover:text-[var(--color-primary)]"
               >
                 Seguir explorando
               </Link>
@@ -279,6 +245,43 @@ function DetalleCursoWeb() {
         </div>
       </div>
     </main>
+  );
+}
+
+function DatoCurso({ label, value, destacado = false }) {
+  return (
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+      <p className="text-sm font-medium text-[var(--color-muted-text)]">
+        {label}
+      </p>
+      <p
+        className={`mt-1 text-lg font-bold ${
+          destacado ? "text-[var(--color-primary)]" : "text-[var(--color-text)]"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SeccionTexto({ titulo, texto }) {
+  return (
+    <div className="mb-8">
+      <h2 className="mb-3 text-2xl font-bold text-[var(--color-text)]">
+        {titulo}
+      </h2>
+      <p className="leading-7 text-[var(--color-muted-text)]">{texto}</p>
+    </div>
+  );
+}
+
+function ResumenRow({ label, value }) {
+  return (
+    <div className="flex justify-between gap-4 text-sm">
+      <span className="text-[var(--color-muted-text)]">{label}</span>
+      <span className="font-semibold text-[var(--color-text)]">{value}</span>
+    </div>
   );
 }
 

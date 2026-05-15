@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import PerfilDocumentosHistorial from "../docente/PerfilDocumentosHistorial";
 import toast from "react-hot-toast";
-
 import { obtenerCargaAcademicaDocente } from "../services/docente.service";
 
 export default function DocentePerfilModal({
@@ -40,7 +39,10 @@ export default function DocentePerfilModal({
   const [isLoadingCarga, setIsLoadingCarga] = useState(true);
 
   const cargarCargaAcademica = async () => {
+    if (!docente?.id) return;
+
     setIsLoadingCarga(true);
+
     try {
       const data = await obtenerCargaAcademicaDocente(docente.id);
       setCargaAcademica(data || []);
@@ -53,9 +55,8 @@ export default function DocentePerfilModal({
   };
 
   useEffect(() => {
-    if (!docente?.id) return;
     cargarCargaAcademica();
-  }, [docente.id]);
+  }, [docente?.id]);
 
   if (!docente) return null;
 
@@ -67,53 +68,66 @@ export default function DocentePerfilModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-2xl animate-fadeIn">
         {/* HEADER */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-700 p-6 flex justify-between items-center text-white shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold backdrop-blur-md shadow-inner uppercase">
+        <div
+          className="relative flex shrink-0 items-center justify-between overflow-hidden p-6 text-white"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+          }}
+        >
+          <div className="pointer-events-none absolute -right-14 -top-14 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-black shadow-inner backdrop-blur-md">
               {docente.nombre?.charAt(0)}
               {docente.apellido?.charAt(0)}
             </div>
+
             <div>
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-2xl font-black">
                 {docente.nombre} {docente.apellido}
               </h2>
-              <p className="text-indigo-100 flex items-center gap-2 mt-1">
+
+              <p className="mt-1 flex items-center gap-2 text-white/80">
                 <CreditCard size={16} />
                 {docente.tipoDocumento || docente.tipodocumento || "DNI"}:{" "}
-                {docente.numDocumento || docente.numdocumento}
+                {docente.numDocumento || docente.numdocumento || "-"}
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            className="relative z-10 rounded-full p-2 transition hover:bg-white/20"
+            title="Cerrar"
           >
             <X size={24} />
           </button>
         </div>
 
-        {/* BARRA DE PESTAÑAS */}
-        <div className="bg-white border-b border-gray-200 px-8 flex gap-8 shrink-0 overflow-x-auto">
+        {/* TABS */}
+        <div className="flex shrink-0 overflow-x-auto border-b border-[var(--color-border)] bg-[var(--color-card)] px-8">
           <button
             onClick={() => setActiveTab("general")}
-            className={`flex items-center gap-2 py-4 font-semibold text-sm transition-all border-b-2 whitespace-nowrap ${
+            className={`flex items-center gap-2 whitespace-nowrap border-b-2 py-4 text-sm font-bold transition ${
               activeTab === "general"
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+                : "border-transparent text-[var(--color-muted-text)] hover:text-[var(--color-text)]"
             }`}
           >
             <User size={18} />
             Información General y Cursos
           </button>
+
           <button
             onClick={() => setActiveTab("documentos")}
-            className={`flex items-center gap-2 py-4 font-semibold text-sm transition-all border-b-2 whitespace-nowrap ${
+            className={`ml-6 flex items-center gap-2 whitespace-nowrap border-b-2 py-4 text-sm font-bold transition ${
               activeTab === "documentos"
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+                : "border-transparent text-[var(--color-muted-text)] hover:text-[var(--color-text)]"
             }`}
           >
             <FileText size={18} />
@@ -122,31 +136,39 @@ export default function DocentePerfilModal({
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-50/50">
+        <div className="flex-1 overflow-y-auto bg-[var(--color-background)] p-8">
           {activeTab === "general" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-fadeIn">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3 animate-fadeIn">
               {/* COLUMNA IZQUIERDA */}
-              <div className="md:col-span-1 space-y-6">
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
+              <div className="space-y-6 md:col-span-1">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-sm">
+                  <h3 className="mb-4 border-b border-[var(--color-border)] pb-2 text-sm font-black uppercase tracking-wider text-[var(--color-muted-text)]">
                     Contacto
                   </h3>
-                  <div className="space-y-4 text-sm text-gray-600">
+
+                  <div className="space-y-4 text-sm text-[var(--color-muted-text)]">
                     <div className="flex items-start gap-3">
                       <Mail
                         size={18}
-                        className="text-indigo-500 shrink-0 mt-0.5"
+                        className="mt-0.5 shrink-0 text-[var(--color-primary)]"
                       />
-                      <span className="break-all">{docente.correo}</span>
+                      <span className="break-all">
+                        {docente.correo || "No registrado"}
+                      </span>
                     </div>
+
                     <div className="flex items-center gap-3">
-                      <Phone size={18} className="text-indigo-500 shrink-0" />
-                      <span>{docente.telefono}</span>
+                      <Phone
+                        size={18}
+                        className="shrink-0 text-[var(--color-primary)]"
+                      />
+                      <span>{docente.telefono || "No registrado"}</span>
                     </div>
+
                     <div className="flex items-start gap-3">
                       <MapPin
                         size={18}
-                        className="text-indigo-500 shrink-0 mt-0.5"
+                        className="mt-0.5 shrink-0 text-[var(--color-primary)]"
                       />
                       <span>{docente.direccion || "No registrada"}</span>
                     </div>
@@ -154,20 +176,24 @@ export default function DocentePerfilModal({
 
                   {(docente.contacto_emergencia_nombre ||
                     docente.contacto_emergencia_telefono) && (
-                    <div className="mt-6 pt-4 border-t border-gray-100">
-                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                    <div className="mt-6 border-t border-[var(--color-border)] pt-4">
+                      <h3 className="mb-3 text-xs font-black uppercase tracking-wider text-[var(--color-muted-text)]">
                         Emergencia
                       </h3>
-                      <div className="space-y-2 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <AlertCircle size={16} className="text-orange-400" />
-                          <span className="font-medium">
-                            {docente.contacto_emergencia_nombre}
-                          </span>
-                        </div>
+
+                      <div className="space-y-2 text-sm text-[var(--color-muted-text)]">
+                        {docente.contacto_emergencia_nombre && (
+                          <div className="flex items-center gap-2">
+                            <AlertCircle size={16} className="text-orange-400" />
+                            <span className="font-semibold text-[var(--color-text)]">
+                              {docente.contacto_emergencia_nombre}
+                            </span>
+                          </div>
+                        )}
+
                         {docente.contacto_emergencia_telefono && (
                           <div className="flex items-center gap-2 pl-6">
-                            <Phone size={14} className="text-gray-400" />
+                            <Phone size={14} />
                             <span>{docente.contacto_emergencia_telefono}</span>
                           </div>
                         )}
@@ -175,12 +201,13 @@ export default function DocentePerfilModal({
                     </div>
                   )}
 
-                  <div className="mt-6 pt-4 border-t border-gray-100">
-                    <span className="text-xs text-gray-500 block mb-2 font-medium">
+                  <div className="mt-6 border-t border-[var(--color-border)] pt-4">
+                    <span className="mb-2 block text-xs font-semibold text-[var(--color-muted-text)]">
                       Estado en el sistema:
                     </span>
+
                     <span
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide uppercase inline-block ${
+                      className={`inline-block rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wide ${
                         esInactivo
                           ? "bg-red-100 text-red-700"
                           : "bg-green-100 text-green-700"
@@ -193,69 +220,58 @@ export default function DocentePerfilModal({
               </div>
 
               {/* COLUMNA DERECHA */}
-              <div className="md:col-span-2 space-y-6">
+              <div className="space-y-6 md:col-span-2">
                 {/* RESUMEN PROFESIONAL */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
-                    <Briefcase size={20} className="text-indigo-600" />
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm">
+                  <h3 className="mb-6 flex items-center gap-2 text-lg font-black text-[var(--color-text)]">
+                    <Briefcase size={20} className="text-[var(--color-primary)]" />
                     Resumen Profesional
                   </h3>
+
                   <div className="space-y-5">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
-                        <GraduationCap size={20} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-gray-800">
-                          Grado Académico
-                        </h4>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {docente.titulo || "No registrado"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
-                        <Briefcase size={20} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-gray-800">
-                          Experiencia
-                        </h4>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {docente.experiencia ||
-                            docente.perfil_profesional ||
-                            "No registrada"}
-                        </p>
-                      </div>
-                    </div>
+                    <InfoItem
+                      icon={GraduationCap}
+                      title="Grado Académico"
+                      text={docente.titulo || "No registrado"}
+                    />
+
+                    <InfoItem
+                      icon={Briefcase}
+                      title="Experiencia"
+                      text={
+                        docente.experiencia ||
+                        docente.perfil_profesional ||
+                        "No registrada"
+                      }
+                    />
+
                     {docente.bio && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-600 italic">
-                        "{docente.bio}"
+                      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 text-sm italic text-[var(--color-muted-text)]">
+                        “{docente.bio}”
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* CARGA ACADÉMICA */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                      <BookOpen size={20} className="text-indigo-600" />
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm">
+                  <div className="mb-6 flex items-center justify-between">
+                    <h3 className="flex items-center gap-2 text-lg font-black text-[var(--color-text)]">
+                      <BookOpen size={20} className="text-[var(--color-primary)]" />
                       Carga Académica Asignada
                     </h3>
                   </div>
 
                   {isLoadingCarga ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                    <div className="flex flex-col items-center justify-center py-8 text-[var(--color-muted-text)]">
                       <Loader2
                         size={32}
-                        className="animate-spin mb-3 text-indigo-500"
+                        className="mb-3 animate-spin text-[var(--color-primary)]"
                       />
                       <p>Cargando cursos...</p>
                     </div>
                   ) : cargaAcademica.length === 0 ? (
-                    <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                    <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-6 py-8 text-center text-[var(--color-muted-text)]">
                       Este docente aún no tiene cursos ni grupos asignados.
                     </div>
                   ) : (
@@ -263,24 +279,26 @@ export default function DocentePerfilModal({
                       {cargaAcademica.map((grupo) => (
                         <div
                           key={grupo.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/50 transition-colors gap-3 group"
+                          className="group flex flex-col justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_7%,transparent)] sm:flex-row sm:items-center"
                         >
                           <div>
-                            <h4 className="font-bold text-gray-800">
+                            <h4 className="font-black text-[var(--color-text)]">
                               {grupo.curso?.nombrecurso || "Curso Asociado"}
                             </h4>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded inline-block">
-                                Grupo: {grupo.nombregrupo}
+
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <span className="inline-block rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-2 py-1 text-xs font-semibold text-[var(--color-muted-text)]">
+                                Grupo: {grupo.nombregrupo || "-"}
                               </span>
-                              <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded inline-block">
-                                Horario: {grupo.horario}
+
+                              <span className="inline-block rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-2 py-1 text-xs font-semibold text-[var(--color-muted-text)]">
+                                Horario: {grupo.horario || "-"}
                               </span>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3 shrink-0">
-                            <span className="text-xs font-bold px-3 py-1.5 rounded-full uppercase bg-emerald-100 text-emerald-700">
+                          <div className="flex shrink-0 items-center gap-3">
+                            <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-black uppercase text-emerald-700">
                               Dictando
                             </span>
 
@@ -290,7 +308,7 @@ export default function DocentePerfilModal({
                                   e.stopPropagation();
                                   onConfigurarPermisos(grupo);
                                 }}
-                                className="p-2 text-indigo-600 hover:bg-indigo-100 bg-indigo-50 rounded-lg transition-colors border border-indigo-100 shadow-sm"
+                                className="rounded-xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] p-2 text-[var(--color-primary)] shadow-sm transition hover:bg-[var(--color-primary)] hover:text-white"
                                 title="Configurar permisos del docente"
                               >
                                 <Settings size={18} />
@@ -306,17 +324,19 @@ export default function DocentePerfilModal({
             </div>
           )}
 
-          {/* GESTOR DOCUMENTAL */}
+          {/* DOCUMENTOS */}
           {activeTab === "documentos" && (
-            <div className="animate-fadeIn bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm animate-fadeIn">
               <div className="mb-6">
-                <h3 className="text-lg font-bold text-gray-800">
+                <h3 className="text-lg font-black text-[var(--color-text)]">
                   Gestor Documental del Docente
                 </h3>
-                <p className="text-sm text-gray-500">
+
+                <p className="text-sm text-[var(--color-muted-text)]">
                   Sube el CV, grados académicos y gestiona el historial laboral.
                 </p>
               </div>
+
               <PerfilDocumentosHistorial
                 documentos={documentos}
                 setDocumentos={setDocumentos}
@@ -329,49 +349,72 @@ export default function DocentePerfilModal({
         </div>
 
         {/* FOOTER */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4 shrink-0 flex flex-wrap justify-between items-center gap-4">
-          <p className="text-sm font-medium text-gray-500 hidden md:block">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-[var(--color-border)] bg-[var(--color-card)] px-6 py-4">
+          <p className="hidden text-sm font-semibold text-[var(--color-muted-text)] md:block">
             Acciones rápidas del docente
           </p>
 
-          <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+          <div className="flex w-full items-center gap-3 overflow-x-auto pb-1 md:w-auto md:pb-0">
             {onAsignar && (
               <button
                 onClick={() => onAsignar()}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-semibold transition-colors border border-emerald-100 whitespace-nowrap"
+                className="flex items-center gap-2 whitespace-nowrap rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2 font-semibold text-emerald-700 transition hover:bg-emerald-100"
               >
                 <BookPlus size={18} />
                 <span>Nueva Asignación</span>
               </button>
             )}
 
-            <button
-              onClick={onEdit}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-semibold transition-colors border border-indigo-100 whitespace-nowrap"
-            >
-              <Edit2 size={18} />
-              <span>Editar Perfil</span>
-            </button>
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="flex items-center gap-2 whitespace-nowrap rounded-xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-4 py-2 font-semibold text-[var(--color-primary)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_16%,transparent)]"
+              >
+                <Edit2 size={18} />
+                <span>Editar Perfil</span>
+              </button>
+            )}
 
             {esInactivo ? (
-              <button
-                onClick={onHabilitar}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-200 rounded-lg font-semibold transition-all border border-transparent whitespace-nowrap"
-              >
-                <CheckCircle size={18} />
-                <span>Habilitar</span>
-              </button>
+              onHabilitar && (
+                <button
+                  onClick={onHabilitar}
+                  className="flex items-center gap-2 whitespace-nowrap rounded-xl border border-transparent bg-[var(--color-background)] px-4 py-2 font-semibold text-[var(--color-text)] transition hover:border-green-200 hover:bg-green-50 hover:text-green-700"
+                >
+                  <CheckCircle size={18} />
+                  <span>Habilitar</span>
+                </button>
+              )
             ) : (
-              <button
-                onClick={onInhabilitar}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200 rounded-lg font-semibold transition-all border border-transparent whitespace-nowrap"
-              >
-                <Trash2 size={18} />
-                <span>Inhabilitar</span>
-              </button>
+              onInhabilitar && (
+                <button
+                  onClick={onInhabilitar}
+                  className="flex items-center gap-2 whitespace-nowrap rounded-xl border border-transparent bg-[var(--color-background)] px-4 py-2 font-semibold text-[var(--color-text)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Trash2 size={18} />
+                  <span>Inhabilitar</span>
+                </button>
+              )
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({ icon: Icon, title, text }) {
+  return (
+    <div className="flex items-start gap-4">
+      <div className="shrink-0 rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] p-2.5 text-[var(--color-primary)]">
+        <Icon size={20} />
+      </div>
+
+      <div>
+        <h4 className="text-sm font-black text-[var(--color-text)]">{title}</h4>
+        <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted-text)]">
+          {text}
+        </p>
       </div>
     </div>
   );

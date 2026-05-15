@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import "mathlive";
 import "mathlive/static.css";
 import { Settings } from "lucide-react";
@@ -106,10 +106,10 @@ function SortableModuloItem({ modulo, children }) {
       <div
         {...attributes}
         {...listeners}
-        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-slate-500 shadow-sm hover:bg-slate-50"
-        title="Arrastrar módulo"
+        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-[var(--color-muted-text)] shadow-sm hover:bg-[var(--color-background)]"
+        title="Arrastrar mÃ³dulo"
       >
-        ⋮⋮
+        â‹®â‹®
       </div>
 
       {children}
@@ -141,10 +141,10 @@ function SortableTareaItem({ tarea, children }) {
       <div
         {...attributes}
         {...listeners}
-        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-slate-500 shadow-sm hover:bg-slate-50"
+        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-[var(--color-muted-text)] shadow-sm hover:bg-[var(--color-background)]"
         title="Arrastrar tarea"
       >
-        ⋮⋮
+        â‹®â‹®
       </div>
 
       {children}
@@ -153,7 +153,7 @@ function SortableTareaItem({ tarea, children }) {
 }
 
 //===================================
-//Arrastrar lección y submódulo
+//Arrastrar lecciÃ³n y submÃ³dulo
 //===================================
 function SortableSubModuloItem({ submodulo, children }) {
   const {
@@ -179,10 +179,10 @@ function SortableSubModuloItem({ submodulo, children }) {
       <div
         {...attributes}
         {...listeners}
-        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-slate-500 shadow-sm hover:bg-slate-50"
-        title="Arrastrar submódulo"
+        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-[var(--color-muted-text)] shadow-sm hover:bg-[var(--color-background)]"
+        title="Arrastrar submÃ³dulo"
       >
-        ⋮⋮
+        â‹®â‹®
       </div>
 
       {children}
@@ -214,10 +214,10 @@ function SortableLeccionItem({ leccion, children }) {
       <div
         {...attributes}
         {...listeners}
-        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-slate-500 shadow-sm hover:bg-slate-50"
-        title="Arrastrar lección"
+        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-[var(--color-muted-text)] shadow-sm hover:bg-[var(--color-background)]"
+        title="Arrastrar lecciÃ³n"
       >
-        ⋮⋮
+        â‹®â‹®
       </div>
 
       {children}
@@ -250,10 +250,10 @@ function SortableMaterialItem({ material, children }) {
       <div
         {...attributes}
         {...listeners}
-        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-slate-500 shadow-sm hover:bg-slate-50"
+        className="absolute right-4 top-4 z-20 cursor-grab active:cursor-grabbing rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-[var(--color-muted-text)] shadow-sm hover:bg-[var(--color-background)]"
         title="Arrastrar material"
       >
-        ⋮⋮
+        â‹®â‹®
       </div>
 
       {children}
@@ -297,7 +297,7 @@ function VideoEmbed({ url }) {
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm inline-flex"
+        className="px-3 py-2 rounded-xl border hover:bg-[var(--color-background)] text-sm inline-flex"
       >
         Ver video
       </a>
@@ -353,7 +353,7 @@ function MathContentPreview({ content, className = "" }) {
 
   return (
     <div
-      className={`rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap ${className}`}
+      className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-sm text-[var(--color-text)] whitespace-pre-wrap ${className}`}
     >
       {segments.map((segment, index) => {
         if (segment.type === "text") {
@@ -387,7 +387,7 @@ function FormulaNumericaPreview({ latex }) {
   return (
     <math-field
       ref={previewRef}
-      className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+      className="block w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
     />
   );
 }
@@ -445,13 +445,13 @@ function FormulaNumericaModal({
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/45" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-3xl rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-900 to-violet-800 px-6 py-5 text-white">
+      <div className="relative z-10 w-full max-w-3xl rounded-3xl bg-[var(--color-card)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[var(--color-sidenav)] to-violet-800 px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-xl font-bold">Insertar fórmula</h3>
+              <h3 className="text-xl font-bold">Insertar fÃ³rmula</h3>
               <p className="text-sm text-slate-200 mt-1">
-                Construye la fórmula y luego insértala en la respuesta de referencia
+                Construye la fÃ³rmula y luego insÃ©rtala en la respuesta de referencia
               </p>
             </div>
 
@@ -467,24 +467,24 @@ function FormulaNumericaModal({
 
         <div className="p-6 space-y-5">
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => insertarPlantilla("\frac{#0}{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Fracción</button>
-            <button type="button" onClick={() => insertarPlantilla("x^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Potencia</button>
-            <button type="button" onClick={() => insertarPlantilla("\sqrt{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Raíz</button>
-            <button type="button" onClick={() => insertarPlantilla("\int_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Integral</button>
-            <button type="button" onClick={() => insertarPlantilla("\sum_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Sumatoria</button>
-            <button type="button" onClick={() => insertarPlantilla("\begin{bmatrix}#0 & #0\\ #0 & #0\end{bmatrix}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Matriz 2x2</button>
-            <button type="button" onClick={() => insertarPlantilla("\pi")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">π</button>
-            <button type="button" onClick={() => insertarPlantilla("\theta")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">θ</button>
+            <button type="button" onClick={() => insertarPlantilla("\frac{#0}{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">FracciÃ³n</button>
+            <button type="button" onClick={() => insertarPlantilla("x^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Potencia</button>
+            <button type="button" onClick={() => insertarPlantilla("\sqrt{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">RaÃ­z</button>
+            <button type="button" onClick={() => insertarPlantilla("\int_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Integral</button>
+            <button type="button" onClick={() => insertarPlantilla("\sum_{#0}^{#0}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Sumatoria</button>
+            <button type="button" onClick={() => insertarPlantilla("\begin{bmatrix}#0 & #0\\ #0 & #0\end{bmatrix}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Matriz 2x2</button>
+            <button type="button" onClick={() => insertarPlantilla("\pi")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Ï€</button>
+            <button type="button" onClick={() => insertarPlantilla("\theta")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Î¸</button>
             <button
               type="button"
               onClick={() => window.mathVirtualKeyboard?.toggle?.()}
               className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white hover:bg-violet-700"
             >
-              Teclado matemático
+              Teclado matemÃ¡tico
             </button>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
             <math-field
               ref={mfRef}
               className="block w-full min-h-[90px]"
@@ -493,7 +493,7 @@ function FormulaNumericaModal({
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-slate-700 mb-2">Vista previa</p>
+            <p className="text-sm font-semibold text-[var(--color-text)] mb-2">Vista previa</p>
             <FormulaNumericaPreview latex={latex} />
           </div>
 
@@ -501,7 +501,7 @@ function FormulaNumericaModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
             >
               Cancelar
             </button>
@@ -511,7 +511,7 @@ function FormulaNumericaModal({
               onClick={() => onInsert(latex)}
               className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700"
             >
-              Insertar fórmula
+              Insertar fÃ³rmula
             </button>
           </div>
         </div>
@@ -574,13 +574,13 @@ function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/45" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-900 to-violet-800 px-6 py-5 text-white">
+      <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-[var(--color-card)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[var(--color-sidenav)] to-violet-800 px-6 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-xl font-bold">Insertar fórmula</h3>
+              <h3 className="text-xl font-bold">Insertar fÃ³rmula</h3>
               <p className="text-sm text-slate-200 mt-1">
-                Puedes usar texto normal en el enunciado y añadir fórmulas cuando lo necesites.
+                Puedes usar texto normal en el enunciado y aÃ±adir fÃ³rmulas cuando lo necesites.
               </p>
             </div>
 
@@ -596,24 +596,24 @@ function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
 
         <div className="p-6 space-y-5">
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => insertarPlantilla("\frac{#?}{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Fracción</button>
-            <button type="button" onClick={() => insertarPlantilla("x^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Potencia</button>
-            <button type="button" onClick={() => insertarPlantilla("\sqrt{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Raíz</button>
-            <button type="button" onClick={() => insertarPlantilla("\int_{#?}^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Integral</button>
-            <button type="button" onClick={() => insertarPlantilla("\sum_{#?}^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Sumatoria</button>
-            <button type="button" onClick={() => insertarPlantilla("\begin{bmatrix}#? & #?\\ #? & #?\end{bmatrix}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">Matriz 2x2</button>
-            <button type="button" onClick={() => insertarPlantilla("\pi")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">π</button>
-            <button type="button" onClick={() => insertarPlantilla("\theta")} className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50">θ</button>
+            <button type="button" onClick={() => insertarPlantilla("\frac{#?}{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">FracciÃ³n</button>
+            <button type="button" onClick={() => insertarPlantilla("x^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Potencia</button>
+            <button type="button" onClick={() => insertarPlantilla("\sqrt{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">RaÃ­z</button>
+            <button type="button" onClick={() => insertarPlantilla("\int_{#?}^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Integral</button>
+            <button type="button" onClick={() => insertarPlantilla("\sum_{#?}^{#?}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Sumatoria</button>
+            <button type="button" onClick={() => insertarPlantilla("\begin{bmatrix}#? & #?\\ #? & #?\end{bmatrix}")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Matriz 2x2</button>
+            <button type="button" onClick={() => insertarPlantilla("\pi")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Ï€</button>
+            <button type="button" onClick={() => insertarPlantilla("\theta")} className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]">Î¸</button>
             <button
               type="button"
               onClick={() => window.mathVirtualKeyboard?.toggle?.()}
               className="rounded-xl bg-violet-600 px-3 py-2 text-sm text-white hover:bg-violet-700"
             >
-              Teclado matemático
+              Teclado matemÃ¡tico
             </button>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
             <math-field
               ref={mfRef}
               className="block w-full min-h-[96px]"
@@ -622,7 +622,7 @@ function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
               <input
                 type="checkbox"
                 checked={displayMode}
@@ -633,7 +633,7 @@ function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-slate-700 mb-2">Vista previa</p>
+            <p className="text-sm font-semibold text-[var(--color-text)] mb-2">Vista previa</p>
             <MathContentPreview content={displayMode ? `\[${latex}\]` : `\(${latex}\)`} />
           </div>
 
@@ -641,7 +641,7 @@ function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
             >
               Cancelar
             </button>
@@ -651,7 +651,7 @@ function FormulaEditorModal({ open, initialLatex = "", onClose, onInsert }) {
               onClick={handleInsert}
               className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700"
             >
-              Insertar fórmula
+              Insertar fÃ³rmula
             </button>
           </div>
         </div>
@@ -757,7 +757,7 @@ function CursoDetalleAdmin() {
   const [moduloDestinoTarea, setModuloDestinoTarea] = useState(null);
 
   // ==============================
-  // Módulos / Lecciones / Materiales
+  // MÃ³dulos / Lecciones / Materiales
   // ==============================
   const [modulos, setModulos] = useState([]);
   const [modulosOrdenados, setModulosOrdenados] = useState([]);
@@ -835,7 +835,7 @@ function CursoDetalleAdmin() {
   );
 
   // ==============================
-  // Edición
+  // EdiciÃ³n
   // ==============================
   const [editandoModuloId, setEditandoModuloId] = useState(null);
   const [formEditarModulo, setFormEditarModulo] = useState({
@@ -948,19 +948,19 @@ function CursoDetalleAdmin() {
 
     try {
       if (!formSesionVivo.titulo.trim()) {
-        return alert("Ingresa el título de la sesión en vivo.");
+        return alert("Ingresa el tÃ­tulo de la sesiÃ³n en vivo.");
       }
 
       if (!formSesionVivo.fecha) {
-        return alert("Selecciona la fecha y hora de la sesión.");
+        return alert("Selecciona la fecha y hora de la sesiÃ³n.");
       }
 
       if (!formSesionVivo.duracion || Number(formSesionVivo.duracion) <= 0) {
-        return alert("La duración debe ser mayor a 0.");
+        return alert("La duraciÃ³n debe ser mayor a 0.");
       }
 
       if (!grupoIdActual) {
-        return alert("No se pudo identificar el grupo para la sesión en vivo.");
+        return alert("No se pudo identificar el grupo para la sesiÃ³n en vivo.");
       }
 
       setGuardandoSesionVivo(true);
@@ -976,10 +976,10 @@ function CursoDetalleAdmin() {
       limpiarFormSesionVivo();
       setMostrarFormSesionVivo(false);
       await cargarSesionesVivoCurso();
-      alert("Sesión en vivo creada correctamente ✅");
+      alert("SesiÃ³n en vivo creada correctamente âœ…");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo crear la sesión en vivo.");
+      alert(error?.message || "No se pudo crear la sesiÃ³n en vivo.");
     } finally {
       setGuardandoSesionVivo(false);
     }
@@ -1025,7 +1025,7 @@ function CursoDetalleAdmin() {
 
     autoTable(doc, {
       startY: 35,
-      head: [["Alumno", "DNI", "Estado", "Justificación", "Observación"]],
+      head: [["Alumno", "DNI", "Estado", "JustificaciÃ³n", "ObservaciÃ³n"]],
       body: rows,
     });
 
@@ -1075,7 +1075,7 @@ function CursoDetalleAdmin() {
       ["Sin registro", totalSinRegistro],
       [""],
       ["DETALLE DE ASISTENCIA"],
-      ["N°", "Alumno", "DNI", "Estado", "Justificación", "Observación"],
+      ["NÂ°", "Alumno", "DNI", "Estado", "JustificaciÃ³n", "ObservaciÃ³n"],
       ...alumnosFiltradosAsistencia.map((a, index) => {
         const key = a.idalumno || a.id;
         const asistencia = asistenciaMap[key] || {};
@@ -1420,7 +1420,7 @@ useEffect(() => {
       });
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo cargar la configuración de asistencia.");
+      alert(error?.message || "No se pudo cargar la configuraciÃ³n de asistencia.");
     } finally {
       setCargandoConfigAsistencia(false);
     }
@@ -1456,10 +1456,10 @@ useEffect(() => {
         activo: data?.activo ?? false,
       });
 
-      alert("Configuración de asistencia guardada correctamente ✅");
+      alert("ConfiguraciÃ³n de asistencia guardada correctamente âœ…");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo guardar la configuración de asistencia.");
+      alert(error?.message || "No se pudo guardar la configuraciÃ³n de asistencia.");
     } finally {
       setGuardandoConfigAsistencia(false);
     }
@@ -1561,7 +1561,7 @@ useEffect(() => {
         fechaEmision: new Date().toISOString().slice(0, 10),
       });
 
-      alert(`Certificado emitido automáticamente para ${verificacion.alumno.nombreCompleto} ✅`);
+      alert(`Certificado emitido automÃ¡ticamente para ${verificacion.alumno.nombreCompleto} âœ…`);
     } catch (error) {
       console.error("Error verificando/emitiendo certificado:", error);
     }
@@ -1589,7 +1589,7 @@ useEffect(() => {
         await procesarCertificadoAutomatico(item.idalumno);
       }
 
-      alert("Asistencia guardada correctamente ✅");
+      alert("Asistencia guardada correctamente âœ…");
     } catch (error) {
       console.error(error);
       alert(error?.message || "No se pudo guardar la asistencia");
@@ -1651,15 +1651,15 @@ useEffect(() => {
 
     try {
       if (!formTarea.titulo.trim()) {
-        return alert("Ingresa el título de la tarea.");
+        return alert("Ingresa el tÃ­tulo de la tarea.");
       }
 
       if (!formTarea.descripcion.trim()) {
-        return alert("Ingresa la descripción de la tarea.");
+        return alert("Ingresa la descripciÃ³n de la tarea.");
       }
 
       if (!formTarea.fechaInicio || !formTarea.fechaLimite) {
-        return alert("Completa la fecha de inicio y la fecha límite.");
+        return alert("Completa la fecha de inicio y la fecha lÃ­mite.");
       }
 
       if (!formTarea.tipoEntrega) {
@@ -1684,7 +1684,7 @@ useEffect(() => {
         idmodulo: moduloDestinoTarea?.id ?? null,
       });
 
-      alert("Tarea creada correctamente ✅");
+      alert("Tarea creada correctamente âœ…");
       limpiarFormTarea();
       setMostrarFormTarea(false);
       await cargarTareasCurso();
@@ -1715,7 +1715,7 @@ useEffect(() => {
 
   const eliminarTareaCurso = async (tareaId) => {
     const confirmado = window.confirm(
-      "¿Seguro que deseas eliminar esta tarea?",
+      "Â¿Seguro que deseas eliminar esta tarea?",
     );
     if (!confirmado) return;
 
@@ -1744,7 +1744,7 @@ useEffect(() => {
   };
 
   // ==============================
-  // MÓDULOS
+  // MÃ“DULOS
   // ==============================
   const handleChangeModulo = (e) => {
     const { name, value } = e.target;
@@ -1759,11 +1759,11 @@ useEffect(() => {
 
     try {
       if (!formModulo.titulo.trim()) {
-        return alert("Ingresa el título del módulo.");
+        return alert("Ingresa el tÃ­tulo del mÃ³dulo.");
       }
 
       if (!grupoIdActual) {
-        return alert("No se pudo identificar el grupo real para crear el módulo.");
+        return alert("No se pudo identificar el grupo real para crear el mÃ³dulo.");
       }
 
       setGuardandoModulo(true);
@@ -1778,10 +1778,10 @@ useEffect(() => {
       setFormModulo({ titulo: "", descripcion: "" });
       setMostrarFormModulo(false);
       await cargarModulosCurso();
-      alert("Módulo creado correctamente ✅");
+      alert("MÃ³dulo creado correctamente âœ…");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo crear el módulo");
+      alert(error?.message || "No se pudo crear el mÃ³dulo");
     } finally {
       setGuardandoModulo(false);
     }
@@ -1789,17 +1789,17 @@ useEffect(() => {
 
   const eliminarModuloCurso = async (moduloId) => {
     const confirmado = window.confirm(
-      "¿Seguro que deseas eliminar este módulo?",
+      "Â¿Seguro que deseas eliminar este mÃ³dulo?",
     );
     if (!confirmado) return;
 
     try {
       await deleteModulo(moduloId);
       await cargarModulosCurso();
-      alert("Módulo eliminado correctamente");
+      alert("MÃ³dulo eliminado correctamente");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo eliminar el módulo");
+      alert(error?.message || "No se pudo eliminar el mÃ³dulo");
     }
   };
 
@@ -1809,7 +1809,7 @@ useEffect(() => {
       await cargarModulosCurso();
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo mover el módulo");
+      alert(error?.message || "No se pudo mover el mÃ³dulo");
     }
   };
 
@@ -1847,12 +1847,12 @@ useEffect(() => {
       await cargarModulosCurso();
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo reordenar los módulos");
+      alert(error?.message || "No se pudo reordenar los mÃ³dulos");
       await cargarModulosCurso();
     }
   };
 
-  //Movimientos de módulos
+  //Movimientos de mÃ³dulos
   const handleDragEndModulos = async (event) => {
     const { active, over } = event;
 
@@ -1921,7 +1921,7 @@ useEffect(() => {
       await cargarModulosCurso();
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo reordenar los submódulos");
+      alert(error?.message || "No se pudo reordenar los submÃ³dulos");
       await cargarModulosCurso();
     }
   };
@@ -2000,7 +2000,7 @@ useEffect(() => {
   const guardarEdicionModulo = async (moduloId) => {
     try {
       if (!formEditarModulo.titulo.trim()) {
-        return alert("Ingresa el título del módulo.");
+        return alert("Ingresa el tÃ­tulo del mÃ³dulo.");
       }
 
       await actualizarModulo(moduloId, {
@@ -2010,14 +2010,14 @@ useEffect(() => {
 
       cancelarEdicionModulo();
       await cargarModulosCurso();
-      alert("Módulo actualizado correctamente ✅");
+      alert("MÃ³dulo actualizado correctamente âœ…");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo actualizar el módulo");
+      alert(error?.message || "No se pudo actualizar el mÃ³dulo");
     }
   };
 
-  //Submódulos
+  //SubmÃ³dulos
   const toggleFormSubModulo = (moduloId) => {
   setMostrarFormSubModulo((prev) => ({
     ...prev,
@@ -2045,7 +2045,7 @@ const handleChangeSubModulo = (moduloId, e) => {
   }));
 };
 
-//Submódulos
+//SubmÃ³dulos
 
   const guardarSubModuloCurso = async (e, moduloPadreId) => {
     e.preventDefault();
@@ -2054,11 +2054,11 @@ const handleChangeSubModulo = (moduloId, e) => {
       const data = formSubModulo[moduloPadreId] || {};
 
       if (!data.titulo?.trim()) {
-        return alert("Ingresa el título del submódulo.");
+        return alert("Ingresa el tÃ­tulo del submÃ³dulo.");
       }
 
       if (!grupoIdActual) {
-        return alert("No se pudo identificar el grupo real para crear el submódulo.");
+        return alert("No se pudo identificar el grupo real para crear el submÃ³dulo.");
       }
 
       setGuardandoSubModulo(true);
@@ -2085,10 +2085,10 @@ const handleChangeSubModulo = (moduloId, e) => {
       }));
 
       await cargarModulosCurso();
-      alert("Submódulo creado correctamente ✅");
+      alert("SubmÃ³dulo creado correctamente âœ…");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo crear el submódulo");
+      alert(error?.message || "No se pudo crear el submÃ³dulo");
     } finally {
       setGuardandoSubModulo(false);
     }
@@ -2156,7 +2156,7 @@ const handleChangeSubModulo = (moduloId, e) => {
       await cargarModulosCurso();
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo mover el submódulo");
+      alert(error?.message || "No se pudo mover el submÃ³dulo");
     }
   };
 
@@ -2204,7 +2204,7 @@ const handleChangeSubModulo = (moduloId, e) => {
       const data = formLeccion[moduloId] || {};
 
       if (!data.titulo?.trim()) {
-        return alert("Ingresa el título de la lección.");
+        return alert("Ingresa el tÃ­tulo de la lecciÃ³n.");
       }
 
       setGuardandoLeccion(true);
@@ -2229,10 +2229,10 @@ const handleChangeSubModulo = (moduloId, e) => {
       }));
 
       await cargarModulosCurso();
-      alert("Lección creada correctamente ✅");
+      alert("LecciÃ³n creada correctamente âœ…");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo crear la lección");
+      alert(error?.message || "No se pudo crear la lecciÃ³n");
     } finally {
       setGuardandoLeccion(false);
     }
@@ -2240,17 +2240,17 @@ const handleChangeSubModulo = (moduloId, e) => {
 
   const eliminarLeccionCurso = async (leccionId) => {
     const confirmado = window.confirm(
-      "¿Seguro que deseas eliminar esta lección?",
+      "Â¿Seguro que deseas eliminar esta lecciÃ³n?",
     );
     if (!confirmado) return;
 
     try {
       await deleteLeccion(leccionId);
       await cargarModulosCurso();
-      alert("Lección eliminada correctamente");
+      alert("LecciÃ³n eliminada correctamente");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo eliminar la lección");
+      alert(error?.message || "No se pudo eliminar la lecciÃ³n");
     }
   };
 
@@ -2260,7 +2260,7 @@ const handleChangeSubModulo = (moduloId, e) => {
       await cargarModulosCurso();
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo mover la lección");
+      alert(error?.message || "No se pudo mover la lecciÃ³n");
     }
   };
 
@@ -2283,7 +2283,7 @@ const handleChangeSubModulo = (moduloId, e) => {
   const guardarEdicionLeccion = async (leccionId) => {
     try {
       if (!formEditarLeccion.titulo.trim()) {
-        return alert("Ingresa el título de la lección.");
+        return alert("Ingresa el tÃ­tulo de la lecciÃ³n.");
       }
 
       await actualizarLeccion(leccionId, {
@@ -2293,10 +2293,10 @@ const handleChangeSubModulo = (moduloId, e) => {
 
       cancelarEdicionLeccion();
       await cargarModulosCurso();
-      alert("Lección actualizada correctamente ✅");
+      alert("LecciÃ³n actualizada correctamente âœ…");
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo actualizar la lección");
+      alert(error?.message || "No se pudo actualizar la lecciÃ³n");
     }
   };
 
@@ -2345,7 +2345,7 @@ const handleChangeSubModulo = (moduloId, e) => {
     const file = e.target.files?.[0] || null;
 
     if (file && file.size > 20 * 1024 * 1024) {
-      alert("El archivo supera el límite permitido de 20 MB.");
+      alert("El archivo supera el lÃ­mite permitido de 20 MB.");
       return;
     }
 
@@ -2365,7 +2365,7 @@ const handleChangeSubModulo = (moduloId, e) => {
       const data = formMaterial[leccionId] || {};
 
       if (!data.titulo?.trim()) {
-        return alert("Ingresa el título del material.");
+        return alert("Ingresa el tÃ­tulo del material.");
       }
 
       if (!data.tipo) {
@@ -2466,7 +2466,7 @@ const handleChangeSubModulo = (moduloId, e) => {
       }));
 
       await cargarModulosCurso();
-      alert("Material agregado correctamente ✅");
+      alert("Material agregado correctamente âœ…");
     } catch (error) {
       console.error(error);
       alert(error?.message || "No se pudo agregar el material");
@@ -2499,7 +2499,7 @@ const handleChangeSubModulo = (moduloId, e) => {
         return;
       }
 
-      throw new Error("El material no tiene una ruta válida.");
+      throw new Error("El material no tiene una ruta vÃ¡lida.");
     } catch (error) {
       console.error(error);
       alert(error?.message || "No se pudo abrir el archivo.");
@@ -2508,7 +2508,7 @@ const handleChangeSubModulo = (moduloId, e) => {
 
   const eliminarMaterialCurso = async (materialId) => {
     const confirmado = window.confirm(
-      "¿Seguro que deseas eliminar este material?",
+      "Â¿Seguro que deseas eliminar este material?",
     );
     if (!confirmado) return;
 
@@ -2557,7 +2557,7 @@ const handleChangeSubModulo = (moduloId, e) => {
   const guardarEdicionMaterial = async (materialId) => {
     try {
       if (!formEditarMaterial.titulo.trim()) {
-        return alert("Ingresa el título del material.");
+        return alert("Ingresa el tÃ­tulo del material.");
       }
 
       if (
@@ -2600,7 +2600,7 @@ const handleChangeSubModulo = (moduloId, e) => {
 
       cancelarEdicionMaterial();
       await cargarModulosCurso();
-      alert("Material actualizado correctamente ✅");
+      alert("Material actualizado correctamente âœ…");
     } catch (error) {
       console.error(error);
       alert(error?.message || "No se pudo actualizar el material");
@@ -2681,7 +2681,7 @@ const handleChangeSubModulo = (moduloId, e) => {
             clearInterval(intervalo);
             actualizarNotificacionVideo(notificacionId, {
               estado: "warning",
-              mensaje: "No se encontró el video para verificar su estado.",
+              mensaje: "No se encontrÃ³ el video para verificar su estado.",
             });
           }
           return;
@@ -2694,7 +2694,7 @@ const handleChangeSubModulo = (moduloId, e) => {
 
           actualizarNotificacionVideo(notificacionId, {
             estado: "success",
-            mensaje: "Video cargado correctamente ✅",
+            mensaje: "Video cargado correctamente âœ…",
             progreso: 100,
           });
 
@@ -2711,7 +2711,7 @@ const handleChangeSubModulo = (moduloId, e) => {
           actualizarNotificacionVideo(notificacionId, {
             estado: "info",
             mensaje:
-              "El video sigue procesándose en Vimeo. Revisa en unos minutos.",
+              "El video sigue procesÃ¡ndose en Vimeo. Revisa en unos minutos.",
           });
         }
       } catch (error) {
@@ -2766,7 +2766,7 @@ const handleChangeSubModulo = (moduloId, e) => {
       if (estado === "available" || estado === "listo") {
         actualizarNotificacionVideo(notificacionId, {
           estado: "success",
-          mensaje: "Video cargado correctamente ✅",
+          mensaje: "Video cargado correctamente âœ…",
           progreso: 100,
         });
 
@@ -2779,7 +2779,7 @@ const handleChangeSubModulo = (moduloId, e) => {
 
       actualizarNotificacionVideo(notificacionId, {
         estado: "processing",
-        mensaje: "Video subido. Vimeo lo está procesando...",
+        mensaje: "Video subido. Vimeo lo estÃ¡ procesando...",
         progreso: 100,
       });
 
@@ -2823,7 +2823,7 @@ const handleChangeSubModulo = (moduloId, e) => {
         nota: fila.nota,
       });
 
-      alert("Nota guardada correctamente ✅");
+      alert("Nota guardada correctamente âœ…");
 
       const data = await getEntregasByTarea(tareaDetalle.id);
       setEntregasTarea(data?.entregas || []);
@@ -2846,7 +2846,7 @@ const handleChangeSubModulo = (moduloId, e) => {
       }
 
       if (!tarea.calificable) {
-        alert("Esta tarea no está marcada como calificable.");
+        alert("Esta tarea no estÃ¡ marcada como calificable.");
         return;
       }
 
@@ -2869,7 +2869,7 @@ const handleChangeSubModulo = (moduloId, e) => {
       );
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo abrir la configuración de la tarea.");
+      alert(error?.message || "No se pudo abrir la configuraciÃ³n de la tarea.");
       setConfigTareaOpen(false);
       setTareaConfigActual(null);
       setEvaluacionesTareaDisponibles([]);
@@ -2889,12 +2889,12 @@ const handleChangeSubModulo = (moduloId, e) => {
 const guardarConfiguracionTarea = async () => {
   try {
     if (!tareaConfigActual?.id) {
-      alert("No se encontró la tarea a configurar.");
+      alert("No se encontrÃ³ la tarea a configurar.");
       return;
     }
 
     if (!evaluacionSeleccionadaTarea) {
-      alert("Selecciona una evaluación de tipo tarea.");
+      alert("Selecciona una evaluaciÃ³n de tipo tarea.");
       return;
     }
 
@@ -2908,11 +2908,11 @@ const guardarConfiguracionTarea = async () => {
 
     await cargarTareasCurso();
 
-    alert("La tarea fue vinculada correctamente a la evaluación ✅");
+    alert("La tarea fue vinculada correctamente a la evaluaciÃ³n âœ…");
     cerrarConfigTarea();
   } catch (error) {
     console.error(error);
-    alert(error?.message || "No se pudo guardar la configuración de la tarea.");
+    alert(error?.message || "No se pudo guardar la configuraciÃ³n de la tarea.");
   } finally {
     setGuardandoConfigTarea(false);
   }
@@ -2940,7 +2940,7 @@ const guardarConfiguracionTarea = async () => {
           modo_respuesta_numerica: "numero",
           tamano_max_mb: 10,
           extensiones_permitidas: "",
-          texto_placeholder: "Escribe una respuesta más extensa",
+          texto_placeholder: "Escribe una respuesta mÃ¡s extensa",
         };
       case "numerica":
         return {
@@ -2949,7 +2949,7 @@ const guardarConfiguracionTarea = async () => {
           modo_respuesta_numerica: "numero",
           tamano_max_mb: 10,
           extensiones_permitidas: "",
-          texto_placeholder: "Ingresa un número",
+          texto_placeholder: "Ingresa un nÃºmero",
         };
       case "archivo":
         return {
@@ -3370,8 +3370,8 @@ const guardarConfiguracionTarea = async () => {
         String(pregunta.respuesta_texto).trim() === ""
       ) {
         return modo === "formula"
-          ? "Las preguntas numéricas en modo fórmula deben tener una fórmula de referencia."
-          : "Las preguntas numéricas deben tener una respuesta numérica de referencia.";
+          ? "Las preguntas numÃ©ricas en modo fÃ³rmula deben tener una fÃ³rmula de referencia."
+          : "Las preguntas numÃ©ricas deben tener una respuesta numÃ©rica de referencia.";
       }
 
       if (modo === "formula") {
@@ -3383,8 +3383,8 @@ const guardarConfiguracionTarea = async () => {
 
       if (!regex.test(valor)) {
         return pregunta.permitir_decimales
-          ? "La respuesta de referencia debe ser un número válido."
-          : "La respuesta de referencia debe ser un número entero.";
+          ? "La respuesta de referencia debe ser un nÃºmero vÃ¡lido."
+          : "La respuesta de referencia debe ser un nÃºmero entero.";
       }
 
       return null;
@@ -3392,7 +3392,7 @@ const guardarConfiguracionTarea = async () => {
 
     if (tipo === "archivo") {
       if (Number(pregunta.tamano_max_mb || 0) <= 0) {
-        return "Las preguntas de archivo deben tener un tamaño máximo válido.";
+        return "Las preguntas de archivo deben tener un tamaÃ±o mÃ¡ximo vÃ¡lido.";
       }
       return null;
     }
@@ -3409,11 +3409,11 @@ const guardarConfiguracionTarea = async () => {
     const correctas = (pregunta.opciones || []).filter((op) => op.es_correcta).length;
 
     if (tipo === "unica" && correctas !== 1) {
-      return "Las preguntas de opción única deben tener exactamente una respuesta correcta.";
+      return "Las preguntas de opciÃ³n Ãºnica deben tener exactamente una respuesta correcta.";
     }
 
     if (tipo === "multiple" && correctas < 1) {
-      return "Las preguntas de opción múltiple deben tener al menos una respuesta correcta.";
+      return "Las preguntas de opciÃ³n mÃºltiple deben tener al menos una respuesta correcta.";
     }
 
     return null;
@@ -3426,7 +3426,7 @@ const guardarConfiguracionTarea = async () => {
       const data = formExamen[leccionId] || crearExamenVacio();
 
       if (!data?.titulo?.trim()) {
-        return alert("Ingresa el título del examen.");
+        return alert("Ingresa el tÃ­tulo del examen.");
       }
 
       if (!data.preguntas?.length) {
@@ -3488,10 +3488,10 @@ const guardarConfiguracionTarea = async () => {
 
       if (data.id) {
         await actualizarExamen(data.id, payload);
-        alert("Examen actualizado correctamente ✅");
+        alert("Examen actualizado correctamente âœ…");
       } else {
         await crearExamen(payload);
-        alert("Examen creado correctamente ✅");
+        alert("Examen creado correctamente âœ…");
       }
 
       setExamenEditandoId(null);
@@ -3544,7 +3544,7 @@ const guardarConfiguracionTarea = async () => {
       }));
     } catch (error) {
       console.error("Error al cargar examen:", error);
-      alert(error?.message || "No se pudo cargar el examen para edición.");
+      alert(error?.message || "No se pudo cargar el examen para ediciÃ³n.");
     } finally {
       setGuardandoExamen(false);
     }
@@ -3692,7 +3692,7 @@ const guardarConfiguracionTarea = async () => {
 
       if (bancoModo === "formulario") {
         if (!bancoLeccionActual) {
-          alert("No se encontró la lección del formulario.");
+          alert("No se encontrÃ³ la lecciÃ³n del formulario.");
           return;
         }
 
@@ -3719,7 +3719,7 @@ const guardarConfiguracionTarea = async () => {
       }
 
       if (!bancoExamenActual?.id) {
-        alert("No se encontró el examen.");
+        alert("No se encontrÃ³ el examen.");
         return;
       }
 
@@ -3778,7 +3778,7 @@ const guardarConfiguracionTarea = async () => {
       );
     } catch (error) {
       console.error(error);
-      alert(error?.message || "No se pudo abrir la configuración del examen.");
+      alert(error?.message || "No se pudo abrir la configuraciÃ³n del examen.");
       setConfigExamenOpen(false);
       setExamenConfigActual(null);
       setEvaluacionesExamenDisponibles([]);
@@ -3798,12 +3798,12 @@ const guardarConfiguracionTarea = async () => {
   const guardarConfiguracionExamen = async () => {
     try {
       if (!examenConfigActual?.id) {
-        alert("No se encontró el examen a configurar.");
+        alert("No se encontrÃ³ el examen a configurar.");
         return;
       }
 
       if (!evaluacionSeleccionadaExamen) {
-        alert("Selecciona una evaluación de tipo examen.");
+        alert("Selecciona una evaluaciÃ³n de tipo examen.");
         return;
       }
 
@@ -3817,12 +3817,12 @@ const guardarConfiguracionTarea = async () => {
 
       await cargarModulosCurso();
 
-      alert("El examen fue vinculado correctamente a la evaluación ✅");
+      alert("El examen fue vinculado correctamente a la evaluaciÃ³n âœ…");
       cerrarConfigExamen();
     } catch (error) {
       console.error(error);
       alert(
-        error?.message || "No se pudo guardar la configuración del examen.",
+        error?.message || "No se pudo guardar la configuraciÃ³n del examen.",
       );
     } finally {
       setGuardandoConfigExamen(false);
@@ -3831,7 +3831,7 @@ const guardarConfiguracionTarea = async () => {
 
   const eliminarExamenLeccion = async (examenId) => {
     const confirmado = window.confirm(
-      "¿Seguro que deseas eliminar este examen?",
+      "Â¿Seguro que deseas eliminar este examen?",
     );
     if (!confirmado) return;
 
@@ -3933,13 +3933,13 @@ const guardarConfiguracionTarea = async () => {
 
     if (nombreEvaluacion) {
       return {
-        texto: `Evaluación asignada: ${nombreEvaluacion}`,
+        texto: `EvaluaciÃ³n asignada: ${nombreEvaluacion}`,
         clase: "border-emerald-200 bg-emerald-50 text-emerald-700",
       };
     }
 
     return {
-      texto: "Sin evaluación asignada",
+      texto: "Sin evaluaciÃ³n asignada",
       clase: "border-amber-200 bg-amber-50 text-amber-700",
     };
   };
@@ -3986,8 +3986,8 @@ const guardarConfiguracionTarea = async () => {
 
     if (porcentaje >= 70) {
       return {
-        badge: "bg-blue-100 text-blue-700",
-        bar: "bg-blue-500",
+        badge: "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]",
+        bar: "bg-[var(--color-primary)]",
         label: "Avanzado",
       };
     }
@@ -4009,7 +4009,7 @@ const guardarConfiguracionTarea = async () => {
 
   if (loading) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow text-gray-500">
+      <div className="bg-[var(--color-card)] p-6 rounded-2xl shadow text-[var(--color-muted-text)]">
         Cargando curso...
       </div>
     );
@@ -4017,15 +4017,15 @@ const guardarConfiguracionTarea = async () => {
 
   if (!curso) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow text-red-600">
+      <div className="bg-[var(--color-card)] p-6 rounded-2xl shadow text-red-600">
         Curso no encontrado.
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 bg-slate-50/80 min-h-screen p-1">
-      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-900 text-white p-6 md:p-8 shadow-[0_20px_60px_-20px_rgba(15,23,42,0.65)]">
+    <div className="space-y-6 bg-[var(--color-background)] min-h-screen p-1">
+      <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[var(--color-sidenav)] via-[var(--color-sidenav)] to-[var(--color-primary)] text-white p-6 md:p-8 shadow-[0_20px_60px_-20px_rgba(15,23,42,0.65)]">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-16 -right-10 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
           <div className="absolute -bottom-20 left-10 h-52 w-52 rounded-full bg-blue-400/20 blur-3xl" />
@@ -4038,7 +4038,7 @@ const guardarConfiguracionTarea = async () => {
               onClick={() => navigate(-1)}
               className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-slate-100 backdrop-blur hover:bg-white/15 transition"
             >
-              ← Volver
+              â† Volver
             </button>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -4059,8 +4059,8 @@ const guardarConfiguracionTarea = async () => {
             </h2>
 
             <p className="mt-3 text-sm md:text-base text-slate-200 max-w-2xl">
-              Gestiona módulos, tareas, asistencia, exámenes y materiales desde una
-              vista más clara, moderna y profesional.
+              Gestiona mÃ³dulos, tareas, asistencia, exÃ¡menes y materiales desde una
+              vista mÃ¡s clara, moderna y profesional.
             </p>
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
@@ -4096,7 +4096,7 @@ const guardarConfiguracionTarea = async () => {
           <div className="flex flex-wrap gap-3 xl:max-w-md xl:justify-end">
             {permisos.gestionar_contenido && (
               <button onClick={() => setTabActiva("modulos")} className="...">
-                Gestionar módulos
+                Gestionar mÃ³dulos
               </button>
             )}
 
@@ -4120,7 +4120,7 @@ const guardarConfiguracionTarea = async () => {
             <button
               type="button"
               onClick={() => setTabActiva("tareas")}
-              className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition shadow-lg"
+              className="rounded-2xl bg-[var(--color-card)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] transition shadow-lg"
             >
               Crear tarea
             </button>
@@ -4129,25 +4129,25 @@ const guardarConfiguracionTarea = async () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_-18px_rgba(15,23,42,0.25)] transition hover:-translate-y-1 hover:shadow-[0_20px_45px_-18px_rgba(15,23,42,0.35)]">
-          <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-blue-500 to-cyan-400" />
-          <p className="text-sm font-medium text-slate-500">Alumnos</p>
-          <h3 className="mt-3 text-4xl font-black tracking-tight text-slate-900">
+        <div className="group relative overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[0_12px_35px_-18px_rgba(15,23,42,0.25)] transition hover:-translate-y-1 hover:shadow-[0_20px_45px_-18px_rgba(15,23,42,0.35)]">
+          <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-[var(--color-primary)] to-cyan-400" />
+          <p className="text-sm font-medium text-[var(--color-muted-text)]">Alumnos</p>
+          <h3 className="mt-3 text-4xl font-black tracking-tight text-[var(--color-text)]">
             {alumnos.length}
           </h3>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-[var(--color-muted-text)]">
             Total registrados en este curso
           </p>
         </div>
 
-        <div className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_-18px_rgba(15,23,42,0.25)] transition hover:-translate-y-1 hover:shadow-[0_20px_45px_-18px_rgba(15,23,42,0.35)]">
+        <div className="group relative overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-[0_12px_35px_-18px_rgba(15,23,42,0.25)] transition hover:-translate-y-1 hover:shadow-[0_20px_45px_-18px_rgba(15,23,42,0.35)]">
           <div className="absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r from-violet-500 to-fuchsia-400" />
-          <p className="text-sm font-medium text-slate-500">Módulos</p>
-          <h3 className="mt-3 text-4xl font-black tracking-tight text-slate-900">
+          <p className="text-sm font-medium text-[var(--color-muted-text)]">MÃ³dulos</p>
+          <h3 className="mt-3 text-4xl font-black tracking-tight text-[var(--color-text)]">
             {modulos.length}
           </h3>
-          <p className="mt-2 text-sm text-slate-400">
-            Estructura académica del curso
+          <p className="mt-2 text-sm text-[var(--color-muted-text)]">
+            Estructura acadÃ©mica del curso
           </p>
         </div>
 
@@ -4174,14 +4174,14 @@ const guardarConfiguracionTarea = async () => {
         </div>
       </div>
 
-      <div className="sticky top-3 z-20 rounded-[24px] border border-slate-200/80 bg-white/85 p-3 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.25)] backdrop-blur">
+      <div className="sticky top-3 z-20 rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] p-3 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.25)] backdrop-blur">
         <div className="flex flex-wrap gap-2">
           {[
             { key: "resumen", label: "Resumen" },
             { key: "progreso", label: "Progreso" },
             { key: "asistencia", label: "Asistencia" },
             { key: "tareas", label: "Tareas" },
-            { key: "modulos", label: "Módulos" },
+            { key: "modulos", label: "MÃ³dulos" },
             { key: "foro", label: "Foro" },
           ].map((tab) => {
             const active = tabActiva === tab.key;
@@ -4193,8 +4193,8 @@ const guardarConfiguracionTarea = async () => {
                   onClick={() => setTabActiva(tab.key)}
                   className={`px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 ${
                     active
-                      ? "bg-slate-900 text-white shadow-lg"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-[var(--color-sidenav)] text-white shadow-lg"
+                      : "bg-[var(--color-background)] text-[var(--color-muted-text)] hover:bg-[var(--color-background)]"
                   }`}
                 >
                   {tab.label}
@@ -4206,38 +4206,38 @@ const guardarConfiguracionTarea = async () => {
 
       {tabActiva === "resumen" && (
         <div className="space-y-6">
-          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
-            <h3 className="text-xl font-bold mb-4">Información general</h3>
+          <div className="bg-[var(--color-card)] p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-[var(--color-border)]">
+            <h3 className="text-xl font-bold mb-4">InformaciÃ³n general</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="rounded-xl bg-gray-50 p-4">
-                <p className="text-gray-500 mb-1">Curso</p>
-                <p className="font-semibold text-gray-900">
+              <div className="rounded-xl bg-[var(--color-background)] p-4">
+                <p className="text-[var(--color-muted-text)] mb-1">Curso</p>
+                <p className="font-semibold text-[var(--color-text)]">
                   {curso.nombre || "Sin nombre"}
                 </p>
               </div>
 
-              <div className="rounded-xl bg-gray-50 p-4">
-                <p className="text-gray-500 mb-1">Grupo</p>
-                <p className="font-semibold text-gray-900">
+              <div className="rounded-xl bg-[var(--color-background)] p-4">
+                <p className="text-[var(--color-muted-text)] mb-1">Grupo</p>
+                <p className="font-semibold text-[var(--color-text)]">
                   {curso.grupo || "Sin grupo"}
                 </p>
               </div>
 
-              <div className="rounded-xl bg-gray-50 p-4">
-                <p className="text-gray-500 mb-1">Horario</p>
-                <p className="font-semibold text-gray-900">
+              <div className="rounded-xl bg-[var(--color-background)] p-4">
+                <p className="text-[var(--color-muted-text)] mb-1">Horario</p>
+                <p className="font-semibold text-[var(--color-text)]">
                   {curso.horario || "Sin horario"}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+          <div className="bg-[var(--color-card)] p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-[var(--color-border)]">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold">Sesiones en vivo</h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-[var(--color-muted-text)] mt-1">
                   Programa clases en vivo con {meetingProviderInfo?.label || "Google Meet"} para este grupo.
                 </p>
               </div>
@@ -4247,7 +4247,7 @@ const guardarConfiguracionTarea = async () => {
                 onClick={() => setMostrarFormSesionVivo((prev) => !prev)}
                 className="rounded-2xl bg-violet-600 px-4 py-2 text-white font-semibold hover:bg-violet-700 transition"
               >
-                {mostrarFormSesionVivo ? "Cancelar" : "+ Crear sesión en vivo"}
+                {mostrarFormSesionVivo ? "Cancelar" : "+ Crear sesiÃ³n en vivo"}
               </button>
             </div>
 
@@ -4257,20 +4257,20 @@ const guardarConfiguracionTarea = async () => {
                 className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6 mt-6"
               >
                 <div>
-                  <label className="block font-semibold mb-2">Título</label>
+                  <label className="block font-semibold mb-2">TÃ­tulo</label>
                   <input
                     type="text"
                     name="titulo"
                     value={formSesionVivo.titulo}
                     onChange={handleChangeSesionVivo}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    placeholder="Ej. Clase en vivo - Introducción"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Ej. Clase en vivo - IntroducciÃ³n"
                   />
                 </div>
 
                 <div>
                   <label className="block font-semibold mb-2">
-                    Duración (minutos)
+                    DuraciÃ³n (minutos)
                   </label>
                   <input
                     type="number"
@@ -4278,21 +4278,21 @@ const guardarConfiguracionTarea = async () => {
                     name="duracion"
                     value={formSesionVivo.duracion}
                     onChange={handleChangeSesionVivo}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
 
                 <div className="md:col-span-2">
                   <label className="block font-semibold mb-2">
-                    Descripción
+                    DescripciÃ³n
                   </label>
                   <textarea
                     name="descripcion"
                     value={formSesionVivo.descripcion}
                     onChange={handleChangeSesionVivo}
                     rows={3}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    placeholder="Descripción breve de la sesión"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="DescripciÃ³n breve de la sesiÃ³n"
                   />
                 </div>
 
@@ -4305,7 +4305,7 @@ const guardarConfiguracionTarea = async () => {
                     name="fecha"
                     value={formSesionVivo.fecha}
                     onChange={handleChangeSesionVivo}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
 
@@ -4316,8 +4316,8 @@ const guardarConfiguracionTarea = async () => {
                     className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
                   >
                     {guardandoSesionVivo
-                      ? "Creando sesión..."
-                      : "Guardar sesión"}
+                      ? "Creando sesiÃ³n..."
+                      : "Guardar sesiÃ³n"}
                   </button>
                 </div>
               </form>
@@ -4325,16 +4325,16 @@ const guardarConfiguracionTarea = async () => {
 
             <div className="mt-6">
               {cargandoSesionesVivo ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[var(--color-muted-text)]">
                   Cargando sesiones en vivo...
                 </p>
               ) : sesionesVivo.length === 0 ? (
-                <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
-                  <p className="text-gray-700 font-medium">
-                    Aún no hay sesiones en vivo programadas.
+                <div className="border border-dashed border-[var(--color-border)] rounded-2xl p-6 text-center">
+                  <p className="text-[var(--color-text)] font-medium">
+                    AÃºn no hay sesiones en vivo programadas.
                   </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Crea una sesión para que tus alumnos puedan unirse a la
+                  <p className="text-sm text-[var(--color-muted-text)] mt-2">
+                    Crea una sesiÃ³n para que tus alumnos puedan unirse a la
                     clase.
                   </p>
                 </div>
@@ -4343,12 +4343,12 @@ const guardarConfiguracionTarea = async () => {
                   {sesionesVivo.map((sesion) => (
                     <div
                       key={sesion.id}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                      className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-5"
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                           <div className="mb-3">
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                            <span className="inline-flex items-center rounded-full bg-[var(--color-background)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text)]">
                               {sesion.provider === "google"
                                 ? "Google Meet"
                                 : sesion.provider === "zoom"
@@ -4359,18 +4359,18 @@ const guardarConfiguracionTarea = async () => {
                             </span>
                           </div>
 
-                          <p className="text-lg font-bold text-slate-800">{sesion.titulo}</p>
-                          <p className="text-sm text-slate-500 mt-1">
-                            {sesion.descripcion || "Sin descripción"}
+                          <p className="text-lg font-bold text-[var(--color-text)]">{sesion.titulo}</p>
+                          <p className="text-sm text-[var(--color-muted-text)] mt-1">
+                            {sesion.descripcion || "Sin descripciÃ³n"}
                           </p>
 
-                          <div className="mt-3 space-y-1 text-sm text-slate-600">
+                          <div className="mt-3 space-y-1 text-sm text-[var(--color-muted-text)]">
                             <p>
                               <span className="font-semibold">Fecha:</span>{" "}
                               {formatearFechaSesion(sesion.fecha)}
                             </p>
                             <p>
-                              <span className="font-semibold">Duración:</span>{" "}
+                              <span className="font-semibold">DuraciÃ³n:</span>{" "}
                               {sesion.duracion} min
                             </p>
                             <p>
@@ -4387,7 +4387,7 @@ const guardarConfiguracionTarea = async () => {
                             rel="noreferrer"
                             className="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition"
                           >
-                            Unirse a la sesión
+                            Unirse a la sesiÃ³n
                           </a>
                         </div>
                       </div>
@@ -4399,10 +4399,10 @@ const guardarConfiguracionTarea = async () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+            <div className="bg-[var(--color-card)] p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-[var(--color-border)]">
               <h3 className="text-lg font-bold mb-4">Presentes</h3>
               {presentes.length === 0 ? (
-                <p className="text-gray-500">
+                <p className="text-[var(--color-muted-text)]">
                   No hay alumnos marcados como presentes.
                 </p>
               ) : (
@@ -4414,7 +4414,7 @@ const guardarConfiguracionTarea = async () => {
                         <div className="font-medium">
                           {a.nombre} {a.apellido}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-[var(--color-muted-text)]">
                           DNI: {a.numdocumento || "-"}
                         </div>
                       </div>
@@ -4424,10 +4424,10 @@ const guardarConfiguracionTarea = async () => {
               )}
             </div>
 
-            <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+            <div className="bg-[var(--color-card)] p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-[var(--color-border)]">
               <h3 className="text-lg font-bold mb-4">Ausentes</h3>
               {ausentes.length === 0 ? (
-                <p className="text-gray-500">No hay alumnos ausentes.</p>
+                <p className="text-[var(--color-muted-text)]">No hay alumnos ausentes.</p>
               ) : (
                 <div className="space-y-3">
                   {ausentes.map((a) => {
@@ -4438,11 +4438,11 @@ const guardarConfiguracionTarea = async () => {
                         <div className="font-medium">
                           {a.nombre} {a.apellido}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-[var(--color-muted-text)]">
                           DNI: {a.numdocumento || "-"}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {info.tipo_justificacion || "Sin clasificación"}
+                        <div className="text-sm text-[var(--color-muted-text)]">
+                          {info.tipo_justificacion || "Sin clasificaciÃ³n"}
                         </div>
                       </div>
                     );
@@ -4451,10 +4451,10 @@ const guardarConfiguracionTarea = async () => {
               )}
             </div>
 
-            <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+            <div className="bg-[var(--color-card)] p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-[var(--color-border)]">
               <h3 className="text-lg font-bold mb-4">Tardanzas</h3>
               {tardanzas.length === 0 ? (
-                <p className="text-gray-500">No hay tardanzas.</p>
+                <p className="text-[var(--color-muted-text)]">No hay tardanzas.</p>
               ) : (
                 <div className="space-y-3">
                   {tardanzas.map((a) => {
@@ -4465,11 +4465,11 @@ const guardarConfiguracionTarea = async () => {
                         <div className="font-medium">
                           {a.nombre} {a.apellido}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-[var(--color-muted-text)]">
                           DNI: {a.numdocumento || "-"}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {info.tipo_justificacion || "Sin clasificación"}
+                        <div className="text-sm text-[var(--color-muted-text)]">
+                          {info.tipo_justificacion || "Sin clasificaciÃ³n"}
                         </div>
                       </div>
                     );
@@ -4484,14 +4484,14 @@ const guardarConfiguracionTarea = async () => {
 
       {tabActiva === "progreso" && (
         <div className="space-y-6">
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h3 className="text-2xl font-black tracking-tight text-slate-900">
+                <h3 className="text-2xl font-black tracking-tight text-[var(--color-text)]">
                   Progreso del curso
                 </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Seguimiento del avance por tareas, exámenes, videos y asistencia.
+                <p className="mt-1 text-sm text-[var(--color-muted-text)]">
+                  Seguimiento del avance por tareas, exÃ¡menes, videos y asistencia.
                 </p>
               </div>
 
@@ -4501,14 +4501,14 @@ const guardarConfiguracionTarea = async () => {
                   value={busquedaProgreso}
                   onChange={(e) => setBusquedaProgreso(e.target.value)}
                   placeholder="Buscar alumno o DNI..."
-                  className="w-full min-w-[260px] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200"
+                  className="w-full min-w-[260px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-[var(--color-card)] focus:ring-2 focus:ring-slate-200"
                 />
 
                 <button
                   type="button"
                   onClick={() => cargarProgresoCurso(true)}
                   disabled={cargandoProgreso}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-60"
                 >
                   {cargandoProgreso ? "Actualizando..." : "Recargar"}
                 </button>
@@ -4516,7 +4516,7 @@ const guardarConfiguracionTarea = async () => {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-6">
-              <div className="rounded-2xl bg-slate-950 p-5 text-white">
+              <div className="rounded-2xl bg-[var(--color-sidenav)] p-5 text-white">
                 <p className="text-xs uppercase tracking-[0.14em] text-slate-300">
                   Promedio general
                 </p>
@@ -4525,18 +4525,18 @@ const guardarConfiguracionTarea = async () => {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-blue-50 p-5">
-                <p className="text-xs uppercase tracking-[0.14em] text-blue-700">
+              <div className="rounded-2xl bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] p-5">
+                <p className="text-xs uppercase tracking-[0.14em] text-[var(--color-primary)]">
                   Promedio tareas
                 </p>
-                <p className="mt-3 text-4xl font-black text-blue-700">
+                <p className="mt-3 text-4xl font-black text-[var(--color-primary)]">
                   {Number(progresoResumen.promedioTareas || 0).toFixed(0)}%
                 </p>
               </div>
 
               <div className="rounded-2xl bg-violet-50 p-5">
                 <p className="text-xs uppercase tracking-[0.14em] text-violet-700">
-                  Promedio exámenes
+                  Promedio exÃ¡menes
                 </p>
                 <p className="mt-3 text-4xl font-black text-violet-700">
                   {Number(progresoResumen.promedioExamenes || 0).toFixed(0)}%
@@ -4563,7 +4563,7 @@ const guardarConfiguracionTarea = async () => {
                   {Number(progresoResumen.promedioAsistencia || 0).toFixed(0)}%
                 </p>
                 <p className="mt-2 text-xs text-amber-700/80">
-                  {progresoResumen.totalSesiones || 0} sesión(es)
+                  {progresoResumen.totalSesiones || 0} sesiÃ³n(es)
                 </p>
               </div>
 
@@ -4578,11 +4578,11 @@ const guardarConfiguracionTarea = async () => {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="grid grid-cols-12 gap-4 border-b border-slate-200 bg-slate-50 px-5 py-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+          <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm overflow-hidden">
+            <div className="grid grid-cols-12 gap-4 border-b border-[var(--color-border)] bg-[var(--color-background)] px-5 py-4 text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-muted-text)]">
               <div className="col-span-12 2xl:col-span-3">Alumno</div>
               <div className="col-span-6 md:col-span-3 2xl:col-span-2">Tareas</div>
-              <div className="col-span-6 md:col-span-3 2xl:col-span-2">Exámenes</div>
+              <div className="col-span-6 md:col-span-3 2xl:col-span-2">ExÃ¡menes</div>
               <div className="col-span-6 md:col-span-3 2xl:col-span-2">Videos</div>
               <div className="col-span-6 md:col-span-3 2xl:col-span-1">Asistencia</div>
               <div className="col-span-12 2xl:col-span-2 2xl:text-right">Progreso</div>
@@ -4593,7 +4593,7 @@ const guardarConfiguracionTarea = async () => {
                 {[1, 2, 3, 4].map((item) => (
                   <div
                     key={item}
-                    className="animate-pulse rounded-2xl border border-slate-200 p-4"
+                    className="animate-pulse rounded-2xl border border-[var(--color-border)] p-4"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
@@ -4611,11 +4611,11 @@ const guardarConfiguracionTarea = async () => {
               </div>
             ) : alumnosFiltradosProgreso.length === 0 ? (
               <div className="p-10 text-center">
-                <p className="font-semibold text-slate-700">
+                <p className="font-semibold text-[var(--color-text)]">
                   No hay datos de progreso para mostrar.
                 </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  Revisa si el grupo tiene matrículas, tareas, exámenes, videos o asistencia registrada.
+                <p className="mt-2 text-sm text-[var(--color-muted-text)]">
+                  Revisa si el grupo tiene matrÃ­culas, tareas, exÃ¡menes, videos o asistencia registrada.
                 </p>
               </div>
             ) : (
@@ -4632,7 +4632,7 @@ const guardarConfiguracionTarea = async () => {
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-12 2xl:col-span-3">
                           <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 overflow-hidden rounded-full border border-slate-200 bg-slate-100 flex items-center justify-center">
+                            <div className="h-12 w-12 overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-background)] flex items-center justify-center">
                               {fila.foto_url ? (
                                 <img
                                   src={fila.foto_url}
@@ -4641,76 +4641,76 @@ const guardarConfiguracionTarea = async () => {
                                   loading="lazy"
                                 />
                               ) : (
-                                <span className="text-[11px] text-slate-400">Sin foto</span>
+                                <span className="text-[11px] text-[var(--color-muted-text)]">Sin foto</span>
                               )}
                             </div>
 
                             <div className="min-w-0">
-                              <p className="truncate text-base font-bold text-slate-900">
+                              <p className="truncate text-base font-bold text-[var(--color-text)]">
                                 {fila.nombre} {fila.apellido}
                               </p>
-                              <p className="text-sm text-slate-500">
-                                DNI: {fila.numdocumento || "-"} · Matrícula #{fila.idmatricula}
+                              <p className="text-sm text-[var(--color-muted-text)]">
+                                DNI: {fila.numdocumento || "-"} Â· MatrÃ­cula #{fila.idmatricula}
                               </p>
                             </div>
                           </div>
                         </div>
 
                         <div className="col-span-6 md:col-span-3 2xl:col-span-2">
-                          <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          <div className="rounded-2xl bg-[var(--color-background)] px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted-text)]">
                               Tareas
                             </p>
-                            <p className="mt-1 text-lg font-bold text-slate-900">
+                            <p className="mt-1 text-lg font-bold text-[var(--color-text)]">
                               {fila.tareasEntregadas || 0}/{fila.totalTareas || 0}
                             </p>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-[var(--color-muted-text)]">
                               {Number(fila.progresoTareas || 0).toFixed(0)}%
                             </p>
                           </div>
                         </div>
 
                         <div className="col-span-6 md:col-span-3 2xl:col-span-2">
-                          <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Exámenes
+                          <div className="rounded-2xl bg-[var(--color-background)] px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted-text)]">
+                              ExÃ¡menes
                             </p>
-                            <p className="mt-1 text-lg font-bold text-slate-900">
+                            <p className="mt-1 text-lg font-bold text-[var(--color-text)]">
                               {fila.examenesRendidos || 0}/{fila.totalExamenes || 0}
                             </p>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-[var(--color-muted-text)]">
                               {Number(fila.progresoExamenes || 0).toFixed(0)}%
                             </p>
                           </div>
                         </div>
 
                         <div className="col-span-6 md:col-span-3 2xl:col-span-2">
-                          <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          <div className="rounded-2xl bg-[var(--color-background)] px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted-text)]">
                               Videos
                             </p>
-                            <p className="mt-1 text-lg font-bold text-slate-900">
+                            <p className="mt-1 text-lg font-bold text-[var(--color-text)]">
                               {fila.videosCompletados || 0}/{fila.totalVideos || 0}
                             </p>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-[var(--color-muted-text)]">
                               {Number(fila.progresoVideos || 0).toFixed(0)}%
                             </p>
-                            <p className="mt-1 text-[11px] text-slate-400">
+                            <p className="mt-1 text-[11px] text-[var(--color-muted-text)]">
                               Iniciados: {fila.videosIniciados || 0}
                             </p>
                           </div>
                         </div>
 
                         <div className="col-span-6 md:col-span-3 2xl:col-span-1">
-                          <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          <div className="rounded-2xl bg-[var(--color-background)] px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted-text)]">
                               Asistencia
                             </p>
-                            <p className="mt-1 text-lg font-bold text-slate-900">
+                            <p className="mt-1 text-lg font-bold text-[var(--color-text)]">
                               {Number(fila.progresoAsistencia || 0).toFixed(0)}%
                             </p>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                              P:{fila.presentes || 0} · T:{fila.tardanzas || 0} · F:{fila.faltas || 0}
+                            <p className="text-[11px] text-[var(--color-muted-text)] mt-1">
+                              P:{fila.presentes || 0} Â· T:{fila.tardanzas || 0} Â· F:{fila.faltas || 0}
                             </p>
                           </div>
                         </div>
@@ -4722,7 +4722,7 @@ const guardarConfiguracionTarea = async () => {
                             >
                               {clase.label}
                             </span>
-                            <span className="text-2xl font-black text-slate-900">
+                            <span className="text-2xl font-black text-[var(--color-text)]">
                               {porcentaje.toFixed(0)}%
                             </span>
                           </div>
@@ -4730,7 +4730,7 @@ const guardarConfiguracionTarea = async () => {
                       </div>
 
                       <div className="mt-4">
-                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--color-background)]">
                           <div
                             className={`h-full rounded-full ${clase.bar} transition-all duration-500`}
                             style={{ width: `${Math.min(porcentaje, 100)}%` }}
@@ -4751,11 +4751,11 @@ const guardarConfiguracionTarea = async () => {
       )}
 
       {tabActiva === "asistencia" && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+        <div className="bg-[var(--color-card)] p-6 rounded-2xl shadow-sm border border-[var(--color-border)] space-y-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <h3 className="text-xl font-bold">Asistencia</h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[var(--color-muted-text)]">
                 Registrar y consultar asistencia por fecha
               </p>
             </div>
@@ -4784,7 +4784,7 @@ const guardarConfiguracionTarea = async () => {
               <button
                 type="button"
                 onClick={irAHoy}
-                className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+                className="bg-[var(--color-button-primary)] text-white px-4 py-2 rounded-xl hover:brightness-95"
               >
                 Hoy
               </button>
@@ -4810,10 +4810,10 @@ const guardarConfiguracionTarea = async () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <h4 className="font-bold text-amber-900">
-                  Configuración para marcado del alumno
+                  ConfiguraciÃ³n para marcado del alumno
                 </h4>
                 <p className="text-sm text-amber-800">
-                  Define el horario en el que el alumno podrá marcar su propia asistencia para la fecha seleccionada.
+                  Define el horario en el que el alumno podrÃ¡ marcar su propia asistencia para la fecha seleccionada.
                 </p>
               </div>
 
@@ -4846,7 +4846,7 @@ const guardarConfiguracionTarea = async () => {
                       hora_inicio: e.target.value,
                     }))
                   }
-                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                  className="w-full border rounded-xl px-3 py-2 bg-[var(--color-card)]"
                 />
               </div>
 
@@ -4863,7 +4863,7 @@ const guardarConfiguracionTarea = async () => {
                       hora_fin: e.target.value,
                     }))
                   }
-                  className="w-full border rounded-xl px-3 py-2 bg-white"
+                  className="w-full border rounded-xl px-3 py-2 bg-[var(--color-card)]"
                 />
               </div>
 
@@ -4878,18 +4878,18 @@ const guardarConfiguracionTarea = async () => {
                     ? "Guardando..."
                     : cargandoConfigAsistencia
                     ? "Cargando..."
-                    : "Guardar configuración"}
+                    : "Guardar configuraciÃ³n"}
                 </button>
               </div>
             </div>
 
             <p className="text-xs text-amber-700">
-              Esta configuración aplica al grupo actual y a la fecha seleccionada:{" "}
+              Esta configuraciÃ³n aplica al grupo actual y a la fecha seleccionada:{" "}
               <span className="font-semibold">{fechaAsistencia}</span>.
             </p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl px-4 py-3 text-sm">
+          <div className="bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] border border-[var(--color-primary)] text-[var(--color-primary)] rounded-xl px-4 py-3 text-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block font-semibold mb-2">
@@ -4926,22 +4926,22 @@ const guardarConfiguracionTarea = async () => {
           </div>
 
           {alumnosFiltradosAsistencia.length === 0 ? (
-            <p className="text-gray-500">
+            <p className="text-[var(--color-muted-text)]">
               No se encontraron alumnos con ese filtro.
             </p>
           ) : (
-            <div className="overflow-auto rounded-2xl border border-gray-200">
+            <div className="overflow-auto rounded-2xl border border-[var(--color-border)]">
               <table className="w-full text-left min-w-[1100px]">
                 <thead>
-                  <tr className="border-b bg-gray-50">
+                  <tr className="border-b bg-[var(--color-background)]">
                     <th className="py-3 px-2">Foto</th>
                     <th className="py-3 px-2">Alumno</th>
                     <th className="py-3 px-2">DNI</th>
                     <th className="py-3 px-2">Presente</th>
                     <th className="py-3 px-2">Tardanza</th>
                     <th className="py-3 px-2">Falta</th>
-                    <th className="py-3 px-2">Justificación</th>
-                    <th className="py-3 px-2">Observación</th>
+                    <th className="py-3 px-2">JustificaciÃ³n</th>
+                    <th className="py-3 px-2">ObservaciÃ³n</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4952,7 +4952,7 @@ const guardarConfiguracionTarea = async () => {
                     return (
                       <tr key={key} className="border-b align-top">
                         <td className="py-3 px-2">
-                          <div className="w-12 h-12 rounded-full overflow-hidden border bg-gray-50 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full overflow-hidden border bg-[var(--color-background)] flex items-center justify-center">
                             {a.foto_url ? (
                               <img
                                 src={a.foto_url}
@@ -4960,7 +4960,7 @@ const guardarConfiguracionTarea = async () => {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-[var(--color-muted-text)]">
                                 Sin foto
                               </span>
                             )}
@@ -5049,7 +5049,7 @@ const guardarConfiguracionTarea = async () => {
             <button
               type="button"
               onClick={guardarAsistencia}
-              className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+              className="bg-[var(--color-button-primary)] text-white px-4 py-2 rounded-xl hover:brightness-95"
             >
               Guardar asistencia
             </button>
@@ -5059,11 +5059,11 @@ const guardarConfiguracionTarea = async () => {
 
       {tabActiva === "tareas" && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+          <div className="bg-[var(--color-card)] p-6 rounded-2xl shadow-sm border border-[var(--color-border)] space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold">Tareas del curso</h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-[var(--color-muted-text)] mt-1">
                   Crea tareas directamente para este curso y administra su
                   seguimiento.
                 </p>
@@ -5073,7 +5073,7 @@ const guardarConfiguracionTarea = async () => {
                 <button
                   type="button"
                   onClick={() => setMostrarFormTarea((prev) => !prev)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+                  className="bg-[var(--color-button-primary)] text-white px-4 py-2 rounded-xl hover:brightness-95"
                 >
                   {mostrarFormTarea ? "Cancelar" : "Nueva tarea"}
                 </button>
@@ -5081,9 +5081,9 @@ const guardarConfiguracionTarea = async () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-2xl border bg-slate-50 p-4">
-                <p className="text-sm text-gray-500">Total de tareas</p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">
+              <div className="rounded-2xl border bg-[var(--color-background)] p-4">
+                <p className="text-sm text-[var(--color-muted-text)]">Total de tareas</p>
+                <p className="text-2xl font-bold text-[var(--color-text)] mt-1">
                   {tareas.length}
                 </p>
               </div>
@@ -5105,7 +5105,7 @@ const guardarConfiguracionTarea = async () => {
 
             {moduloDestinoTarea && (
               <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
-                Creando tarea para el módulo:{" "}
+                Creando tarea para el mÃ³dulo:{" "}
                 <span className="font-semibold">
                   {moduloDestinoTarea.titulo}
                 </span>
@@ -5118,19 +5118,19 @@ const guardarConfiguracionTarea = async () => {
                 className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6"
               >
                 <div className="md:col-span-2">
-                  <label className="block font-semibold mb-2">Título</label>
+                  <label className="block font-semibold mb-2">TÃ­tulo</label>
                   <input
                     type="text"
                     name="titulo"
                     value={formTarea.titulo}
                     onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                     placeholder="Ej. Tarea semana 1"
                     required
                   />
                 </div>
                 <div className="md:col-span-2">
-                <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer">
+                <label className="inline-flex items-center gap-3 rounded-xl border border-[var(--color-border)] px-4 py-3 bg-[var(--color-background)] cursor-pointer">
                   <input
                     type="checkbox"
                     name="calificable"
@@ -5139,9 +5139,9 @@ const guardarConfiguracionTarea = async () => {
                     className="h-4 w-4"
                   />
                   <div>
-                    <p className="font-semibold text-gray-800">Tarea calificada</p>
-                    <p className="text-sm text-gray-500">
-                      Si la marcas, esta tarea podrá usarse en el registro de notas.
+                    <p className="font-semibold text-[var(--color-text)]">Tarea calificada</p>
+                    <p className="text-sm text-[var(--color-muted-text)]">
+                      Si la marcas, esta tarea podrÃ¡ usarse en el registro de notas.
                     </p>
                   </div>
                 </label>
@@ -5149,12 +5149,12 @@ const guardarConfiguracionTarea = async () => {
 
 
                 <div className="md:col-span-2">
-                  <label className="block font-semibold mb-2">Descripción</label>
+                  <label className="block font-semibold mb-2">DescripciÃ³n</label>
                   <textarea
                     name="descripcion"
                     value={formTarea.descripcion}
                     onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
                     placeholder="Describe la actividad a realizar"
                     required
                   />
@@ -5169,21 +5169,21 @@ const guardarConfiguracionTarea = async () => {
                     name="fechaInicio"
                     value={formTarea.fechaInicio}
                     onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block font-semibold mb-2">
-                    Fecha límite
+                    Fecha lÃ­mite
                   </label>
                   <input
                     type="date"
                     name="fechaLimite"
                     value={formTarea.fechaLimite}
                     onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                     required
                   />
                 </div>
@@ -5196,7 +5196,7 @@ const guardarConfiguracionTarea = async () => {
                     name="tipoEntrega"
                     value={formTarea.tipoEntrega}
                     onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                     required
                   >
                     <option value="">Seleccione</option>
@@ -5214,7 +5214,7 @@ const guardarConfiguracionTarea = async () => {
                     name="tipoApoyo"
                     value={formTarea.tipoApoyo}
                     onChange={handleChangeTarea}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                   >
                     <option value="ninguno">Ninguno</option>
                     <option value="texto">Texto</option>
@@ -5247,7 +5247,7 @@ const guardarConfiguracionTarea = async () => {
                       type="file"
                       name="archivoApoyo"
                       onChange={handleFileChangeTarea}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                     />
                   </div>
                 )}
@@ -5262,7 +5262,7 @@ const guardarConfiguracionTarea = async () => {
                       name="videoApoyo"
                       accept="video/*"
                       onChange={handleFileChangeTarea}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                     />
                   </div>
                 )}
@@ -5280,29 +5280,29 @@ const guardarConfiguracionTarea = async () => {
             )}
           </div>
 
-          <div className="bg-white/95 p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-slate-200/70">
+          <div className="bg-[var(--color-card)] p-6 rounded-[24px] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.25)] border border-[var(--color-border)]">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold">Listado de tareas</h4>
 
               <button
                 type="button"
                 onClick={cargarTareasCurso}
-                className="text-sm px-3 py-2 rounded-xl border hover:bg-gray-50"
+                className="text-sm px-3 py-2 rounded-xl border hover:bg-[var(--color-background)]"
               >
                 Recargar
               </button>
             </div>
 
             {cargandoTareas ? (
-              <p className="text-gray-500">Cargando tareas...</p>
+              <p className="text-[var(--color-muted-text)]">Cargando tareas...</p>
             ) : tareas.length === 0 ? (
-              <div className="border border-dashed border-gray-300 rounded-2xl p-8 text-center">
-                <p className="text-gray-700 font-medium">
+              <div className="border border-dashed border-[var(--color-border)] rounded-2xl p-8 text-center">
+                <p className="text-[var(--color-text)] font-medium">
                   No hay tareas registradas
                 </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Crea la primera tarea de este curso desde el botón “Nueva
-                  tarea”.
+                <p className="text-sm text-[var(--color-muted-text)] mt-2">
+                  Crea la primera tarea de este curso desde el botÃ³n â€œNueva
+                  tareaâ€.
                 </p>
               </div>
             ) : (
@@ -5330,7 +5330,7 @@ const guardarConfiguracionTarea = async () => {
                             className={`overflow-hidden rounded-2xl border shadow-sm transition ${
                               tarea.revisada
                                 ? "border-emerald-200 bg-emerald-50/60"
-                                : "border-gray-200 bg-white"
+                                : "border-[var(--color-border)] bg-[var(--color-card)]"
                             }`}
                           >
                             <div
@@ -5349,7 +5349,7 @@ const guardarConfiguracionTarea = async () => {
                               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                                 <div className="flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <h5 className="text-lg font-bold text-gray-800">
+                                    <h5 className="text-lg font-bold text-[var(--color-text)]">
                                       {tarea.titulo}
                                     </h5>
 
@@ -5372,13 +5372,13 @@ const guardarConfiguracionTarea = async () => {
                                     )}
                                   </div>
 
-                                  <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-500">
+                                  <div className="mt-2 flex flex-wrap gap-3 text-sm text-[var(--color-muted-text)]">
                                     <span>
                                       <strong>Inicio:</strong>{" "}
                                       {formatearFecha(tarea.fecha_inicio)}
                                     </span>
                                     <span>
-                                      <strong>Límite:</strong>{" "}
+                                      <strong>LÃ­mite:</strong>{" "}
                                       {formatearFecha(tarea.fecha_limite)}
                                     </span>
                                   </div>
@@ -5402,46 +5402,46 @@ const guardarConfiguracionTarea = async () => {
                                         e.stopPropagation();
                                         abrirConfigTarea(tarea);
                                       }}
-                                      className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 transition"
+                                      className="inline-flex items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-2 text-[var(--color-muted-text)] hover:bg-[var(--color-background)] transition"
                                       title="Configurar nota de la tarea"
                                     >
                                       <Settings className="w-4 h-4" />
                                     </button>
                                   )}
 
-                                  <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1">
+                                  <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)] text-xs font-semibold px-3 py-1">
                                     {tarea.tipo_entrega || "Sin tipo"}
                                   </span>
 
-                                  <span className="text-lg text-gray-500">
-                                    {abierta ? "▲" : "▼"}
+                                  <span className="text-lg text-[var(--color-muted-text)]">
+                                    {abierta ? "â–²" : "â–¼"}
                                   </span>
                                 </div>
                               </div>
                             </div>
 
                             {abierta && (
-                              <div className="border-t bg-white px-4 py-4 md:px-5 md:py-5 space-y-4">
+                              <div className="border-t bg-[var(--color-card)] px-4 py-4 md:px-5 md:py-5 space-y-4">
                                 <div>
-                                  <p className="text-sm font-semibold text-gray-700 mb-2">
-                                    Descripción
+                                  <p className="text-sm font-semibold text-[var(--color-text)] mb-2">
+                                    DescripciÃ³n
                                   </p>
-                                  <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700 whitespace-pre-line">
-                                    {tarea.descripcion || "Sin descripción"}
+                                  <div className="rounded-xl border bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)] whitespace-pre-line">
+                                    {tarea.descripcion || "Sin descripciÃ³n"}
                                   </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                  <div className="rounded-xl border bg-gray-50 p-3">
-                                    <p className="text-gray-500">Tipo de entrega</p>
-                                    <p className="font-medium text-gray-800">
+                                  <div className="rounded-xl border bg-[var(--color-background)] p-3">
+                                    <p className="text-[var(--color-muted-text)]">Tipo de entrega</p>
+                                    <p className="font-medium text-[var(--color-text)]">
                                       {tarea.tipo_entrega || "-"}
                                     </p>
                                   </div>
 
-                                  <div className="rounded-xl border bg-gray-50 p-3">
-                                    <p className="text-gray-500">Tipo de apoyo</p>
-                                    <p className="font-medium text-gray-800 capitalize">
+                                  <div className="rounded-xl border bg-[var(--color-background)] p-3">
+                                    <p className="text-[var(--color-muted-text)]">Tipo de apoyo</p>
+                                    <p className="font-medium text-[var(--color-text)] capitalize">
                                       {tarea.tipo_apoyo || "ninguno"}
                                     </p>
                                   </div>
@@ -5451,12 +5451,12 @@ const guardarConfiguracionTarea = async () => {
                                   tarea.archivo_apoyo_url ||
                                   tarea.video_apoyo_url) && (
                                   <div>
-                                    <p className="text-sm font-semibold text-gray-700 mb-2">
+                                    <p className="text-sm font-semibold text-[var(--color-text)] mb-2">
                                       Material de apoyo
                                     </p>
 
                                     {tarea.texto_apoyo && (
-                                      <div className="rounded-xl border bg-gray-50 p-3 text-sm text-gray-700 mb-3 whitespace-pre-line">
+                                      <div className="rounded-xl border bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)] mb-3 whitespace-pre-line">
                                         {tarea.texto_apoyo}
                                       </div>
                                     )}
@@ -5467,7 +5467,7 @@ const guardarConfiguracionTarea = async () => {
                                           href={tarea.archivo_apoyo_url}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                          className="px-3 py-2 rounded-xl border hover:bg-[var(--color-background)] text-sm"
                                         >
                                           Ver archivo de apoyo
                                         </a>
@@ -5478,7 +5478,7 @@ const guardarConfiguracionTarea = async () => {
                                           href={tarea.video_apoyo_url}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                          className="px-3 py-2 rounded-xl border hover:bg-[var(--color-background)] text-sm"
                                         >
                                           Ver video de apoyo
                                         </a>
@@ -5492,10 +5492,10 @@ const guardarConfiguracionTarea = async () => {
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                                       <div>
                                         <p className="text-sm font-semibold text-violet-800">
-                                          Configuración de nota de la tarea
+                                          ConfiguraciÃ³n de nota de la tarea
                                         </p>
                                         <p className="text-xs text-violet-700 mt-1">
-                                          Vincula esta tarea con una evaluación del tipo tarea.
+                                          Vincula esta tarea con una evaluaciÃ³n del tipo tarea.
                                         </p>
 
                                         {indicadorEvaluacion && (
@@ -5526,28 +5526,28 @@ const guardarConfiguracionTarea = async () => {
                                 )}
 
                                 <div>
-                                  <p className="text-sm font-semibold text-gray-700 mb-2">
+                                  <p className="text-sm font-semibold text-[var(--color-text)] mb-2">
                                     Entregas de alumnos
                                   </p>
 
                                   {cargandoDetalleTarea && tareaDetalle?.id === tarea.id ? (
-                                    <p className="text-sm text-gray-500">Cargando entregas...</p>
+                                    <p className="text-sm text-[var(--color-muted-text)]">Cargando entregas...</p>
                                   ) : tareaDetalle?.id === tarea.id ? (
                                     entregasTarea.length === 0 ? (
-                                      <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+                                      <div className="rounded-xl border border-dashed border-[var(--color-border)] p-4 text-sm text-[var(--color-muted-text)]">
                                         No hay alumnos ni entregas registradas para esta tarea.
                                       </div>
                                     ) : (
-                                      <div className="overflow-auto rounded-2xl border border-gray-200">
+                                      <div className="overflow-auto rounded-2xl border border-[var(--color-border)]">
                                         <table className="w-full min-w-[900px] text-sm">
-                                          <thead className="bg-gray-50">
+                                          <thead className="bg-[var(--color-background)]">
                                             <tr className="border-b">
                                               <th className="px-3 py-3 text-left">Alumno</th>
                                               <th className="px-3 py-3 text-left">Fecha</th>
                                               <th className="px-3 py-3 text-left">Hora</th>
                                               <th className="px-3 py-3 text-left">Entrega</th>
                                               <th className="px-3 py-3 text-left">Nota</th>
-                                              <th className="px-3 py-3 text-left">Acción</th>
+                                              <th className="px-3 py-3 text-left">AcciÃ³n</th>
                                             </tr>
                                           </thead>
 
@@ -5563,10 +5563,10 @@ const guardarConfiguracionTarea = async () => {
                                                   className="border-b align-middle"
                                                 >
                                                   <td className="px-3 py-3">
-                                                    <div className="font-medium text-gray-800">
+                                                    <div className="font-medium text-[var(--color-text)]">
                                                       {fila.nombre} {fila.apellido}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
+                                                    <div className="text-xs text-[var(--color-muted-text)]">
                                                       DNI: {fila.numdocumento || "-"}
                                                     </div>
                                                   </td>
@@ -5574,7 +5574,7 @@ const guardarConfiguracionTarea = async () => {
                                                   <td className="px-3 py-3">
                                                     {fechaEntrega
                                                       ? fechaEntrega.toLocaleDateString("es-PE")
-                                                      : "—"}
+                                                      : "â€”"}
                                                   </td>
 
                                                   <td className="px-3 py-3">
@@ -5583,7 +5583,7 @@ const guardarConfiguracionTarea = async () => {
                                                           hour: "2-digit",
                                                           minute: "2-digit",
                                                         })
-                                                      : "—"}
+                                                      : "â€”"}
                                                   </td>
 
                                                   <td className="px-3 py-3">
@@ -5594,7 +5594,7 @@ const guardarConfiguracionTarea = async () => {
                                                             href={fila.archivo_url}
                                                             target="_blank"
                                                             rel="noreferrer"
-                                                            className="inline-flex items-center rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                                                            className="inline-flex items-center rounded-xl border border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] px-3 py-2 text-sm font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
                                                           >
                                                             Ver archivo
                                                           </a>
@@ -5631,14 +5631,14 @@ const guardarConfiguracionTarea = async () => {
                                                         {!fila.archivo_url &&
                                                           !fila.comentario &&
                                                           !fila.enlace_url && (
-                                                            <span className="inline-flex rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs font-semibold">
+                                                            <span className="inline-flex rounded-full bg-[var(--color-background)] text-[var(--color-text)] px-3 py-1 text-xs font-semibold">
                                                               Entregado
                                                             </span>
                                                           )}
                                                       </div>
                                                     ) : (
                                                       <span className="inline-flex rounded-full bg-red-100 text-red-700 px-3 py-1 text-xs font-semibold">
-                                                        No entregó
+                                                        No entregÃ³
                                                       </span>
                                                     )}
                                                   </td>
@@ -5666,7 +5666,7 @@ const guardarConfiguracionTarea = async () => {
                                                       type="button"
                                                       disabled={!!guardandoNotaEntrega[fila.idmatricula]}
                                                       onClick={() => guardarNotaEntrega(fila)}
-                                                      className="rounded-xl bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 disabled:opacity-60"
+                                                      className="rounded-xl bg-[var(--color-button-primary)] text-white px-4 py-2 hover:brightness-95 disabled:opacity-60"
                                                     >
                                                       {guardandoNotaEntrega[fila.idmatricula]
                                                         ? "Guardando..."
@@ -5681,7 +5681,7 @@ const guardarConfiguracionTarea = async () => {
                                       </div>
                                     )
                                   ) : (
-                                    <div className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
+                                    <div className="rounded-xl border border-dashed border-[var(--color-border)] p-4 text-sm text-[var(--color-muted-text)]">
                                       Abre esta tarea para cargar entregas y calificaciones.
                                     </div>
                                   )}
@@ -5724,26 +5724,26 @@ const guardarConfiguracionTarea = async () => {
 
       {tabActiva === "modulos" && (
         <div className="space-y-6">
-          <div className="rounded-[28px] border border-slate-200/80 bg-white/95 p-6 md:p-7 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.28)]">
-            <div className="mb-6 rounded-[24px] border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 p-5 md:p-6">
+          <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] p-6 md:p-7 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.28)]">
+            <div className="mb-6 rounded-[24px] border border-[var(--color-border)] bg-gradient-to-br from-slate-50 via-white to-blue-50 p-5 md:p-6">
               <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
                 <div className="max-w-3xl">
                   <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <span className="inline-flex items-center rounded-full bg-slate-900 text-white px-3 py-1 text-xs font-semibold tracking-wide">
-                      Estructura académica
+                    <span className="inline-flex items-center rounded-full bg-[var(--color-sidenav)] text-white px-3 py-1 text-xs font-semibold tracking-wide">
+                      Estructura acadÃ©mica
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-3 py-1 text-xs font-semibold">
-                      {modulos.length} módulo{modulos.length === 1 ? "" : "s"}
+                    <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)] px-3 py-1 text-xs font-semibold">
+                      {modulos.length} mÃ³dulo{modulos.length === 1 ? "" : "s"}
                     </span>
                   </div>
 
-                  <h3 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">
-                    Módulos del curso
+                  <h3 className="text-2xl md:text-3xl font-black tracking-tight text-[var(--color-text)]">
+                    MÃ³dulos del curso
                   </h3>
 
-                  <p className="text-sm md:text-base text-slate-500 mt-2">
-                    Organiza el curso por módulos, submódulos, lecciones y
-                    materiales en una vista más clara, moderna y profesional.
+                  <p className="text-sm md:text-base text-[var(--color-muted-text)] mt-2">
+                    Organiza el curso por mÃ³dulos, submÃ³dulos, lecciones y
+                    materiales en una vista mÃ¡s clara, moderna y profesional.
                   </p>
                 </div>
 
@@ -5751,7 +5751,7 @@ const guardarConfiguracionTarea = async () => {
                   <button
                     type="button"
                     onClick={cargarModulosCurso}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] transition"
                   >
                     Recargar
                   </button>
@@ -5760,9 +5760,9 @@ const guardarConfiguracionTarea = async () => {
                     <button
                       type="button"
                       onClick={() => setMostrarFormModulo((prev) => !prev)}
-                      className="rounded-2xl bg-slate-900 text-white px-4 py-2.5 text-sm font-semibold hover:bg-slate-800 transition shadow-lg"
+                      className="rounded-2xl bg-[var(--color-sidenav)] text-white px-4 py-2.5 text-sm font-semibold hover:bg-slate-800 transition shadow-lg"
                     >
-                      {mostrarFormModulo ? "Cancelar" : "+ Crear módulo"}
+                      {mostrarFormModulo ? "Cancelar" : "+ Crear mÃ³dulo"}
                     </button>
                   )}
                 </div>
@@ -5772,33 +5772,33 @@ const guardarConfiguracionTarea = async () => {
             {mostrarFormModulo && (
               <form
                 onSubmit={guardarModuloCurso}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 md:p-6 mb-6"
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-[24px] border border-[var(--color-border)] bg-[var(--color-background)] p-5 md:p-6 mb-6"
               >
                 <div>
                   <label className="block font-semibold mb-2">
-                    Título del módulo
+                    TÃ­tulo del mÃ³dulo
                   </label>
                   <input
                     type="text"
                     name="titulo"
                     value={formModulo.titulo}
                     onChange={handleChangeModulo}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    placeholder="Ej. Módulo 1 - Introducción"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="Ej. MÃ³dulo 1 - IntroducciÃ³n"
                   />
                 </div>
 
                 <div>
                   <label className="block font-semibold mb-2">
-                    Descripción
+                    DescripciÃ³n
                   </label>
                   <input
                     type="text"
                     name="descripcion"
                     value={formModulo.descripcion}
                     onChange={handleChangeModulo}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                    placeholder="Descripción breve del módulo"
+                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    placeholder="DescripciÃ³n breve del mÃ³dulo"
                   />
                 </div>
 
@@ -5808,25 +5808,25 @@ const guardarConfiguracionTarea = async () => {
                     disabled={guardandoModulo}
                     className="rounded-2xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 transition shadow-lg"
                   >
-                    {guardandoModulo ? "Guardando..." : "Guardar módulo"}
+                    {guardandoModulo ? "Guardando..." : "Guardar mÃ³dulo"}
                   </button>
                 </div>
               </form>
             )}
 
             {cargandoModulos ? (
-              <p className="text-gray-500">Cargando módulos...</p>
+              <p className="text-[var(--color-muted-text)]">Cargando mÃ³dulos...</p>
             ) : modulos.length === 0 ? (
-              <div className="rounded-[28px] border border-dashed border-slate-300 bg-gradient-to-br from-white to-slate-50 p-10 text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-white text-2xl shadow-lg">
-                  📚
+              <div className="rounded-[28px] border border-dashed border-[var(--color-border)] bg-gradient-to-br from-white to-slate-50 p-10 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-sidenav)] text-white text-2xl shadow-lg">
+                  ðŸ“š
                 </div>
-                <p className="text-lg font-bold text-slate-800">
-                  No hay módulos registrados
+                <p className="text-lg font-bold text-[var(--color-text)]">
+                  No hay mÃ³dulos registrados
                 </p>
-                <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
-                  Crea el primer módulo para comenzar a estructurar el curso con
-                  submódulos, lecciones y materiales.
+                <p className="text-sm text-[var(--color-muted-text)] mt-2 max-w-md mx-auto">
+                  Crea el primer mÃ³dulo para comenzar a estructurar el curso con
+                  submÃ³dulos, lecciones y materiales.
                 </p>
               </div>
             ) : (
@@ -5848,30 +5848,30 @@ const guardarConfiguracionTarea = async () => {
 
                       return (
                         <SortableModuloItem key={modulo.id} modulo={modulo}>
-                          <div className="group relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.22)] transition hover:shadow-[0_24px_50px_-24px_rgba(15,23,42,0.30)]">
-                            <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-blue-600 via-violet-500 to-cyan-400" />
-                            <div className="px-5 md:px-6 py-5 bg-gradient-to-r from-slate-50 via-white to-blue-50/70 border-b border-slate-200">
+                          <div className="group relative overflow-hidden rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[0_18px_40px_-24px_rgba(15,23,42,0.22)] transition hover:shadow-[0_24px_50px_-24px_rgba(15,23,42,0.30)]">
+                            <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-[var(--color-primary)] via-violet-500 to-cyan-400" />
+                            <div className="px-5 md:px-6 py-5 bg-gradient-to-r from-slate-50 via-white to-blue-50/70 border-b border-[var(--color-border)]">
                               <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
                                 <div className="flex-1">
                                   <div className="flex flex-wrap items-center gap-3">
-                                    <span className="inline-flex items-center rounded-full bg-blue-600 text-white text-xs font-bold px-3 py-1.5 shadow-sm">
-                                      Módulo {index + 1}
+                                    <span className="inline-flex items-center rounded-full bg-[var(--color-button-primary)] text-white text-xs font-bold px-3 py-1.5 shadow-sm">
+                                      MÃ³dulo {index + 1}
                                     </span>
 
-                                    <h4 className="text-xl md:text-2xl font-black tracking-tight text-slate-900">
+                                    <h4 className="text-xl md:text-2xl font-black tracking-tight text-[var(--color-text)]">
                                       {modulo.titulo}
                                     </h4>
                                   </div>
 
                                   {modulo.descripcion && (
-                                    <p className="text-sm md:text-base text-slate-500 mt-3 max-w-3xl">
+                                    <p className="text-sm md:text-base text-[var(--color-muted-text)] mt-3 max-w-3xl">
                                       {modulo.descripcion}
                                     </p>
                                   )}
 
                                   <div className="mt-4 flex flex-wrap gap-2">
-                                    <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs font-semibold">
-                                      {modulo.submodulos?.length || 0} submódulo
+                                    <span className="inline-flex items-center rounded-full bg-[var(--color-background)] text-[var(--color-text)] px-3 py-1 text-xs font-semibold">
+                                      {modulo.submodulos?.length || 0} submÃ³dulo
                                       {(modulo.submodulos?.length || 0) === 1
                                         ? ""
                                         : "s"}
@@ -5885,8 +5885,8 @@ const guardarConfiguracionTarea = async () => {
 
                                   {tareasDelModulo.length > 0 && (
                                     <div className="mt-5">
-                                      <p className="text-sm font-semibold text-slate-600 mb-3">
-                                        Tareas vinculadas al módulo
+                                      <p className="text-sm font-semibold text-[var(--color-muted-text)] mb-3">
+                                        Tareas vinculadas al mÃ³dulo
                                       </p>
 
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -5897,11 +5897,11 @@ const guardarConfiguracionTarea = async () => {
                                           >
                                             <div className="flex items-start justify-between gap-3">
                                               <div>
-                                                <div className="font-semibold text-slate-800">
+                                                <div className="font-semibold text-[var(--color-text)]">
                                                   {tarea.titulo}
                                                 </div>
-                                                <div className="text-slate-500 text-xs mt-1">
-                                                  Límite:{" "}
+                                                <div className="text-[var(--color-muted-text)] text-xs mt-1">
+                                                  LÃ­mite:{" "}
                                                   {formatearFecha(
                                                     tarea.fecha_limite,
                                                   )}
@@ -5925,9 +5925,9 @@ const guardarConfiguracionTarea = async () => {
                                     onClick={() =>
                                       toggleFormSubModulo(modulo.id)
                                     }
-                                    className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+                                    className="inline-flex items-center justify-center rounded-2xl bg-[var(--color-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:brightness-95 transition shadow-sm"
                                   >
-                                    + Submódulo
+                                    + SubmÃ³dulo
                                   </button>
 
                                   <button
@@ -5945,7 +5945,7 @@ const guardarConfiguracionTarea = async () => {
                                     onClick={() =>
                                       toggleLeccionesModulo(modulo.id)
                                     }
-                                    className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                    className="inline-flex items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-sm font-semibold text-[var(--color-muted-text)] hover:bg-[var(--color-background)] transition"
                                   >
                                     {abierto ? "Ocultar" : "Ver contenido"}
                                   </button>
@@ -5979,7 +5979,7 @@ const guardarConfiguracionTarea = async () => {
                                 >
                                   <div>
                                     <label className="block font-semibold mb-2">
-                                      Título del submódulo
+                                      TÃ­tulo del submÃ³dulo
                                     </label>
                                     <input
                                       type="text"
@@ -5990,14 +5990,14 @@ const guardarConfiguracionTarea = async () => {
                                       onChange={(e) =>
                                         handleChangeSubModulo(modulo.id, e)
                                       }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                      placeholder="Ej. Submódulo 1.1"
+                                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                      placeholder="Ej. SubmÃ³dulo 1.1"
                                     />
                                   </div>
 
                                   <div>
                                     <label className="block font-semibold mb-2">
-                                      Descripción
+                                      DescripciÃ³n
                                     </label>
                                     <input
                                       type="text"
@@ -6009,8 +6009,8 @@ const guardarConfiguracionTarea = async () => {
                                       onChange={(e) =>
                                         handleChangeSubModulo(modulo.id, e)
                                       }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                      placeholder="Descripción breve"
+                                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                      placeholder="DescripciÃ³n breve"
                                     />
                                   </div>
 
@@ -6022,7 +6022,7 @@ const guardarConfiguracionTarea = async () => {
                                     >
                                       {guardandoSubModulo
                                         ? "Guardando..."
-                                        : "Guardar submódulo"}
+                                        : "Guardar submÃ³dulo"}
                                     </button>
                                   </div>
                                 </form>
@@ -6032,7 +6032,7 @@ const guardarConfiguracionTarea = async () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 border-t pt-5">
                                   <div>
                                     <label className="block font-semibold mb-2">
-                                      Editar título
+                                      Editar tÃ­tulo
                                     </label>
                                     <input
                                       type="text"
@@ -6043,13 +6043,13 @@ const guardarConfiguracionTarea = async () => {
                                           titulo: e.target.value,
                                         }))
                                       }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                     />
                                   </div>
 
                                   <div>
                                     <label className="block font-semibold mb-2">
-                                      Editar descripción
+                                      Editar descripciÃ³n
                                     </label>
                                     <input
                                       type="text"
@@ -6060,7 +6060,7 @@ const guardarConfiguracionTarea = async () => {
                                           descripcion: e.target.value,
                                         }))
                                       }
-                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                     />
                                   </div>
 
@@ -6068,7 +6068,7 @@ const guardarConfiguracionTarea = async () => {
                                     <button
                                       type="button"
                                       onClick={cancelarEdicionModulo}
-                                      className="px-4 py-2 rounded-xl border hover:bg-gray-50"
+                                      className="px-4 py-2 rounded-xl border hover:bg-[var(--color-background)]"
                                     >
                                       Cancelar
                                     </button>
@@ -6090,12 +6090,12 @@ const guardarConfiguracionTarea = async () => {
                             {abierto && (
                               <div className="p-5 space-y-4">
                                 {modulo.submodulos?.length === 0 ? (
-                                  <div className="border border-dashed border-gray-300 rounded-2xl p-6 text-center">
-                                    <p className="text-gray-700 font-medium">
-                                      Este módulo no tiene submódulos
+                                  <div className="border border-dashed border-[var(--color-border)] rounded-2xl p-6 text-center">
+                                    <p className="text-[var(--color-text)] font-medium">
+                                      Este mÃ³dulo no tiene submÃ³dulos
                                     </p>
-                                    <p className="text-sm text-gray-500 mt-2">
-                                      Agrega el primer submódulo para empezar a
+                                    <p className="text-sm text-[var(--color-muted-text)] mt-2">
+                                      Agrega el primer submÃ³dulo para empezar a
                                       organizar sesiones y materiales.
                                     </p>
                                   </div>
@@ -6119,22 +6119,22 @@ const guardarConfiguracionTarea = async () => {
                                             key={submodulo.id}
                                             submodulo={submodulo}
                                           >
-                                            <div className="rounded-[22px] border border-blue-100 bg-blue-50/60 overflow-hidden shadow-sm">
-                                              <div className="px-4 py-4 bg-blue-50/60">
+                                            <div className="rounded-[22px] border border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] overflow-hidden shadow-sm">
+                                              <div className="px-4 py-4 bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]">
                                                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
                                                   <div>
                                                     <div className="flex items-center gap-3 flex-wrap">
-                                                      <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5">
-                                                        Submódulo {index + 1}.{idxSub + 1}
+                                                      <span className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)] text-xs font-bold px-3 py-1.5">
+                                                        SubmÃ³dulo {index + 1}.{idxSub + 1}
                                                       </span>
 
-                                                      <h5 className="text-lg font-bold text-slate-800">
+                                                      <h5 className="text-lg font-bold text-[var(--color-text)]">
                                                         {submodulo.titulo}
                                                       </h5>
                                                     </div>
 
                                                     {submodulo.descripcion && (
-                                                      <p className="text-sm text-slate-500 mt-2">
+                                                      <p className="text-sm text-[var(--color-muted-text)] mt-2">
                                                         {submodulo.descripcion}
                                                       </p>
                                                     )}
@@ -6144,9 +6144,9 @@ const guardarConfiguracionTarea = async () => {
                                                     <button
                                                       type="button"
                                                       onClick={() => toggleFormLeccion(submodulo.id)}
-                                                      className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm"
+                                                      className="inline-flex items-center justify-center rounded-2xl bg-[var(--color-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:brightness-95 transition shadow-sm"
                                                     >
-                                                      + Lección
+                                                      + LecciÃ³n
                                                     </button>
 
                                                     <button
@@ -6180,7 +6180,7 @@ const guardarConfiguracionTarea = async () => {
                                                   >
                                                     <div>
                                                       <label className="block font-semibold mb-2">
-                                                        Título de la lección
+                                                        TÃ­tulo de la lecciÃ³n
                                                       </label>
                                                       <input
                                                         type="text"
@@ -6196,14 +6196,14 @@ const guardarConfiguracionTarea = async () => {
                                                             e,
                                                           )
                                                         }
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                        placeholder="Ej. Lección 1 - Introducción"
+                                                        className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                        placeholder="Ej. LecciÃ³n 1 - IntroducciÃ³n"
                                                       />
                                                     </div>
 
                                                     <div>
                                                       <label className="block font-semibold mb-2">
-                                                        Descripción
+                                                        DescripciÃ³n
                                                       </label>
                                                       <input
                                                         type="text"
@@ -6219,8 +6219,8 @@ const guardarConfiguracionTarea = async () => {
                                                             e,
                                                           )
                                                         }
-                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                        placeholder="Descripción breve"
+                                                        className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                        placeholder="DescripciÃ³n breve"
                                                       />
                                                     </div>
 
@@ -6234,7 +6234,7 @@ const guardarConfiguracionTarea = async () => {
                                                       >
                                                         {guardandoLeccion
                                                           ? "Guardando..."
-                                                          : "Guardar lección"}
+                                                          : "Guardar lecciÃ³n"}
                                                       </button>
                                                     </div>
                                                   </form>
@@ -6244,8 +6244,8 @@ const guardarConfiguracionTarea = async () => {
                                               <div className="p-4 space-y-4">
                                                 {submodulo.lecciones?.length ===
                                                 0 ? (
-                                                  <p className="text-sm text-gray-500">
-                                                    Este submódulo no tiene
+                                                  <p className="text-sm text-[var(--color-muted-text)]">
+                                                    Este submÃ³dulo no tiene
                                                     lecciones.
                                                   </p>
                                                 ) : (
@@ -6304,13 +6304,13 @@ const guardarConfiguracionTarea = async () => {
                                                               key={leccion.id}
                                                               leccion={leccion}
                                                             >
-                                                              <div className="relative ml-0 md:ml-8 rounded-[20px] border border-white bg-white overflow-hidden shadow-sm">
-                                                                <div className="px-4 py-4 bg-white">
+                                                              <div className="relative ml-0 md:ml-8 rounded-[20px] border border-white bg-[var(--color-card)] overflow-hidden shadow-sm">
+                                                                <div className="px-4 py-4 bg-[var(--color-card)]">
                                                                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
                                                                     <div>
                                                                       <div className="flex items-center gap-3 flex-wrap">
-                                                                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1.5">
-                                                                          Lección{" "}
+                                                                        <span className="inline-flex items-center rounded-full bg-[var(--color-background)] text-[var(--color-text)] text-xs font-bold px-3 py-1.5">
+                                                                          LecciÃ³n{" "}
                                                                           {index +
                                                                             1}
                                                                           .
@@ -6321,7 +6321,7 @@ const guardarConfiguracionTarea = async () => {
                                                                             1}
                                                                         </span>
 
-                                                                        <h5 className="text-lg font-bold text-slate-800">
+                                                                        <h5 className="text-lg font-bold text-[var(--color-text)]">
                                                                           {
                                                                             leccion.titulo
                                                                           }
@@ -6329,7 +6329,7 @@ const guardarConfiguracionTarea = async () => {
                                                                       </div>
 
                                                                       {leccion.descripcion && (
-                                                                        <p className="text-sm text-slate-500 mt-2">
+                                                                        <p className="text-sm text-[var(--color-muted-text)] mt-2">
                                                                           {
                                                                             leccion.descripcion
                                                                           }
@@ -6384,7 +6384,7 @@ const guardarConfiguracionTarea = async () => {
                                                                             leccion.id,
                                                                           )
                                                                         }
-                                                                        className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                        className="px-3 py-2 rounded-xl border hover:bg-[var(--color-background)] text-sm"
                                                                       >
                                                                         {abiertaMateriales
                                                                           ? "Ocultar materiales"
@@ -6398,7 +6398,7 @@ const guardarConfiguracionTarea = async () => {
                                                                             leccion,
                                                                           )
                                                                         }
-                                                                        className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                        className="px-3 py-2 rounded-xl border hover:bg-[var(--color-background)] text-sm"
                                                                       >
                                                                         Editar
                                                                       </button>
@@ -6422,10 +6422,10 @@ const guardarConfiguracionTarea = async () => {
                                                                     ?.length >
                                                                     0 && (
                                                                     <div className="mt-4 space-y-3">
-                                                                      <p className="text-sm font-semibold text-slate-700">
-                                                                        Exámenes
+                                                                      <p className="text-sm font-semibold text-[var(--color-text)]">
+                                                                        ExÃ¡menes
                                                                         de la
-                                                                        lección
+                                                                        lecciÃ³n
                                                                       </p>
 
                                                                       {leccion.examenes
@@ -6483,7 +6483,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                         1}
                                                                                     </span>
 
-                                                                                    <h6 className="font-bold text-slate-800">
+                                                                                    <h6 className="font-bold text-[var(--color-text)]">
                                                                                       {
                                                                                         examen.titulo
                                                                                       }
@@ -6503,7 +6503,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                   </div>
 
                                                                                   {examen.descripcion && (
-                                                                                    <p className="text-sm text-slate-500 mt-2">
+                                                                                    <p className="text-sm text-[var(--color-muted-text)] mt-2">
                                                                                       {
                                                                                         examen.descripcion
                                                                                       }
@@ -6511,17 +6511,17 @@ const guardarConfiguracionTarea = async () => {
                                                                                   )}
 
                                                                                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                    <span className="inline-flex rounded-full bg-[var(--color-card)] border px-3 py-1 text-[var(--color-text)]">
                                                                                       {examen.total_preguntas ||
                                                                                         0}{" "}
                                                                                       preguntas
                                                                                     </span>
-                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                    <span className="inline-flex rounded-full bg-[var(--color-card)] border px-3 py-1 text-[var(--color-text)]">
                                                                                       {examen.duracion_minutos ||
                                                                                         30}{" "}
                                                                                       min
                                                                                     </span>
-                                                                                    <span className="inline-flex rounded-full bg-white border px-3 py-1 text-slate-700">
+                                                                                    <span className="inline-flex rounded-full bg-[var(--color-card)] border px-3 py-1 text-[var(--color-text)]">
                                                                                       {examen.intentos_permitidos ||
                                                                                         1}{" "}
                                                                                       intento(s)
@@ -6534,8 +6534,8 @@ const guardarConfiguracionTarea = async () => {
                                                                                       }`}
                                                                                     >
                                                                                       {examen.evaluacion_nombre
-                                                                                        ? `Evaluación asignada: ${examen.evaluacion_nombre}`
-                                                                                        : "Sin evaluación asignada"}
+                                                                                        ? `EvaluaciÃ³n asignada: ${examen.evaluacion_nombre}`
+                                                                                        : "Sin evaluaciÃ³n asignada"}
                                                                                     </span>
                                                                                   </div>
                                                                                 </div>
@@ -6615,13 +6615,13 @@ const guardarConfiguracionTarea = async () => {
                                                                           <div>
                                                                             <p className="text-sm font-semibold text-amber-800">
                                                                               {examenEditandoId
-                                                                                ? `Editando examen: ${formExamen[leccion.id]?.titulo || "Sin título"}`
+                                                                                ? `Editando examen: ${formExamen[leccion.id]?.titulo || "Sin tÃ­tulo"}`
                                                                                 : "Creando nuevo examen"}
                                                                             </p>
                                                                             <p className="text-xs text-amber-700 mt-1">
                                                                               {examenEditandoId
-                                                                                ? "Mientras editas este examen, los demás exámenes de la lección se ocultan para evitar confusión."
-                                                                                : "Define la configuración general y luego agrega las preguntas."}
+                                                                                ? "Mientras editas este examen, los demÃ¡s exÃ¡menes de la lecciÃ³n se ocultan para evitar confusiÃ³n."
+                                                                                : "Define la configuraciÃ³n general y luego agrega las preguntas."}
                                                                             </p>
                                                                           </div>
 
@@ -6631,7 +6631,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                 <a
                                                                                   href={PLANTILLA_BANCO_PREGUNTAS_URL}
                                                                                   download
-                                                                                  className="rounded-2xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                                                                                  className="rounded-2xl border border-emerald-300 bg-[var(--color-card)] px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
                                                                                 >
                                                                                   Descargar plantilla para banco
                                                                                 </a>
@@ -6640,7 +6640,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                   className={`rounded-2xl px-4 py-2 text-sm font-semibold text-white transition ${
                                                                                     importandoBanco
                                                                                       ? "bg-slate-400 cursor-not-allowed"
-                                                                                      : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                                                                                      : "bg-[var(--color-button-primary)] hover:brightness-95 cursor-pointer"
                                                                                   }`}
                                                                                 >
                                                                                   {importandoBanco ? "Importando..." : "Importar Excel al banco"}
@@ -6662,7 +6662,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                       leccionId: leccion.id,
                                                                                     })
                                                                                   }
-                                                                                  className="rounded-2xl bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-200"
+                                                                                  className="rounded-2xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_16%,transparent)]"
                                                                                 >
                                                                                   Agregar preguntas desde banco
                                                                                 </button>
@@ -6676,7 +6676,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                   leccion.id,
                                                                                 )
                                                                               }
-                                                                              className="rounded-2xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100"
+                                                                              className="rounded-2xl border border-amber-300 bg-[var(--color-card)] px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100"
                                                                             >
                                                                               Cancelar
                                                                             </button>
@@ -6687,7 +6687,7 @@ const guardarConfiguracionTarea = async () => {
                                                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                         <div>
                                                                           <label className="block font-semibold mb-2">
-                                                                            Título
+                                                                            TÃ­tulo
                                                                             del
                                                                             examen
                                                                           </label>
@@ -6712,14 +6712,14 @@ const guardarConfiguracionTarea = async () => {
                                                                                   .value,
                                                                               )
                                                                             }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                             placeholder="Ej. Examen parcial"
                                                                           />
                                                                         </div>
 
                                                                         <div>
                                                                           <label className="block font-semibold mb-2">
-                                                                            Descripción
+                                                                            DescripciÃ³n
                                                                           </label>
                                                                           <input
                                                                             type="text"
@@ -6742,14 +6742,14 @@ const guardarConfiguracionTarea = async () => {
                                                                                   .value,
                                                                               )
                                                                             }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                            placeholder="Descripción breve"
+                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
+                                                                            placeholder="DescripciÃ³n breve"
                                                                           />
                                                                         </div>
 
                                                                         <div>
                                                                           <label className="block font-semibold mb-2">
-                                                                            Duración
+                                                                            DuraciÃ³n
                                                                             (minutos)
                                                                           </label>
                                                                           <input
@@ -6774,7 +6774,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                   .value,
                                                                               )
                                                                             }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                           />
                                                                         </div>
 
@@ -6805,7 +6805,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                   .value,
                                                                               )
                                                                             }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                           />
                                                                         </div>
                                                                       </div>
@@ -6827,10 +6827,10 @@ const guardarConfiguracionTarea = async () => {
                                                                               key={
                                                                                 preguntaIndex
                                                                               }
-                                                                              className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4"
+                                                                              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 space-y-4"
                                                                             >
                                                                               <div className="flex items-center justify-between gap-3">
-                                                                                <h6 className="font-bold text-slate-800">
+                                                                                <h6 className="font-bold text-[var(--color-text)]">
                                                                                   Pregunta{" "}
                                                                                   {preguntaIndex +
                                                                                     1}
@@ -6861,9 +6861,9 @@ const guardarConfiguracionTarea = async () => {
                                                                                       <button
                                                                                         type="button"
                                                                                         onClick={() => abrirFormulaEnunciado(leccion.id, preguntaIndex)}
-                                                                                        className="rounded-xl border px-3 py-2 text-sm hover:bg-slate-50"
+                                                                                        className="rounded-xl border px-3 py-2 text-sm hover:bg-[var(--color-background)]"
                                                                                       >
-                                                                                        Insertar fórmula
+                                                                                        Insertar fÃ³rmula
                                                                                       </button>
                                                                                     )}
                                                                                   </div>
@@ -6885,7 +6885,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                           .value,
                                                                                       )
                                                                                     }
-                                                                                    className="w-full min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                    className="w-full min-h-[110px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                     placeholder="Escribe la pregunta"
                                                                                   />
 
@@ -6921,7 +6921,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                           .value,
                                                                                       )
                                                                                     }
-                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                   />
                                                                                 </div>
 
@@ -6948,13 +6948,13 @@ const guardarConfiguracionTarea = async () => {
                                                                                           .value,
                                                                                       )
                                                                                     }
-                                                                                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                    className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                   >
                                                                                     <option value="unica">
                                                                                       Marcar
                                                                                       una
                                                                                       sola
-                                                                                      opción
+                                                                                      opciÃ³n
                                                                                     </option>
                                                                                     <option value="multiple">
                                                                                       Marcar
@@ -6971,7 +6971,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                     </option>
                                                                                     <option value="numerica">
                                                                                       Respuesta
-                                                                                      numérica
+                                                                                      numÃ©rica
                                                                                     </option>
                                                                                     <option value="archivo">
                                                                                       Subir
@@ -7014,11 +7014,11 @@ const guardarConfiguracionTarea = async () => {
                                                                                             .value,
                                                                                         )
                                                                                       }
-                                                                                      className="w-full min-h-[120px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      className="w-full min-h-[120px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                       placeholder="Escribe la respuesta esperada"
                                                                                     />
-                                                                                    <p className="mt-1 text-xs text-slate-500">
-                                                                                      Máximo{" "}
+                                                                                    <p className="mt-1 text-xs text-[var(--color-muted-text)]">
+                                                                                      MÃ¡ximo{" "}
                                                                                       {pregunta.tipo_pregunta ===
                                                                                       "texto_corto"
                                                                                         ? 50
@@ -7052,8 +7052,8 @@ const guardarConfiguracionTarea = async () => {
                                                                                             .value,
                                                                                         )
                                                                                       }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                      placeholder="Ej. Escribe tu respuesta aquí"
+                                                                                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
+                                                                                      placeholder="Ej. Escribe tu respuesta aquÃ­"
                                                                                     />
                                                                                   </div>
                                                                                 </div>
@@ -7077,16 +7077,16 @@ const guardarConfiguracionTarea = async () => {
                                                                                             e.target.value,
                                                                                           )
                                                                                         }
-                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                        className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                       >
-                                                                                        <option value="numero">Solo número</option>
-                                                                                        <option value="formula">Texto / fórmula matemática</option>
+                                                                                        <option value="numero">Solo nÃºmero</option>
+                                                                                        <option value="formula">Texto / fÃ³rmula matemÃ¡tica</option>
                                                                                       </select>
                                                                                     </div>
 
                                                                                     {(pregunta.modo_respuesta_numerica || "numero") !== "formula" && (
                                                                                       <div className="flex items-end">
-                                                                                        <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 cursor-pointer w-full">
+                                                                                        <label className="inline-flex items-center gap-3 rounded-xl border border-[var(--color-border)] px-4 py-3 bg-[var(--color-background)] cursor-pointer w-full">
                                                                                           <input
                                                                                             type="checkbox"
                                                                                             checked={!!pregunta.permitir_decimales}
@@ -7101,11 +7101,11 @@ const guardarConfiguracionTarea = async () => {
                                                                                             className="h-4 w-4"
                                                                                           />
                                                                                           <div>
-                                                                                            <p className="font-semibold text-gray-800">
+                                                                                            <p className="font-semibold text-[var(--color-text)]">
                                                                                               Permitir decimales
                                                                                             </p>
-                                                                                            <p className="text-sm text-gray-500">
-                                                                                              Si lo desactivas, solo se aceptarán enteros.
+                                                                                            <p className="text-sm text-[var(--color-muted-text)]">
+                                                                                              Si lo desactivas, solo se aceptarÃ¡n enteros.
                                                                                             </p>
                                                                                           </div>
                                                                                         </label>
@@ -7116,7 +7116,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                   {(pregunta.modo_respuesta_numerica || "numero") === "numero" ? (
                                                                                     <div>
                                                                                       <label className="block font-semibold mb-2">
-                                                                                        Respuesta numérica correcta
+                                                                                        Respuesta numÃ©rica correcta
                                                                                       </label>
                                                                                       <input
                                                                                         type="text"
@@ -7129,7 +7129,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                             e.target.value.replace(/[^\d.-]/g, ""),
                                                                                           )
                                                                                         }
-                                                                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                        className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                         placeholder="Ej. 25 o 25.5"
                                                                                       />
                                                                                     </div>
@@ -7137,7 +7137,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                     <div className="space-y-3">
                                                                                       <div className="flex flex-wrap items-center justify-between gap-3">
                                                                                         <label className="block font-semibold">
-                                                                                          Fórmula de referencia
+                                                                                          FÃ³rmula de referencia
                                                                                         </label>
 
                                                                                         <button
@@ -7151,7 +7151,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                           }
                                                                                           className="rounded-xl bg-violet-100 text-violet-700 px-4 py-2 text-sm hover:bg-violet-200"
                                                                                         >
-                                                                                          Insertar fórmula
+                                                                                          Insertar fÃ³rmula
                                                                                         </button>
                                                                                       </div>
 
@@ -7165,14 +7165,14 @@ const guardarConfiguracionTarea = async () => {
                                                                                             e.target.value,
                                                                                           )
                                                                                         }
-                                                                                        className="w-full min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                                                                        placeholder="Escribe el texto o fórmula matemática de referencia"
+                                                                                        className="w-full min-h-[110px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
+                                                                                        placeholder="Escribe el texto o fÃ³rmula matemÃ¡tica de referencia"
                                                                                       />
 
                                                                                       <FormulaNumericaPreview latex={pregunta.respuesta_texto || ""} />
 
-                                                                                      <p className="text-xs text-slate-500">
-                                                                                        Usa este modo cuando quieras aceptar una fórmula o expresión matemática en lugar de solo un número.
+                                                                                      <p className="text-xs text-[var(--color-muted-text)]">
+                                                                                        Usa este modo cuando quieras aceptar una fÃ³rmula o expresiÃ³n matemÃ¡tica en lugar de solo un nÃºmero.
                                                                                       </p>
                                                                                     </div>
                                                                                   )}
@@ -7184,8 +7184,8 @@ const guardarConfiguracionTarea = async () => {
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                                   <div>
                                                                                     <label className="block font-semibold mb-2">
-                                                                                      Tamaño
-                                                                                      máximo
+                                                                                      TamaÃ±o
+                                                                                      mÃ¡ximo
                                                                                       (MB)
                                                                                     </label>
                                                                                     <input
@@ -7207,7 +7207,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                             .value,
                                                                                         )
                                                                                       }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                     />
                                                                                   </div>
 
@@ -7234,10 +7234,10 @@ const guardarConfiguracionTarea = async () => {
                                                                                             .value,
                                                                                         )
                                                                                       }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                       placeholder="pdf,jpg,png,doc,docx"
                                                                                     />
-                                                                                    <p className="mt-1 text-xs text-slate-500">
+                                                                                    <p className="mt-1 text-xs text-[var(--color-muted-text)]">
                                                                                       Separadas
                                                                                       por
                                                                                       coma,
@@ -7270,7 +7270,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                             .value,
                                                                                         )
                                                                                       }
-                                                                                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                                                      className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3"
                                                                                       placeholder="Ej. Sube tu informe en PDF"
                                                                                     />
                                                                                   </div>
@@ -7297,11 +7297,11 @@ const guardarConfiguracionTarea = async () => {
                                                                                           className={`rounded-2xl border p-4 ${
                                                                                             opcion.es_correcta
                                                                                               ? "border-emerald-300 bg-emerald-50"
-                                                                                              : "border-slate-200 bg-white"
+                                                                                              : "border-[var(--color-border)] bg-[var(--color-card)]"
                                                                                           }`}
                                                                                         >
                                                                                           <label className="block font-semibold mb-2">
-                                                                                            Opción{" "}
+                                                                                            OpciÃ³n{" "}
                                                                                             {opcionIndex +
                                                                                               1}
                                                                                           </label>
@@ -7325,11 +7325,11 @@ const guardarConfiguracionTarea = async () => {
                                                                                                   .value,
                                                                                               )
                                                                                             }
-                                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 mb-3"
-                                                                                            placeholder={`Texto de la opción ${opcionIndex + 1}`}
+                                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 mb-3"
+                                                                                            placeholder={`Texto de la opciÃ³n ${opcionIndex + 1}`}
                                                                                           />
 
-                                                                                          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                                                                                          <label className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
                                                                                             <input
                                                                                               type={
                                                                                                 pregunta.tipo_pregunta ===
@@ -7373,7 +7373,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                             className="rounded-xl bg-red-100 text-red-700 px-3 py-2 text-sm hover:bg-red-200 mt-3"
                                                                                           >
                                                                                             Eliminar
-                                                                                            opción
+                                                                                            opciÃ³n
                                                                                           </button>
                                                                                         </div>
                                                                                       ),
@@ -7388,10 +7388,10 @@ const guardarConfiguracionTarea = async () => {
                                                                                         preguntaIndex,
                                                                                       )
                                                                                     }
-                                                                                    className="rounded-xl bg-blue-100 text-blue-700 px-4 py-2 text-sm hover:bg-blue-200"
+                                                                                    className="rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)] px-4 py-2 text-sm hover:bg-[color-mix(in_srgb,var(--color-primary)_16%,transparent)]"
                                                                                   >
-                                                                                    Añadir
-                                                                                    opción
+                                                                                    AÃ±adir
+                                                                                    opciÃ³n
                                                                                   </button>
                                                                                 </>
                                                                               )}
@@ -7408,7 +7408,7 @@ const guardarConfiguracionTarea = async () => {
                                                                               leccion.id,
                                                                             )
                                                                           }
-                                                                          className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                                                                          className="rounded-2xl bg-[var(--color-background)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                                                                         >
                                                                           +
                                                                           Agregar
@@ -7448,7 +7448,7 @@ const guardarConfiguracionTarea = async () => {
                                                                     >
                                                                       <div>
                                                                         <label className="block font-semibold mb-2">
-                                                                          Título
+                                                                          TÃ­tulo
                                                                           del
                                                                           material
                                                                         </label>
@@ -7466,8 +7466,8 @@ const guardarConfiguracionTarea = async () => {
                                                                               e,
                                                                             )
                                                                           }
-                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                                                                          placeholder="Ej. PDF de introducción"
+                                                                          className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                          placeholder="Ej. PDF de introducciÃ³n"
                                                                         />
                                                                       </div>
 
@@ -7488,7 +7488,7 @@ const guardarConfiguracionTarea = async () => {
                                                                               e,
                                                                             )
                                                                           }
-                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                          className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                         >
                                                                           <option value="texto">
                                                                             Texto
@@ -7529,8 +7529,8 @@ const guardarConfiguracionTarea = async () => {
                                                                                 e,
                                                                               )
                                                                             }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
-                                                                            placeholder="Escribe el contenido de la lección"
+                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
+                                                                            placeholder="Escribe el contenido de la lecciÃ³n"
                                                                           />
                                                                         </div>
                                                                       )}
@@ -7557,7 +7557,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                 e,
                                                                               )
                                                                             }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                             placeholder="https://vimeo.com/123456789"
                                                                           />
                                                                         </div>
@@ -7583,7 +7583,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                 e,
                                                                               )
                                                                             }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                             placeholder="https://..."
                                                                           />
                                                                         </div>
@@ -7613,11 +7613,11 @@ const guardarConfiguracionTarea = async () => {
                                                                                 ? "video/*"
                                                                                 : ".pdf,.ppt,.pptx,.doc,.docx,.zip,.rar"
                                                                             }
-                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                           />
 
                                                                           {formMat.file && (
-                                                                            <p className="text-sm text-gray-500 mt-2">
+                                                                            <p className="text-sm text-[var(--color-muted-text)] mt-2">
                                                                               Archivo
                                                                               seleccionado:{" "}
                                                                               {
@@ -7636,7 +7636,7 @@ const guardarConfiguracionTarea = async () => {
                                                                       ] && (
                                                                         <div className="md:col-span-2 space-y-2">
                                                                           <div className="flex items-center justify-between text-sm">
-                                                                            <span className="text-gray-700 font-medium">
+                                                                            <span className="text-[var(--color-text)] font-medium">
                                                                               {
                                                                                 subidaMaterialEstado[
                                                                                   leccion
@@ -7651,7 +7651,7 @@ const guardarConfiguracionTarea = async () => {
                                                                             ] ||
                                                                               0) <
                                                                               100 && (
-                                                                              <span className="text-gray-600">
+                                                                              <span className="text-[var(--color-muted-text)]">
                                                                                 {Math.round(
                                                                                   subidaMaterialProgress[
                                                                                     leccion
@@ -7673,7 +7673,7 @@ const guardarConfiguracionTarea = async () => {
                                                                           100 ? (
                                                                             <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                                                                               <div
-                                                                                className="h-full bg-blue-600 transition-all duration-200"
+                                                                                className="h-full bg-[var(--color-button-primary)] transition-all duration-200"
                                                                                 style={{
                                                                                   width: `${subidaMaterialProgress[leccion.id] || 0}%`,
                                                                                 }}
@@ -7715,7 +7715,7 @@ const guardarConfiguracionTarea = async () => {
                                                                       <div>
                                                                         <label className="block font-semibold mb-2">
                                                                           Editar
-                                                                          título
+                                                                          tÃ­tulo
                                                                         </label>
                                                                         <input
                                                                           type="text"
@@ -7737,14 +7737,14 @@ const guardarConfiguracionTarea = async () => {
                                                                               }),
                                                                             )
                                                                           }
-                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                          className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                         />
                                                                       </div>
 
                                                                       <div>
                                                                         <label className="block font-semibold mb-2">
                                                                           Editar
-                                                                          descripción
+                                                                          descripciÃ³n
                                                                         </label>
                                                                         <input
                                                                           type="text"
@@ -7766,7 +7766,7 @@ const guardarConfiguracionTarea = async () => {
                                                                               }),
                                                                             )
                                                                           }
-                                                                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                          className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                         />
                                                                       </div>
 
@@ -7776,7 +7776,7 @@ const guardarConfiguracionTarea = async () => {
                                                                           onClick={
                                                                             cancelarEdicionLeccion
                                                                           }
-                                                                          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                                                          className="inline-flex items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-sm font-semibold text-[var(--color-muted-text)] hover:bg-[var(--color-background)] transition"
                                                                         >
                                                                           Cancelar
                                                                         </button>
@@ -7799,16 +7799,16 @@ const guardarConfiguracionTarea = async () => {
                                                                 </div>
 
                                                                 {abiertaMateriales && (
-                                                                  <div className="border-t bg-gray-50 p-4">
+                                                                  <div className="border-t bg-[var(--color-background)] p-4">
                                                                     {leccion
                                                                       .materiales
                                                                       ?.length ===
                                                                     0 ? (
-                                                                      <p className="text-sm text-gray-500">
+                                                                      <p className="text-sm text-[var(--color-muted-text)]">
                                                                         No hay
                                                                         materiales
                                                                         en esta
-                                                                        lección.
+                                                                        lecciÃ³n.
                                                                       </p>
                                                                     ) : (
                                                                       <div className="space-y-3">
@@ -7860,7 +7860,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                     material
                                                                                   }
                                                                                 >
-                                                                                  <div className="relative ml-0 md:ml-10 rounded-[18px] border border-slate-200 bg-slate-50 p-4">
+                                                                                  <div className="relative ml-0 md:ml-10 rounded-[18px] border border-[var(--color-border)] bg-[var(--color-background)] p-4">
                                                                                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pr-16">
                                                                                       <div>
                                                                                         <div className="flex items-center gap-2 flex-wrap">
@@ -7870,14 +7870,14 @@ const guardarConfiguracionTarea = async () => {
                                                                                               1}
                                                                                           </span>
 
-                                                                                          <span className="inline-flex items-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold px-3 py-1.5 uppercase">
+                                                                                          <span className="inline-flex items-center rounded-full bg-slate-200 text-[var(--color-text)] text-xs font-bold px-3 py-1.5 uppercase">
                                                                                             {
                                                                                               material.tipo
                                                                                             }
                                                                                           </span>
                                                                                         </div>
 
-                                                                                        <h6 className="font-bold text-slate-800 mt-2 text-base">
+                                                                                        <h6 className="font-bold text-[var(--color-text)] mt-2 text-base">
                                                                                           {
                                                                                             material.titulo
                                                                                           }
@@ -7905,7 +7905,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                           )}
 
                                                                                         {material.contenido_texto && (
-                                                                                          <p className="text-sm text-gray-500 mt-2 whitespace-pre-line">
+                                                                                          <p className="text-sm text-[var(--color-muted-text)] mt-2 whitespace-pre-line">
                                                                                             {
                                                                                               material.contenido_texto
                                                                                             }
@@ -7922,7 +7922,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                                   material,
                                                                                                 )
                                                                                               }
-                                                                                              className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                                              className="px-3 py-2 rounded-xl border hover:bg-[var(--color-background)] text-sm"
                                                                                             >
                                                                                               Ver
                                                                                               archivo
@@ -7946,7 +7946,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                               }
                                                                                               target="_blank"
                                                                                               rel="noreferrer"
-                                                                                              className="px-3 py-2 rounded-xl border hover:bg-gray-50 text-sm"
+                                                                                              className="px-3 py-2 rounded-xl border hover:bg-[var(--color-background)] text-sm"
                                                                                             >
                                                                                               Abrir
                                                                                               enlace
@@ -7988,7 +7988,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                         <div>
                                                                                           <label className="block font-semibold mb-2">
                                                                                             Editar
-                                                                                            título
+                                                                                            tÃ­tulo
                                                                                           </label>
                                                                                           <input
                                                                                             type="text"
@@ -8010,7 +8010,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                                 }),
                                                                                               )
                                                                                             }
-                                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                                           />
                                                                                         </div>
 
@@ -8036,7 +8036,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                                 }),
                                                                                               )
                                                                                             }
-                                                                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                                            className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                                           >
                                                                                             <option value="texto">
                                                                                               Texto
@@ -8077,7 +8077,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                                   }),
                                                                                                 )
                                                                                               }
-                                                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
+                                                                                              className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 min-h-[120px]"
                                                                                             />
                                                                                           </div>
                                                                                         )}
@@ -8110,7 +8110,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                                   }),
                                                                                                 )
                                                                                               }
-                                                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                                              className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                                             />
                                                                                           </div>
                                                                                         )}
@@ -8141,7 +8141,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                                   }),
                                                                                                 )
                                                                                               }
-                                                                                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                                                                                              className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                                                                             />
                                                                                           </div>
                                                                                         )}
@@ -8152,7 +8152,7 @@ const guardarConfiguracionTarea = async () => {
                                                                                             onClick={
                                                                                               cancelarEdicionMaterial
                                                                                             }
-                                                                                            className="px-4 py-2 rounded-xl border hover:bg-gray-50"
+                                                                                            className="px-4 py-2 rounded-xl border hover:bg-[var(--color-background)]"
                                                                                           >
                                                                                             Cancelar
                                                                                           </button>
@@ -8217,28 +8217,28 @@ const guardarConfiguracionTarea = async () => {
           {notificacionesVideo.map((item) => (
             <div
               key={item.id}
-              className={`rounded-2xl border shadow-lg p-4 bg-white ${
+              className={`rounded-2xl border shadow-lg p-4 bg-[var(--color-card)] ${
                 item.estado === "success"
                   ? "border-emerald-200"
                   : item.estado === "error"
                     ? "border-red-200"
                     : item.estado === "warning"
                       ? "border-amber-200"
-                      : "border-slate-200"
+                      : "border-[var(--color-border)]"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-slate-800">{item.titulo || "Video"}</p>
-                  <p className="text-sm text-slate-600 mt-1">{item.mensaje}</p>
+                  <p className="font-semibold text-[var(--color-text)]">{item.titulo || "Video"}</p>
+                  <p className="text-sm text-[var(--color-muted-text)] mt-1">{item.mensaje}</p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => eliminarNotificacionVideo(item.id)}
-                  className="text-xs rounded-lg border px-2 py-1 hover:bg-slate-50"
+                  className="text-xs rounded-lg border px-2 py-1 hover:bg-[var(--color-background)]"
                 >
-                  ✕
+                  âœ•
                 </button>
               </div>
 
@@ -8250,14 +8250,14 @@ const guardarConfiguracionTarea = async () => {
                       className={`h-full transition-all duration-300 ${
                         item.estado === "processing"
                           ? "bg-amber-500"
-                          : "bg-blue-600"
+                          : "bg-[var(--color-button-primary)]"
                       }`}
                       style={{ width: `${item.progreso || 0}%` }}
                     />
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-[var(--color-muted-text)] mt-2">
                     {item.estado === "processing"
-                      ? "El video ya se subió. Vimeo lo está procesando."
+                      ? "El video ya se subiÃ³. Vimeo lo estÃ¡ procesando."
                       : `${Math.round(item.progreso || 0)}% completado`}
                   </p>
                 </div>
@@ -8288,8 +8288,8 @@ const guardarConfiguracionTarea = async () => {
             onClick={cerrarConfigTarea}
           />
 
-          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-5 text-white">
+          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-[var(--color-card)] shadow-2xl border border-[var(--color-border)] overflow-hidden">
+            <div className="bg-gradient-to-r from-[var(--color-sidenav)] via-[var(--color-sidenav)] to-slate-700 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-bold">
@@ -8311,21 +8311,21 @@ const guardarConfiguracionTarea = async () => {
 
             <div className="p-6 space-y-5">
               {cargandoConfigTarea ? (
-                <p className="text-slate-500">
+                <p className="text-[var(--color-muted-text)]">
                   Cargando evaluaciones disponibles...
                 </p>
               ) : (
                 <>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Tarea</p>
-                    <p className="text-base font-semibold text-slate-800 mt-1">
+                  <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+                    <p className="text-sm text-[var(--color-muted-text)]">Tarea</p>
+                    <p className="text-base font-semibold text-[var(--color-text)] mt-1">
                       {tareaConfigActual?.titulo || "-"}
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Seleccionar evaluación de tipo tarea
+                    <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">
+                      Seleccionar evaluaciÃ³n de tipo tarea
                     </label>
 
                     <select
@@ -8333,14 +8333,14 @@ const guardarConfiguracionTarea = async () => {
                       onChange={(e) =>
                         setEvaluacionSeleccionadaTarea(e.target.value)
                       }
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text)] shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
                     >
-                      <option value="">-- Selecciona una evaluación --</option>
+                      <option value="">-- Selecciona una evaluaciÃ³n --</option>
                       {evaluacionesTareaDisponibles.map((ev) => (
                         <option key={ev.id} value={ev.id}>
                           {ev.nombre} ({Number(ev.porcentaje || 0)}%)
                           {Number(ev.idtarea) === Number(tareaConfigActual?.id)
-                            ? " · actualmente vinculada"
+                            ? " Â· actualmente vinculada"
                             : ""}
                         </option>
                       ))}
@@ -8350,20 +8350,20 @@ const guardarConfiguracionTarea = async () => {
                   {evaluacionesTareaDisponibles.length === 0 && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                       No hay evaluaciones de tipo tarea disponibles para este
-                      grupo. Primero configúralas en Registro de Notas.
+                      grupo. Primero configÃºralas en Registro de Notas.
                     </div>
                   )}
 
-                  <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                  <div className="rounded-xl border border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] px-4 py-3 text-sm text-[var(--color-primary)]">
                     Solo se muestran evaluaciones activas del tipo tarea. Al
-                    guardar, esta tarea quedará vinculada a la evaluación
+                    guardar, esta tarea quedarÃ¡ vinculada a la evaluaciÃ³n
                     seleccionada.
                   </div>
 
                   <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                     <button
                       onClick={cerrarConfigTarea}
-                      className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                      className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] transition"
                     >
                       Cancelar
                     </button>
@@ -8383,7 +8383,7 @@ const guardarConfiguracionTarea = async () => {
                     >
                       {guardandoConfigTarea
                         ? "Guardando..."
-                        : "Guardar asignación"}
+                        : "Guardar asignaciÃ³n"}
                     </button>
                   </div>
                 </>
@@ -8400,8 +8400,8 @@ const guardarConfiguracionTarea = async () => {
             onClick={() => setModalEntregaOpen(false)}
           />
 
-          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-5 text-white">
+          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-[var(--color-card)] shadow-2xl border border-[var(--color-border)] overflow-hidden">
+            <div className="bg-gradient-to-r from-[var(--color-sidenav)] via-[var(--color-sidenav)] to-slate-700 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-bold">Entrega del alumno</h3>
@@ -8420,7 +8420,7 @@ const guardarConfiguracionTarea = async () => {
             </div>
 
             <div className="p-6">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 whitespace-pre-line text-sm text-slate-700 max-h-[420px] overflow-auto">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 whitespace-pre-line text-sm text-[var(--color-text)] max-h-[420px] overflow-auto">
                 {entregaSeleccionada?.contenido || "Sin contenido"}
               </div>
             </div>
@@ -8435,8 +8435,8 @@ const guardarConfiguracionTarea = async () => {
             onClick={cerrarBancoPreguntas}
           />
 
-          <div className="relative z-10 w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200">
-            <div className="bg-gradient-to-r from-blue-700 to-violet-700 px-6 py-5 text-white">
+          <div className="relative z-10 w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-3xl bg-[var(--color-card)] shadow-2xl border border-[var(--color-border)]">
+            <div className="bg-gradient-to-r from-[var(--color-primary)] to-violet-700 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-bold">
@@ -8450,7 +8450,7 @@ const guardarConfiguracionTarea = async () => {
                       <>
                         {" "}
                         <span className="font-semibold">
-                          {bancoExamenActual?.titulo || "Sin título"}
+                          {bancoExamenActual?.titulo || "Sin tÃ­tulo"}
                         </span>
                       </>
                     )}
@@ -8473,20 +8473,20 @@ const guardarConfiguracionTarea = async () => {
                   type="text"
                   value={busquedaBanco}
                   onChange={(e) => setBusquedaBanco(e.target.value)}
-                  placeholder="Buscar por enunciado, tipo, categoría o dificultad..."
-                  className="w-full md:max-w-lg rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  placeholder="Buscar por enunciado, tipo, categorÃ­a o dificultad..."
+                  className="w-full md:max-w-lg rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                 />
 
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-[var(--color-muted-text)]">
                   Seleccionadas:{" "}
-                  <span className="font-bold text-blue-700">
+                  <span className="font-bold text-[var(--color-primary)]">
                     {bancoSeleccionadas.length}
                   </span>
                 </div>
               </div>
 
               {cargandoBanco ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-slate-500">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-8 text-center text-[var(--color-muted-text)]">
                   Cargando banco de preguntas...
                 </div>
               ) : bancoPreguntasFiltradas.length === 0 ? (
@@ -8504,8 +8504,8 @@ const guardarConfiguracionTarea = async () => {
                         key={pregunta.id}
                         className={`block cursor-pointer rounded-2xl border p-4 transition ${
                           seleccionada
-                            ? "border-blue-400 bg-blue-50"
-                            : "border-slate-200 bg-white hover:bg-slate-50"
+                            ? "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
+                            : "border-[var(--color-border)] bg-[var(--color-card)] hover:bg-[var(--color-background)]"
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -8518,7 +8518,7 @@ const guardarConfiguracionTarea = async () => {
 
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                              <span className="rounded-full bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
                                 {pregunta.tipo_pregunta || "sin tipo"}
                               </span>
 
@@ -8539,7 +8539,7 @@ const guardarConfiguracionTarea = async () => {
                               </span>
                             </div>
 
-                            <p className="text-sm font-semibold text-slate-800 whitespace-pre-line">
+                            <p className="text-sm font-semibold text-[var(--color-text)] whitespace-pre-line">
                               {pregunta.enunciado}
                             </p>
 
@@ -8551,19 +8551,19 @@ const guardarConfiguracionTarea = async () => {
                                     className={`rounded-xl border px-3 py-2 text-xs ${
                                       opcion.es_correcta
                                         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                        : "border-slate-200 bg-slate-50 text-slate-600"
+                                        : "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted-text)]"
                                     }`}
                                   >
                                     {String.fromCharCode(65 + index)}.{" "}
                                     {opcion.texto_opcion || opcion.texto}
-                                    {opcion.es_correcta ? " ✓" : ""}
+                                    {opcion.es_correcta ? " âœ“" : ""}
                                   </div>
                                 ))}
                               </div>
                             )}
 
                             {pregunta.respuesta_referencia && (
-                              <p className="mt-2 text-xs text-slate-500">
+                              <p className="mt-2 text-xs text-[var(--color-muted-text)]">
                                 Respuesta de referencia:{" "}
                                 <span className="font-semibold">
                                   {pregunta.respuesta_referencia}
@@ -8579,11 +8579,11 @@ const guardarConfiguracionTarea = async () => {
               )}
             </div>
 
-            <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+            <div className="border-t border-[var(--color-border)] bg-[var(--color-background)] px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
               <button
                 type="button"
                 onClick={cerrarBancoPreguntas}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
               >
                 Cancelar
               </button>
@@ -8601,7 +8601,7 @@ const guardarConfiguracionTarea = async () => {
                   cargandoBanco ||
                   bancoSeleccionadas.length === 0
                     ? "bg-slate-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
+                    : "bg-[var(--color-button-primary)] hover:brightness-95"
                 }`}
               >
                 {agregandoBanco
@@ -8620,7 +8620,7 @@ const guardarConfiguracionTarea = async () => {
             onClick={cerrarConfigExamen}
           />
 
-          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-[var(--color-card)] shadow-2xl border border-[var(--color-border)] overflow-hidden">
             <div className="bg-gradient-to-r from-violet-900 via-violet-800 to-fuchsia-700 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -8643,33 +8643,33 @@ const guardarConfiguracionTarea = async () => {
 
             <div className="p-6 space-y-5">
               {cargandoConfigExamen ? (
-                <p className="text-slate-500">Cargando evaluaciones disponibles...</p>
+                <p className="text-[var(--color-muted-text)]">Cargando evaluaciones disponibles...</p>
               ) : (
                 <>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Examen</p>
-                    <p className="text-base font-semibold text-slate-800 mt-1">
+                  <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+                    <p className="text-sm text-[var(--color-muted-text)]">Examen</p>
+                    <p className="text-base font-semibold text-[var(--color-text)] mt-1">
                       {examenConfigActual?.titulo || "-"}
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Seleccionar evaluación de tipo examen
+                    <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">
+                      Seleccionar evaluaciÃ³n de tipo examen
                     </label>
 
                     <select
                       value={evaluacionSeleccionadaExamen}
                       onChange={(e) => setEvaluacionSeleccionadaExamen(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text)] shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
                     >
-                      <option value="">-- Selecciona una evaluación --</option>
+                      <option value="">-- Selecciona una evaluaciÃ³n --</option>
                       {evaluacionesExamenDisponibles.map((ev) => (
                         <option key={ev.id} value={ev.id}>
                           {ev.nombre} ({Number(ev.porcentaje || 0)}%)
                           {Number(ev.idexamen) ===
                           Number(examenConfigActual?.id)
-                            ? " · actualmente vinculada"
+                            ? " Â· actualmente vinculada"
                             : ""}
                         </option>
                       ))}
@@ -8678,18 +8678,18 @@ const guardarConfiguracionTarea = async () => {
 
                   {evaluacionesExamenDisponibles.length === 0 && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                      No hay evaluaciones de tipo examen disponibles para este grupo. Primero configúralas en Registro de Notas.
+                      No hay evaluaciones de tipo examen disponibles para este grupo. Primero configÃºralas en Registro de Notas.
                     </div>
                   )}
 
-                  <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                  <div className="rounded-xl border border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] px-4 py-3 text-sm text-[var(--color-primary)]">
                     Solo se muestran evaluaciones activas del tipo examen.
                   </div>
 
                   <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                     <button
                       onClick={cerrarConfigExamen}
-                      className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                      className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] transition"
                     >
                       Cancelar
                     </button>
@@ -8707,7 +8707,7 @@ const guardarConfiguracionTarea = async () => {
                           : "bg-violet-600 hover:bg-violet-700"
                       }`}
                     >
-                      {guardandoConfigExamen ? "Guardando..." : "Guardar asignación"}
+                      {guardandoConfigExamen ? "Guardando..." : "Guardar asignaciÃ³n"}
                     </button>
                   </div>
                 </>
@@ -8720,3 +8720,4 @@ const guardarConfiguracionTarea = async () => {
   );
 }
 export default CursoDetalleAdmin;
+

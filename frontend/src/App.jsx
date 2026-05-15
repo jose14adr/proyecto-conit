@@ -50,6 +50,7 @@ const ControlSesiones = lazy(() => import("./admin/ControlSesiones"));
 const Certificados = lazy(() => import("./admin/Certificados"));
 const PerfilAdministrador = lazy(() => import("./admin/PerfilAdministrador"));
 const GestionWeb = lazy(() => import("./admin/GestionWeb"));
+const ConfigurarEstilos = lazy(() => import("./admin/ConfigurarEstilos"));
 
 
 
@@ -196,6 +197,7 @@ export default function App() {
               <Route path="certificados" element={<Certificados />} />
               <Route path="perfil" element={<PerfilAdministrador />} />
               <Route path="gestion-web" element={<GestionWeb />} />
+              <Route path="estilos" element={<ConfigurarEstilos />} />
             </Route>
           </Route>
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import XLSX from "xlsx-js-style";
 import autoTable from "jspdf-autotable";
@@ -157,7 +157,7 @@ function ListaAprobados() {
         busquedaAlumno.toLowerCase().trim()
       );
 
-      // 🎯 filtro por estado (el que ya tenías)
+      // 🎯 filtro por estado (el que ya tení­as)
       const coincideEstado =
         filtro === "TODOS" || estadoAlumno(r) === filtro;
 
@@ -189,8 +189,7 @@ function ListaAprobados() {
     doc.setLineWidth(0.6);
     doc.rect(10, 10, 190, 24);
 
-    // Logo / nombre empresa
-    // Si luego tienes logo en imagen, aquí lo agregamos con doc.addImage(...)
+    // Logo / nombre empresa agregar con addImage...
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.text("CONIT", 16, 19);
@@ -250,8 +249,8 @@ function ListaAprobados() {
       index + 1,
       r.nombre,
       r.numdocumento || "-",
-      ...evaluaciones.map((ev) => r.notas?.[ev.id] ?? "—"),
-      r.promedio ?? "—",
+      ...evaluaciones.map((ev) => r.notas?.[ev.id] ?? "—”"),
+      r.promedio ?? "—”",
       estadoAlumno(r),
     ]);
 
@@ -346,7 +345,7 @@ function ListaAprobados() {
         DESAPROBADOS:
           "bg-rose-50 text-rose-700 border border-rose-200",
         SIN_NOTAS:
-          "bg-slate-100 text-slate-600 border border-slate-200",
+          "bg-[var(--color-background)] text-[var(--color-muted-text)] border border-[var(--color-border)]",
       };
 
       return map[estado] || map.SIN_NOTAS;
@@ -389,8 +388,8 @@ function ListaAprobados() {
       index + 1,
       r.nombre,
       r.numdocumento || "-",
-      ...evaluaciones.map((ev) => r.notas?.[ev.id] ?? "—"),
-      r.promedio ?? "—",
+      ...evaluaciones.map((ev) => r.notas?.[ev.id] ?? "—”"),
+      r.promedio ?? "—”",
       estadoAlumno(r) === "SIN_NOTAS" && r.faltantes > 0
         ? `SIN_NOTAS (${r.faltantes})`
         : estadoAlumno(r),
@@ -519,17 +518,17 @@ function ListaAprobados() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-6 text-white">
+      <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-[var(--color-sidenav)] via-[var(--color-sidenav)] to-[var(--color-primary)] px-6 py-6 text-white">
           <h2 className="text-3xl font-bold">Lista de aprobados</h2>
-          <p className="mt-2 text-sm text-slate-200">
+          <p className="mt-2 text-sm text-white/75">
             Consulta el rendimiento final por grupo, filtra resultados y descarga el reporte en PDF.
           </p>
         </div>
 
         <div className="p-6 space-y-5" ref={wrapperRef}>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
+            <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">
               Buscar curso
             </label>
 
@@ -545,31 +544,31 @@ function ListaAprobados() {
                 }}
                 onFocus={() => setOpenSug(true)}
                 placeholder="Escribe el nombre del curso..."
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="w-full rounded-2xl border border-[var(--color-border)] px-4 py-3 shadow-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
               />
 
               {query && (
                 <button
                   type="button"
                   onClick={limpiarCurso}
-                  className="absolute right-3 top-3 text-sm text-slate-500 hover:text-slate-800"
+                  className="absolute right-3 top-3 text-sm text-[var(--color-muted-text)] hover:text-[var(--color-text)]"
                   title="Limpiar"
                 >
-                  ✕
+                  âœ•
                 </button>
               )}
 
               {openSug && sugerencias.length > 0 && (
-                <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-xl">
                   {sugerencias.map((c) => (
                     <button
                       key={c.idgrupo}
                       type="button"
                       onClick={() => elegirCurso(c)}
-                      className="w-full px-4 py-3 text-left hover:bg-slate-50 transition"
+                      className="w-full px-4 py-3 text-left hover:bg-[var(--color-background)] transition"
                     >
-                      <div className="font-semibold text-slate-800">{c.nombre}</div>
-                      <div className="text-xs text-slate-500">
+                      <div className="font-semibold text-[var(--color-text)]">{c.nombre}</div>
+                      <div className="text-xs text-[var(--color-muted-text)]">
                         Grupo {c.grupo} {c.horario ? `• ${c.horario}` : ""}
                       </div>
                     </button>
@@ -581,8 +580,8 @@ function ListaAprobados() {
 
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-bold text-slate-800">Cursos del docente</h3>
-              <span className="text-sm text-slate-500">{cursosVisibles.length} curso(s)</span>
+              <h3 className="font-bold text-[var(--color-text)]">Cursos del docente</h3>
+              <span className="text-sm text-[var(--color-muted-text)]">{cursosVisibles.length} curso(s)</span>
             </div>
 
             {cursosVisibles.length ? (
@@ -597,17 +596,17 @@ function ListaAprobados() {
                       onClick={() => elegirCurso(c)}
                       className={`rounded-2xl border p-4 text-left transition ${
                         activo
-                          ? "border-blue-300 bg-blue-50 shadow-sm"
-                          : "border-slate-200 bg-white hover:bg-slate-50"
+                          ? "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] shadow-sm"
+                          : "border-[var(--color-border)] bg-[var(--color-card)] hover:bg-[var(--color-background)]"
                       }`}
                     >
-                      <div className="font-semibold text-slate-800">{c.nombre}</div>
-                      <div className="mt-1 text-sm text-slate-500">
+                      <div className="font-semibold text-[var(--color-text)]">{c.nombre}</div>
+                      <div className="mt-1 text-sm text-[var(--color-muted-text)]">
                         Grupo {c.grupo} {c.horario ? `• ${c.horario}` : ""}
                       </div>
 
                       {activo && (
-                        <div className="mt-3 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                        <div className="mt-3 inline-flex rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-3 py-1 text-xs font-semibold text-[var(--color-primary)]">
                           Seleccionado
                         </div>
                       )}
@@ -616,15 +615,15 @@ function ListaAprobados() {
                 })}
               </div>
             ) : (
-              <p className="text-slate-500">No se encontraron cursos con ese filtro.</p>
+              <p className="text-[var(--color-muted-text)]">No se encontraron cursos con ese filtro.</p>
             )}
           </div>
 
           {cursoSeleccionado && (
-            <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <div className="font-semibold text-slate-800">{cursoSeleccionado.nombre}</div>
-                <div className="text-sm text-slate-500">
+                <div className="font-semibold text-[var(--color-text)]">{cursoSeleccionado.nombre}</div>
+                <div className="text-sm text-[var(--color-muted-text)]">
                   Grupo {cursoSeleccionado.grupo} {cursoSeleccionado.horario ? `• ${cursoSeleccionado.horario}` : ""}
                 </div>
               </div>
@@ -632,7 +631,7 @@ function ListaAprobados() {
               <button
                 type="button"
                 onClick={() => cargar(cursoSeleccionado.idgrupo)}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                 disabled={loading}
               >
                 {loading ? "Cargando..." : "Refrescar"}
@@ -653,20 +652,20 @@ function ListaAprobados() {
       )}
 
       {cursoSeleccionado && (
-        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="border-b border-slate-200 px-6 py-5">
+        <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm overflow-hidden">
+          <div className="border-b border-[var(--color-border)] px-6 py-5">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
               <div className="max-w-xl">
-                <h3 className="text-xl font-bold text-slate-800">Reporte de alumnos</h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <h3 className="text-xl font-bold text-[var(--color-text)]">Reporte de alumnos</h3>
+                <p className="mt-1 text-sm text-[var(--color-muted-text)]">
                   Visualiza notas, promedio final y estado del alumno.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 xl:min-w-[780px]">
-                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 md:col-span-1">
-                  <div className="text-sm font-semibold text-blue-800">Descargar reporte</div>
-                  <p className="mt-1 text-xs text-blue-700">
+                <div className="rounded-2xl border border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] p-4 md:col-span-1">
+                  <div className="text-sm font-semibold text-[var(--color-primary)]">Descargar reporte</div>
+                  <p className="mt-1 text-xs text-[var(--color-primary)]">
                     Exporta el listado visible según el filtro actual.
                   </p>
 
@@ -677,8 +676,8 @@ function ListaAprobados() {
                       disabled={loading || rowsFiltradas.length === 0}
                       className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${
                         loading || rowsFiltradas.length === 0
-                          ? "cursor-not-allowed bg-slate-400"
-                          : "bg-blue-600 hover:bg-blue-700"
+                          ? "cursor-not-allowed bg-[var(--color-muted-text)]"
+                          : "bg-[var(--color-button-primary)] hover:bg-[var(--color-button-primary)]"
                       }`}
                     >
                       PDF
@@ -690,7 +689,7 @@ function ListaAprobados() {
                       disabled={loading || rowsFiltradas.length === 0}
                       className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${
                         loading || rowsFiltradas.length === 0
-                          ? "cursor-not-allowed bg-slate-400"
+                          ? "cursor-not-allowed bg-[var(--color-muted-text)]"
                           : "bg-emerald-600 hover:bg-emerald-700"
                       }`}
                     >
@@ -699,8 +698,8 @@ function ListaAprobados() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Buscar alumno
                   </label>
 
@@ -709,19 +708,19 @@ function ListaAprobados() {
                     value={busquedaAlumno}
                     onChange={(e) => setBusquedaAlumno(e.target.value)}
                     placeholder="Nombre o DNI..."
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-700 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2.5 text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   />
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Filtrar estado
                   </label>
 
                   <select
                     value={filtro}
                     onChange={(e) => setFiltro(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-700 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2.5 text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   >
                     <option value="TODOS">Todos</option>
                     <option value="APROBADOS">Aprobados</option>
@@ -735,34 +734,34 @@ function ListaAprobados() {
           </div>
 
           {loading ? (
-            <div className="p-6 text-slate-500">Cargando alumnos...</div>
+            <div className="p-6 text-[var(--color-muted-text)]">Cargando alumnos...</div>
           ) : rowsFiltradas.length === 0 ? (
-            <div className="p-6 text-slate-500">No hay alumnos para este filtro.</div>
+            <div className="p-6 text-[var(--color-muted-text)]">No hay alumnos para este filtro.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-[980px] w-full">
-                <thead className="bg-slate-50">
-                  <tr className="border-b border-slate-200">
-                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">
+                <thead className="bg-[var(--color-background)]">
+                  <tr className="border-b border-[var(--color-border)]">
+                    <th className="px-6 py-4 text-left text-sm font-bold text-[var(--color-text)]">
                       Alumno
                     </th>
 
                     {evaluaciones.map((ev) => (
                       <th
                         key={ev.id}
-                        className="px-4 py-4 text-center text-sm font-bold text-slate-700"
+                        className="px-4 py-4 text-center text-sm font-bold text-[var(--color-text)]"
                       >
                         <div>{ev.nombre}</div>
-                        <div className="mt-1 text-xs font-medium text-slate-500">
+                        <div className="mt-1 text-xs font-medium text-[var(--color-muted-text)]">
                           {ev.porcentaje}%
                         </div>
                       </th>
                     ))}
 
-                    <th className="px-4 py-4 text-center text-sm font-bold text-slate-700">
+                    <th className="px-4 py-4 text-center text-sm font-bold text-[var(--color-text)]">
                       Promedio
                     </th>
-                    <th className="px-4 py-4 text-center text-sm font-bold text-slate-700">
+                    <th className="px-4 py-4 text-center text-sm font-bold text-[var(--color-text)]">
                       Estado
                     </th>
                   </tr>
@@ -772,11 +771,11 @@ function ListaAprobados() {
                   {rowsFiltradas.map((r) => (
                     <tr
                       key={r.idmatricula}
-                      className="border-b border-slate-100 transition hover:bg-slate-50/70"
+                      className="border-b border-[var(--color-border)] transition hover:bg-[var(--color-background)]"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 font-semibold text-slate-500">
+                          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--color-border)] bg-[var(--color-background)] font-semibold text-[var(--color-muted-text)]">
                             {r.foto_url ? (
                               <img
                                 src={r.foto_url}
@@ -792,8 +791,8 @@ function ListaAprobados() {
                           </div>
 
                           <div>
-                            <div className="font-semibold text-slate-800">{r.nombre}</div>
-                            <div className="text-xs text-slate-500">
+                            <div className="font-semibold text-[var(--color-text)]">{r.nombre}</div>
+                            <div className="text-xs text-[var(--color-muted-text)]">
                               DNI: {r.numdocumento || "No registrado"}
                             </div>
                           </div>
@@ -805,8 +804,8 @@ function ListaAprobados() {
 
                         return (
                           <td key={ev.id} className="px-4 py-4 text-center">
-                            <span className="inline-flex min-w-[52px] justify-center rounded-lg bg-slate-100 px-2.5 py-1.5 text-sm font-medium text-slate-700">
-                              {valor ?? "—"}
+                            <span className="inline-flex min-w-[52px] justify-center rounded-lg bg-[var(--color-background)] px-2.5 py-1.5 text-sm font-medium text-[var(--color-text)]">
+                              {valor ?? "â€”"}
                             </span>
                           </td>
                         );
@@ -814,7 +813,7 @@ function ListaAprobados() {
 
                       <td className="px-4 py-4 text-center">
                         {r.faltantes > 0 ? (
-                          <span className="font-semibold text-slate-400">—</span>
+                          <span className="font-semibold text-[var(--color-muted-text)]">â€”</span>
                         ) : (
                           <span
                             className={`font-bold ${
@@ -851,11 +850,11 @@ function ListaAprobados() {
 
 function ResumenCard({ titulo, valor, color = "slate" }) {
   const styles = {
-    slate: "border-slate-200 bg-slate-50 text-slate-800",
+    slate: "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
     amber: "border-amber-200 bg-amber-50 text-amber-700",
     rose: "border-rose-200 bg-rose-50 text-rose-700",
-    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    blue: "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] text-[var(--color-primary)]",
   };
 
   return (

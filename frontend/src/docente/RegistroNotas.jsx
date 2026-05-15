@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   getCursosDocente,
   getRegistroNotasByGrupo,
@@ -237,14 +237,14 @@ export default function RegistroNotas() {
   }, [evaluaciones, modalNotas]);
 
   const modalPromedio = useMemo(() => {
-    if (!evaluaciones.length) return "—";
-    if (modalFaltantes > 0) return "—";
+    if (!evaluaciones.length) return "â€”";
+    if (modalFaltantes > 0) return "â€”";
 
     let suma = 0;
 
     for (const ev of evaluaciones) {
       const valor = Number(modalNotas[ev.id]);
-      if (Number.isNaN(valor)) return "—";
+      if (Number.isNaN(valor)) return "â€”";
       suma += valor * (Number(ev.porcentaje || 0) / 100);
     }
 
@@ -529,7 +529,7 @@ const guardarConfigEvaluaciones = async () => {
       await refrescarDatos();
       await procesarCertificadoAutomatico(modalAlumno);
       cerrarModal();
-      alert("Cambios guardados correctamente ✅");
+      alert("Cambios guardados correctamente âœ…");
     } catch (error) {
       console.error("Error guardando notas:", error);
       alert("Ocurrió un error al guardar las notas.");
@@ -541,17 +541,17 @@ const guardarConfigEvaluaciones = async () => {
   
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl bg-white shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-6 text-white">
+      <section className="rounded-2xl bg-[var(--color-card)] shadow-sm border border-[var(--color-border)] overflow-hidden">
+        <div className="bg-gradient-to-r from-[var(--color-sidenav)] via-[var(--color-sidenav)] to-[var(--color-primary)] px-6 py-6 text-white">
           <h1 className="text-3xl font-bold">Registro de Notas</h1>
-          <p className="mt-2 text-sm text-slate-200">
+          <p className="mt-2 text-sm text-white/75">
             Administra evaluaciones, revisa faltantes y registra notas por grupo.
           </p>
         </div>
 
         <div className="p-6">
           <div className="max-w-xl">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
+            <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">
               Selecciona un grupo
             </label>
 
@@ -560,7 +560,7 @@ const guardarConfigEvaluaciones = async () => {
               onChange={(e) =>
                 setGrupoId(e.target.value ? Number(e.target.value) : null)
               }
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text)] shadow-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-border)]"
             >
               <option value="">-- Selecciona un grupo --</option>
 
@@ -575,8 +575,8 @@ const guardarConfigEvaluaciones = async () => {
             </select>
 
             {grupoSeleccionado && (
-              <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
-                <p className="text-sm text-slate-700">
+              <div className="mt-4 rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] px-4 py-3">
+                <p className="text-sm text-[var(--color-text)]">
                   <span className="font-semibold">{grupoSeleccionado.nombre}</span>
                   {" · "}
                   Grupo {grupoSeleccionado.grupo}
@@ -620,15 +620,15 @@ const guardarConfigEvaluaciones = async () => {
               ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200"
               : evaluaciones.length === 0
               ? "bg-amber-50 border-amber-400 ring-2 ring-amber-200"
-              : "bg-white border-gray-200"
+              : "bg-[var(--color-card)] border-[var(--color-border)]"
           }`}
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-800">
+              <h2 className="text-lg font-bold text-[var(--color-text)]">
                 Configuración de evaluaciones
               </h2>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-[var(--color-muted-text)] mt-1">
                 La suma actual de porcentajes debe ser 100%.
               </p>
 
@@ -649,7 +649,7 @@ const guardarConfigEvaluaciones = async () => {
                 className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition shadow-sm ${
                   configuracionCompleta
                     ? "bg-emerald-500 text-white hover:bg-emerald-600"
-                    : "bg-slate-900 text-white hover:bg-slate-800"
+                    : "bg-slate-900 text-white hover:brightness-95"
                 }`}
               >
                 {configuracionCompleta ? "Editar configuración" : "Configurar evaluaciones"}
@@ -675,12 +675,12 @@ const guardarConfigEvaluaciones = async () => {
               evaluaciones.map((ev) => (
                 <div
                   key={ev.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 min-w-[180px]"
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 min-w-[180px]"
                 >
-                  <div className="text-sm font-semibold text-slate-800">
+                  <div className="text-sm font-semibold text-[var(--color-text)]">
                     {ev.nombre}
                   </div>
-                  <div className="mt-1 text-xs text-slate-500">
+                  <div className="mt-1 text-xs text-[var(--color-muted-text)]">
                     {ev.porcentaje}% · {ev.tipo === "tarea" ? "Tarea" : "Manual"}
                   </div>
                 </div>
@@ -690,10 +690,10 @@ const guardarConfigEvaluaciones = async () => {
         </section>
       )}
 
-      <section className="rounded-2xl bg-white shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-200">
-          <h2 className="text-xl font-bold text-slate-800">Alumnos del grupo</h2>
-          <p className="text-sm text-slate-500 mt-1">
+      <section className="rounded-2xl bg-[var(--color-card)] shadow-sm border border-[var(--color-border)] overflow-hidden">
+        <div className="px-6 py-5 border-b border-[var(--color-border)]">
+          <h2 className="text-xl font-bold text-[var(--color-text)]">Alumnos del grupo</h2>
+          <p className="text-sm text-[var(--color-muted-text)] mt-1">
             {grupoId
               ? "Revisa el avance por alumno y registra notas cuando sea necesario."
               : "Selecciona un grupo para ver a los alumnos."}
@@ -724,7 +724,7 @@ const guardarConfigEvaluaciones = async () => {
                     value={busquedaAlumno}
                     onChange={(e) => setBusquedaAlumno(e.target.value)}
                     placeholder="Buscar por nombre, apellido o DNI..."
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text)] shadow-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-border)]"
                   />
                 </div>
 
@@ -732,7 +732,7 @@ const guardarConfigEvaluaciones = async () => {
                   <select
                     value={filtroEstado}
                     onChange={(e) => setFiltroEstado(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-[var(--color-text)] shadow-sm outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-border)]"
                   >
                     <option value="todos">Todos</option>
                     <option value="completos">Con notas completas</option>
@@ -750,43 +750,43 @@ const guardarConfigEvaluaciones = async () => {
 
 
         {!grupoId ? (
-          <div className="p-6 text-slate-500">
+          <div className="p-6 text-[var(--color-muted-text)]">
             Selecciona un grupo para visualizar el registro de notas.
           </div>
         ) : loading ? (
-          <div className="p-6 text-slate-500">Cargando alumnos...</div>
+          <div className="p-6 text-[var(--color-muted-text)]">Cargando alumnos...</div>
         ) : alumnosFiltrados.length === 0 ? (
-          <div className="p-6 text-slate-500">
+          <div className="p-6 text-[var(--color-muted-text)]">
             No se encontraron alumnos con ese filtro.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-[1100px] w-full">
-              <thead className="bg-slate-50">
-                <tr className="border-b border-slate-200">
-                  <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">
+              <thead className="bg-[var(--color-background)]">
+                <tr className="border-b border-[var(--color-border)]">
+                  <th className="px-6 py-4 text-left text-sm font-bold text-[var(--color-text)]">
                     Alumno
                   </th>
 
                   {evaluaciones.map((ev) => (
                     <th
                       key={ev.id}
-                      className="px-4 py-4 text-center text-sm font-bold text-slate-700"
+                      className="px-4 py-4 text-center text-sm font-bold text-[var(--color-text)]"
                     >
                       <div>{ev.nombre}</div>
-                      <div className="text-xs font-medium text-slate-500 mt-1">
+                      <div className="text-xs font-medium text-[var(--color-muted-text)] mt-1">
                         {ev.porcentaje}%
                       </div>
                     </th>
                   ))}
 
-                  <th className="px-4 py-4 text-center text-sm font-bold text-slate-700">
+                  <th className="px-4 py-4 text-center text-sm font-bold text-[var(--color-text)]">
                     Promedio
                   </th>
-                  <th className="px-4 py-4 text-center text-sm font-bold text-slate-700">
+                  <th className="px-4 py-4 text-center text-sm font-bold text-[var(--color-text)]">
                     Estado
                   </th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-slate-700">
+                  <th className="px-6 py-4 text-center text-sm font-bold text-[var(--color-text)]">
                     Acciones
                   </th>
                 </tr>
@@ -796,11 +796,11 @@ const guardarConfigEvaluaciones = async () => {
                 {alumnosFiltrados.map((a) => (
                   <tr
                     key={a.idmatricula}
-                    className="border-b border-slate-100 hover:bg-slate-50/70 transition"
+                    className="border-b border-[var(--color-border)] hover:bg-[var(--color-background)] transition"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-11 w-11 rounded-full overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-semibold">
+                        <div className="h-11 w-11 rounded-full overflow-hidden border border-[var(--color-border)] bg-[var(--color-background)] flex items-center justify-center text-[var(--color-muted-text)] font-semibold">
                           {a.foto_url ? (
                             <img
                               src={a.foto_url}
@@ -816,10 +816,10 @@ const guardarConfigEvaluaciones = async () => {
                         </div>
 
                         <div>
-                          <div className="font-semibold text-slate-800">
+                          <div className="font-semibold text-[var(--color-text)]">
                             {a.nombre} {a.apellido}
                           </div>
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-[var(--color-muted-text)]">
                             DNI: {a.numdocumento || "No registrado"}
                           </div>
                         </div>
@@ -831,8 +831,8 @@ const guardarConfigEvaluaciones = async () => {
 
                       return (
                         <td key={ev.id} className="px-4 py-4 text-center">
-                          <span className="inline-flex min-w-[48px] justify-center rounded-lg bg-slate-100 px-2.5 py-1.5 text-sm font-medium text-slate-700">
-                            {valor ?? "—"}
+                          <span className="inline-flex min-w-[48px] justify-center rounded-lg bg-[var(--color-background)] px-2.5 py-1.5 text-sm font-medium text-[var(--color-text)]">
+                            {valor ?? "â€”"}
                           </span>
                         </td>
                       );
@@ -840,7 +840,7 @@ const guardarConfigEvaluaciones = async () => {
 
                     <td className="px-4 py-4 text-center">
                       {a.faltantes > 0 ? (
-                        <span className="text-slate-400 font-semibold">—</span>
+                        <span className="text-[var(--color-muted-text)] font-semibold">â€”</span>
                       ) : (
                         <span
                           className={`font-bold ${
@@ -888,8 +888,8 @@ const guardarConfigEvaluaciones = async () => {
                         disabled={!configuracionCompleta}
                         className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition ${
                           !configuracionCompleta
-                            ? "bg-slate-300 text-slate-500 cursor-not-allowed"
-                            : "bg-slate-900 text-white hover:bg-slate-800"
+                            ? "bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)] text-[var(--color-muted-text)] cursor-not-allowed"
+                            : "bg-slate-900 text-white hover:brightness-95"
                         }`}
                       >
                         Editar
@@ -910,12 +910,12 @@ const guardarConfigEvaluaciones = async () => {
             onClick={cerrarModal}
           />
 
-          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-5 text-white">
+          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-[var(--color-card)] shadow-2xl border border-[var(--color-border)] overflow-hidden">
+            <div className="bg-gradient-to-r from-[var(--color-sidenav)] via-[var(--color-sidenav)] to-[var(--color-primary)] px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-bold">Editar notas</h3>
-                  <p className="text-sm text-slate-200 mt-1">
+                  <p className="text-sm text-white/75 mt-1">
                     {modalAlumno.nombre} {modalAlumno.apellido}
                   </p>
                 </div>
@@ -937,9 +937,9 @@ const guardarConfigEvaluaciones = async () => {
 
                   return (
                     <div key={ev.id}>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">
                         {ev.nombre}
-                        <span className="ml-2 text-xs text-slate-500">
+                        <span className="ml-2 text-xs text-[var(--color-muted-text)]">
                           ({ev.porcentaje}%)
                         </span>
                       </label>
@@ -966,7 +966,7 @@ const guardarConfigEvaluaciones = async () => {
                         className={`w-full rounded-xl border px-4 py-3 outline-none transition ${
                           invalid
                             ? "border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
-                            : "border-slate-300 bg-white focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                            : "border-[var(--color-border)] bg-[var(--color-card)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-border)]"
                         }`}
                       />
 
@@ -989,7 +989,7 @@ const guardarConfigEvaluaciones = async () => {
                 <InfoBox
                   label="Promedio"
                   value={modalPromedio}
-                  tone={modalPromedio !== "—" && Number(modalPromedio) >= 11 ? "emerald" : "slate"}
+                  tone={modalPromedio !== "â€”" && Number(modalPromedio) >= 11 ? "emerald" : "slate"}
                 />
                 <InfoBox
                   label="Porcentaje total"
@@ -1013,7 +1013,7 @@ const guardarConfigEvaluaciones = async () => {
               <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                 <button
                   onClick={cerrarModal}
-                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] transition"
                 >
                   Cancelar
                 </button>
@@ -1023,8 +1023,8 @@ const guardarConfigEvaluaciones = async () => {
                   disabled={saving}
                   className={`rounded-xl px-5 py-3 text-sm font-semibold text-white transition ${
                     saving
-                      ? "bg-slate-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
+                      ? "bg-[var(--color-muted-text)] cursor-not-allowed"
+                      : "bg-[var(--color-button-primary)] hover:bg-[var(--color-button-primary)]"
                   }`}
                 >
                   {saving ? "Guardando..." : "Guardar notas"}
@@ -1042,13 +1042,13 @@ const guardarConfigEvaluaciones = async () => {
       onClick={cerrarConfigEvaluaciones}
     />
 
-    <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-[var(--color-card)] shadow-2xl border border-[var(--color-border)] overflow-hidden">
       {/* HEADER */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 px-6 py-5 text-white">
+      <div className="bg-gradient-to-r from-[var(--color-sidenav)] via-[var(--color-sidenav)] to-[var(--color-primary)] px-6 py-5 text-white">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-bold">Configurar evaluaciones</h3>
-            <p className="text-sm text-slate-200 mt-1">
+            <p className="text-sm text-white/75 mt-1">
               Agrega, edita o elimina evaluaciones del grupo seleccionado. Las evaluaciones de tipo tarea se vinculan después desde la sección de tareas del curso.
             </p>
           </div>
@@ -1068,7 +1068,7 @@ const guardarConfigEvaluaciones = async () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <button
             onClick={agregarEvaluacionDraft}
-            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition"
+            className="rounded-xl bg-[var(--color-button-primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-button-primary)] transition"
           >
             Agregar evaluación
           </button>
@@ -1087,25 +1087,25 @@ const guardarConfigEvaluaciones = async () => {
         {/* TABLA */}
         <div className="overflow-x-auto">
           <table className="w-full min-w-[620px]">
-            <thead className="bg-slate-50">
-              <tr className="border-b border-slate-200">
-                <th className="px-4 py-3 text-left text-sm font-bold text-slate-700">
+            <thead className="bg-[var(--color-background)]">
+              <tr className="border-b border-[var(--color-border)]">
+                <th className="px-4 py-3 text-left text-sm font-bold text-[var(--color-text)]">
                   Nombre
                 </th>
 
-                <th className="px-4 py-3 text-left text-sm font-bold text-slate-700">
+                <th className="px-4 py-3 text-left text-sm font-bold text-[var(--color-text)]">
                   Porcentaje (%)
                 </th>
 
-                <th className="px-4 py-3 text-left text-sm font-bold text-slate-700">
+                <th className="px-4 py-3 text-left text-sm font-bold text-[var(--color-text)]">
                   Tipo
                 </th>
 
-                <th className="px-4 py-3 text-center text-sm font-bold text-slate-700">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[var(--color-text)]">
                   Orden
                 </th>
 
-                <th className="px-4 py-3 text-center text-sm font-bold text-slate-700">
+                <th className="px-4 py-3 text-center text-sm font-bold text-[var(--color-text)]">
                   Acción
                 </th>
 
@@ -1114,7 +1114,7 @@ const guardarConfigEvaluaciones = async () => {
 
             <tbody>
               {configDraft.map((ev, index) => (
-                <tr key={ev.id} className="border-b border-slate-100">
+                <tr key={ev.id} className="border-b border-[var(--color-border)]">
                   {/* NOMBRE */}
                   <td className="px-4 py-3">
                     <input
@@ -1125,8 +1125,8 @@ const guardarConfigEvaluaciones = async () => {
                       }
                       placeholder="Ej. Parcial, Proyecto"
                       disabled={ev.tipo === "tarea"}
-                      className={`w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200 ${
-                        ev.tipo === "tarea" ? "bg-slate-100 text-slate-500" : ""
+                      className={`w-full rounded-xl border border-[var(--color-border)] px-3 py-2 outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-border)] ${
+                        ev.tipo === "tarea" ? "bg-[var(--color-background)] text-[var(--color-muted-text)]" : ""
                       }`}
                     />
                   </td>
@@ -1144,9 +1144,9 @@ const guardarConfigEvaluaciones = async () => {
                           cambiarEvaluacionDraft(index, "porcentaje", e.target.value)
                         }
                         placeholder="0 - 100"
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 pr-8 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-3 py-2 pr-8 outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-border)]"
                       />
-                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-slate-500">
+                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-[var(--color-muted-text)]">
                         %
                       </span>
                     </div>
@@ -1159,7 +1159,7 @@ const guardarConfigEvaluaciones = async () => {
                       onChange={(e) =>
                         cambiarEvaluacionDraft(index, "tipo", e.target.value)
                       }
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-xl border border-[var(--color-border)] px-3 py-2 outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-border)]"
                     >
                       <option value="manual">Manual</option>
                       <option value="tarea">Tarea</option>
@@ -1168,7 +1168,7 @@ const guardarConfigEvaluaciones = async () => {
                   </td>
 
                   {/* ORDEN */}
-                  <td className="px-4 py-3 text-center text-sm font-semibold text-slate-600">
+                  <td className="px-4 py-3 text-center text-sm font-semibold text-[var(--color-muted-text)]">
                     {index + 1}
                   </td>
 
@@ -1213,7 +1213,7 @@ const guardarConfigEvaluaciones = async () => {
         <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
           <button
             onClick={cerrarConfigEvaluaciones}
-            className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+            className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] transition"
           >
             Cancelar
           </button>
@@ -1223,8 +1223,8 @@ const guardarConfigEvaluaciones = async () => {
             disabled={configSaving}
             className={`rounded-xl px-5 py-3 text-sm font-semibold text-white transition ${
               configSaving
-                ? "bg-slate-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+                ? "bg-[var(--color-muted-text)] cursor-not-allowed"
+                : "bg-[var(--color-button-primary)] hover:bg-[var(--color-button-primary)]"
             }`}
           >
             {configSaving ? "Guardando..." : "Guardar configuración"}
@@ -1241,10 +1241,10 @@ const guardarConfigEvaluaciones = async () => {
 
 function ResumenCard({ titulo, valor, color = "slate" }) {
   const styles = {
-    slate: "border-slate-200 bg-slate-50 text-slate-800",
+    slate: "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
     amber: "border-amber-200 bg-amber-50 text-amber-700",
-    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    blue: "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] text-[var(--color-primary)]",
   };
 
   return (
@@ -1257,10 +1257,10 @@ function ResumenCard({ titulo, valor, color = "slate" }) {
 
 function InfoBox({ label, value, tone = "slate" }) {
   const styles = {
-    slate: "border-slate-200 bg-slate-50 text-slate-800",
+    slate: "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
     amber: "border-amber-200 bg-amber-50 text-amber-700",
-    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    blue: "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] text-[var(--color-primary)]",
   };
 
   return (

@@ -29,7 +29,7 @@ export class Empresa {
 
   @Column({ name: 'meeting_provider', type: 'varchar', default: 'google' })
   meetingProvider: string;
-
+  
   @OneToMany(() => ConfiguracionPago, (configuracion) => configuracion.empresa)
   configuracionesPago: ConfiguracionPago[];
 }

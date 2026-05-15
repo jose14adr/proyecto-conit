@@ -33,55 +33,48 @@ export default function PermisosDocenteModal({
     gestionar_calificaciones: false,
   });
 
-  // Mapeamos las funcionalidades a sus respectivos íconos y descripciones
   const PERMISOS_LIST = [
     {
       id: "gestionar_contenido",
       label: "Gestión de Contenido",
-      desc: "Crear, editar, eliminar y reordenar módulos, lecciones y materiales (incluyendo videos).",
+      desc: "Crear, editar, eliminar y reordenar módulos, lecciones y materiales.",
       icon: BookOpen,
-      color: "text-blue-600",
-      bg: "bg-blue-100",
+      tone: "primary",
     },
     {
       id: "gestionar_tareas",
       label: "Gestión de Tareas",
       desc: "Crear, modificar y eliminar tareas. Adjuntar archivos de apoyo.",
       icon: CheckSquare,
-      color: "text-violet-600",
-      bg: "bg-violet-100",
+      tone: "secondary",
     },
     {
       id: "gestionar_examenes",
       label: "Gestión de Exámenes",
-      desc: "Diseñar, estructurar y configurar cuestionarios y exámenes interactivos.",
+      desc: "Diseñar, estructurar y configurar cuestionarios y exámenes.",
       icon: FileEdit,
-      color: "text-amber-600",
-      bg: "bg-amber-100",
+      tone: "amber",
     },
     {
       id: "gestionar_sesiones",
       label: "Sesiones en Vivo",
-      desc: "Programar, editar y gestionar enlaces para las clases en vivo (Meet/Zoom).",
+      desc: "Programar, editar y gestionar enlaces para clases en vivo.",
       icon: Video,
-      color: "text-rose-600",
-      bg: "bg-rose-100",
+      tone: "rose",
     },
     {
       id: "tomar_asistencia",
       label: "Control de Asistencia",
-      desc: "Registrar presentes, tardanzas, faltas y exportar reportes (PDF/Excel).",
+      desc: "Registrar presentes, tardanzas, faltas y exportar reportes.",
       icon: UserCheck,
-      color: "text-emerald-600",
-      bg: "bg-emerald-100",
+      tone: "emerald",
     },
     {
       id: "gestionar_calificaciones",
       label: "Calificaciones y Notas",
-      desc: "Revisar entregas, colocar notas y vincular tareas/exámenes al registro oficial.",
+      desc: "Revisar entregas, colocar notas y vincular evaluaciones.",
       icon: GraduationCap,
-      color: "text-indigo-600",
-      bg: "bg-indigo-100",
+      tone: "primary",
     },
   ];
 
@@ -90,7 +83,6 @@ export default function PermisosDocenteModal({
       try {
         let p = grupo.permisos_docente;
 
-        // Lo parseamos con seguridad (doble parseo por si el backend lo mandó doblemente convertido a string)
         if (typeof p === "string") p = JSON.parse(p);
         if (typeof p === "string") p = JSON.parse(p);
 
@@ -125,11 +117,8 @@ export default function PermisosDocenteModal({
     } else {
       setPermisos((prev) => {
         const next = { ...prev, [name]: checked };
-
-        // Verificamos si todos los individuales están marcados
         const todosMarcados = PERMISOS_LIST.every((item) => next[item.id]);
         next.control_total = todosMarcados;
-
         return next;
       });
     }
@@ -137,7 +126,9 @@ export default function PermisosDocenteModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setIsSubmitting(true);
+
     try {
       await asignarDocenteAGrupo(grupo.id, docente.id, permisos);
 
@@ -146,11 +137,14 @@ export default function PermisosDocenteModal({
       }
 
       toast.success("Permisos actualizados exitosamente");
+
       if (onSuccess) onSuccess();
+
       onClose();
     } catch (error) {
+      console.error("Error al actualizar permisos:", error);
       toast.error(
-        error.response?.data?.message || "Error al actualizar los permisos",
+        error.response?.data?.message || "Error al actualizar los permisos"
       );
     } finally {
       setIsSubmitting(false);
@@ -160,28 +154,39 @@ export default function PermisosDocenteModal({
   if (!grupo || !docente) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[60] p-4">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-2xl animate-fadeIn">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-700 p-6 md:p-8 text-white flex justify-between items-center shrink-0 relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm border border-white/20">
+        <div
+          className="relative flex shrink-0 items-center justify-between overflow-hidden p-6 text-white md:p-8"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+          }}
+        >
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="rounded-2xl border border-white/20 bg-white/20 p-3 backdrop-blur-sm">
               <ShieldCheck size={28} />
             </div>
+
             <div>
-              <h2 className="text-2xl font-bold leading-tight">
+              <h2 className="text-2xl font-black leading-tight">
                 Permisos del Docente
               </h2>
-              <p className="text-indigo-100 text-sm mt-1">
+
+              <p className="mt-1 text-sm text-white/75">
                 {grupo.curso?.nombrecurso || "Curso"} • Grupo{" "}
                 {grupo.nombregrupo}
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="hover:bg-white/20 p-2 rounded-full transition-colors relative z-10"
+            className="relative z-10 rounded-full p-2 transition hover:bg-white/20"
+            title="Cerrar"
           >
             <X size={24} />
           </button>
@@ -191,58 +196,67 @@ export default function PermisosDocenteModal({
         <form
           id="permisos-form"
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-6 md:p-8"
+          className="flex-1 overflow-y-auto bg-[var(--color-background)] p-6 md:p-8"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-600 text-lg uppercase shrink-0">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] text-lg font-black uppercase text-[var(--color-primary)]">
               {docente.nombre?.charAt(0)}
               {docente.apellido?.charAt(0)}
             </div>
+
             <div>
-              <p className="font-bold text-slate-800">
+              <p className="font-black text-[var(--color-text)]">
                 {docente.nombre} {docente.apellido}
               </p>
-              <p className="text-sm text-slate-500">
+
+              <p className="text-sm text-[var(--color-muted-text)]">
                 Configura las áreas del curso a las que tendrá acceso.
               </p>
             </div>
           </div>
 
-          <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl overflow-hidden shadow-sm">
-            {/* Control Total Master Switch */}
-            <div className="bg-white px-6 py-5 border-b border-indigo-100">
-              <label className="flex items-center justify-between cursor-pointer group">
+          <div className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
+            {/* Control total */}
+            <div className="border-b border-[var(--color-border)] bg-[var(--color-card)] px-6 py-5">
+              <label className="group flex cursor-pointer items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2 rounded-lg transition-colors ${permisos.control_total ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"}`}
+                    className={`rounded-xl p-2 transition ${
+                      permisos.control_total
+                        ? "bg-[var(--color-primary)] text-white"
+                        : "bg-[var(--color-background)] text-[var(--color-muted-text)]"
+                    }`}
                   >
                     <Key size={20} />
                   </div>
+
                   <div>
-                    <span className="font-bold text-slate-800 text-base group-hover:text-black block">
+                    <span className="block text-base font-black text-[var(--color-text)] group-hover:text-[var(--color-primary)]">
                       Control total del curso
                     </span>
-                    <span className="text-xs text-slate-500 block mt-0.5">
+
+                    <span className="mt-0.5 block text-xs text-[var(--color-muted-text)]">
                       Otorga acceso absoluto a todas las funciones académicas.
                     </span>
                   </div>
                 </div>
 
-                <div className="relative flex items-center ml-4">
+                <div className="relative ml-4 flex items-center">
                   <input
                     type="checkbox"
                     name="control_total"
                     checked={permisos.control_total}
                     onChange={handlePermisoChange}
-                    className="sr-only peer"
+                    className="peer sr-only"
                   />
-                  <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
+
+                  <div className="h-7 w-14 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-6 after:w-6 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[var(--color-primary)] peer-checked:after:translate-x-full peer-checked:after:border-white" />
                 </div>
               </label>
             </div>
 
-            {/* Grid de Permisos Individuales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-indigo-100">
+            {/* Permisos individuales */}
+            <div className="grid grid-cols-1 gap-px bg-[var(--color-border)] md:grid-cols-2">
               {PERMISOS_LIST.map((item) => {
                 const Icon = item.icon;
                 const isChecked = permisos[item.id];
@@ -250,21 +264,34 @@ export default function PermisosDocenteModal({
                 return (
                   <label
                     key={item.id}
-                    className={`flex items-start gap-4 p-5 cursor-pointer transition-colors bg-white hover:bg-slate-50 ${isChecked ? "bg-slate-50/50" : ""}`}
+                    className={`flex cursor-pointer items-start gap-4 bg-[var(--color-card)] p-5 transition hover:bg-[color-mix(in_srgb,var(--color-primary)_7%,transparent)] ${
+                      isChecked
+                        ? "bg-[color-mix(in_srgb,var(--color-primary)_6%,var(--color-card))]"
+                        : ""
+                    }`}
                   >
                     <div
-                      className={`mt-0.5 p-2 rounded-lg border ${isChecked ? `${item.bg} ${item.color} border-transparent` : "bg-slate-50 text-slate-400 border-slate-200"}`}
+                      className={`mt-0.5 rounded-xl border p-2 transition ${
+                        isChecked
+                          ? "border-transparent bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]"
+                          : "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted-text)]"
+                      }`}
                     >
                       <Icon size={18} />
                     </div>
 
                     <div className="flex-1">
                       <span
-                        className={`font-semibold text-sm block ${isChecked ? "text-slate-900" : "text-slate-700"}`}
+                        className={`block text-sm font-bold ${
+                          isChecked
+                            ? "text-[var(--color-text)]"
+                            : "text-[var(--color-muted-text)]"
+                        }`}
                       >
                         {item.label}
                       </span>
-                      <span className="text-xs text-slate-500 mt-1 block leading-relaxed pr-2">
+
+                      <span className="mt-1 block pr-2 text-xs leading-relaxed text-[var(--color-muted-text)]">
                         {item.desc}
                       </span>
                     </div>
@@ -275,7 +302,7 @@ export default function PermisosDocenteModal({
                         name={item.id}
                         checked={isChecked}
                         onChange={handlePermisoChange}
-                        className="w-5 h-5 rounded-md border-gray-300 text-indigo-600 focus:ring-indigo-600 transition-colors cursor-pointer"
+                        className="h-5 w-5 cursor-pointer rounded-md border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                       />
                     </div>
                   </label>
@@ -286,27 +313,30 @@ export default function PermisosDocenteModal({
         </form>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
+        <div className="flex shrink-0 justify-end gap-3 border-t border-[var(--color-border)] bg-[var(--color-card)] p-6">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 text-slate-600 font-semibold hover:bg-slate-200 rounded-xl transition-colors"
+            className="rounded-xl px-6 py-2.5 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
           >
             Cancelar
           </button>
+
           <button
             type="submit"
             form="permisos-form"
             disabled={isSubmitting}
-            className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 flex items-center gap-2"
+            className="flex items-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-6 py-2.5 font-semibold text-[var(--color-button-primary-text)] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? (
               <>
-                <Loader2 size={18} className="animate-spin" /> Guardando...
+                <Loader2 size={18} className="animate-spin" />
+                Guardando...
               </>
             ) : (
               <>
-                <Save size={18} /> Guardar Permisos
+                <Save size={18} />
+                Guardar Permisos
               </>
             )}
           </button>

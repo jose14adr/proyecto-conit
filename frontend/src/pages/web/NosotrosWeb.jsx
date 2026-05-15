@@ -54,19 +54,25 @@ function NosotrosWeb() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
       {/* HERO */}
-      <section className="bg-gradient-to-r from-slate-900 to-blue-900 py-20 text-white">
+      <section
+        className="py-20 text-white"
+        style={{
+          background:
+            "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+        }}
+      >
         <div className="mx-auto max-w-6xl px-5">
-          <p className="mb-4 inline-block rounded-full bg-sky-400/20 px-4 py-2 text-sm font-semibold text-sky-300">
+          <p className="mb-4 inline-block rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 backdrop-blur">
             {hero.tag}
           </p>
 
-          <h1 className="mb-5 max-w-4xl text-4xl font-bold leading-tight md:text-5xl">
+          <h1 className="mb-5 max-w-4xl text-4xl font-black leading-tight md:text-5xl">
             {hero.title}
           </h1>
 
-          <p className="max-w-3xl text-base leading-relaxed text-slate-200 md:text-lg">
+          <p className="max-w-3xl text-base leading-relaxed text-white/80 md:text-lg">
             {hero.description}
           </p>
         </div>
@@ -78,9 +84,11 @@ function NosotrosWeb() {
           {about.map((item, index) => (
             <article
               key={index}
-              className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
+              className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-8 shadow-sm"
             >
-              <h2 className="mb-4 text-2xl font-bold text-slate-900">
+              <div className="mb-5 h-1.5 w-16 rounded-full bg-[var(--color-primary)]" />
+
+              <h2 className="mb-4 text-2xl font-bold text-[var(--color-text)]">
                 {item.title}
               </h2>
 
@@ -88,7 +96,7 @@ function NosotrosWeb() {
                 {(item.paragraphs || []).map((paragraph, paragraphIndex) => (
                   <p
                     key={paragraphIndex}
-                    className="leading-8 text-slate-600"
+                    className="leading-8 text-[var(--color-muted-text)]"
                   >
                     {paragraph}
                   </p>
@@ -103,11 +111,11 @@ function NosotrosWeb() {
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-5">
           <div className="mb-10 text-center">
-            <p className="mb-3 inline-block rounded-full bg-sky-400/20 px-4 py-2 text-sm font-semibold text-sky-500">
+            <p className="mb-3 inline-block rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)]">
               {pillars.tag}
             </p>
 
-            <h2 className="text-3xl font-bold text-slate-900">
+            <h2 className="text-3xl font-black text-[var(--color-text)]">
               {pillars.title}
             </h2>
           </div>
@@ -116,13 +124,13 @@ function NosotrosWeb() {
             {(pillars.items || []).map((item, index) => (
               <article
                 key={index}
-                className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
+                className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
               >
-                <h3 className="mb-4 text-2xl font-bold text-slate-900">
+                <h3 className="mb-4 text-2xl font-bold text-[var(--color-text)]">
                   {item.title}
                 </h3>
 
-                <p className="leading-8 text-slate-600">
+                <p className="leading-8 text-[var(--color-muted-text)]">
                   {item.description}
                 </p>
               </article>
@@ -135,11 +143,11 @@ function NosotrosWeb() {
       <section className="pb-20 pt-16">
         <div className="mx-auto max-w-6xl px-5">
           <div className="mb-10 text-center">
-            <p className="mb-3 inline-block rounded-full bg-sky-400/20 px-4 py-2 text-sm font-semibold text-sky-500">
+            <p className="mb-3 inline-block rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)]">
               {values.tag}
             </p>
 
-            <h2 className="text-3xl font-bold text-slate-900">
+            <h2 className="text-3xl font-black text-[var(--color-text)]">
               {values.title}
             </h2>
           </div>
@@ -148,13 +156,17 @@ function NosotrosWeb() {
             {(values.items || []).map((item, index) => (
               <article
                 key={index}
-                className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-md"
+                className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-8 shadow-sm transition hover:-translate-y-1 hover:border-[var(--color-primary)] hover:shadow-md"
               >
-                <h3 className="mb-4 text-xl font-bold text-slate-900">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-lg font-black text-[var(--color-primary)]">
+                  {index + 1}
+                </div>
+
+                <h3 className="mb-4 text-xl font-bold text-[var(--color-text)]">
                   {item.title}
                 </h3>
 
-                <p className="leading-8 text-slate-600">
+                <p className="leading-8 text-[var(--color-muted-text)]">
                   {item.description}
                 </p>
               </article>

@@ -3,7 +3,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import toast from "react-hot-toast";
-import { Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  Loader2,
+  X,
+  UserCog,
+  Save,
+  ShieldCheck,
+} from "lucide-react";
 
 import {
   crearAdministrador,
@@ -44,6 +53,7 @@ const adminSchema = z
         message: "El DNI debe tener 8 dígitos",
       });
     }
+
     if (
       data.tipodocumento === "Pasaporte" &&
       (data.numdocumento.length < 8 || data.numdocumento.length > 12)
@@ -112,10 +122,11 @@ export default function AdministradorModal({
     if (adminEditar) {
       reset({
         ...adminEditar,
-        telefono: String(adminEditar.telefono || ""),
+        telefono: String(adminEditar.telefono || "").replace(/[^\d]/g, ""),
         direccion: adminEditar.direccion || "",
         isEditing: true,
         contrasenia: "",
+        prefijo: "+51",
       });
     }
   }, [adminEditar, reset]);
@@ -125,8 +136,7 @@ export default function AdministradorModal({
   }, [tipoDocumentoActual, setValue, adminEditar]);
 
   const handleKeyUp = (e) => {
-    if (e.getModifierState("CapsLock")) setCapsLockOn(true);
-    else setCapsLockOn(false);
+    setCapsLockOn(e.getModifierState("CapsLock"));
   };
 
   const onSubmit = async (data) => {
@@ -142,10 +152,12 @@ export default function AdministradorModal({
       if (adminEditar) {
         delete dataToSend.contrasenia;
         delete dataToSend.crearUsuario;
+
         await actualizarAdministrador(adminEditar.id, dataToSend);
         toast.success("Administrador actualizado correctamente");
       } else {
         dataToSend.crearUsuario = true;
+
         await crearAdministrador(dataToSend);
         toast.success("Administrador y credenciales creados exitosamente");
       }
@@ -155,7 +167,7 @@ export default function AdministradorModal({
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Ocurrió un error al guardar el administrador",
+          "Ocurrió un error al guardar el administrador"
       );
       console.error(error);
     } finally {
@@ -165,256 +177,310 @@ export default function AdministradorModal({
 
   const getInputClass = (error, hasPrefix = false) => {
     const baseClass =
-      "w-full border p-2 focus:ring-2 outline-none transition-colors";
+      "w-full border px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-muted-text)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]";
     const roundedClass = hasPrefix
-      ? "rounded-r-lg border-l-0"
-      : "rounded-lg mt-1";
+      ? "rounded-r-2xl border-l-0"
+      : "rounded-2xl mt-1";
+
     return `${baseClass} ${roundedClass} ${
       error
-        ? "border-red-500 focus:ring-red-500 bg-red-50"
-        : "border-gray-300 focus:ring-indigo-600 bg-white"
+        ? "border-red-400 bg-red-50 focus:border-red-500"
+        : "border-[var(--color-border)] bg-[var(--color-background)] focus:border-[var(--color-primary)]"
     }`;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 py-4 p-4">
-      <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl p-8 animate-fadeIn max-h-[95vh] overflow-y-auto my-auto">
-        <h2 className="text-2xl font-bold mb-6 text-slate-800 border-b pb-3">
-          {adminEditar
-            ? "Editar Administrador"
-            : "Registrar Nuevo Administrador"}
-        </h2>
-
-        <form onSubmit={handleSubmit(onSubmit)} onKeyUp={handleKeyUp}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5">
-            {/* Datos Personales */}
-            <div>
-              <label className="text-sm text-gray-600 font-medium">
-                Nombre *
-              </label>
-              <input
-                type="text"
-                {...register("nombre")}
-                onChange={(e) =>
-                  setValue(
-                    "nombre",
-                    e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
-                    { shouldValidate: true },
-                  )
-                }
-                className={getInputClass(errors.nombre)}
-              />
-              {errors.nombre && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.nombre.message}
-                </p>
-              )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-2xl animate-fadeIn">
+        <div
+          className="flex shrink-0 items-center justify-between px-8 py-6 text-white"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-white/20 p-2.5 backdrop-blur">
+              <UserCog size={26} />
             </div>
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
-                Apellido *
-              </label>
-              <input
-                type="text"
-                {...register("apellido")}
-                onChange={(e) =>
-                  setValue(
-                    "apellido",
-                    e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
-                    { shouldValidate: true },
-                  )
-                }
-                className={getInputClass(errors.apellido)}
-              />
-              {errors.apellido && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.apellido.message}
-                </p>
-              )}
-            </div>
+              <h2 className="text-2xl font-black">
+                {adminEditar
+                  ? "Editar Administrador"
+                  : "Registrar Nuevo Administrador"}
+              </h2>
 
-            <div>
-              <label className="text-sm text-gray-600 font-medium">
-                Tipo Documento
-              </label>
-              <select
-                {...register("tipodocumento")}
-                className={getInputClass(errors.tipodocumento)}
-              >
-                <option value="DNI">DNI</option>
-                <option value="Pasaporte">Pasaporte</option>
-                <option value="Carnet Extranjería">Carnet Extranjería</option>
-              </select>
+              <p className="mt-1 text-sm text-white/75">
+                Completa los datos personales y credenciales administrativas.
+              </p>
             </div>
+          </div>
 
-            <div>
-              <label className="text-sm text-gray-600 font-medium">
-                N° Documento *
-              </label>
-              <input
-                type="text"
-                {...register("numdocumento")}
-                onChange={(e) => {
-                  let val = e.target.value;
-                  if (tipoDocumentoActual === "DNI")
-                    val = val.replace(/\D/g, "").slice(0, 8);
-                  else if (tipoDocumentoActual === "Carnet Extranjería")
-                    val = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 9);
-                  else if (tipoDocumentoActual === "Pasaporte")
-                    val = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
-                  setValue("numdocumento", val, { shouldValidate: true });
-                }}
-                className={getInputClass(errors.numdocumento)}
-              />
-              {errors.numdocumento && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.numdocumento.message}
-                </p>
-              )}
-            </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="rounded-full p-2 transition hover:bg-white/20 disabled:opacity-60"
+            title="Cerrar"
+          >
+            <X size={22} />
+          </button>
+        </div>
 
-            {/* Contacto */}
-            <div>
-              <label className="text-sm text-gray-600 font-medium">
-                Correo Electrónico *
-              </label>
-              <input
-                type="email"
-                {...register("correo")}
-                className={getInputClass(errors.correo)}
-              />
-              {errors.correo && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.correo.message}
-                </p>
-              )}
-            </div>
+        <div className="flex-1 overflow-y-auto bg-[var(--color-background)] p-8">
+          <form onSubmit={handleSubmit(onSubmit)} onKeyUp={handleKeyUp}>
+            <div className="grid grid-cols-1 gap-x-4 gap-y-5 md:grid-cols-2">
+              <SectionTitle title="Datos personales" />
 
-            <div>
-              <label className="text-sm text-gray-600 font-medium">
-                Celular / Teléfono *
-              </label>
-              <div className="flex mt-1">
+              <Campo label="Nombre *" error={errors.nombre}>
                 <input
                   type="text"
-                  placeholder="+51"
-                  {...register("prefijo")}
-                  onChange={(e) => {
-                    let val = e.target.value.replace(/[^\d+]/g, "");
-                    if (!val.startsWith("+"))
-                      val = "+" + val.replace(/\+/g, "");
-                    setValue("prefijo", val.slice(0, 5), {
-                      shouldValidate: true,
-                    });
-                  }}
-                  className={`w-20 border border-r-0 rounded-l-lg px-2 bg-gray-50 text-gray-700 font-medium outline-none text-center transition-colors focus:bg-white ${
-                    errors.prefijo
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-300 focus:border-indigo-600"
-                  }`}
-                />
-                <input
-                  type="text"
-                  placeholder="Número..."
-                  {...register("telefono")}
+                  {...register("nombre")}
                   onChange={(e) =>
-                    setValue("telefono", e.target.value.replace(/\D/g, ""), {
-                      shouldValidate: true,
-                    })
+                    setValue(
+                      "nombre",
+                      e.target.value.replace(
+                        /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+                        ""
+                      ),
+                      { shouldValidate: true }
+                    )
                   }
-                  className={getInputClass(errors.telefono, true)}
+                  className={getInputClass(errors.nombre)}
                 />
-              </div>
-              {(errors.prefijo || errors.telefono) && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.prefijo?.message || errors.telefono?.message}
-                </p>
-              )}
-            </div>
+              </Campo>
 
-            <div className="md:col-span-2">
-              <label className="text-sm text-gray-600 font-medium">
-                Dirección
-              </label>
-              <input
-                type="text"
-                {...register("direccion")}
-                className={getInputClass(errors.direccion)}
-              />
-            </div>
+              <Campo label="Apellido *" error={errors.apellido}>
+                <input
+                  type="text"
+                  {...register("apellido")}
+                  onChange={(e) =>
+                    setValue(
+                      "apellido",
+                      e.target.value.replace(
+                        /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+                        ""
+                      ),
+                      { shouldValidate: true }
+                    )
+                  }
+                  className={getInputClass(errors.apellido)}
+                />
+              </Campo>
 
-            {/* Creación de Usuario (Solo visible al crear uno nuevo adaptado a indigo) */}
-            {!adminEditar && (
-              <div className="md:col-span-2 mt-4 bg-indigo-50 p-5 rounded-xl border border-indigo-100">
-                <h3 className="font-bold text-indigo-900 mb-1 flex items-center gap-2">
-                  Credenciales de Acceso
-                </h3>
-                <p className="text-xs text-indigo-700 mb-4">
-                  Se creará automáticamente un usuario administrador con el
-                  correo ingresado.
-                </p>
+              <Campo label="Tipo Documento" error={errors.tipodocumento}>
+                <select
+                  {...register("tipodocumento")}
+                  className={getInputClass(errors.tipodocumento)}
+                >
+                  <option value="DNI">DNI</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                  <option value="Carnet Extranjería">
+                    Carnet Extranjería
+                  </option>
+                </select>
+              </Campo>
 
-                <label className="text-sm font-medium block mb-1 text-indigo-900">
-                  Contraseña de acceso *
+              <Campo label="N° Documento *" error={errors.numdocumento}>
+                <input
+                  type="text"
+                  {...register("numdocumento")}
+                  onChange={(e) => {
+                    let val = e.target.value;
+
+                    if (tipoDocumentoActual === "DNI") {
+                      val = val.replace(/\D/g, "").slice(0, 8);
+                    } else if (tipoDocumentoActual === "Carnet Extranjería") {
+                      val = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 9);
+                    } else if (tipoDocumentoActual === "Pasaporte") {
+                      val = val.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
+                    }
+
+                    setValue("numdocumento", val, { shouldValidate: true });
+                  }}
+                  className={getInputClass(errors.numdocumento)}
+                />
+              </Campo>
+
+              <SectionTitle title="Contacto" />
+
+              <Campo label="Correo Electrónico *" error={errors.correo}>
+                <input
+                  type="email"
+                  {...register("correo")}
+                  className={getInputClass(errors.correo)}
+                />
+              </Campo>
+
+              <div>
+                <label className="text-sm font-semibold text-[var(--color-text)]">
+                  Celular / Teléfono *
                 </label>
-                <div className="relative mt-1">
+
+                <div className="mt-1 flex">
                   <input
-                    type={showPassword ? "text" : "password"}
-                    {...register("contrasenia")}
-                    className={getInputClass(errors.contrasenia)}
-                    placeholder="Ej: Admin@123"
+                    type="text"
+                    placeholder="+51"
+                    {...register("prefijo")}
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/[^\d+]/g, "");
+
+                      if (!val.startsWith("+")) {
+                        val = "+" + val.replace(/\+/g, "");
+                      }
+
+                      setValue("prefijo", val.slice(0, 5), {
+                        shouldValidate: true,
+                      });
+                    }}
+                    className={`w-20 rounded-l-2xl border border-r-0 px-2 text-center text-sm font-semibold text-[var(--color-text)] outline-none transition ${
+                      errors.prefijo
+                        ? "border-red-400 bg-red-50"
+                        : "border-[var(--color-border)] bg-[var(--color-background)] focus:border-[var(--color-primary)]"
+                    }`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-indigo-600"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+
+                  <input
+                    type="text"
+                    placeholder="Número..."
+                    {...register("telefono")}
+                    onChange={(e) =>
+                      setValue("telefono", e.target.value.replace(/\D/g, ""), {
+                        shouldValidate: true,
+                      })
+                    }
+                    className={getInputClass(errors.telefono, true)}
+                  />
                 </div>
-                {capsLockOn && (
-                  <p className="text-orange-500 text-xs mt-1 flex items-center gap-1 font-medium">
-                    <AlertTriangle size={14} /> Bloq Mayús activado
-                  </p>
-                )}
-                {errors.contrasenia && (
-                  <p className="text-red-500 text-xs mt-1 font-medium">
-                    {errors.contrasenia.message}
+
+                {(errors.prefijo || errors.telefono) && (
+                  <p className="mt-1 text-xs font-medium text-red-500">
+                    {errors.prefijo?.message || errors.telefono?.message}
                   </p>
                 )}
               </div>
-            )}
-          </div>
 
-          <div className="flex justify-end gap-4 mt-8 pt-5 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-5 py-2.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition font-medium"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-2.5 rounded-lg text-white font-medium transition shadow-sm bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center min-w-[160px]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="animate-spin mr-2" size={18} />
-                  Procesando...
-                </>
-              ) : adminEditar ? (
-                "Actualizar Administrador"
-              ) : (
-                "Guardar Administrador"
+              <div className="md:col-span-2">
+                <Campo label="Dirección" error={errors.direccion}>
+                  <input
+                    type="text"
+                    {...register("direccion")}
+                    className={getInputClass(errors.direccion)}
+                  />
+                </Campo>
+              </div>
+
+              {!adminEditar && (
+                <div className="md:col-span-2 rounded-3xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] p-5">
+                  <h3 className="mb-1 flex items-center gap-2 font-black text-[var(--color-text)]">
+                    <ShieldCheck size={18} className="text-[var(--color-primary)]" />
+                    Credenciales de Acceso
+                  </h3>
+
+                  <p className="mb-4 text-xs font-medium text-[var(--color-muted-text)]">
+                    Se creará automáticamente un usuario administrador con el
+                    correo ingresado.
+                  </p>
+
+                  <label className="mb-1 block text-sm font-semibold text-[var(--color-text)]">
+                    Contraseña de acceso *
+                  </label>
+
+                  <div className="relative mt-1">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      {...register("contrasenia")}
+                      className={`${getInputClass(errors.contrasenia)} pr-12`}
+                      placeholder="Ej: Admin@123"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-text)] transition hover:text-[var(--color-primary)]"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+
+                  {capsLockOn && (
+                    <p className="mt-1 flex items-center gap-1 text-xs font-medium text-orange-500">
+                      <AlertTriangle size={14} />
+                      Bloq Mayús activado
+                    </p>
+                  )}
+
+                  {errors.contrasenia && (
+                    <p className="mt-1 text-xs font-medium text-red-500">
+                      {errors.contrasenia.message}
+                    </p>
+                  )}
+                </div>
               )}
-            </button>
-          </div>
-        </form>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-4 border-t border-[var(--color-border)] pt-5">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isLoading}
+                className="rounded-xl px-5 py-2.5 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-card)] disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex min-w-[190px] items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-6 py-2.5 font-semibold text-[var(--color-button-primary-text)] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    {adminEditar
+                      ? "Actualizar Administrador"
+                      : "Guardar Administrador"}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function SectionTitle({ title }) {
+  return (
+    <div className="md:col-span-2 mt-2">
+      <h3 className="border-b border-[var(--color-border)] pb-2 font-black text-[var(--color-primary)]">
+        {title}
+      </h3>
+    </div>
+  );
+}
+
+function Campo({ label, error, children }) {
+  return (
+    <div>
+      <label className="text-sm font-semibold text-[var(--color-text)]">
+        {label}
+      </label>
+
+      {children}
+
+      {error && (
+        <p className="mt-1 text-xs font-medium text-red-500">
+          {error.message}
+        </p>
+      )}
     </div>
   );
 }

@@ -125,19 +125,25 @@ function ContactoWeb() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">
       {/* HERO */}
-      <section className="bg-gradient-to-r from-slate-900 to-blue-900 py-20 text-white">
+      <section
+        className="py-20 text-white"
+        style={{
+          background:
+            "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+        }}
+      >
         <div className="mx-auto max-w-6xl px-5">
-          <p className="mb-4 inline-block rounded-full bg-sky-400/20 px-4 py-2 text-sm font-semibold text-sky-300">
+          <p className="mb-4 inline-block rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 backdrop-blur">
             {hero.tag}
           </p>
 
-          <h1 className="mb-5 text-4xl font-bold leading-tight md:text-5xl">
+          <h1 className="mb-5 text-4xl font-black leading-tight md:text-5xl">
             {hero.title}
           </h1>
 
-          <p className="max-w-3xl text-base leading-relaxed text-slate-200 md:text-lg">
+          <p className="max-w-3xl text-base leading-relaxed text-white/80 md:text-lg">
             {hero.description}
           </p>
         </div>
@@ -146,15 +152,17 @@ function ContactoWeb() {
       {/* INFORMACIÓN DE CONTACTO */}
       <section className="py-14">
         <div className="mx-auto grid max-w-6xl gap-6 px-5 md:grid-cols-2">
-          <article className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h2 className="mb-5 text-2xl font-bold text-slate-900">
+          <article className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-8 shadow-sm">
+            <div className="mb-5 h-1.5 w-16 rounded-full bg-[var(--color-primary)]" />
+
+            <h2 className="mb-5 text-2xl font-bold text-[var(--color-text)]">
               {contactInfo.title}
             </h2>
 
             <div className="space-y-4">
               {(contactInfo.items || []).map((item, index) => (
-                <p key={index} className="leading-7 text-slate-600">
-                  <span className="font-semibold text-slate-900">
+                <p key={index} className="leading-7 text-[var(--color-muted-text)]">
+                  <span className="font-semibold text-[var(--color-text)]">
                     {item.label}:
                   </span>{" "}
                   {item.value}
@@ -163,14 +171,16 @@ function ContactoWeb() {
             </div>
           </article>
 
-          <article className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h2 className="mb-5 text-2xl font-bold text-slate-900">
+          <article className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-8 shadow-sm">
+            <div className="mb-5 h-1.5 w-16 rounded-full bg-[var(--color-secondary)]" />
+
+            <h2 className="mb-5 text-2xl font-bold text-[var(--color-text)]">
               {support.title}
             </h2>
 
             <div className="space-y-4">
               {(support.paragraphs || []).map((paragraph, index) => (
-                <p key={index} className="leading-8 text-slate-600">
+                <p key={index} className="leading-8 text-[var(--color-muted-text)]">
                   {paragraph}
                 </p>
               ))}
@@ -182,82 +192,51 @@ function ContactoWeb() {
       {/* FORMULARIO */}
       <section className="pb-20 pt-4">
         <div className="mx-auto max-w-6xl px-5">
-          <div className="rounded-[28px] bg-white p-6 shadow-lg ring-1 ring-slate-200 md:p-10">
+          <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-lg md:p-10">
             <div className="mb-8 text-center">
-              <p className="mb-3 inline-block rounded-full bg-sky-400/20 px-4 py-2 text-sm font-semibold text-sky-500">
+              <p className="mb-3 inline-block rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)]">
                 {form.tag}
               </p>
 
-              <h2 className="text-3xl font-bold text-slate-900">
+              <h2 className="text-3xl font-black text-[var(--color-text)]">
                 {form.title}
               </h2>
             </div>
 
             <form onSubmit={handleSubmit} className="mx-auto max-w-3xl space-y-5">
-              <div>
-                <label
-                  htmlFor="nombre"
-                  className="mb-2 block text-sm font-semibold text-slate-800"
-                >
-                  {form.fields?.nombre?.label || "Nombre"}
-                </label>
-                <input
-                  id="nombre"
-                  type="text"
-                  value={formData.nombre}
-                  onChange={(e) => handleChange("nombre", e.target.value)}
-                  placeholder={
-                    form.fields?.nombre?.placeholder || "Ingresa tu nombre"
-                  }
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                />
-              </div>
+              <CampoTexto
+                id="nombre"
+                label={form.fields?.nombre?.label || "Nombre"}
+                value={formData.nombre}
+                onChange={(value) => handleChange("nombre", value)}
+                placeholder={form.fields?.nombre?.placeholder || "Ingresa tu nombre"}
+              />
 
-              <div>
-                <label
-                  htmlFor="correo"
-                  className="mb-2 block text-sm font-semibold text-slate-800"
-                >
-                  {form.fields?.correo?.label || "Correo"}
-                </label>
-                <input
-                  id="correo"
-                  type="email"
-                  value={formData.correo}
-                  onChange={(e) => handleChange("correo", e.target.value)}
-                  placeholder={
-                    form.fields?.correo?.placeholder || "Ingresa tu correo"
-                  }
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                />
-              </div>
+              <CampoTexto
+                id="correo"
+                type="email"
+                label={form.fields?.correo?.label || "Correo"}
+                value={formData.correo}
+                onChange={(value) => handleChange("correo", value)}
+                placeholder={form.fields?.correo?.placeholder || "Ingresa tu correo"}
+              />
 
-              <div>
-                <label
-                  htmlFor="asunto"
-                  className="mb-2 block text-sm font-semibold text-slate-800"
-                >
-                  {form.fields?.asunto?.label || "Asunto"}
-                </label>
-                <input
-                  id="asunto"
-                  type="text"
-                  value={formData.asunto}
-                  onChange={(e) => handleChange("asunto", e.target.value)}
-                  placeholder={
-                    form.fields?.asunto?.placeholder || "Motivo de contacto"
-                  }
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-                />
-              </div>
+              <CampoTexto
+                id="asunto"
+                label={form.fields?.asunto?.label || "Asunto"}
+                value={formData.asunto}
+                onChange={(value) => handleChange("asunto", value)}
+                placeholder={form.fields?.asunto?.placeholder || "Motivo de contacto"}
+              />
 
               <div>
                 <label
                   htmlFor="mensaje"
-                  className="mb-2 block text-sm font-semibold text-slate-800"
+                  className="mb-2 block text-sm font-semibold text-[var(--color-text)]"
                 >
                   {form.fields?.mensaje?.label || "Mensaje"}
                 </label>
+
                 <textarea
                   id="mensaje"
                   rows="5"
@@ -266,14 +245,14 @@ function ContactoWeb() {
                   placeholder={
                     form.fields?.mensaje?.placeholder || "Escribe tu consulta"
                   }
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                  className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-muted-text)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_16%,transparent)]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={enviando}
-                className="w-full rounded-2xl bg-sky-500 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-2xl bg-[var(--color-button-primary)] px-5 py-3.5 text-base font-semibold text-[var(--color-button-primary-text)] transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {enviando
                   ? "Enviando..."
@@ -284,6 +263,35 @@ function ContactoWeb() {
         </div>
       </section>
     </main>
+  );
+}
+
+function CampoTexto({
+  id,
+  type = "text",
+  label,
+  value,
+  onChange,
+  placeholder,
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="mb-2 block text-sm font-semibold text-[var(--color-text)]"
+      >
+        {label}
+      </label>
+
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-muted-text)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_16%,transparent)]"
+      />
+    </div>
   );
 }
 

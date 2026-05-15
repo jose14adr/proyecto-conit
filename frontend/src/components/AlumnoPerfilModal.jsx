@@ -11,13 +11,10 @@ import {
   BookPlus,
   Trash2,
   CheckCircle,
+  Settings,
 } from "lucide-react";
-import {
-  obtenerMatriculasPorAlumno,
-  actualizarPermisosCertificado,
-} from "../services/matricula.service";
+import { obtenerMatriculasPorAlumno } from "../services/matricula.service";
 import toast from "react-hot-toast";
-import { Settings } from "lucide-react";
 import PermisosCertificadoModal from "./PermisosCertificadoModal";
 
 export default function AlumnoPerfilModal({
@@ -34,10 +31,13 @@ export default function AlumnoPerfilModal({
 
   useEffect(() => {
     const cargarMatriculas = async () => {
+      if (!alumno?.id) return;
+
       setIsLoading(true);
+
       try {
         const data = await obtenerMatriculasPorAlumno(alumno.id);
-        setMatriculas(data);
+        setMatriculas(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error al cargar matriculas del alumno", error);
         toast.error("Error al cargar cursos matriculados");
@@ -47,7 +47,7 @@ export default function AlumnoPerfilModal({
     };
 
     cargarMatriculas();
-  }, [alumno.id]);
+  }, [alumno?.id]);
 
   if (!alumno) {
     return null;
@@ -55,54 +55,16 @@ export default function AlumnoPerfilModal({
 
   const esInactivo = alumno.estado === false;
 
-  const handleTogglePermiso = async (
-    matriculaId,
-    tipo,
-    estadoActual,
-    matriculaCompleta,
-  ) => {
-    try {
-      // Determinamos los nuevos estados
-      let nuevoPuedeVer = matriculaCompleta.puede_ver_certificado;
-      let nuevoPuedeDescargar = matriculaCompleta.puede_descargar_certificado;
-
-      if (tipo === "ver") {
-        nuevoPuedeVer = !estadoActual;
-        // Si quitamos el permiso de ver, forzamos quitar el de descargar
-        if (!nuevoPuedeVer) nuevoPuedeDescargar = false;
-      } else if (tipo === "descargar") {
-        nuevoPuedeDescargar = !estadoActual;
-      }
-
-      await actualizarPermisosCertificado(
-        matriculaId,
-        nuevoPuedeVer,
-        nuevoPuedeDescargar,
-      );
-
-      // Actualizamos el estado local para que la UI cambie instantáneamente
-      setMatriculas((prev) =>
-        prev.map((m) =>
-          m.id === matriculaId
-            ? {
-                ...m,
-                puede_ver_certificado: nuevoPuedeVer,
-                puede_descargar_certificado: nuevoPuedeDescargar,
-              }
-            : m,
-        ),
-      );
-      toast.success("Permisos actualizados");
-    } catch (error) {
-      toast.error("Error al actualizar permisos");
-      console.error(error);
-    }
-  };
+  const hayAcciones =
+    typeof onMatricular === "function" ||
+    typeof onEdit === "function" ||
+    typeof onHabilitar === "function" ||
+    typeof onInhabilitar === "function";
 
   const handleCertificadoActualizado = (
     matriculaId,
     puedeVer,
-    puedeDescargar,
+    puedeDescargar
   ) => {
     setMatriculas((prev) =>
       prev.map((m) =>
@@ -112,77 +74,95 @@ export default function AlumnoPerfilModal({
               puede_ver_certificado: puedeVer,
               puede_descargar_certificado: puedeDescargar,
             }
-          : m,
-      ),
+          : m
+      )
     );
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden animate-fadeIn flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-4xl animate-fadeIn flex-col overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-2xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-700 p-6 flex justify-between items-center text-white shrink-0">
+        <div
+          className="flex shrink-0 items-center justify-between p-6 text-white"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+          }}
+        >
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold backdrop-blur-md shadow-inner">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold shadow-inner backdrop-blur-md">
               {alumno.nombre?.charAt(0)}
               {alumno.apellido?.charAt(0)}
             </div>
+
             <div>
               <h2 className="text-2xl font-bold">
-                {" "}
                 {alumno.nombre} {alumno.apellido}
               </h2>
-              <p className="text-indigo-100 flex items-center gap-2 mt-1">
+
+              <p className="mt-1 flex items-center gap-2 text-white/80">
                 <CreditCard size={16} />
                 {alumno.tipoDocumento || "DNI"}:{" "}
-                {alumno.numDocumento || alumno.numdocumento}
+                {alumno.numDocumento || alumno.numdocumento || "-"}
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            className="rounded-full p-2 transition hover:bg-white/20"
+            title="Cerrar"
           >
             <X size={24} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Datos Personales */}
-            <div className="md:col-span-1 space-y-6">
-              <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2">
-                  Información de Contacto
+        <div className="flex-1 overflow-y-auto bg-[var(--color-background)] p-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {/* Datos personales */}
+            <div className="space-y-6 md:col-span-1">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-sm">
+                <h3 className="mb-4 border-b border-[var(--color-border)] pb-2 text-sm font-bold uppercase tracking-wider text-[var(--color-muted-text)]">
+                  Información de contacto
                 </h3>
 
-                <div className="space-y-4 text-sm text-gray-600">
+                <div className="space-y-4 text-sm text-[var(--color-muted-text)]">
                   <div className="flex items-start gap-3">
                     <Mail
                       size={18}
-                      className="text-indigo-500 shrink-0 mt-0.5"
+                      className="mt-0.5 shrink-0 text-[var(--color-primary)]"
                     />
-                    <span className="break-all">{alumno.correo}</span>
+                    <span className="break-all">
+                      {alumno.correo || "No registrado"}
+                    </span>
                   </div>
+
                   <div className="flex items-center gap-3">
-                    <Phone size={18} className="text-indigo-500 shrink-0" />
-                    <span>{alumno.telefono}</span>
+                    <Phone
+                      size={18}
+                      className="shrink-0 text-[var(--color-primary)]"
+                    />
+                    <span>{alumno.telefono || "No registrado"}</span>
                   </div>
+
                   <div className="flex items-start gap-3">
                     <MapPin
                       size={18}
-                      className="text-indigo-500 shrink-0 mt-0.5"
+                      className="mt-0.5 shrink-0 text-[var(--color-primary)]"
                     />
                     <span>{alumno.direccion || "No registrada"}</span>
                   </div>
                 </div>
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <span className="text-xs text-gray-500 block mb-2 font-medium">
+
+                <div className="mt-6 border-t border-[var(--color-border)] pt-4">
+                  <span className="mb-2 block text-xs font-medium text-[var(--color-muted-text)]">
                     Estado en el sistema:
                   </span>
+
                   <span
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide uppercase inline-block ${
+                    className={`inline-block rounded-xl px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
                       esInactivo
                         ? "bg-red-100 text-red-700"
                         : "bg-green-100 text-green-700"
@@ -194,24 +174,24 @@ export default function AlumnoPerfilModal({
               </div>
             </div>
 
-            {/* Cursos Matriculados */}
+            {/* Cursos matriculados */}
             <div className="md:col-span-2">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
-                  <BookOpen size={20} className="text-indigo-600" />
+              <div className="h-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-6 shadow-sm">
+                <h3 className="mb-6 flex items-center gap-2 text-lg font-bold text-[var(--color-text)]">
+                  <BookOpen size={20} className="text-[var(--color-primary)]" />
                   Cursos Matriculados
                 </h3>
 
                 {isLoading ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                  <div className="flex flex-col items-center justify-center py-12 text-[var(--color-muted-text)]">
                     <Loader2
                       size={32}
-                      className="animate-spin mb-3 text-indigo-500"
+                      className="mb-3 animate-spin text-[var(--color-primary)]"
                     />
                     <p>Cargando información académica...</p>
                   </div>
                 ) : matriculas.length === 0 ? (
-                  <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                  <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-6 py-8 text-center text-[var(--color-muted-text)]">
                     Este alumno aún no tiene cursos registrados.
                   </div>
                 ) : (
@@ -219,33 +199,36 @@ export default function AlumnoPerfilModal({
                     {matriculas.map((matricula) => (
                       <div
                         key={matricula.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/50 transition-colors gap-3"
+                        className="flex flex-col justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_7%,transparent)] sm:flex-row sm:items-center"
                       >
                         <div>
-                          <h4 className="font-bold text-gray-800">
+                          <h4 className="font-bold text-[var(--color-text)]">
                             {matricula.grupo?.curso?.nombrecurso ||
                               matricula.observacion ||
                               "Curso Desconocido"}
                           </h4>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded inline-block">
+
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <span className="inline-block rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-2 py-1 text-xs font-medium text-[var(--color-muted-text)]">
                               Grupo: {matricula.grupo?.nombregrupo || "N/A"}
                             </span>
+
                             {matricula.grupo?.horario && (
-                              <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded inline-block">
+                              <span className="inline-block rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-2 py-1 text-xs font-medium text-[var(--color-muted-text)]">
                                 Horario: {matricula.grupo.horario}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="shrink-0 flex items-center gap-3">
+
+                        <div className="flex shrink-0 items-center gap-3">
                           <span
-                            className={`text-xs font-bold px-3 py-1.5 rounded-full uppercase ${
+                            className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase ${
                               matricula.estado === "pendiente"
                                 ? "bg-yellow-100 text-yellow-700"
                                 : matricula.estado === "activo"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-green-100 text-green-700"
+                                ? "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]"
+                                : "bg-green-100 text-green-700"
                             }`}
                           >
                             {matricula.estado || "Inscrito"}
@@ -253,8 +236,8 @@ export default function AlumnoPerfilModal({
 
                           <button
                             onClick={() => setCertModalOpen(matricula)}
-                            className="p-2 text-emerald-600 hover:bg-emerald-100 bg-emerald-50 rounded-lg transition-colors border border-emerald-100 shadow-sm"
-                            title="Configurar Certificado"
+                            className="rounded-xl border border-emerald-100 bg-emerald-50 p-2 text-emerald-600 shadow-sm transition hover:bg-emerald-100"
+                            title="Configurar certificado"
                           >
                             <Settings size={18} />
                           </button>
@@ -268,49 +251,60 @@ export default function AlumnoPerfilModal({
           </div>
         </div>
 
-        {/* Footer - Panel de acciones */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4 shrink-0 flex flex-wrap justify-between items-center gap-4">
-          <p className="text-sm font-medium text-gray-500">
-            Acciones rápidas del alumno
+        {/* Footer */}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t border-[var(--color-border)] bg-[var(--color-card)] px-6 py-4">
+          <p className="text-sm font-medium text-[var(--color-muted-text)]">
+            {hayAcciones
+              ? "Acciones rápidas del alumno"
+              : "Vista rápida del alumno"}
           </p>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onMatricular}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-semibold transition-colors border border-emerald-100"
-            >
-              <BookPlus size={18} />
-              <span className="hidden sm:inline">Matricular</span>
-            </button>
+          {hayAcciones && (
+            <div className="flex flex-wrap items-center gap-3">
+              {typeof onMatricular === "function" && (
+                <button
+                  onClick={onMatricular}
+                  className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2 font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                >
+                  <BookPlus size={18} />
+                  <span className="hidden sm:inline">Matricular</span>
+                </button>
+              )}
 
-            <button
-              onClick={onEdit}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-semibold transition-colors border border-indigo-100"
-            >
-              <Edit2 size={18} />
-              <span className="hidden sm:inline">Editar Perfil</span>
-            </button>
+              {typeof onEdit === "function" && (
+                <button
+                  onClick={onEdit}
+                  className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-4 py-2 font-semibold text-[var(--color-primary)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_16%,transparent)]"
+                >
+                  <Edit2 size={18} />
+                  <span className="hidden sm:inline">Editar Perfil</span>
+                </button>
+              )}
 
-            {esInactivo ? (
-              <button
-                onClick={onHabilitar}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-200 rounded-lg font-semibold transition-all border border-transparent"
-              >
-                <CheckCircle size={18} />
-                <span className="hidden sm:inline">Habilitar</span>
-              </button>
-            ) : (
-              <button
-                onClick={onInhabilitar}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200 rounded-lg font-semibold transition-all border border-transparent"
-              >
-                <Trash2 size={18} />
-                <span className="hidden sm:inline">Inhabilitar</span>
-              </button>
-            )}
-          </div>
+              {esInactivo
+                ? typeof onHabilitar === "function" && (
+                    <button
+                      onClick={onHabilitar}
+                      className="flex items-center gap-2 rounded-xl border border-transparent bg-[var(--color-background)] px-4 py-2 font-semibold text-[var(--color-text)] transition hover:border-green-200 hover:bg-green-50 hover:text-green-700"
+                    >
+                      <CheckCircle size={18} />
+                      <span className="hidden sm:inline">Habilitar</span>
+                    </button>
+                  )
+                : typeof onInhabilitar === "function" && (
+                    <button
+                      onClick={onInhabilitar}
+                      className="flex items-center gap-2 rounded-xl border border-transparent bg-[var(--color-background)] px-4 py-2 font-semibold text-[var(--color-text)] transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 size={18} />
+                      <span className="hidden sm:inline">Inhabilitar</span>
+                    </button>
+                  )}
+            </div>
+          )}
         </div>
       </div>
+
       {certModalOpen && (
         <PermisosCertificadoModal
           matricula={certModalOpen}

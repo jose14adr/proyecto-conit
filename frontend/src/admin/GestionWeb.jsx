@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
   BookOpen,
@@ -89,7 +89,7 @@ const defaultHomeContent = {
       to: "/web/cursos",
     },
     secondaryButton: {
-      text: "Conócenos",
+      text: "Contactenos",
       to: "/web/nosotros",
     },
   },
@@ -547,7 +547,7 @@ export default function GestionWeb() {
 
   const inhabilitarCategoria = async (categoria) => {
     const confirmar = window.confirm(
-      `¿Seguro que deseas ocultar la categoría "${categoria.nombre}"?`
+      `Â¿Seguro que deseas ocultar la categoría "${categoria.nombre}"?`
     );
 
     if (!confirmar) return;
@@ -1156,9 +1156,9 @@ export default function GestionWeb() {
       case "RESPONDIDO":
         return "bg-green-100 text-green-700";
       case "EN_REVISION":
-        return "bg-blue-100 text-blue-700";
+        return "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]";
       case "ARCHIVADO":
-        return "bg-slate-200 text-slate-700";
+        return "bg-[var(--color-background)] text-[var(--color-text)]";
       default:
         return "bg-amber-100 text-amber-700";
     }
@@ -1207,7 +1207,7 @@ export default function GestionWeb() {
 
   const eliminarMedio = async (media) => {
     const confirmar = window.confirm(
-      `¿Seguro que deseas eliminar la imagen "${media.nombreOriginal}"?`
+      `Â¿Seguro que deseas eliminar la imagen "${media.nombreOriginal}"?`
     );
 
     if (!confirmar) return;
@@ -1387,7 +1387,7 @@ export default function GestionWeb() {
 
   const eliminarPagina = async (pagina) => {
     const confirmar = window.confirm(
-      `¿Seguro que deseas eliminar u ocultar la página "${pagina.titulo}"?`
+      `Â¿Seguro que deseas eliminar u ocultar la página "${pagina.titulo}"?`
     );
 
     if (!confirmar) return;
@@ -1673,18 +1673,18 @@ export default function GestionWeb() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 space-y-8">
-      <section className="rounded-2xl bg-gradient-to-r from-slate-900 to-blue-900 p-8 text-white shadow">
+    <div className="min-h-screen bg-[var(--color-background)] p-8 space-y-8">
+      <section className="rounded-2xl bg-gradient-to-r from-[var(--color-sidenav)] to-[var(--color-primary)] p-8 text-white shadow">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-sky-200">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/80">
               <Globe2 size={18} />
               Editor del sitio público
             </div>
 
             <h1 className="text-3xl font-bold">Gestión web</h1>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-200">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/75">
               Administra los cursos que aparecen en la web pública, sus
               categorías, imágenes, textos, destacados y visibilidad.
             </p>
@@ -1692,7 +1692,7 @@ export default function GestionWeb() {
 
           <button
             onClick={abrirCrearCategoria}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-blue-800 transition hover:bg-slate-100"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-card)] px-5 py-3 font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-background)]"
           >
             <Plus size={20} />
             Nueva categoría
@@ -1700,7 +1700,7 @@ export default function GestionWeb() {
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <section className="rounded-2xl bg-[var(--color-card)] p-5 shadow-sm ring-1 ring-[var(--color-border)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-3">
             <button
@@ -1708,8 +1708,8 @@ export default function GestionWeb() {
               onClick={() => setTab("inicio")}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
                   tab === "inicio"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-[var(--color-button-primary)] text-white shadow"
+                  : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
               }`}
               >
               <Home size={18} />
@@ -1720,8 +1720,8 @@ export default function GestionWeb() {
                 onClick={() => setTab("nosotros")}
                 className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
                   tab === "nosotros"
-                    ? "bg-blue-600 text-white shadow"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    ? "bg-[var(--color-button-primary)] text-white shadow"
+                    : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
                 }`}
               >
                 <Users size={18} />
@@ -1732,8 +1732,8 @@ export default function GestionWeb() {
               onClick={() => setTab("cursos")}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
                 tab === "cursos"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-[var(--color-button-primary)] text-white shadow"
+                  : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
               }`}
             >
               <BookOpen size={18} />
@@ -1745,8 +1745,8 @@ export default function GestionWeb() {
               onClick={() => setTab("categorias")}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
                 tab === "categorias"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-[var(--color-button-primary)] text-white shadow"
+                  : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
               }`}
             >
               <FolderOpen size={18} />
@@ -1758,8 +1758,8 @@ export default function GestionWeb() {
               onClick={() => setTab("contacto")}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
                 tab === "contacto"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-[var(--color-button-primary)] text-white shadow"
+                  : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
               }`}
             >
               <Mail size={18} />
@@ -1771,8 +1771,8 @@ export default function GestionWeb() {
               onClick={() => setTab("mensajes")}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
                 tab === "mensajes"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-[var(--color-button-primary)] text-white shadow"
+                  : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
               }`}
             >
               <Inbox size={18} />
@@ -1789,8 +1789,8 @@ export default function GestionWeb() {
               onClick={() => setTab("medios")}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
                 tab === "medios"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-[var(--color-button-primary)] text-white shadow"
+                  : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
               }`}
             >
               <ImageIcon size={18} />
@@ -1801,8 +1801,8 @@ export default function GestionWeb() {
               onClick={() => setTab("paginas")}
               className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
                 tab === "paginas"
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-[var(--color-button-primary)] text-white shadow"
+                  : "bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
               }`}
             >
               <Globe2 size={18} />
@@ -1813,7 +1813,7 @@ export default function GestionWeb() {
           <div className="relative w-full max-w-md">
             <Search
               size={19}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-text)]"
             />
             <input
               value={busqueda}
@@ -1823,27 +1823,27 @@ export default function GestionWeb() {
                   ? "Buscar curso o categoría..."
                   : "Buscar categoría..."
               }
-              className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              className="w-full rounded-xl border border-[var(--color-border)] py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
             />
           </div>
         </div>
       </section>
 
       {cargando ? (
-        <div className="rounded-2xl bg-white p-10 text-center font-semibold text-slate-600 shadow-sm ring-1 ring-slate-200">
+        <div className="rounded-2xl bg-[var(--color-card)] p-10 text-center font-semibold text-[var(--color-muted-text)] shadow-sm ring-1 ring-[var(--color-border)]">
           Cargando información...
         </div>
         ) : tab === "inicio" ? (
             <form
                 onSubmit={guardarContenidoHome}
-                className="space-y-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+                className="space-y-6 rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]"
             >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900">
+                    <h2 className="text-2xl font-bold text-[var(--color-text)]">
                     Contenido del Inicio
                     </h2>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-[var(--color-muted-text)]">
                     Edita el hero, beneficios, cursos destacados y CTA final de la página principal.
                     </p>
                 </div>
@@ -1851,22 +1851,22 @@ export default function GestionWeb() {
                 <button
                     type="submit"
                     disabled={guardandoHome}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)] disabled:opacity-60"
                 >
                     <Save size={18} />
                     {guardandoHome ? "Guardando..." : "Guardar inicio"}
                 </button>
                 </div>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-[var(--color-border)] p-5">
                 <div className="mb-5 flex items-center gap-2">
-                    <Home size={20} className="text-blue-600" />
-                    <h3 className="text-lg font-bold text-slate-900">Hero principal</h3>
+                    <Home size={20} className="text-[var(--color-primary)]" />
+                    <h3 className="text-lg font-bold text-[var(--color-text)]">Hero principal</h3>
                 </div>
 
                 <div className="grid gap-5 md:grid-cols-2">
                     <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Etiqueta superior
                     </label>
                     <input
@@ -1874,13 +1874,13 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("hero", "tag", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Formación profesional"
                     />
                     </div>
 
                     <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Imagen de fondo URL
                     </label>
                     <div className="space-y-3">
@@ -1889,7 +1889,7 @@ export default function GestionWeb() {
                         onChange={(e) =>
                           actualizarSeccionHome("hero", "backgroundImage", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="https://..."
                       />
 
@@ -1898,7 +1898,7 @@ export default function GestionWeb() {
                         onClick={() =>
                           abrirSelectorMedia("homeHeroBackground", "Seleccionar imagen del Home")
                         }
-                        className="w-full rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                        className="w-full rounded-xl bg-[var(--color-background)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
                       >
                         Seleccionar desde biblioteca
                       </button>
@@ -1914,7 +1914,7 @@ export default function GestionWeb() {
                     </div>
 
                     <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Título principal
                     </label>
                     <input
@@ -1922,13 +1922,13 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("hero", "title", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Título del inicio"
                     />
                     </div>
 
                     <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Descripción
                     </label>
                     <textarea
@@ -1937,13 +1937,13 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("hero", "description", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Descripción del hero..."
                     />
                     </div>
 
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                    <h4 className="mb-3 font-bold text-slate-800">Botón principal</h4>
+                    <div className="rounded-2xl bg-[var(--color-background)] p-4">
+                    <h4 className="mb-3 font-bold text-[var(--color-text)]">Botón principal</h4>
 
                     <div className="space-y-3">
                         <input
@@ -1951,7 +1951,7 @@ export default function GestionWeb() {
                         onChange={(e) =>
                             actualizarBotonHero("primaryButton", "text", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Texto del botón"
                         />
 
@@ -1960,14 +1960,14 @@ export default function GestionWeb() {
                         onChange={(e) =>
                             actualizarBotonHero("primaryButton", "to", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="/web/cursos"
                         />
                     </div>
                     </div>
 
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                    <h4 className="mb-3 font-bold text-slate-800">Botón secundario</h4>
+                    <div className="rounded-2xl bg-[var(--color-background)] p-4">
+                    <h4 className="mb-3 font-bold text-[var(--color-text)]">Botón secundario</h4>
 
                     <div className="space-y-3">
                         <input
@@ -1975,7 +1975,7 @@ export default function GestionWeb() {
                         onChange={(e) =>
                             actualizarBotonHero("secondaryButton", "text", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Texto del botón"
                         />
 
@@ -1984,7 +1984,7 @@ export default function GestionWeb() {
                         onChange={(e) =>
                             actualizarBotonHero("secondaryButton", "to", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="/web/nosotros"
                         />
                     </div>
@@ -1992,11 +1992,11 @@ export default function GestionWeb() {
                 </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-[var(--color-border)] p-5">
                 <div className="mb-5 flex items-center justify-between gap-3">
                     <div>
-                    <h3 className="text-lg font-bold text-slate-900">Beneficios</h3>
-                    <p className="text-sm text-slate-500">
+                    <h3 className="text-lg font-bold text-[var(--color-text)]">Beneficios</h3>
+                    <p className="text-sm text-[var(--color-muted-text)]">
                         Estos aparecen debajo del hero principal.
                     </p>
                     </div>
@@ -2004,7 +2004,7 @@ export default function GestionWeb() {
                     <button
                     type="button"
                     onClick={agregarBeneficio}
-                    className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-background)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                     >
                     <Plus size={17} />
                     Agregar
@@ -2015,10 +2015,10 @@ export default function GestionWeb() {
                     {homeForm.benefits.map((benefit, index) => (
                     <div
                         key={index}
-                        className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                        className="rounded-2xl bg-[var(--color-background)] p-4 ring-1 ring-[var(--color-border)]"
                     >
                         <div className="mb-3 flex items-center justify-between gap-3">
-                        <h4 className="font-bold text-slate-800">
+                        <h4 className="font-bold text-[var(--color-text)]">
                             Beneficio {index + 1}
                         </h4>
 
@@ -2038,7 +2038,7 @@ export default function GestionWeb() {
                         onChange={(e) =>
                             actualizarBeneficio(index, "title", e.target.value)
                         }
-                        className="mb-3 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="mb-3 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Título"
                         />
 
@@ -2048,7 +2048,7 @@ export default function GestionWeb() {
                         onChange={(e) =>
                             actualizarBeneficio(index, "description", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Descripción"
                         />
                     </div>
@@ -2056,17 +2056,17 @@ export default function GestionWeb() {
                 </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-[var(--color-border)] p-5">
                 <div className="mb-5 flex items-center gap-2">
-                    <BookOpen size={20} className="text-blue-600" />
-                    <h3 className="text-lg font-bold text-slate-900">
+                    <BookOpen size={20} className="text-[var(--color-primary)]" />
+                    <h3 className="text-lg font-bold text-[var(--color-text)]">
                     Sección cursos destacados
                     </h3>
                 </div>
 
                 <div className="grid gap-5 md:grid-cols-2">
                     <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Etiqueta
                     </label>
                     <input
@@ -2074,12 +2074,12 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("featured", "tag", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     />
                     </div>
 
                     <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Título
                     </label>
                     <input
@@ -2087,12 +2087,12 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("featured", "title", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     />
                     </div>
 
                     <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Descripción
                     </label>
                     <textarea
@@ -2101,21 +2101,21 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("featured", "description", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     />
                     </div>
                 </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-[var(--color-border)] p-5">
                 <div className="mb-5 flex items-center gap-2">
-                    <Image size={20} className="text-blue-600" />
-                    <h3 className="text-lg font-bold text-slate-900">CTA final</h3>
+                    <Image size={20} className="text-[var(--color-primary)]" />
+                    <h3 className="text-lg font-bold text-[var(--color-text)]">CTA final</h3>
                 </div>
 
                 <div className="grid gap-5 md:grid-cols-2">
                     <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Título
                     </label>
                     <input
@@ -2123,12 +2123,12 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("cta", "title", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     />
                     </div>
 
                     <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Descripción
                     </label>
                     <textarea
@@ -2137,12 +2137,12 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("cta", "description", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     />
                     </div>
 
                     <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Texto del botón
                     </label>
                     <input
@@ -2150,12 +2150,12 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("cta", "buttonText", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     />
                     </div>
 
                     <div>
-                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Ruta del botón
                     </label>
                     <input
@@ -2163,7 +2163,7 @@ export default function GestionWeb() {
                         onChange={(e) =>
                         actualizarSeccionHome("cta", "buttonTo", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="/web/cursos"
                     />
                     </div>
@@ -2174,7 +2174,7 @@ export default function GestionWeb() {
                 <button
                     type="submit"
                     disabled={guardandoHome}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-6 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)] disabled:opacity-60"
                 >
                     <Save size={18} />
                     {guardandoHome ? "Guardando..." : "Guardar inicio"}
@@ -2185,14 +2185,14 @@ export default function GestionWeb() {
             ) : tab === "nosotros" ? (
               <form
                 onSubmit={guardarContenidoNosotros}
-                className="space-y-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+                className="space-y-6 rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-900">
+                    <h2 className="text-2xl font-bold text-[var(--color-text)]">
                       Contenido de Nosotros
                     </h2>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-[var(--color-muted-text)]">
                       Edita el hero, descripción institucional, misión, visión y valores.
                     </p>
                   </div>
@@ -2200,46 +2200,46 @@ export default function GestionWeb() {
                   <button
                     type="submit"
                     disabled={guardandoNosotros}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)] disabled:opacity-60"
                   >
                     <Save size={18} />
                     {guardandoNosotros ? "Guardando..." : "Guardar Nosotros"}
                   </button>
                 </div>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-[var(--color-border)] p-5">
                   <div className="mb-5 flex items-center gap-2">
-                    <Users size={20} className="text-blue-600" />
-                    <h3 className="text-lg font-bold text-slate-900">Hero de Nosotros</h3>
+                    <Users size={20} className="text-[var(--color-primary)]" />
+                    <h3 className="text-lg font-bold text-[var(--color-text)]">Hero de Nosotros</h3>
                   </div>
 
                   <div className="grid gap-5 md:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Etiqueta
                       </label>
                       <input
                         value={nosotrosForm.hero.tag}
                         onChange={(e) => actualizarNosotrosHero("tag", e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Sobre nosotros"
                       />
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Título
                       </label>
                       <input
                         value={nosotrosForm.hero.title}
                         onChange={(e) => actualizarNosotrosHero("title", e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Título principal"
                       />
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Descripción
                       </label>
                       <textarea
@@ -2248,20 +2248,20 @@ export default function GestionWeb() {
                         onChange={(e) =>
                           actualizarNosotrosHero("description", e.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Descripción principal..."
                       />
                     </div>
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-[var(--color-border)] p-5">
                   <div className="mb-5 flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">
+                      <h3 className="text-lg font-bold text-[var(--color-text)]">
                         Bloques institucionales
                       </h3>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-[var(--color-muted-text)]">
                         Por ejemplo: Quiénes somos, propósito, historia, enfoque, etc.
                       </p>
                     </div>
@@ -2269,7 +2269,7 @@ export default function GestionWeb() {
                     <button
                       type="button"
                       onClick={agregarAboutItem}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                      className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-background)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                     >
                       <Plus size={17} />
                       Agregar bloque
@@ -2280,10 +2280,10 @@ export default function GestionWeb() {
                     {nosotrosForm.about.map((item, index) => (
                       <div
                         key={index}
-                        className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                        className="rounded-2xl bg-[var(--color-background)] p-4 ring-1 ring-[var(--color-border)]"
                       >
                         <div className="mb-3 flex items-center justify-between gap-3">
-                          <h4 className="font-bold text-slate-800">Bloque {index + 1}</h4>
+                          <h4 className="font-bold text-[var(--color-text)]">Bloque {index + 1}</h4>
 
                           {nosotrosForm.about.length > 1 && (
                             <button
@@ -2301,7 +2301,7 @@ export default function GestionWeb() {
                           onChange={(e) =>
                             actualizarAboutItem(index, "title", e.target.value)
                           }
-                          className="mb-3 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="mb-3 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Título del bloque"
                         />
 
@@ -2318,7 +2318,7 @@ export default function GestionWeb() {
                                     e.target.value
                                   )
                                 }
-                                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                                 placeholder="Párrafo..."
                               />
 
@@ -2340,7 +2340,7 @@ export default function GestionWeb() {
                         <button
                           type="button"
                           onClick={() => agregarAboutParagraph(index)}
-                          className="mt-3 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                          className="mt-3 rounded-xl bg-[var(--color-card)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] ring-1 ring-[var(--color-border)] hover:bg-[var(--color-background)]"
                         >
                           + Agregar párrafo
                         </button>
@@ -2349,11 +2349,11 @@ export default function GestionWeb() {
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-[var(--color-border)] p-5">
                   <div className="mb-5 flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">Misión y visión</h3>
-                      <p className="text-sm text-slate-500">
+                      <h3 className="text-lg font-bold text-[var(--color-text)]">Misión y visión</h3>
+                      <p className="text-sm text-[var(--color-muted-text)]">
                         Edita los pilares principales de la institución.
                       </p>
                     </div>
@@ -2361,7 +2361,7 @@ export default function GestionWeb() {
                     <button
                       type="button"
                       onClick={agregarPillarItem}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                      className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-background)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                     >
                       <Plus size={17} />
                       Agregar pilar
@@ -2370,24 +2370,24 @@ export default function GestionWeb() {
 
                   <div className="mb-5 grid gap-5 md:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Etiqueta
                       </label>
                       <input
                         value={nosotrosForm.pillars.tag}
                         onChange={(e) => actualizarPillars("tag", e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Título de sección
                       </label>
                       <input
                         value={nosotrosForm.pillars.title}
                         onChange={(e) => actualizarPillars("title", e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                       />
                     </div>
                   </div>
@@ -2396,10 +2396,10 @@ export default function GestionWeb() {
                     {nosotrosForm.pillars.items.map((item, index) => (
                       <div
                         key={index}
-                        className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                        className="rounded-2xl bg-[var(--color-background)] p-4 ring-1 ring-[var(--color-border)]"
                       >
                         <div className="mb-3 flex items-center justify-between gap-3">
-                          <h4 className="font-bold text-slate-800">Pilar {index + 1}</h4>
+                          <h4 className="font-bold text-[var(--color-text)]">Pilar {index + 1}</h4>
 
                           {nosotrosForm.pillars.items.length > 1 && (
                             <button
@@ -2417,7 +2417,7 @@ export default function GestionWeb() {
                           onChange={(e) =>
                             actualizarPillarItem(index, "title", e.target.value)
                           }
-                          className="mb-3 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="mb-3 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Misión"
                         />
 
@@ -2427,7 +2427,7 @@ export default function GestionWeb() {
                           onChange={(e) =>
                             actualizarPillarItem(index, "description", e.target.value)
                           }
-                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Descripción..."
                         />
                       </div>
@@ -2435,11 +2435,11 @@ export default function GestionWeb() {
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-[var(--color-border)] p-5">
                   <div className="mb-5 flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">Valores</h3>
-                      <p className="text-sm text-slate-500">
+                      <h3 className="text-lg font-bold text-[var(--color-text)]">Valores</h3>
+                      <p className="text-sm text-[var(--color-muted-text)]">
                         Edita los valores que aparecen al final de la página.
                       </p>
                     </div>
@@ -2447,7 +2447,7 @@ export default function GestionWeb() {
                     <button
                       type="button"
                       onClick={agregarValueItem}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                      className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-background)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                     >
                       <Plus size={17} />
                       Agregar valor
@@ -2456,24 +2456,24 @@ export default function GestionWeb() {
 
                   <div className="mb-5 grid gap-5 md:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Etiqueta
                       </label>
                       <input
                         value={nosotrosForm.values.tag}
                         onChange={(e) => actualizarValues("tag", e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Título de sección
                       </label>
                       <input
                         value={nosotrosForm.values.title}
                         onChange={(e) => actualizarValues("title", e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                       />
                     </div>
                   </div>
@@ -2482,10 +2482,10 @@ export default function GestionWeb() {
                     {nosotrosForm.values.items.map((item, index) => (
                       <div
                         key={index}
-                        className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                        className="rounded-2xl bg-[var(--color-background)] p-4 ring-1 ring-[var(--color-border)]"
                       >
                         <div className="mb-3 flex items-center justify-between gap-3">
-                          <h4 className="font-bold text-slate-800">Valor {index + 1}</h4>
+                          <h4 className="font-bold text-[var(--color-text)]">Valor {index + 1}</h4>
 
                           {nosotrosForm.values.items.length > 1 && (
                             <button
@@ -2503,7 +2503,7 @@ export default function GestionWeb() {
                           onChange={(e) =>
                             actualizarValueItem(index, "title", e.target.value)
                           }
-                          className="mb-3 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="mb-3 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Compromiso"
                         />
 
@@ -2513,7 +2513,7 @@ export default function GestionWeb() {
                           onChange={(e) =>
                             actualizarValueItem(index, "description", e.target.value)
                           }
-                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Descripción..."
                         />
                       </div>
@@ -2525,7 +2525,7 @@ export default function GestionWeb() {
                   <button
                     type="submit"
                     disabled={guardandoNosotros}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-6 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)] disabled:opacity-60"
                   >
                     <Save size={18} />
                     {guardandoNosotros ? "Guardando..." : "Guardar Nosotros"}
@@ -2536,14 +2536,14 @@ export default function GestionWeb() {
               ) : tab === "contacto" ? (
                 <form
                   onSubmit={guardarContenidoContacto}
-                  className="space-y-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+                  className="space-y-6 rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-2xl font-bold text-slate-900">
+                      <h2 className="text-2xl font-bold text-[var(--color-text)]">
                         Contenido de Contacto
                       </h2>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-[var(--color-muted-text)]">
                         Edita el hero, datos de contacto, soporte y textos del formulario.
                       </p>
                     </div>
@@ -2551,46 +2551,46 @@ export default function GestionWeb() {
                     <button
                       type="submit"
                       disabled={guardandoContacto}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)] disabled:opacity-60"
                     >
                       <Save size={18} />
                       {guardandoContacto ? "Guardando..." : "Guardar Contacto"}
                     </button>
                   </div>
 
-                  <section className="rounded-2xl border border-slate-200 p-5">
+                  <section className="rounded-2xl border border-[var(--color-border)] p-5">
                     <div className="mb-5 flex items-center gap-2">
-                      <Mail size={20} className="text-blue-600" />
-                      <h3 className="text-lg font-bold text-slate-900">Hero de Contacto</h3>
+                      <Mail size={20} className="text-[var(--color-primary)]" />
+                      <h3 className="text-lg font-bold text-[var(--color-text)]">Hero de Contacto</h3>
                     </div>
 
                     <div className="grid gap-5 md:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                           Etiqueta
                         </label>
                         <input
                           value={contactoForm.hero.tag}
                           onChange={(e) => actualizarContactoHero("tag", e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Contacto"
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                           Título
                         </label>
                         <input
                           value={contactoForm.hero.title}
                           onChange={(e) => actualizarContactoHero("title", e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Estamos aquí para ayudarte"
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                           Descripción
                         </label>
                         <textarea
@@ -2599,20 +2599,20 @@ export default function GestionWeb() {
                           onChange={(e) =>
                             actualizarContactoHero("description", e.target.value)
                           }
-                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Descripción principal..."
                         />
                       </div>
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-slate-200 p-5">
+                  <section className="rounded-2xl border border-[var(--color-border)] p-5">
                     <div className="mb-5 flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900">
+                        <h3 className="text-lg font-bold text-[var(--color-text)]">
                           Información de contacto
                         </h3>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-[var(--color-muted-text)]">
                           Agrega correo, teléfono, dirección, horario u otros datos.
                         </p>
                       </div>
@@ -2620,7 +2620,7 @@ export default function GestionWeb() {
                       <button
                         type="button"
                         onClick={agregarContactoItem}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-background)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                       >
                         <Plus size={17} />
                         Agregar dato
@@ -2628,13 +2628,13 @@ export default function GestionWeb() {
                     </div>
 
                     <div className="mb-5">
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Título de sección
                       </label>
                       <input
                         value={contactoForm.contactInfo.title}
                         onChange={(e) => actualizarContactoInfo("title", e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Información de contacto"
                       />
                     </div>
@@ -2643,10 +2643,10 @@ export default function GestionWeb() {
                       {contactoForm.contactInfo.items.map((item, index) => (
                         <div
                           key={index}
-                          className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                          className="rounded-2xl bg-[var(--color-background)] p-4 ring-1 ring-[var(--color-border)]"
                         >
                           <div className="mb-3 flex items-center justify-between gap-3">
-                            <h4 className="font-bold text-slate-800">Dato {index + 1}</h4>
+                            <h4 className="font-bold text-[var(--color-text)]">Dato {index + 1}</h4>
 
                             {contactoForm.contactInfo.items.length > 1 && (
                               <button
@@ -2664,7 +2664,7 @@ export default function GestionWeb() {
                             onChange={(e) =>
                               actualizarContactoItem(index, "label", e.target.value)
                             }
-                            className="mb-3 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            className="mb-3 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             placeholder="Correo"
                           />
 
@@ -2673,7 +2673,7 @@ export default function GestionWeb() {
                             onChange={(e) =>
                               actualizarContactoItem(index, "value", e.target.value)
                             }
-                            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             placeholder="contacto@conit.com"
                           />
                         </div>
@@ -2681,13 +2681,13 @@ export default function GestionWeb() {
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-slate-200 p-5">
+                  <section className="rounded-2xl border border-[var(--color-border)] p-5">
                     <div className="mb-5 flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900">
+                        <h3 className="text-lg font-bold text-[var(--color-text)]">
                           Soporte académico
                         </h3>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-[var(--color-muted-text)]">
                           Edita los textos informativos que aparecen al costado.
                         </p>
                       </div>
@@ -2695,7 +2695,7 @@ export default function GestionWeb() {
                       <button
                         type="button"
                         onClick={agregarContactoSupportParagraph}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-background)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                       >
                         <Plus size={17} />
                         Agregar párrafo
@@ -2703,13 +2703,13 @@ export default function GestionWeb() {
                     </div>
 
                     <div className="mb-5">
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Título de soporte
                       </label>
                       <input
                         value={contactoForm.support.title}
                         onChange={(e) => actualizarContactoSupport("title", e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                         placeholder="Soporte académico"
                       />
                     </div>
@@ -2723,7 +2723,7 @@ export default function GestionWeb() {
                             onChange={(e) =>
                               actualizarContactoSupportParagraph(index, e.target.value)
                             }
-                            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             placeholder="Párrafo de soporte..."
                           />
 
@@ -2741,35 +2741,35 @@ export default function GestionWeb() {
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-slate-200 p-5">
+                  <section className="rounded-2xl border border-[var(--color-border)] p-5">
                     <div className="mb-5 flex items-center gap-2">
-                      <Edit2 size={20} className="text-blue-600" />
-                      <h3 className="text-lg font-bold text-slate-900">
+                      <Edit2 size={20} className="text-[var(--color-primary)]" />
+                      <h3 className="text-lg font-bold text-[var(--color-text)]">
                         Textos del formulario
                       </h3>
                     </div>
 
                     <div className="grid gap-5 md:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                           Etiqueta superior
                         </label>
                         <input
                           value={contactoForm.form.tag}
                           onChange={(e) => actualizarContactoForm("tag", e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Escríbenos"
                         />
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                           Título del formulario
                         </label>
                         <input
                           value={contactoForm.form.title}
                           onChange={(e) => actualizarContactoForm("title", e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Envíanos un mensaje"
                         />
                       </div>
@@ -2777,9 +2777,9 @@ export default function GestionWeb() {
                       {["nombre", "correo", "asunto", "mensaje"].map((fieldName) => (
                         <div
                           key={fieldName}
-                          className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                          className="rounded-2xl bg-[var(--color-background)] p-4 ring-1 ring-[var(--color-border)]"
                         >
-                          <h4 className="mb-3 font-bold capitalize text-slate-800">
+                          <h4 className="mb-3 font-bold capitalize text-[var(--color-text)]">
                             Campo: {fieldName}
                           </h4>
 
@@ -2792,7 +2792,7 @@ export default function GestionWeb() {
                                 e.target.value
                               )
                             }
-                            className="mb-3 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            className="mb-3 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             placeholder="Label"
                           />
 
@@ -2805,14 +2805,14 @@ export default function GestionWeb() {
                                 e.target.value
                               )
                             }
-                            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             placeholder="Placeholder"
                           />
                         </div>
                       ))}
 
                       <div className="md:col-span-2">
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                           Texto del botón
                         </label>
                         <input
@@ -2820,7 +2820,7 @@ export default function GestionWeb() {
                           onChange={(e) =>
                             actualizarContactoForm("buttonText", e.target.value)
                           }
-                          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           placeholder="Enviar mensaje"
                         />
                       </div>
@@ -2831,7 +2831,7 @@ export default function GestionWeb() {
                     <button
                       type="submit"
                       disabled={guardandoContacto}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-6 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)] disabled:opacity-60"
                     >
                       <Save size={18} />
                       {guardandoContacto ? "Guardando..." : "Guardar Contacto"}
@@ -2841,14 +2841,14 @@ export default function GestionWeb() {
 
                 ) : tab === "mensajes" ? (
                   <section className="space-y-6">
-                    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                    <div className="rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                          <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-                            <Inbox size={24} className="text-blue-600" />
+                          <h2 className="flex items-center gap-2 text-2xl font-bold text-[var(--color-text)]">
+                            <Inbox size={24} className="text-[var(--color-primary)]" />
                             Bandeja de mensajes
                           </h2>
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-1 text-sm text-[var(--color-muted-text)]">
                             Revisa los mensajes enviados desde el formulario de contacto.
                           </p>
                         </div>
@@ -2857,7 +2857,7 @@ export default function GestionWeb() {
                           <select
                             value={filtroMensajes}
                             onChange={(e) => setFiltroMensajes(e.target.value)}
-                            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                           >
                             <option value="todos">Todos</option>
                             <option value="no_leidos">No leídos</option>
@@ -2871,7 +2871,7 @@ export default function GestionWeb() {
                           <button
                             type="button"
                             onClick={cargarDatos}
-                            className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                            className="rounded-xl bg-[var(--color-background)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
                           >
                             Actualizar
                           </button>
@@ -2880,9 +2880,9 @@ export default function GestionWeb() {
                     </div>
 
                     <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-                      <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                      <section className="rounded-2xl bg-[var(--color-card)] p-5 shadow-sm ring-1 ring-[var(--color-border)]">
                         <div className="mb-4 flex items-center justify-between gap-3">
-                          <h3 className="font-bold text-slate-900">
+                          <h3 className="font-bold text-[var(--color-text)]">
                             {mensajesFiltrados.length} mensaje(s)
                           </h3>
 
@@ -2895,7 +2895,7 @@ export default function GestionWeb() {
 
                         <div className="space-y-3">
                           {mensajesFiltrados.length === 0 ? (
-                            <div className="rounded-2xl bg-slate-50 p-8 text-center text-sm font-medium text-slate-500">
+                            <div className="rounded-2xl bg-[var(--color-background)] p-8 text-center text-sm font-medium text-[var(--color-muted-text)]">
                               No se encontraron mensajes.
                             </div>
                           ) : (
@@ -2904,23 +2904,23 @@ export default function GestionWeb() {
                                 key={mensaje.id}
                                 type="button"
                                 onClick={() => abrirMensajeContacto(mensaje)}
-                                className={`w-full rounded-2xl border p-4 text-left transition hover:border-blue-300 hover:bg-blue-50/50 ${
+                                className={`w-full rounded-2xl border p-4 text-left transition hover:border-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] ${
                                   mensajeSeleccionado?.id === mensaje.id
-                                    ? "border-blue-400 bg-blue-50"
+                                    ? "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
                                     : mensaje.leido
-                                    ? "border-slate-200 bg-white"
+                                    ? "border-[var(--color-border)] bg-[var(--color-card)]"
                                     : "border-amber-200 bg-amber-50"
                                 }`}
                               >
                                 <div className="mb-2 flex items-start justify-between gap-3">
                                   <div className="flex items-center gap-2">
                                     {mensaje.leido ? (
-                                      <MailOpen size={18} className="text-slate-400" />
+                                      <MailOpen size={18} className="text-[var(--color-muted-text)]" />
                                     ) : (
                                       <Mail size={18} className="text-amber-600" />
                                     )}
 
-                                    <p className="font-bold text-slate-900">
+                                    <p className="font-bold text-[var(--color-text)]">
                                       {mensaje.nombre}
                                     </p>
                                   </div>
@@ -2934,15 +2934,15 @@ export default function GestionWeb() {
                                   </span>
                                 </div>
 
-                                <p className="text-sm font-medium text-slate-600">
+                                <p className="text-sm font-medium text-[var(--color-muted-text)]">
                                   {mensaje.asunto}
                                 </p>
 
-                                <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                                <p className="mt-1 line-clamp-2 text-sm text-[var(--color-muted-text)]">
                                   {mensaje.mensaje}
                                 </p>
 
-                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--color-muted-text)]">
                                   <span>{mensaje.correo}</span>
                                   <span>{formatearFechaMensaje(mensaje.created_at)}</span>
                                 </div>
@@ -2952,14 +2952,14 @@ export default function GestionWeb() {
                         </div>
                       </section>
 
-                      <aside className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                      <aside className="rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
                         {!mensajeSeleccionado ? (
                           <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
-                            <MessageSquare size={44} className="mb-4 text-slate-300" />
-                            <h3 className="text-xl font-bold text-slate-900">
+                            <MessageSquare size={44} className="mb-4 text-white/70" />
+                            <h3 className="text-xl font-bold text-[var(--color-text)]">
                               Selecciona un mensaje
                             </h3>
-                            <p className="mt-2 max-w-sm text-sm text-slate-500">
+                            <p className="mt-2 max-w-sm text-sm text-[var(--color-muted-text)]">
                               Haz clic en un mensaje de la bandeja para revisar su contenido.
                             </p>
                           </div>
@@ -2967,12 +2967,12 @@ export default function GestionWeb() {
                           <div>
                             <div className="mb-5 flex items-start justify-between gap-3">
                               <div>
-                                <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-muted-text)]">
                                   <Clock size={14} />
                                   {formatearFechaMensaje(mensajeSeleccionado.created_at)}
                                 </p>
 
-                                <h3 className="text-2xl font-bold text-slate-900">
+                                <h3 className="text-2xl font-bold text-[var(--color-text)]">
                                   {mensajeSeleccionado.asunto}
                                 </h3>
                               </div>
@@ -2986,26 +2986,26 @@ export default function GestionWeb() {
                               </span>
                             </div>
 
-                            <div className="mb-5 rounded-2xl bg-slate-50 p-4">
-                              <p className="text-sm text-slate-500">Nombre</p>
-                              <p className="font-bold text-slate-900">
+                            <div className="mb-5 rounded-2xl bg-[var(--color-background)] p-4">
+                              <p className="text-sm text-[var(--color-muted-text)]">Nombre</p>
+                              <p className="font-bold text-[var(--color-text)]">
                                 {mensajeSeleccionado.nombre}
                               </p>
 
-                              <p className="mt-3 text-sm text-slate-500">Correo</p>
+                              <p className="mt-3 text-sm text-[var(--color-muted-text)]">Correo</p>
                               <a
                                 href={`mailto:${mensajeSeleccionado.correo}`}
-                                className="font-bold text-blue-600 hover:underline"
+                                className="font-bold text-[var(--color-primary)] hover:underline"
                               >
                                 {mensajeSeleccionado.correo}
                               </a>
                             </div>
 
                             <div className="mb-6">
-                              <p className="mb-2 text-sm font-semibold text-slate-700">
+                              <p className="mb-2 text-sm font-semibold text-[var(--color-text)]">
                                 Mensaje
                               </p>
-                              <div className="whitespace-pre-line rounded-2xl border border-slate-200 bg-white p-4 leading-7 text-slate-700">
+                              <div className="whitespace-pre-line rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4 leading-7 text-[var(--color-text)]">
                                 {mensajeSeleccionado.mensaje}
                               </div>
                             </div>
@@ -3016,7 +3016,7 @@ export default function GestionWeb() {
                                 onClick={() =>
                                   cambiarEstadoMensaje(mensajeSeleccionado.id, "EN_REVISION")
                                 }
-                                className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                                className="rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] px-4 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
                               >
                                 En revisión
                               </button>
@@ -3046,7 +3046,7 @@ export default function GestionWeb() {
                                 onClick={() =>
                                   cambiarEstadoMensaje(mensajeSeleccionado.id, "ARCHIVADO")
                                 }
-                                className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                                className="rounded-xl bg-[var(--color-background)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
                               >
                                 Archivar
                               </button>
@@ -3054,7 +3054,7 @@ export default function GestionWeb() {
 
                             <a
                               href={`mailto:${mensajeSeleccionado.correo}?subject=Re: ${mensajeSeleccionado.asunto}`}
-                              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)]"
                             >
                               <Mail size={18} />
                               Responder por correo
@@ -3067,19 +3067,19 @@ export default function GestionWeb() {
                   
                   ) : tab === "medios" ? (
                     <section className="space-y-6">
-                      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                      <div className="rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                           <div>
-                            <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-                              <ImageIcon size={24} className="text-blue-600" />
+                            <h2 className="flex items-center gap-2 text-2xl font-bold text-[var(--color-text)]">
+                              <ImageIcon size={24} className="text-[var(--color-primary)]" />
                               Biblioteca de medios
                             </h2>
-                            <p className="mt-1 text-sm text-slate-500">
+                            <p className="mt-1 text-sm text-[var(--color-muted-text)]">
                               Sube imágenes para usarlas en el sitio web público.
                             </p>
                           </div>
 
-                          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700">
+                          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)]">
                             <Upload size={18} />
                             {subiendoMedio ? "Subiendo..." : "Subir imagen"}
                             <input
@@ -3093,14 +3093,14 @@ export default function GestionWeb() {
                         </div>
                       </div>
 
-                      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                      <div className="rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
                         {medios.length === 0 ? (
-                          <div className="rounded-2xl bg-slate-50 p-10 text-center">
-                            <ImageIcon size={42} className="mx-auto mb-3 text-slate-300" />
-                            <h3 className="text-xl font-bold text-slate-900">
+                          <div className="rounded-2xl bg-[var(--color-background)] p-10 text-center">
+                            <ImageIcon size={42} className="mx-auto mb-3 text-white/70" />
+                            <h3 className="text-xl font-bold text-[var(--color-text)]">
                               Aún no hay imágenes
                             </h3>
-                            <p className="mt-2 text-sm text-slate-500">
+                            <p className="mt-2 text-sm text-[var(--color-muted-text)]">
                               Sube tu primera imagen para usarla en la web.
                             </p>
                           </div>
@@ -3109,9 +3109,9 @@ export default function GestionWeb() {
                             {medios.map((media) => (
                               <article
                                 key={media.id}
-                                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+                                className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm transition hover:shadow-md"
                               >
-                                <div className="h-44 bg-slate-100">
+                                <div className="h-44 bg-[var(--color-background)]">
                                   <img
                                     src={media.archivoUrl}
                                     alt={media.nombreOriginal}
@@ -3120,11 +3120,11 @@ export default function GestionWeb() {
                                 </div>
 
                                 <div className="p-4">
-                                  <h3 className="truncate font-bold text-slate-900">
+                                  <h3 className="truncate font-bold text-[var(--color-text)]">
                                     {media.nombreOriginal}
                                   </h3>
 
-                                  <p className="mt-1 truncate text-xs text-slate-500">
+                                  <p className="mt-1 truncate text-xs text-[var(--color-muted-text)]">
                                     {media.archivoKey}
                                   </p>
 
@@ -3132,7 +3132,7 @@ export default function GestionWeb() {
                                     <button
                                       type="button"
                                       onClick={() => copiarUrlMedio(media.archivoUrl)}
-                                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-background)] px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
                                     >
                                       <Copy size={15} />
                                       Copiar
@@ -3157,14 +3157,14 @@ export default function GestionWeb() {
 
                     ) : tab === "paginas" ? (
                       <section className="space-y-6">
-                        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                        <div className="rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                              <h2 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-                                <Globe2 size={24} className="text-blue-600" />
+                              <h2 className="flex items-center gap-2 text-2xl font-bold text-[var(--color-text)]">
+                                <Globe2 size={24} className="text-[var(--color-primary)]" />
                                 Páginas del sitio web
                               </h2>
-                              <p className="mt-1 text-sm text-slate-500">
+                              <p className="mt-1 text-sm text-[var(--color-muted-text)]">
                                 Crea, publica, oculta y ordena las páginas visibles en la web.
                               </p>
                             </div>
@@ -3172,7 +3172,7 @@ export default function GestionWeb() {
                             <button
                               type="button"
                               onClick={abrirCrearPagina}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)]"
                             >
                               <Plus size={18} />
                               Nueva página
@@ -3180,10 +3180,10 @@ export default function GestionWeb() {
                           </div>
                         </div>
 
-                        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                        <div className="rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
                           <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                              <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                              <thead className="border-b bg-[var(--color-background)] text-xs uppercase tracking-wide text-[var(--color-muted-text)]">
                                 <tr>
                                   <th className="px-5 py-4">Página</th>
                                   <th className="px-5 py-4">Ruta</th>
@@ -3199,22 +3199,22 @@ export default function GestionWeb() {
                                   <tr>
                                     <td
                                       colSpan="6"
-                                      className="px-5 py-10 text-center font-medium text-slate-500"
+                                      className="px-5 py-10 text-center font-medium text-[var(--color-muted-text)]"
                                     >
                                       No se encontraron páginas.
                                     </td>
                                   </tr>
                                 ) : (
                                   paginasFiltradas.map((pagina) => (
-                                    <tr key={pagina.id} className="hover:bg-slate-50">
+                                    <tr key={pagina.id} className="hover:bg-[var(--color-background)]">
                                       <td className="px-5 py-4">
                                         <div>
-                                          <p className="font-bold text-slate-900">
+                                          <p className="font-bold text-[var(--color-text)]">
                                             {pagina.titulo}
                                           </p>
 
                                           <div className="mt-1 flex flex-wrap gap-2">
-                                            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+                                            <span className="rounded-full bg-[var(--color-background)] px-2 py-1 text-xs font-semibold text-[var(--color-muted-text)]">
                                               {pagina.tipo}
                                             </span>
 
@@ -3232,7 +3232,7 @@ export default function GestionWeb() {
                                           href={pagina.ruta}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="font-semibold text-blue-600 hover:underline"
+                                          className="font-semibold text-[var(--color-primary)] hover:underline"
                                         >
                                           {pagina.ruta}
                                         </a>
@@ -3245,7 +3245,7 @@ export default function GestionWeb() {
                                           className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                                             pagina.visible_menu
                                               ? "bg-green-100 text-green-700"
-                                              : "bg-slate-100 text-slate-600"
+                                              : "bg-[var(--color-background)] text-[var(--color-muted-text)]"
                                           }`}
                                         >
                                           {pagina.visible_menu ? "Visible" : "Oculta"}
@@ -3258,7 +3258,7 @@ export default function GestionWeb() {
                                           onClick={() => cambiarPublicacionPagina(pagina)}
                                           className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                                             pagina.publicada
-                                              ? "bg-blue-100 text-blue-700"
+                                              ? "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]"
                                               : "bg-red-100 text-red-700"
                                           }`}
                                         >
@@ -3266,7 +3266,7 @@ export default function GestionWeb() {
                                         </button>
                                       </td>
 
-                                      <td className="px-5 py-4 font-semibold text-slate-700">
+                                      <td className="px-5 py-4 font-semibold text-[var(--color-text)]">
                                         {pagina.orden}
                                       </td>
 
@@ -3283,7 +3283,7 @@ export default function GestionWeb() {
                                           <button
                                             type="button"
                                             onClick={() => abrirEditarPagina(pagina)}
-                                            className="rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                                            className="rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
                                           >
                                             Editar
                                           </button>
@@ -3306,25 +3306,25 @@ export default function GestionWeb() {
                         </div>
                       </section>
       ) : tab === "cursos" ? (
-        <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
           <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className="text-2xl font-bold text-[var(--color-text)]">
                 Cursos publicados en web
               </h2>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[var(--color-muted-text)]">
                 Activa, oculta, destaca y asigna categorías a tus cursos.
               </p>
             </div>
 
-            <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
+            <span className="rounded-full bg-[var(--color-background)] px-4 py-2 text-sm font-semibold text-[var(--color-text)]">
               {cursosFiltrados.length} curso(s)
             </span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b bg-[var(--color-background)] text-xs uppercase tracking-wide text-[var(--color-muted-text)]">
                 <tr>
                   <th className="px-5 py-4">Curso</th>
                   <th className="px-5 py-4">Categorías</th>
@@ -3340,14 +3340,14 @@ export default function GestionWeb() {
                   <tr>
                     <td
                       colSpan="6"
-                      className="px-5 py-10 text-center font-medium text-slate-500"
+                      className="px-5 py-10 text-center font-medium text-[var(--color-muted-text)]"
                     >
                       No se encontraron cursos.
                     </td>
                   </tr>
                 ) : (
                   cursosFiltrados.map((curso) => (
-                    <tr key={curso.id} className="hover:bg-slate-50">
+                    <tr key={curso.id} className="hover:bg-[var(--color-background)]">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           {curso.imagen_url ? (
@@ -3357,16 +3357,16 @@ export default function GestionWeb() {
                               className="h-12 w-12 rounded-xl object-cover"
                             />
                           ) : (
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]">
                               <BookOpen size={22} />
                             </div>
                           )}
 
                           <div>
-                            <p className="font-bold text-slate-800">
+                            <p className="font-bold text-[var(--color-text)]">
                               {curso.nombrecurso}
                             </p>
-                            <p className="max-w-[260px] truncate text-xs text-slate-500">
+                            <p className="max-w-[260px] truncate text-xs text-[var(--color-muted-text)]">
                               {curso.resumen_web ||
                                 curso.descripcion ||
                                 "Sin resumen web"}
@@ -3381,13 +3381,13 @@ export default function GestionWeb() {
                             curso.categorias.map((cat) => (
                               <span
                                 key={cat.id}
-                                className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+                                className="rounded-full bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]"
                               >
                                 {cat.nombre}
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-slate-400">
+                            <span className="text-sm text-[var(--color-muted-text)]">
                               Sin categoría
                             </span>
                           )}
@@ -3401,7 +3401,7 @@ export default function GestionWeb() {
                           className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
                             curso.visible_web
                               ? "bg-green-100 text-green-700"
-                              : "bg-slate-100 text-slate-600"
+                              : "bg-[var(--color-background)] text-[var(--color-muted-text)]"
                           }`}
                         >
                           {curso.visible_web ? (
@@ -3420,7 +3420,7 @@ export default function GestionWeb() {
                           className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
                             curso.destacado_web
                               ? "bg-yellow-100 text-yellow-700"
-                              : "bg-slate-100 text-slate-600"
+                              : "bg-[var(--color-background)] text-[var(--color-muted-text)]"
                           }`}
                         >
                           <Star size={15} />
@@ -3429,7 +3429,7 @@ export default function GestionWeb() {
                       </td>
 
                       <td className="px-5 py-4">
-                        <span className="text-sm font-medium text-slate-600">
+                        <span className="text-sm font-medium text-[var(--color-muted-text)]">
                           {curso.slug || "Sin slug"}
                         </span>
                       </td>
@@ -3439,7 +3439,7 @@ export default function GestionWeb() {
                           <button
                             type="button"
                             onClick={() => abrirEditarCursoWeb(curso)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                            className="inline-flex items-center gap-2 rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
                           >
                             <Edit2 size={17} />
                             Configurar
@@ -3454,13 +3454,13 @@ export default function GestionWeb() {
           </div>
         </section>
       ) : (
-        <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-2xl bg-[var(--color-card)] p-6 shadow-sm ring-1 ring-[var(--color-border)]">
           <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">
-                Categorías web
+              <h2 className="text-2xl font-bold text-[var(--color-text)]">
+                Categoríaas web
               </h2>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[var(--color-muted-text)]">
                 Crea categorías para organizar los cursos en la web pública.
               </p>
             </div>
@@ -3468,7 +3468,7 @@ export default function GestionWeb() {
             <button
               type="button"
               onClick={abrirCrearCategoria}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-button-primary)]"
             >
               <Plus size={18} />
               Nueva categoría
@@ -3477,21 +3477,21 @@ export default function GestionWeb() {
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {categoriasFiltradas.length === 0 ? (
-              <div className="col-span-full rounded-2xl bg-slate-50 p-8 text-center font-medium text-slate-500">
+              <div className="col-span-full rounded-2xl bg-[var(--color-background)] p-8 text-center font-medium text-[var(--color-muted-text)]">
                 No se encontraron categorías.
               </div>
             ) : (
               categoriasFiltradas.map((categoria) => (
                 <article
                   key={categoria.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-sm transition hover:shadow-md"
                 >
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900">
+                      <h3 className="text-xl font-bold text-[var(--color-text)]">
                         {categoria.nombre}
                       </h3>
-                      <p className="text-sm font-medium text-slate-500">
+                      <p className="text-sm font-medium text-[var(--color-muted-text)]">
                         /{categoria.slug || "sin-slug"}
                       </p>
                     </div>
@@ -3500,7 +3500,7 @@ export default function GestionWeb() {
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
                         categoria.estado && categoria.visibleWeb
                           ? "bg-green-100 text-green-700"
-                          : "bg-slate-100 text-slate-600"
+                          : "bg-[var(--color-background)] text-[var(--color-muted-text)]"
                       }`}
                     >
                       {categoria.estado && categoria.visibleWeb
@@ -3509,7 +3509,7 @@ export default function GestionWeb() {
                     </span>
                   </div>
 
-                  <p className="mb-5 min-h-[48px] text-sm leading-6 text-slate-600">
+                  <p className="mb-5 min-h-[48px] text-sm leading-6 text-[var(--color-muted-text)]">
                     {categoria.descripcion || "Sin descripción."}
                   </p>
 
@@ -3517,7 +3517,7 @@ export default function GestionWeb() {
                     <button
                       type="button"
                       onClick={() => abrirEditarCategoria(categoria)}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)]"
                     >
                       <Edit2 size={17} />
                       Editar
@@ -3543,14 +3543,14 @@ export default function GestionWeb() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
           <form
             onSubmit={guardarCategoria}
-            className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-2xl overflow-hidden rounded-2xl bg-[var(--color-card)] shadow-2xl"
           >
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-[var(--color-text)]">
                   {categoriaEditar ? "Editar categoría" : "Nueva categoría"}
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[var(--color-muted-text)]">
                   Configura cómo aparecerá en la web pública.
                 </p>
               </div>
@@ -3558,7 +3558,7 @@ export default function GestionWeb() {
               <button
                 type="button"
                 onClick={cerrarModalCategoria}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-xl p-2 text-[var(--color-muted-text)] hover:bg-[var(--color-background)]"
               >
                 <X size={22} />
               </button>
@@ -3566,7 +3566,7 @@ export default function GestionWeb() {
 
             <div className="grid gap-5 p-6 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Nombre
                 </label>
                 <input
@@ -3577,13 +3577,13 @@ export default function GestionWeb() {
                       nombre: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   placeholder="Ej. Programación"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Slug
                 </label>
                 <input
@@ -3594,13 +3594,13 @@ export default function GestionWeb() {
                       slug: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   placeholder="programacion"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Orden
                 </label>
                 <input
@@ -3612,12 +3612,12 @@ export default function GestionWeb() {
                       orden: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Imagen URL
                 </label>
                 <div className="space-y-3">
@@ -3629,7 +3629,7 @@ export default function GestionWeb() {
                         imagen_url: e.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     placeholder="https://..."
                   />
 
@@ -3638,7 +3638,7 @@ export default function GestionWeb() {
                     onClick={() =>
                       abrirSelectorMedia("categoriaImagen", "Seleccionar imagen de categoría")
                     }
-                    className="w-full rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                    className="w-full rounded-xl bg-[var(--color-background)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
                   >
                     Seleccionar desde biblioteca
                   </button>
@@ -3654,7 +3654,7 @@ export default function GestionWeb() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Descripción
                 </label>
                 <textarea
@@ -3666,12 +3666,12 @@ export default function GestionWeb() {
                       descripcion: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   placeholder="Descripción de la categoría..."
                 />
               </div>
 
-              <label className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+              <label className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] p-4">
                 <input
                   type="checkbox"
                   checked={formCategoria.visible_web}
@@ -3683,12 +3683,12 @@ export default function GestionWeb() {
                   }
                   className="h-5 w-5"
                 />
-                <span className="font-semibold text-slate-700">
+                <span className="font-semibold text-[var(--color-text)]">
                   Visible en web
                 </span>
               </label>
 
-              <label className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+              <label className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] p-4">
                 <input
                   type="checkbox"
                   checked={formCategoria.estado}
@@ -3700,22 +3700,22 @@ export default function GestionWeb() {
                   }
                   className="h-5 w-5"
                 />
-                <span className="font-semibold text-slate-700">Activa</span>
+                <span className="font-semibold text-[var(--color-text)]">Activa</span>
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 border-t bg-slate-50 px-6 py-4">
+            <div className="flex justify-end gap-3 border-t bg-[var(--color-background)] px-6 py-4">
               <button
                 type="button"
                 onClick={cerrarModalCategoria}
-                className="rounded-xl px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200"
+                className="rounded-xl px-5 py-3 font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
               >
                 Cancelar
               </button>
 
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)]"
               >
                 <Save size={18} />
                 Guardar
@@ -3729,14 +3729,14 @@ export default function GestionWeb() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
           <form
             onSubmit={guardarCursoWeb}
-            className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-[var(--color-card)] shadow-2xl"
           >
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-[var(--color-text)]">
                   Configuración web del curso
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[var(--color-muted-text)]">
                   {cursoEditar.nombrecurso}
                 </p>
               </div>
@@ -3744,7 +3744,7 @@ export default function GestionWeb() {
               <button
                 type="button"
                 onClick={cerrarModalCurso}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-xl p-2 text-[var(--color-muted-text)] hover:bg-[var(--color-background)]"
               >
                 <X size={22} />
               </button>
@@ -3752,7 +3752,7 @@ export default function GestionWeb() {
 
             <div className="max-h-[70vh] overflow-y-auto p-6">
               <div className="grid gap-5 lg:grid-cols-2">
-                <label className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+                <label className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] p-4">
                   <input
                     type="checkbox"
                     checked={formCurso.visible_web}
@@ -3764,12 +3764,12 @@ export default function GestionWeb() {
                     }
                     className="h-5 w-5"
                   />
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-[var(--color-text)]">
                     Mostrar curso en la web
                   </span>
                 </label>
 
-                <label className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+                <label className="flex items-center gap-3 rounded-xl bg-[var(--color-background)] p-4">
                   <input
                     type="checkbox"
                     checked={formCurso.destacado_web}
@@ -3781,13 +3781,13 @@ export default function GestionWeb() {
                     }
                     className="h-5 w-5"
                   />
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-[var(--color-text)]">
                     Marcar como destacado
                   </span>
                 </label>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Slug
                   </label>
                   <input
@@ -3798,13 +3798,13 @@ export default function GestionWeb() {
                         slug: e.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     placeholder="excel-profesional"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Etiqueta
                   </label>
                   <input
@@ -3815,13 +3815,13 @@ export default function GestionWeb() {
                         etiqueta_web: e.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     placeholder="Curso, Taller, Diplomado..."
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Orden en web
                   </label>
                   <input
@@ -3833,12 +3833,12 @@ export default function GestionWeb() {
                         orden_web: e.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Imagen URL
                   </label>
                   <div className="space-y-3">
@@ -3850,7 +3850,7 @@ export default function GestionWeb() {
                           imagen_url: e.target.value,
                         }))
                       }
-                      className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                       placeholder="https://..."
                     />
 
@@ -3859,7 +3859,7 @@ export default function GestionWeb() {
                       onClick={() =>
                         abrirSelectorMedia("cursoImagen", "Seleccionar imagen del curso")
                       }
-                      className="w-full rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                      className="w-full rounded-xl bg-[var(--color-background)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
                     >
                       Seleccionar desde biblioteca
                     </button>
@@ -3875,7 +3875,7 @@ export default function GestionWeb() {
                 </div>
 
                 <div className="lg:col-span-2">
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Resumen web
                   </label>
                   <textarea
@@ -3887,13 +3887,13 @@ export default function GestionWeb() {
                         resumen_web: e.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     placeholder="Resumen corto para la tarjeta del curso..."
                   />
                 </div>
 
                 <div className="lg:col-span-2">
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Requisitos
                   </label>
                   <textarea
@@ -3905,13 +3905,13 @@ export default function GestionWeb() {
                         requisitos_web: e.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     placeholder="Requisitos visibles en el detalle del curso..."
                   />
                 </div>
 
                 <div className="lg:col-span-2">
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                     Beneficios
                   </label>
                   <textarea
@@ -3923,7 +3923,7 @@ export default function GestionWeb() {
                         beneficios_texto: e.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                     placeholder={"Un beneficio por línea\nCertificado al finalizar\nMaterial descargable"}
                   />
                 </div>
@@ -3931,10 +3931,10 @@ export default function GestionWeb() {
                 <div className="lg:col-span-2">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">
+                      <h3 className="text-lg font-bold text-[var(--color-text)]">
                         Categorías del curso
                       </h3>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-[var(--color-muted-text)]">
                         Selecciona en qué categorías aparecerá este curso.
                       </p>
                     </div>
@@ -3942,7 +3942,7 @@ export default function GestionWeb() {
 
                   <div className="grid gap-3 md:grid-cols-2">
                     {categorias.length === 0 ? (
-                      <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 md:col-span-2">
+                      <div className="rounded-xl bg-[var(--color-background)] p-4 text-sm text-[var(--color-muted-text)] md:col-span-2">
                         Aún no hay categorías creadas.
                       </div>
                     ) : (
@@ -3951,8 +3951,8 @@ export default function GestionWeb() {
                           key={categoria.id}
                           className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
                             formCurso.categoriasIds.includes(categoria.id)
-                              ? "border-blue-300 bg-blue-50"
-                              : "border-slate-200 bg-white hover:bg-slate-50"
+                              ? "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]"
+                              : "border-[var(--color-border)] bg-[var(--color-card)] hover:bg-[var(--color-background)]"
                           }`}
                         >
                           <input
@@ -3965,10 +3965,10 @@ export default function GestionWeb() {
                           />
 
                           <div>
-                            <p className="font-semibold text-slate-800">
+                            <p className="font-semibold text-[var(--color-text)]">
                               {categoria.nombre}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-[var(--color-muted-text)]">
                               /{categoria.slug}
                             </p>
                           </div>
@@ -3980,18 +3980,18 @@ export default function GestionWeb() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t bg-slate-50 px-6 py-4">
+            <div className="flex justify-end gap-3 border-t bg-[var(--color-background)] px-6 py-4">
               <button
                 type="button"
                 onClick={cerrarModalCurso}
-                className="rounded-xl px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200"
+                className="rounded-xl px-5 py-3 font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
               >
                 Cancelar
               </button>
 
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)]"
               >
                 <Save size={18} />
                 Guardar configuración
@@ -4005,14 +4005,14 @@ export default function GestionWeb() {
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
           <form
             onSubmit={guardarPagina}
-            className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="w-full max-w-3xl overflow-hidden rounded-2xl bg-[var(--color-card)] shadow-2xl"
           >
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-[var(--color-text)]">
                   {paginaEditar ? "Editar página" : "Nueva página"}
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[var(--color-muted-text)]">
                   Configura la información básica de la página.
                 </p>
               </div>
@@ -4020,7 +4020,7 @@ export default function GestionWeb() {
               <button
                 type="button"
                 onClick={cerrarModalPagina}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-xl p-2 text-[var(--color-muted-text)] hover:bg-[var(--color-background)]"
               >
                 <X size={22} />
               </button>
@@ -4028,7 +4028,7 @@ export default function GestionWeb() {
 
             <div className="grid max-h-[70vh] gap-5 overflow-y-auto p-6 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Título
                 </label>
                 <input
@@ -4039,13 +4039,13 @@ export default function GestionWeb() {
                       titulo: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   placeholder="Preguntas frecuentes"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Slug
                 </label>
                 <input
@@ -4057,18 +4057,18 @@ export default function GestionWeb() {
                     }))
                   }
                   disabled={paginaEditar?.protegida}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)] disabled:bg-[var(--color-background)]"
                   placeholder="preguntas-frecuentes"
                 />
                 {paginaEditar?.protegida && (
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-[var(--color-muted-text)]">
                     Las páginas protegidas no permiten cambiar el slug.
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Orden
                 </label>
                 <input
@@ -4080,12 +4080,12 @@ export default function GestionWeb() {
                       orden: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                 />
               </div>
 
               <div className="flex items-center gap-4">
-                <label className="flex flex-1 items-center gap-3 rounded-xl bg-slate-50 p-4">
+                <label className="flex flex-1 items-center gap-3 rounded-xl bg-[var(--color-background)] p-4">
                   <input
                     type="checkbox"
                     checked={formPagina.visible_menu}
@@ -4097,12 +4097,12 @@ export default function GestionWeb() {
                     }
                     className="h-5 w-5"
                   />
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-[var(--color-text)]">
                     Visible en menú
                   </span>
                 </label>
 
-                <label className="flex flex-1 items-center gap-3 rounded-xl bg-slate-50 p-4">
+                <label className="flex flex-1 items-center gap-3 rounded-xl bg-[var(--color-background)] p-4">
                   <input
                     type="checkbox"
                     checked={formPagina.publicada}
@@ -4114,12 +4114,12 @@ export default function GestionWeb() {
                     }
                     className="h-5 w-5"
                   />
-                  <span className="font-semibold text-slate-700">Publicada</span>
+                  <span className="font-semibold text-[var(--color-text)]">Publicada</span>
                 </label>
               </div>
 
               <div className="md:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Descripción
                 </label>
                 <textarea
@@ -4131,13 +4131,13 @@ export default function GestionWeb() {
                       descripcion: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   placeholder="Descripción visible de la página..."
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   SEO title
                 </label>
                 <input
@@ -4148,13 +4148,13 @@ export default function GestionWeb() {
                       seo_title: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   placeholder="Título SEO"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   SEO description
                 </label>
                 <input
@@ -4165,24 +4165,24 @@ export default function GestionWeb() {
                       seo_description: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                   placeholder="Descripción SEO"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t bg-slate-50 px-6 py-4">
+            <div className="flex justify-end gap-3 border-t bg-[var(--color-background)] px-6 py-4">
               <button
                 type="button"
                 onClick={cerrarModalPagina}
-                className="rounded-xl px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200"
+                className="rounded-xl px-5 py-3 font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
               >
                 Cancelar
               </button>
 
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)]"
               >
                 <Save size={18} />
                 Guardar página
@@ -4194,13 +4194,13 @@ export default function GestionWeb() {
 
       {modalContenidoPagina && paginaContenidoEditar && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="max-h-[94vh] w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="max-h-[94vh] w-full max-w-6xl overflow-hidden rounded-2xl bg-[var(--color-card)] shadow-2xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-[var(--color-text)]">
                   Editor de contenido
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[var(--color-muted-text)]">
                   Página: {paginaContenidoEditar.titulo}
                 </p>
               </div>
@@ -4208,15 +4208,15 @@ export default function GestionWeb() {
               <button
                 type="button"
                 onClick={cerrarEditorContenidoPagina}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-xl p-2 text-[var(--color-muted-text)] hover:bg-[var(--color-background)]"
               >
                 <X size={22} />
               </button>
             </div>
 
             <div className="max-h-[74vh] overflow-y-auto p-6">
-              <div className="mb-6 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
-                <h3 className="mb-3 text-lg font-bold text-slate-900">
+              <div className="mb-6 rounded-2xl bg-[var(--color-background)] p-5 ring-1 ring-[var(--color-border)]">
+                <h3 className="mb-3 text-lg font-bold text-[var(--color-text)]">
                   Agregar sección
                 </h3>
 
@@ -4224,7 +4224,7 @@ export default function GestionWeb() {
                   <button
                     type="button"
                     onClick={() => agregarSeccionPagina("texto")}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-card)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] ring-1 ring-[var(--color-border)] hover:bg-[var(--color-background)]"
                   >
                     <FileText size={17} />
                     Texto simple
@@ -4233,7 +4233,7 @@ export default function GestionWeb() {
                   <button
                     type="button"
                     onClick={() => agregarSeccionPagina("imagen_texto")}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-card)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] ring-1 ring-[var(--color-border)] hover:bg-[var(--color-background)]"
                   >
                     <ImageIcon size={17} />
                     Imagen + texto
@@ -4242,7 +4242,7 @@ export default function GestionWeb() {
                   <button
                     type="button"
                     onClick={() => agregarSeccionPagina("faq")}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-card)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] ring-1 ring-[var(--color-border)] hover:bg-[var(--color-background)]"
                   >
                     <HelpCircle size={17} />
                     Preguntas frecuentes
@@ -4251,12 +4251,12 @@ export default function GestionWeb() {
               </div>
 
               {contenidoPaginaForm.secciones.length === 0 ? (
-                <div className="rounded-2xl bg-white p-10 text-center ring-1 ring-slate-200">
-                  <Globe2 size={42} className="mx-auto mb-3 text-slate-300" />
-                  <h3 className="text-xl font-bold text-slate-900">
+                <div className="rounded-2xl bg-[var(--color-card)] p-10 text-center ring-1 ring-[var(--color-border)]">
+                  <Globe2 size={42} className="mx-auto mb-3 text-white/70" />
+                  <h3 className="text-xl font-bold text-[var(--color-text)]">
                     Esta página aún no tiene secciones
                   </h3>
-                  <p className="mt-2 text-sm text-slate-500">
+                  <p className="mt-2 text-sm text-[var(--color-muted-text)]">
                     Agrega una sección para empezar a construir la página.
                   </p>
                 </div>
@@ -4267,13 +4267,13 @@ export default function GestionWeb() {
                       key={seccion.id || index}
                       className={`rounded-2xl border p-5 ${
                         seccion.activo === false
-                          ? "border-slate-200 bg-slate-50 opacity-70"
-                          : "border-slate-200 bg-white"
+                          ? "border-[var(--color-border)] bg-[var(--color-background)] opacity-70"
+                          : "border-[var(--color-border)] bg-[var(--color-card)]"
                       }`}
                     >
                       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                          <h3 className="text-lg font-bold text-slate-900">
+                          <h3 className="text-lg font-bold text-[var(--color-text)]">
                             Sección {index + 1}:{" "}
                             {seccion.tipo === "texto"
                               ? "Texto simple"
@@ -4284,8 +4284,8 @@ export default function GestionWeb() {
                               : seccion.tipo}
                           </h3>
 
-                          <p className="text-sm text-slate-500">
-                            Orden: {seccion.orden} ·{" "}
+                          <p className="text-sm text-[var(--color-muted-text)]">
+                            Orden: {seccion.orden} Â·{" "}
                             {seccion.activo === false ? "Oculta" : "Visible"}
                           </p>
                         </div>
@@ -4295,7 +4295,7 @@ export default function GestionWeb() {
                             type="button"
                             onClick={() => moverSeccionPagina(index, "arriba")}
                             disabled={index === 0}
-                            className="rounded-xl bg-slate-100 p-2 text-slate-700 hover:bg-slate-200 disabled:opacity-40"
+                            className="rounded-xl bg-[var(--color-background)] p-2 text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-40"
                           >
                             <ArrowUp size={17} />
                           </button>
@@ -4306,7 +4306,7 @@ export default function GestionWeb() {
                             disabled={
                               index === contenidoPaginaForm.secciones.length - 1
                             }
-                            className="rounded-xl bg-slate-100 p-2 text-slate-700 hover:bg-slate-200 disabled:opacity-40"
+                            className="rounded-xl bg-[var(--color-background)] p-2 text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-40"
                           >
                             <ArrowDown size={17} />
                           </button>
@@ -4332,7 +4332,7 @@ export default function GestionWeb() {
                       {seccion.tipo === "texto" && (
                         <div className="grid gap-4">
                           <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                               Título
                             </label>
                             <input
@@ -4344,12 +4344,12 @@ export default function GestionWeb() {
                                   e.target.value
                                 )
                               }
-                              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             />
                           </div>
 
                           <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                               Descripción / contenido
                             </label>
                             <textarea
@@ -4362,7 +4362,7 @@ export default function GestionWeb() {
                                   e.target.value
                                 )
                               }
-                              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             />
                           </div>
                         </div>
@@ -4371,7 +4371,7 @@ export default function GestionWeb() {
                       {seccion.tipo === "imagen_texto" && (
                         <div className="grid gap-4 lg:grid-cols-2">
                           <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                               Título
                             </label>
                             <input
@@ -4383,12 +4383,12 @@ export default function GestionWeb() {
                                   e.target.value
                                 )
                               }
-                              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             />
                           </div>
 
                           <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                               Posición de imagen
                             </label>
                             <select
@@ -4400,7 +4400,7 @@ export default function GestionWeb() {
                                   e.target.value
                                 )
                               }
-                              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             >
                               <option value="derecha">Derecha</option>
                               <option value="izquierda">Izquierda</option>
@@ -4408,7 +4408,7 @@ export default function GestionWeb() {
                           </div>
 
                           <div className="lg:col-span-2">
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                               Descripción
                             </label>
                             <textarea
@@ -4421,12 +4421,12 @@ export default function GestionWeb() {
                                   e.target.value
                                 )
                               }
-                              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             />
                           </div>
 
                           <div className="lg:col-span-2">
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                               Imagen
                             </label>
 
@@ -4441,7 +4441,7 @@ export default function GestionWeb() {
                                       e.target.value
                                     )
                                   }
-                                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                                   placeholder="https://..."
                                 />
 
@@ -4453,7 +4453,7 @@ export default function GestionWeb() {
                                       "Seleccionar imagen de sección"
                                     )
                                   }
-                                  className="w-full rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                                  className="w-full rounded-xl bg-[var(--color-background)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                                 >
                                   Seleccionar desde biblioteca
                                 </button>
@@ -4466,7 +4466,7 @@ export default function GestionWeb() {
                                   className="h-36 w-full rounded-xl object-cover"
                                 />
                               ) : (
-                                <div className="flex h-36 items-center justify-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-400">
+                                <div className="flex h-36 items-center justify-center rounded-xl bg-[var(--color-background)] text-sm font-semibold text-[var(--color-muted-text)]">
                                   Sin imagen
                                 </div>
                               )}
@@ -4478,7 +4478,7 @@ export default function GestionWeb() {
                       {seccion.tipo === "faq" && (
                         <div>
                           <div className="mb-4">
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            <label className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                               Título de sección
                             </label>
                             <input
@@ -4490,7 +4490,7 @@ export default function GestionWeb() {
                                   e.target.value
                                 )
                               }
-                              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                             />
                           </div>
 
@@ -4498,10 +4498,10 @@ export default function GestionWeb() {
                             {(seccion.config?.items || []).map((item, itemIndex) => (
                               <div
                                 key={itemIndex}
-                                className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                                className="rounded-2xl bg-[var(--color-background)] p-4 ring-1 ring-[var(--color-border)]"
                               >
                                 <div className="mb-3 flex items-center justify-between gap-3">
-                                  <h4 className="font-bold text-slate-800">
+                                  <h4 className="font-bold text-[var(--color-text)]">
                                     Pregunta {itemIndex + 1}
                                   </h4>
 
@@ -4528,7 +4528,7 @@ export default function GestionWeb() {
                                       e.target.value
                                     )
                                   }
-                                  className="mb-3 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                  className="mb-3 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                                   placeholder="Pregunta"
                                 />
 
@@ -4543,7 +4543,7 @@ export default function GestionWeb() {
                                       e.target.value
                                     )
                                   }
-                                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]"
                                   placeholder="Respuesta"
                                 />
                               </div>
@@ -4553,7 +4553,7 @@ export default function GestionWeb() {
                           <button
                             type="button"
                             onClick={() => agregarFaqItem(index)}
-                            className="mt-4 rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                            className="mt-4 rounded-xl bg-[var(--color-background)] px-4 py-3 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                           >
                             + Agregar pregunta
                           </button>
@@ -4565,11 +4565,11 @@ export default function GestionWeb() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 border-t bg-slate-50 px-6 py-4">
+            <div className="flex justify-end gap-3 border-t bg-[var(--color-background)] px-6 py-4">
               <button
                 type="button"
                 onClick={cerrarEditorContenidoPagina}
-                className="rounded-xl px-5 py-3 font-semibold text-slate-700 hover:bg-slate-200"
+                className="rounded-xl px-5 py-3 font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
               >
                 Cancelar
               </button>
@@ -4577,7 +4577,7 @@ export default function GestionWeb() {
               <button
                 type="button"
                 onClick={guardarContenidoPagina}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-button-primary)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--color-button-primary)]"
               >
                 <Save size={18} />
                 Guardar contenido
@@ -4589,13 +4589,13 @@ export default function GestionWeb() {
 
       {mediaPicker.abierto && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-[var(--color-card)] shadow-2xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-[var(--color-text)]">
                   {mediaPicker.titulo}
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-[var(--color-muted-text)]">
                   Elige una imagen subida en la biblioteca de medios.
                 </p>
               </div>
@@ -4603,7 +4603,7 @@ export default function GestionWeb() {
               <button
                 type="button"
                 onClick={cerrarSelectorMedia}
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-xl p-2 text-[var(--color-muted-text)] hover:bg-[var(--color-background)]"
               >
                 <X size={22} />
               </button>
@@ -4611,12 +4611,12 @@ export default function GestionWeb() {
 
             <div className="max-h-[70vh] overflow-y-auto p-6">
               {medios.length === 0 ? (
-                <div className="rounded-2xl bg-slate-50 p-10 text-center">
-                  <ImageIcon size={42} className="mx-auto mb-3 text-slate-300" />
-                  <h3 className="text-xl font-bold text-slate-900">
+                <div className="rounded-2xl bg-[var(--color-background)] p-10 text-center">
+                  <ImageIcon size={42} className="mx-auto mb-3 text-white/70" />
+                  <h3 className="text-xl font-bold text-[var(--color-text)]">
                     No hay imágenes disponibles
                   </h3>
-                  <p className="mt-2 text-sm text-slate-500">
+                  <p className="mt-2 text-sm text-[var(--color-muted-text)]">
                     Primero sube imágenes desde la pestaña Medios.
                   </p>
                 </div>
@@ -4627,9 +4627,9 @@ export default function GestionWeb() {
                       key={media.id}
                       type="button"
                       onClick={() => seleccionarImagenMedia(media)}
-                      className="overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-blue-400 hover:shadow-md"
+                      className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] text-left shadow-sm transition hover:border-[var(--color-primary)] hover:shadow-md"
                     >
-                      <div className="h-40 bg-slate-100">
+                      <div className="h-40 bg-[var(--color-background)]">
                         <img
                           src={media.archivoUrl}
                           alt={media.nombreOriginal}
@@ -4638,15 +4638,15 @@ export default function GestionWeb() {
                       </div>
 
                       <div className="p-4">
-                        <h3 className="truncate font-bold text-slate-900">
+                        <h3 className="truncate font-bold text-[var(--color-text)]">
                           {media.nombreOriginal}
                         </h3>
 
-                        <p className="mt-1 truncate text-xs text-slate-500">
+                        <p className="mt-1 truncate text-xs text-[var(--color-muted-text)]">
                           {media.archivoKey}
                         </p>
 
-                        <span className="mt-3 inline-flex rounded-xl bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
+                        <span className="mt-3 inline-flex rounded-xl bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] px-3 py-2 text-xs font-semibold text-[var(--color-primary)]">
                           Seleccionar imagen
                         </span>
                       </div>

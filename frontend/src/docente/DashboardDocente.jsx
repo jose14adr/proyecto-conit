@@ -23,49 +23,76 @@ import {
 } from "../services/docenteService";
 
 function SkeletonCard() {
-  return <div className="h-28 animate-pulse rounded-2xl bg-slate-200" />;
+  return (
+    <div className="h-28 animate-pulse rounded-2xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
+  );
 }
 
 function SkeletonCursoCard() {
   return (
     <div className="space-y-4">
-      <div className="h-20 animate-pulse rounded-2xl bg-slate-200" />
+      <div className="h-20 animate-pulse rounded-2xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
-        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
-        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
-        <div className="h-24 animate-pulse rounded-2xl bg-slate-200" />
+        <div className="h-24 animate-pulse rounded-2xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
+        <div className="h-24 animate-pulse rounded-2xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
+        <div className="h-24 animate-pulse rounded-2xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
+        <div className="h-24 animate-pulse rounded-2xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
       </div>
       <div className="grid gap-6 xl:grid-cols-12">
-        <div className="xl:col-span-9 h-[250px] animate-pulse rounded-2xl bg-slate-200" />
-        <div className="xl:col-span-3 h-[250px] animate-pulse rounded-2xl bg-slate-200" />
+        <div className="xl:col-span-9 h-[250px] animate-pulse rounded-2xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
+        <div className="xl:col-span-3 h-[250px] animate-pulse rounded-2xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
       </div>
     </div>
   );
 }
 
-function StatCard({ title, value, subtitle, icon: Icon, tone = "blue" }) {
+function StatCard({ title, value, subtitle, icon: Icon, tone = "primary" }) {
   const tones = {
-    blue: "from-blue-600 to-indigo-600",
-    emerald: "from-emerald-500 to-teal-600",
-    amber: "from-amber-500 to-orange-500",
-    violet: "from-violet-500 to-fuchsia-600",
+    primary: {
+      accent: "var(--color-primary)",
+      bg: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
+    },
+    secondary: {
+      accent: "var(--color-secondary)",
+      bg: "color-mix(in srgb, var(--color-secondary) 16%, transparent)",
+    },
+    sidenav: {
+      accent: "var(--color-sidenav)",
+      bg: "color-mix(in srgb, var(--color-sidenav) 12%, transparent)",
+    },
+    amber: {
+      accent: "#f59e0b",
+      bg: "rgba(245, 158, 11, 0.14)",
+    },
   };
 
+  const selected = tones[tone] || tones.primary;
+
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="absolute right-0 top-0 h-24 w-24 translate-x-6 -translate-y-6 rounded-full bg-slate-100" />
+    <div className="relative overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] p-5 shadow-sm transition hover:shadow-md">
+      <div
+        className="absolute right-0 top-0 h-24 w-24 translate-x-6 -translate-y-6 rounded-full"
+        style={{ backgroundColor: selected.bg }}
+      />
+
       <div className="relative flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <h3 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+          <p className="text-sm font-medium text-[var(--color-muted-text)]">
+            {title}
+          </p>
+
+          <h3 className="mt-2 text-3xl font-bold tracking-tight text-[var(--color-text)]">
             {value}
           </h3>
-          <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+
+          <p className="mt-2 text-sm text-[var(--color-muted-text)]">
+            {subtitle}
+          </p>
         </div>
 
         <div
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow ${tones[tone]}`}
+          className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow"
+          style={{ backgroundColor: selected.accent }}
         >
           <Icon size={22} />
         </div>
@@ -84,19 +111,25 @@ function SectionCard({
 }) {
   return (
     <section
-      className={`h-full w-full rounded-3xl border border-slate-200 bg-white shadow-sm ${className}`}
+      className={`h-full w-full rounded-3xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm ${className}`}
     >
-      <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-4 border-b border-[var(--color-border)] px-6 py-5 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-3">
           {Icon ? (
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]">
               <Icon size={20} />
             </div>
           ) : null}
+
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-text)]">
+              {title}
+            </h2>
+
             {subtitle ? (
-              <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+              <p className="mt-1 text-sm text-[var(--color-muted-text)]">
+                {subtitle}
+              </p>
             ) : null}
           </div>
         </div>
@@ -111,13 +144,21 @@ function SectionCard({
 
 function EmptyState({ text }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+    <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] p-6 text-center text-sm text-[var(--color-muted-text)]">
       {text}
     </div>
   );
 }
 
-const ordenarDias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const ordenarDias = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
+
 const hoyMap = {
   1: "Lunes",
   2: "Martes",
@@ -131,8 +172,10 @@ const hoyMap = {
 function parseHoraInicio(horario = "") {
   const match = horario.match(/(\d{1,2}):(\d{2})/);
   if (!match) return 9999;
+
   const hh = Number(match[1]);
   const mm = Number(match[2]);
+
   return hh * 60 + mm;
 }
 
@@ -229,6 +272,7 @@ export default function DashboardDocente() {
         }
       } catch (err) {
         console.error(err);
+
         if (activo) {
           setError(err?.message || "No se pudo cargar el dashboard.");
         }
@@ -321,6 +365,7 @@ export default function DashboardDocente() {
 
           setDetalleCursosMap((prev) => {
             if (prev[String(curso.idgrupo)]) return prev;
+
             return {
               ...prev,
               [String(curso.idgrupo)]: detalle,
@@ -409,6 +454,7 @@ export default function DashboardDocente() {
 
   const clasesHoy = useMemo(() => {
     const hoy = hoyMap[new Date().getDay()];
+
     return (horario || [])
       .filter((item) => item.dia === hoy)
       .sort((a, b) => parseHoraInicio(a.hora) - parseHoraInicio(b.hora));
@@ -418,7 +464,9 @@ export default function DashboardDocente() {
     return [...(horario || [])].sort((a, b) => {
       const diaA = ordenarDias.indexOf(a.dia);
       const diaB = ordenarDias.indexOf(b.dia);
+
       if (diaA !== diaB) return diaA - diaB;
+
       return parseHoraInicio(a.hora) - parseHoraInicio(b.hora);
     });
   }, [horario]);
@@ -459,7 +507,7 @@ export default function DashboardDocente() {
 
   if (loadingGeneral) {
     return (
-      <div className="min-h-full bg-slate-50 px-6 py-6">
+      <div className="min-h-full bg-[var(--color-background)] px-6 py-6">
         <div className="mx-auto max-w-7xl space-y-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <SkeletonCard />
@@ -468,30 +516,40 @@ export default function DashboardDocente() {
             <SkeletonCard />
           </div>
 
-          <div className="h-[420px] animate-pulse rounded-3xl bg-slate-200" />
+          <div className="h-[420px] animate-pulse rounded-3xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <div className="h-[360px] animate-pulse rounded-3xl bg-slate-200" />
-            <div className="h-[360px] animate-pulse rounded-3xl bg-slate-200" />
+            <div className="h-[360px] animate-pulse rounded-3xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
+            <div className="h-[360px] animate-pulse rounded-3xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
           </div>
 
-          <div className="h-[320px] animate-pulse rounded-3xl bg-slate-200" />
+          <div className="h-[320px] animate-pulse rounded-3xl bg-[color-mix(in_srgb,var(--color-muted-text)_18%,transparent)]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-slate-50 px-6 py-6">
+    <div className="min-h-full bg-[var(--color-background)] px-6 py-6 text-[var(--color-text)]">
       <div className="mx-auto max-w-7xl space-y-6">
-        <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-900 px-6 py-7 text-white shadow-lg">
+        <div
+          className="rounded-3xl px-6 py-7 text-white shadow-lg"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+          }}
+        >
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-300">Resumen general</p>
+              <p className="text-sm font-medium text-white/70">
+                Resumen general
+              </p>
+
               <h1 className="mt-2 text-3xl font-bold tracking-tight">
                 Dashboard Docente
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-300">
+
+              <p className="mt-2 max-w-2xl text-sm text-white/70">
                 Visualiza el estado de tus cursos, alumnos, clases programadas y
                 seguimiento académico en un solo lugar.
               </p>
@@ -499,20 +557,35 @@ export default function DashboardDocente() {
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-                <p className="text-xs uppercase tracking-wide text-slate-300">Cursos</p>
+                <p className="text-xs uppercase tracking-wide text-white/70">
+                  Cursos
+                </p>
                 <p className="mt-1 text-2xl font-bold">{stats.totalCursos}</p>
               </div>
+
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-                <p className="text-xs uppercase tracking-wide text-slate-300">Alumnos</p>
+                <p className="text-xs uppercase tracking-wide text-white/70">
+                  Alumnos
+                </p>
                 <p className="mt-1 text-2xl font-bold">{stats.totalAlumnos}</p>
               </div>
+
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-                <p className="text-xs uppercase tracking-wide text-slate-300">Aprobados</p>
-                <p className="mt-1 text-2xl font-bold">{stats.totalAprobados}</p>
+                <p className="text-xs uppercase tracking-wide text-white/70">
+                  Aprobados
+                </p>
+                <p className="mt-1 text-2xl font-bold">
+                  {stats.totalAprobados}
+                </p>
               </div>
+
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-                <p className="text-xs uppercase tracking-wide text-slate-300">Pendientes</p>
-                <p className="mt-1 text-2xl font-bold">{stats.pendientesRevision}</p>
+                <p className="text-xs uppercase tracking-wide text-white/70">
+                  Pendientes
+                </p>
+                <p className="mt-1 text-2xl font-bold">
+                  {stats.pendientesRevision}
+                </p>
               </div>
             </div>
           </div>
@@ -530,22 +603,25 @@ export default function DashboardDocente() {
             value={stats.totalCursos}
             subtitle="Grupos asignados al docente"
             icon={BookOpen}
-            tone="blue"
+            tone="primary"
           />
+
           <StatCard
             title="Total alumnos"
             value={stats.totalAlumnos}
             subtitle="Alumnos registrados en tus grupos"
             icon={Users}
-            tone="violet"
+            tone="secondary"
           />
+
           <StatCard
             title="Aprobados"
             value={stats.totalAprobados}
             subtitle="Alumnos con promedio aprobatorio"
             icon={CheckCircle2}
-            tone="emerald"
+            tone="sidenav"
           />
+
           <StatCard
             title="Pendientes por revisar"
             value={stats.pendientesRevision}
@@ -564,7 +640,7 @@ export default function DashboardDocente() {
               <select
                 value={cursoSeleccionado}
                 onChange={(e) => setCursoSeleccionado(e.target.value)}
-                className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 md:min-w-[320px]"
+                className="w-full min-w-0 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2.5 text-sm font-medium text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] md:min-w-[320px]"
               >
                 {detalleCursos.map((curso) => (
                   <option key={curso.idgrupo} value={curso.idgrupo}>
@@ -580,23 +656,25 @@ export default function DashboardDocente() {
               <EmptyState text="No hay cursos disponibles para mostrar el estado académico." />
             ) : (
               <div className="space-y-6">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900">
+                      <h3 className="text-lg font-semibold text-[var(--color-text)]">
                         {cursoActivo.nombre}
                       </h3>
-                      <p className="mt-1 text-sm text-slate-500">
+
+                      <p className="mt-1 text-sm text-[var(--color-muted-text)]">
                         Grupo: {cursoActivo.grupo || "-"} · Modalidad:{" "}
                         {cursoActivo.modalidad || "-"}
                       </p>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                      <span className="rounded-full bg-[var(--color-card)] px-3 py-1 text-xs font-semibold text-[var(--color-text)] ring-1 ring-[var(--color-border)]">
                         Total alumnos: {cursoActivo.totalAlumnos || 0}
                       </span>
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+
+                      <span className="rounded-full bg-[var(--color-card)] px-3 py-1 text-xs font-semibold text-[var(--color-text)] ring-1 ring-[var(--color-border)]">
                         Promedio: {cursoActivo.promedioCurso ?? "-"}
                       </span>
                     </div>
@@ -604,30 +682,38 @@ export default function DashboardDocente() {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4">
-                    <p className="text-sm font-medium text-emerald-700">Aprobados</p>
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+                    <p className="text-sm font-medium text-emerald-700">
+                      Aprobados
+                    </p>
                     <p className="mt-2 text-3xl font-bold text-emerald-900">
                       {cursoActivo.aprobadosCount || 0}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4">
-                    <p className="text-sm font-medium text-amber-700">Recuperación</p>
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                    <p className="text-sm font-medium text-amber-700">
+                      Recuperación
+                    </p>
                     <p className="mt-2 text-3xl font-bold text-amber-900">
                       {cursoActivo.recuperacionCount || 0}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4">
-                    <p className="text-sm font-medium text-rose-700">Desaprobados</p>
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4">
+                    <p className="text-sm font-medium text-rose-700">
+                      Desaprobados
+                    </p>
                     <p className="mt-2 text-3xl font-bold text-rose-900">
                       {cursoActivo.desaprobadosCount || 0}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-4">
-                    <p className="text-sm font-medium text-slate-700">Sin notas</p>
-                    <p className="mt-2 text-3xl font-bold text-slate-900">
+                  <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-4">
+                    <p className="text-sm font-medium text-[var(--color-muted-text)]">
+                      Sin notas
+                    </p>
+                    <p className="mt-2 text-3xl font-bold text-[var(--color-text)]">
                       {cursoActivo.sinNotasCount || 0}
                     </p>
                   </div>
@@ -637,24 +723,33 @@ export default function DashboardDocente() {
                   <div className="xl:col-span-9 overflow-x-auto">
                     <table className="min-w-full border-separate border-spacing-y-2">
                       <thead>
-                        <tr className="text-left text-sm text-slate-500">
+                        <tr className="text-left text-sm text-[var(--color-muted-text)]">
                           <th className="px-3 py-2 font-medium">Estado</th>
                           <th className="px-3 py-2 font-medium">Total</th>
                           <th className="px-3 py-2 font-medium">Porcentaje</th>
                           <th className="px-3 py-2 font-medium">Observación</th>
                         </tr>
                       </thead>
+
                       <tbody>
                         {estadosCursoActivo.map((item) => (
-                          <tr key={item.name} className="rounded-2xl bg-slate-50">
-                            <td className="px-3 py-3 font-semibold text-slate-800">
+                          <tr
+                            key={item.name}
+                            className="rounded-2xl bg-[var(--color-background)]"
+                          >
+                            <td className="px-3 py-3 font-semibold text-[var(--color-text)]">
                               {item.name}
                             </td>
-                            <td className="px-3 py-3 text-slate-700">{item.value}</td>
-                            <td className="px-3 py-3 text-slate-700">
+
+                            <td className="px-3 py-3 text-[var(--color-muted-text)]">
+                              {item.value}
+                            </td>
+
+                            <td className="px-3 py-3 text-[var(--color-muted-text)]">
                               {item.porcentaje}%
                             </td>
-                            <td className="px-3 py-3 text-slate-500">
+
+                            <td className="px-3 py-3 text-[var(--color-muted-text)]">
                               {item.name === "Aprobados" &&
                                 "Alumnos con promedio aprobatorio."}
                               {item.name === "Recuperación" &&
@@ -671,7 +766,7 @@ export default function DashboardDocente() {
                   </div>
 
                   <div className="xl:col-span-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
                       {estadosCursoActivo.every((item) => !item.value) ? (
                         <EmptyState text="Sin datos" />
                       ) : (
@@ -690,8 +785,9 @@ export default function DashboardDocente() {
                                   <Cell fill="#22c55e" />
                                   <Cell fill="#f59e0b" />
                                   <Cell fill="#ef4444" />
-                                  <Cell fill="#94a3b8" />
+                                  <Cell fill="var(--color-muted-text)" />
                                 </Pie>
+
                                 <Tooltip />
                               </PieChart>
                             </ResponsiveContainer>
@@ -700,20 +796,22 @@ export default function DashboardDocente() {
                           <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                             {estadosCursoActivo.map((item, index) => {
                               const colors = [
-                                "bg-emerald-500",
-                                "bg-amber-500",
-                                "bg-red-500",
-                                "bg-slate-400",
+                                "#22c55e",
+                                "#f59e0b",
+                                "#ef4444",
+                                "var(--color-muted-text)",
                               ];
 
                               return (
                                 <div
                                   key={item.name}
-                                  className="flex items-center gap-2 rounded-xl bg-slate-50 px-2 py-1.5 text-slate-700"
+                                  className="flex items-center gap-2 rounded-xl bg-[var(--color-background)] px-2 py-1.5 text-[var(--color-text)]"
                                 >
                                   <span
-                                    className={`h-3 w-3 rounded-full ${colors[index]}`}
+                                    className="h-3 w-3 rounded-full"
+                                    style={{ backgroundColor: colors[index] }}
                                   />
+
                                   <span className="font-medium">
                                     {item.name}:{" "}
                                     <span className="font-semibold">
@@ -748,25 +846,31 @@ export default function DashboardDocente() {
                 {clasesHoy.map((item, index) => (
                   <div
                     key={`${item.curso}-${item.grupo}-${index}`}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="font-semibold text-slate-900">{item.curso}</h3>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <h3 className="font-semibold text-[var(--color-text)]">
+                          {item.curso}
+                        </h3>
+
+                        <p className="mt-1 text-sm text-[var(--color-muted-text)]">
                           Grupo: {item.grupo || "-"}
                         </p>
                       </div>
-                      <span className="rounded-xl bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+
+                      <span className="rounded-xl bg-[var(--color-button-primary)] px-3 py-1 text-xs font-semibold text-[var(--color-button-primary-text)]">
                         {item.hora || "-"}
                       </span>
                     </div>
+
                     <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700">
+                      <span className="rounded-full bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-3 py-1 font-medium text-[var(--color-primary)]">
                         {item.modalidad || "Sin modalidad"}
                       </span>
+
                       {item.dia ? (
-                        <span className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700">
+                        <span className="rounded-full bg-[color-mix(in_srgb,var(--color-secondary)_12%,transparent)] px-3 py-1 font-medium text-[var(--color-secondary)]">
                           {item.dia}
                         </span>
                       ) : null}
@@ -796,10 +900,12 @@ export default function DashboardDocente() {
                       <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                         <AlertTriangle size={18} />
                       </div>
+
                       <div>
                         <h3 className="font-semibold text-amber-900">
                           {alerta.titulo}
                         </h3>
+
                         <p className="mt-1 text-sm text-amber-800">
                           {alerta.detalle}
                         </p>
@@ -823,7 +929,7 @@ export default function DashboardDocente() {
             <div className="overflow-x-auto">
               <table className="min-w-full border-separate border-spacing-y-2">
                 <thead>
-                  <tr className="text-left text-sm text-slate-500">
+                  <tr className="text-left text-sm text-[var(--color-muted-text)]">
                     <th className="px-3 py-2 font-medium">Día</th>
                     <th className="px-3 py-2 font-medium">Hora</th>
                     <th className="px-3 py-2 font-medium">Curso</th>
@@ -831,20 +937,31 @@ export default function DashboardDocente() {
                     <th className="px-3 py-2 font-medium">Modalidad</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {horarioOrdenado.map((item, index) => (
                     <tr
                       key={`${item.curso}-${item.grupo}-${index}`}
-                      className="rounded-2xl bg-slate-50"
+                      className="rounded-2xl bg-[var(--color-background)]"
                     >
-                      <td className="px-3 py-3 font-medium text-slate-800">
+                      <td className="px-3 py-3 font-medium text-[var(--color-text)]">
                         {item.dia || "-"}
                       </td>
-                      <td className="px-3 py-3 text-slate-600">{item.hora || "-"}</td>
-                      <td className="px-3 py-3 text-slate-900">{item.curso || "-"}</td>
-                      <td className="px-3 py-3 text-slate-600">{item.grupo || "-"}</td>
+
+                      <td className="px-3 py-3 text-[var(--color-muted-text)]">
+                        {item.hora || "-"}
+                      </td>
+
+                      <td className="px-3 py-3 text-[var(--color-text)]">
+                        {item.curso || "-"}
+                      </td>
+
+                      <td className="px-3 py-3 text-[var(--color-muted-text)]">
+                        {item.grupo || "-"}
+                      </td>
+
                       <td className="px-3 py-3">
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                        <span className="rounded-full bg-[var(--color-card)] px-3 py-1 text-xs font-semibold text-[var(--color-text)] ring-1 ring-[var(--color-border)]">
                           {item.modalidad || "-"}
                         </span>
                       </td>

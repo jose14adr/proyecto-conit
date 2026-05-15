@@ -1,10 +1,89 @@
 @import "tailwindcss";
 
+:root {
+  --color-primary: #3B82F6;
+  --color-secondary: #0EA5E9;
+
+  --color-sidenav: #1E293B;
+  --color-sidenav-text: #FFFFFF;
+
+  --color-button-primary: #1E293B;
+  --color-button-primary-text: #FFFFFF;
+
+  --color-button-secondary: #0EA5E9;
+  --color-button-secondary-text: #FFFFFF;
+
+  --color-background: #F8FAFC;
+  --color-card: #FFFFFF;
+  --color-text: #0F172A;
+  --color-muted-text: #64748B;
+  --color-border: #E2E8F0;
+}
+
 html, body, #root {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+/* Clases reutilizables para el tema global */
+.theme-bg {
+  background-color: var(--color-background);
+}
+
+.theme-card {
+  background-color: var(--color-card);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.theme-text {
+  color: var(--color-text);
+}
+
+.theme-muted {
+  color: var(--color-muted-text);
+}
+
+.theme-border {
+  border-color: var(--color-border);
+}
+
+.theme-primary {
+  color: var(--color-primary);
+}
+
+.theme-bg-primary {
+  background-color: var(--color-primary);
+}
+
+.theme-bg-sidenav {
+  background-color: var(--color-sidenav);
+  color: var(--color-sidenav-text);
+}
+
+.btn-theme-primary {
+  background-color: var(--color-button-primary);
+  color: var(--color-button-primary-text);
+}
+
+.btn-theme-primary:hover {
+  filter: brightness(0.95);
+}
+
+.btn-theme-secondary {
+  background-color: var(--color-button-secondary);
+  color: var(--color-button-secondary-text);
+}
+
+.btn-theme-secondary:hover {
+  filter: brightness(0.95);
 }
 
 @keyframes scaleIn {

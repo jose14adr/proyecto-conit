@@ -75,23 +75,29 @@ function HeaderWeb() {
   const navLinkClass = ({ isActive }) =>
     `rounded-xl px-4 py-2 text-sm font-semibold transition ${
       isActive
-        ? "bg-sky-100 text-sky-700"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        ? "bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] text-[var(--color-primary)]"
+        : "text-[var(--color-muted-text)] hover:bg-[var(--color-background)] hover:text-[var(--color-primary)]"
     }`;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-card)]/95 backdrop-blur-md">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-5">
         <Link to="/web" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-900 to-blue-800 text-lg font-black text-white shadow-sm">
+          <div
+            className="flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black text-white shadow-sm"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--color-sidenav), var(--color-primary))",
+            }}
+          >
             C
           </div>
 
           <div>
-            <p className="text-xl font-black tracking-wide text-slate-900">
+            <p className="text-xl font-black tracking-wide text-[var(--color-text)]">
               CONIT
             </p>
-            <p className="-mt-1 text-xs font-medium text-slate-500">
+            <p className="-mt-1 text-xs font-medium text-[var(--color-muted-text)]">
               Formación profesional
             </p>
           </div>
@@ -114,13 +120,13 @@ function HeaderWeb() {
           {paginaCarrito && (
             <Link
               to={paginaCarrito.ruta || "/web/carrito"}
-              className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 transition hover:bg-sky-100 hover:text-sky-700"
+              className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-background)] text-[var(--color-text)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] hover:text-[var(--color-primary)]"
               title="Carrito"
             >
               <ShoppingCart size={21} />
 
               {cartCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-500 px-1 text-xs font-bold text-white">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-primary)] px-1 text-xs font-bold text-white">
                   {cartCount}
                 </span>
               )}
@@ -129,7 +135,7 @@ function HeaderWeb() {
 
           <Link
             to="/login"
-            className="hidden rounded-2xl bg-sky-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-sky-600 sm:inline-flex"
+            className="hidden rounded-2xl bg-[var(--color-button-primary)] px-5 py-3 text-sm font-bold text-[var(--color-button-primary-text)] shadow-sm transition hover:brightness-95 sm:inline-flex"
           >
             Aula Virtual
           </Link>
@@ -137,7 +143,7 @@ function HeaderWeb() {
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-background)] text-[var(--color-text)] transition hover:bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] hover:text-[var(--color-primary)] lg:hidden"
             aria-label="Abrir menú"
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -146,7 +152,7 @@ function HeaderWeb() {
       </div>
 
       {menuOpen && (
-        <div className="border-t border-slate-200 bg-white px-5 py-4 shadow-lg lg:hidden">
+        <div className="border-t border-[var(--color-border)] bg-[var(--color-card)] px-5 py-4 shadow-lg lg:hidden">
           <nav className="mx-auto flex max-w-7xl flex-col gap-2">
             {linksMenu.map((pagina) => (
               <NavLink
@@ -161,7 +167,7 @@ function HeaderWeb() {
 
             <Link
               to="/login"
-              className="mt-2 rounded-2xl bg-sky-500 px-5 py-3 text-center text-sm font-bold text-white shadow-sm transition hover:bg-sky-600"
+              className="mt-2 rounded-2xl bg-[var(--color-button-primary)] px-5 py-3 text-center text-sm font-bold text-[var(--color-button-primary-text)] shadow-sm transition hover:brightness-95"
             >
               Aula Virtual
             </Link>
